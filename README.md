@@ -32,6 +32,14 @@ Built entirely as a single-page HTML application, Threat Tiger requires no insta
 
 ---
 
+## 🛠️ Docker
+
+1.  download the docker file
+2.  run: sudo docker build -t threat-tiger . && docker run -d --name threat-tiger -p 8080:80 threat-tiger
+3.  navigate to: http://localhost:8080/threat-tiger.html
+4.  
+---
+
 ## 💻 Tech Stack
 
 *   **HTML5 & SVG** for rendering the interactive canvas and shapes.
