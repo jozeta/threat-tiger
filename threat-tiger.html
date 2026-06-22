@@ -352,6 +352,13 @@
             box-shadow: none !important;
         }
 
+        .canvas-card-hidden-box,
+        .node-element.selected .canvas-card-hidden-box {
+            background: transparent !important;
+            border: none !important;
+            box-shadow: none !important;
+        }
+
         .color-swatch-btn {
             width: 24px;
             height: 24px;
@@ -489,6 +496,67 @@
 
         .palette-item-container:hover .palette-popover-panel {
             display: block;
+        }
+
+        /* Custom Accordion Palette Styling */
+        .sidebar-left .accordion {
+            --bs-accordion-bg: transparent;
+            --bs-accordion-border-color: transparent;
+            --bs-accordion-btn-bg: transparent;
+            --bs-accordion-btn-focus-box-shadow: none;
+            --bs-accordion-btn-padding-x: 0;
+            --bs-accordion-btn-padding-y: 0.5rem;
+            --bs-accordion-active-color: #212529;
+            --bs-accordion-active-bg: transparent;
+        }
+
+        .sidebar-left .accordion-item {
+            background-color: transparent;
+            border: none;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .sidebar-left .accordion-item:last-child {
+            border-bottom: none;
+        }
+
+        .sidebar-left .accordion-button {
+            padding: 8px 0;
+            background-color: transparent;
+            border: none;
+            box-shadow: none;
+            color: #6c757d;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .sidebar-left .accordion-button::after {
+            background-size: 10px;
+            width: 10px;
+            height: 10px;
+            margin-left: auto;
+            transition: transform 0.2s ease-in-out;
+        }
+
+        .sidebar-left .accordion-button:not(.collapsed) {
+            color: #212529;
+            background-color: transparent;
+            box-shadow: none;
+        }
+
+        .sidebar-left .accordion-button:focus {
+            box-shadow: none;
+            border-color: transparent;
+        }
+
+        .sidebar-left .accordion-body {
+            padding: 4px 0 12px 0;
+        }
+
+        .sidebar-left .accordion-collapse.show {
+            overflow: visible !important;
         }
 
         .popover-header-title {
@@ -1255,200 +1323,260 @@
                 <p class="text-muted small mb-3">Click elements to instantiate them onto the architecture canvas window.
                 </p>
 
-                <div class="d-flex flex-column gap-2">
-                    <div class="palette-item-container">
-                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="process"
-                            id="pal-process">
-                            <i class="bi bi-gear-fill text-primary fs-5 me-3"></i>
-                            <div>
-                                <div class="fw-semibold small">Process / Service</div>
-                            </div>
-                        </div>
-                        <div class="palette-popover-panel">
-                            <div class="popover-header-title text-primary"><i class="bi bi-gear-fill"></i> Process
-                                Component</div>
-                            <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
-                            <div class="small text-light opacity-75 mb-2">Any active computational engine, runtime
-                                application container, execution node, or microservice block running business
-                                instructions software.</div>
-                        </div>
-                    </div>
+                <div class="accordion accordion-flush d-flex flex-column gap-2" id="paletteAccordion">
+                    <!-- Threat Modeling -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingThreatModeling">
+                            <button class="accordion-button" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseThreatModeling" aria-expanded="true"
+                                aria-controls="collapseThreatModeling">
+                                Threat Modeling
+                            </button>
+                        </h2>
+                        <div id="collapseThreatModeling" class="accordion-collapse collapse show"
+                            aria-labelledby="headingThreatModeling">
+                            <div class="accordion-body d-flex flex-column gap-2">
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="process"
+                                        id="pal-process">
+                                        <i class="bi bi-gear-fill text-primary fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Process / Service</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-primary"><i class="bi bi-gear-fill"></i> Process
+                                            Component</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">Any active computational engine, runtime
+                                            application container, execution node, or microservice block running business
+                                            instructions software.</div>
+                                    </div>
+                                </div>
 
-                    <div class="palette-item-container">
-                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="datastore"
-                            id="pal-datastore">
-                            <i class="bi bi-database-fill text-warning fs-5 me-3"></i>
-                            <div>
-                                <div class="fw-semibold small">Data Store</div>
-                            </div>
-                        </div>
-                        <div class="palette-popover-panel">
-                            <div class="popover-header-title text-warning"><i class="bi bi-database-fill"></i> Data
-                                Store Component</div>
-                            <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
-                            <div class="small text-light opacity-75 mb-2">Any persistence layer, ledger engine, cluster
-                                directory, hardware disk partition, or caching cluster storing persistent or volatile
-                                system state data.</div>
-                        </div>
-                    </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="datastore"
+                                        id="pal-datastore">
+                                        <i class="bi bi-database-fill text-warning fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Data Store</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-warning"><i class="bi bi-database-fill"></i> Data
+                                            Store Component</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">Any persistence layer, ledger engine, cluster
+                                            directory, hardware disk partition, or caching cluster storing persistent or volatile
+                                            system state data.</div>
+                                    </div>
+                                </div>
 
-                    <div class="palette-item-container">
-                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="interactor"
-                            id="pal-interactor">
-                            <i class="bi bi-person-bounding-box text-success fs-5 me-3"></i>
-                            <div>
-                                <div class="fw-semibold small">External Entity</div>
-                            </div>
-                        </div>
-                        <div class="palette-popover-panel">
-                            <div class="popover-header-title text-success"><i class="bi bi-person-bounding-box"></i>
-                                External Entity Component</div>
-                            <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
-                            <div class="small text-light opacity-75 mb-2">An untrusted origin consumer, client terminal,
-                                or downstream partner framework sitting outside system cluster firewall configurations.
-                            </div>
-                        </div>
-                    </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="interactor"
+                                        id="pal-interactor">
+                                        <i class="bi bi-person-bounding-box text-success fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">External Entity</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-success"><i class="bi bi-person-bounding-box"></i>
+                                            External Entity Component</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">An untrusted origin consumer, client terminal,
+                                            or downstream partner framework sitting outside system cluster firewall configurations.
+                                        </div>
+                                    </div>
+                                </div>
 
-                    <div class="palette-item-container">
-                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="boundary"
-                            id="pal-boundary">
-                            <i class="bi bi-bounding-box-circles text-danger fs-5 me-3"></i>
-                            <div>
-                                <div class="fw-semibold small">Trust Boundary Zone</div>
-                            </div>
-                        </div>
-                        <div class="palette-popover-panel">
-                            <div class="popover-header-title text-danger"><i class="bi bi-bounding-box-circles"></i>
-                                Trust Boundary Zone</div>
-                            <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
-                            <div class="small text-light opacity-75 mb-2">A structural border isolation box grouping
-                                items together where privilege access levels or trust shifting context boundaries
-                                change.</div>
-                        </div>
-                    </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="boundary"
+                                        id="pal-boundary">
+                                        <i class="bi bi-bounding-box-circles text-danger fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Trust Boundary Zone</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-danger"><i class="bi bi-bounding-box-circles"></i>
+                                            Trust Boundary Zone</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">A structural border isolation box grouping
+                                            items together where privilege access levels or trust shifting context boundaries
+                                            change.</div>
+                                    </div>
+                                </div>
 
-                    <div class="palette-item-container">
-                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
-                            data-type="boundary_line" id="pal-boundary-line">
-                            <i class="bi bi-dash-lg text-danger fs-5 me-3"></i>
-                            <div>
-                                <div class="fw-semibold small">Trust Boundary Line</div>
-                            </div>
-                        </div>
-                        <div class="palette-popover-panel">
-                            <div class="popover-header-title text-danger"><i class="bi bi-dash-lg"></i> Trust Boundary
-                                Line</div>
-                            <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
-                            <div class="small text-light opacity-75 mb-2">A linear segment indicating a change in trust,
-                                privilege levels, or security protocols between distinct architectural layers.</div>
-                        </div>
-                    </div>
-
-                    <div class="palette-item-container">
-                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
-                            data-type="step_activity" id="pal-step-activity">
-                            <i class="bi bi-list-ol text-info fs-5 me-3"></i>
-                            <div>
-                                <div class="fw-semibold small">Step Activity</div>
-                            </div>
-                        </div>
-                        <div class="palette-popover-panel">
-                            <div class="popover-header-title text-info"><i class="bi bi-list-ol"></i> Step Activity
-                                Component</div>
-                            <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
-                            <div class="small text-light opacity-75 mb-2">An indexable timeline sequence node used to
-                                illustrate sequential activities, data flows, or multi-step user interaction journeys.
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="boundary_line" id="pal-boundary-line">
+                                        <i class="bi bi-dash-lg text-danger fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Trust Boundary Line</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-danger"><i class="bi bi-dash-lg"></i> Trust Boundary
+                                            Line</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">A linear segment indicating a change in trust,
+                                            privilege levels, or security protocols between distinct architectural layers.</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="palette-item-container">
-                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="textbox"
-                            id="pal-textbox">
-                            <i class="bi bi-chat-left-text-fill text-secondary fs-5 me-3"></i>
-                            <div>
-                                <div class="fw-semibold small">Comment Textbox</div>
+                    <!-- Text Items -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingTextItems">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseTextItems" aria-expanded="false"
+                                aria-controls="collapseTextItems">
+                                Text Items
+                            </button>
+                        </h2>
+                        <div id="collapseTextItems" class="accordion-collapse collapse"
+                            aria-labelledby="headingTextItems">
+                            <div class="accordion-body d-flex flex-column gap-2">
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="step_activity" id="pal-step-activity">
+                                        <i class="bi bi-list-ol text-info fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Step Activity</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-info"><i class="bi bi-list-ol"></i> Step Activity
+                                            Component</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">An indexable timeline sequence node used to
+                                            illustrate sequential activities, data flows, or multi-step user interaction journeys.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="textbox"
+                                        id="pal-textbox">
+                                        <i class="bi bi-chat-left-text-fill text-secondary fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Comment Textbox</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-secondary"><i class="bi bi-chat-left-text-fill"></i>
+                                            Comment Textbox</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">A documentation utility block to add
+                                            descriptive metadata, assumptions, or operational context notes onto specific canvas
+                                            regions.</div>
+                                    </div>
+                                </div>
+
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="headline"
+                                        id="pal-headline">
+                                        <i class="bi bi-type-h1 text-dark fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Canvas Headline</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-dark" style="color:#fff !important;"><i
+                                                class="bi bi-type-h1"></i> Canvas Headline</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">A stylized text display label used to organize
+                                            architecture charts into clear visual blocks or create master banners.</div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="palette-popover-panel">
-                            <div class="popover-header-title text-secondary"><i class="bi bi-chat-left-text-fill"></i>
-                                Comment Textbox</div>
-                            <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
-                            <div class="small text-light opacity-75 mb-2">A documentation utility block to add
-                                descriptive metadata, assumptions, or operational context notes onto specific canvas
-                                regions.</div>
                         </div>
                     </div>
 
-                    <div class="palette-item-container">
-                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
-                            data-type="custom_image" id="pal-custom-image">
-                            <i class="bi bi-image-fill text-danger fs-5 me-3"></i>
-                            <div>
-                                <div class="fw-semibold small">Custom Image / Icon</div>
+                    <!-- Data Nodes & Icons -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingDataNodes">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseDataNodes" aria-expanded="false"
+                                aria-controls="collapseDataNodes">
+                                Data Nodes & Icons
+                            </button>
+                        </h2>
+                        <div id="collapseDataNodes" class="accordion-collapse collapse"
+                            aria-labelledby="headingDataNodes">
+                            <div class="accordion-body d-flex flex-column gap-2">
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="custom_image" id="pal-custom-image">
+                                        <i class="bi bi-image-fill text-danger fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Custom Image / Icon</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-danger"><i class="bi bi-image-fill"></i> Custom
+                                            Graphic Image</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">Allows importing custom graphic elements,
+                                            system logos, or specific icons directly onto the diagram. Supports loading local files
+                                            or web URLs.</div>
+                                    </div>
+                                </div>
+
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="infrastructure" id="pal-infrastructure">
+                                        <i class="bi bi-server text-info fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Infrastructure Node</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-info"><i class="bi bi-server"></i> Infrastructure
+                                            Component</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">Any physical or virtual hardware server,
+                                            security appliance, network switch, router, firewall, or email broker mapping
+                                            infrastructure layers.</div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="palette-popover-panel">
-                            <div class="popover-header-title text-danger"><i class="bi bi-image-fill"></i> Custom
-                                Graphic Image</div>
-                            <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
-                            <div class="small text-light opacity-75 mb-2">Allows importing custom graphic elements,
-                                system logos, or specific icons directly onto the diagram. Supports loading local files
-                                or web URLs.</div>
                         </div>
                     </div>
 
-                    <div class="palette-item-container">
-                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="swimlane"
-                            id="pal-swimlane">
-                            <i class="bi bi-grid-3x3-gap text-success fs-5 me-3"></i>
-                            <div>
-                                <div class="fw-semibold small">Swimlane Grid Layout</div>
+                    <!-- Flowchart Diagram Items -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingFlowchart">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseFlowchart" aria-expanded="false"
+                                aria-controls="collapseFlowchart">
+                                Flowchart Diagram Items
+                            </button>
+                        </h2>
+                        <div id="collapseFlowchart" class="accordion-collapse collapse"
+                            aria-labelledby="headingFlowchart">
+                            <div class="accordion-body d-flex flex-column gap-2">
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="swimlane"
+                                        id="pal-swimlane">
+                                        <i class="bi bi-grid-3x3-gap text-success fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Swimlane Grid Layout</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-success"><i class="bi bi-grid-3x3-gap"></i> Swimlane
+                                            Grid Layout</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">A dynamic matrix grid component that
+                                            automatically groups, bounds, and resizes relative to elements placed inside its cells.
+                                            Supports adding/deleting rows and columns.</div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="palette-popover-panel">
-                            <div class="popover-header-title text-success"><i class="bi bi-grid-3x3-gap"></i> Swimlane
-                                Grid Layout</div>
-                            <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
-                            <div class="small text-light opacity-75 mb-2">A dynamic matrix grid component that
-                                automatically groups, bounds, and resizes relative to elements placed inside its cells.
-                                Supports adding/deleting rows and columns.</div>
-                        </div>
-                    </div>
-
-                    <div class="palette-item-container">
-                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="headline"
-                            id="pal-headline">
-                            <i class="bi bi-type-h1 text-dark fs-5 me-3"></i>
-                            <div>
-                                <div class="fw-semibold small">Canvas Headline</div>
-                            </div>
-                        </div>
-                        <div class="palette-popover-panel">
-                            <div class="popover-header-title text-dark" style="color:#fff !important;"><i
-                                    class="bi bi-type-h1"></i> Canvas Headline</div>
-                            <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
-                            <div class="small text-light opacity-75 mb-2">A stylized text display label used to organize
-                                architecture charts into clear visual blocks or create master banners.</div>
-                        </div>
-                    </div>
-
-                    <div class="palette-item-container">
-                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
-                            data-type="infrastructure" id="pal-infrastructure">
-                            <i class="bi bi-server text-info fs-5 me-3"></i>
-                            <div>
-                                <div class="fw-semibold small">Infrastructure Node</div>
-                            </div>
-                        </div>
-                        <div class="palette-popover-panel">
-                            <div class="popover-header-title text-info"><i class="bi bi-server"></i> Infrastructure
-                                Component</div>
-                            <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
-                            <div class="small text-light opacity-75 mb-2">Any physical or virtual hardware server,
-                                security appliance, network switch, router, firewall, or email broker mapping
-                                infrastructure layers.</div>
                         </div>
                     </div>
                 </div>
@@ -1830,6 +1958,10 @@
                                         <button type="button" class="color-swatch-btn" data-color="black"
                                             style="background-color: #212529;" title="Black"></button>
                                     </div>
+                                </div>
+                                <div class="form-check form-switch mt-2">
+                                    <input class="form-check-input" type="checkbox" id="props-step-hide-details">
+                                    <label class="form-check-label extra-small text-dark fw-bold" for="props-step-hide-details">Hide Text &amp; Box (Show Only Circle)</label>
                                 </div>
                             </div>
 
@@ -3494,6 +3626,18 @@
                         }
                     }
                 });
+                document.getElementById('props-step-hide-details').addEventListener('change', (ev) => {
+                    if (this.state.selectedElementIds.length === 1) {
+                        const item = this.state.elements.find(el => el.id === this.state.selectedElementIds[0]);
+                        if (item && item.type === 'step_activity') {
+                            item.hideTextAndBox = ev.target.checked;
+                            const textContentInput = document.getElementById('props-input-text-content');
+                            if (textContentInput) textContentInput.disabled = ev.target.checked;
+                            this.logEvent("CHANGE", `Toggled detail visibility representation toggle on step index timeline component node "${item.name}"`);
+                            this.renderSvgDiagramElements(); this.saveSessionToLocalStorage();
+                        }
+                    }
+                });
                 document.querySelectorAll('#props-step-color-grid .color-swatch-btn').forEach(btn => {
                     btn.addEventListener('click', (ev) => {
                         const targetColor = ev.currentTarget.getAttribute('data-color');
@@ -3890,8 +4034,23 @@
                     if (this.resizingElementId) {
                         const targetEl = this.state.elements.find(el => el.id === this.resizingElementId);
                         if (targetEl) {
-                            targetEl.width = Math.max(120, this.snapValue(this.resizeStartDims.width + (canvasSpaceCoords.x - this.resizeStartCanvasCoords.x)));
-                            targetEl.height = Math.max(40, this.snapValue(this.resizeStartDims.height + (canvasSpaceCoords.y - this.resizeStartCanvasCoords.y)));
+                            let minW = 120;
+                            let minH = 40;
+                            if (targetEl.type === 'infrastructure') {
+                                minW = 32;
+                                minH = 32;
+                            } else if (targetEl.type === 'custom_image') {
+                                minW = 20;
+                                minH = 20;
+                            } else if (targetEl.type === 'textbox' || targetEl.type === 'headline') {
+                                minW = 80;
+                                minH = 30;
+                            } else if (targetEl.type === 'step_activity') {
+                                minW = 100;
+                                minH = 30;
+                            }
+                            targetEl.width = Math.max(minW, this.snapValue(this.resizeStartDims.width + (canvasSpaceCoords.x - this.resizeStartCanvasCoords.x)));
+                            targetEl.height = Math.max(minH, this.snapValue(this.resizeStartDims.height + (canvasSpaceCoords.y - this.resizeStartCanvasCoords.y)));
                             this.renderSvgDiagramElements();
                         }
                         return;
@@ -3991,12 +4150,13 @@
                             });
 
                             this.state.flows.push({
-                                id: flowId, name: 'Data Connection Flow Stream',
+                                id: flowId, name: '',
                                 sourceId: this.phantomWireSourceId,
                                 sourceAnchor: this.phantomWireSourceAnchor || 'right-2',
                                 targetId: dropTargetId,
                                 targetAnchor: targetAnchor,
                                 notes: '',
+                                color: 'black',
                                 secProps: { encrypted: 'false', authenticated: 'false' }, isBidirectional: false, isDashed: false, ports: '', bendX: 0, bendY: 0, textOffset: 0.5,
                                 points: [], curveStyle: this.isIsometric ? 'sharp' : 'smooth'
                             });
@@ -4877,9 +5037,9 @@
                         slate: '#64748b',
                         brown: '#78350f',
                         navy: '#1e3a8a',
-                        black: '#000000'
+                        black: '#212529'
                     };
-                    const customColorHex = colorMap[f.color] || (isDark ? '#ff6b6b' : '#e63946');
+                    const customColorHex = colorMap[f.color] || (isDark ? '#cbd5e1' : '#212529');
                     const lineColor = f.isDisabled ? '#ced4da' : ((f.secProps && f.secProps.encrypted === 'true') ? '#212529' : customColorHex);
 
                     let markerColor = lineColor;
@@ -5118,7 +5278,8 @@
                     }
                     g.setAttribute('transform', transformStr);
 
-                    const w = node.width || (node.type === 'custom_image' ? 120 : 240); const h = node.height || (node.type === 'custom_image' ? 120 : 80);
+                    const w = node.width || (node.type === 'custom_image' ? 120 : (node.type === 'infrastructure' ? 80 : (node.type === 'step_activity' ? 260 : 240)));
+                    const h = node.height || (node.type === 'custom_image' ? 120 : (node.type === 'infrastructure' ? 70 : (node.type === 'step_activity' ? 50 : 80)));
                     if (node.type === 'custom_image') {
                         const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
                         const defaultPlaceholderUrl = "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' fill='%23f1f3f5'/%3E%3Crect x='15' y='15' width='70' height='70' rx='5' fill='none' stroke='%23adb5bd' stroke-width='3'/%3E%3Ccircle cx='35' cy='35' r='8' fill='%23adb5bd'/%3E%3Cpolygon points='20,75 45,45 65,65 80,50 80,75' fill='%23adb5bd'/%3E%3C/svg%3E";
@@ -5179,11 +5340,19 @@
                                 teal: '#20c997', cyan: '#0dcaf0', lime: '#84cc16', emerald: '#10b981',
                                 slate: '#64748b', brown: '#78350f', navy: '#1e3a8a', black: '#212529'
                             };
-                            foreignObj.innerHTML = `
-                                <div xmlns="http://www.w3.org/1999/xhtml" class="d-flex align-items-center bg-white p-2 w-100 h-100 overflow-hidden canvas-card ${isSelected ? 'selected' : ''}" style="border: 2px solid #6c757d; border-radius: 6px;">
-                                    <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 fw-bold text-white me-2" style="background-color: ${colorMap[node.circleColor || 'blue'] || '#0d6efd'}; width: 32px; height: 32px; font-size: 13px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">${node.stepNumber || 1}</div>
-                                    <div class="small text-dark text-wrap overflow-hidden card-text-render-target flex-grow-1 fw-medium" style="font-size: 11px; line-height: 1.25;">${node.name}</div>
-                                </div>`;
+                            if (node.hideTextAndBox) {
+                                const selectedStyle = isSelected ? 'box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.4), 0 0 12px rgba(13, 110, 253, 0.6), inset 0 2px 4px rgba(0,0,0,0.15); border: 2px solid #ffffff;' : '';
+                                foreignObj.innerHTML = `
+                                    <div xmlns="http://www.w3.org/1999/xhtml" class="d-flex align-items-center justify-content-center bg-transparent w-100 h-100 overflow-hidden canvas-card canvas-card-hidden-box ${isSelected ? 'selected' : ''}">
+                                        <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 fw-bold text-white" style="background-color: ${colorMap[node.circleColor || 'blue'] || '#0d6efd'}; width: 32px; height: 32px; font-size: 13px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15); ${selectedStyle}">${node.stepNumber || 1}</div>
+                                    </div>`;
+                            } else {
+                                foreignObj.innerHTML = `
+                                    <div xmlns="http://www.w3.org/1999/xhtml" class="d-flex align-items-center bg-white p-2 w-100 h-100 overflow-hidden canvas-card ${isSelected ? 'selected' : ''}" style="border: 2px solid #6c757d; border-radius: 6px;">
+                                        <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 fw-bold text-white me-2" style="background-color: ${colorMap[node.circleColor || 'blue'] || '#0d6efd'}; width: 32px; height: 32px; font-size: 13px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">${node.stepNumber || 1}</div>
+                                        <div class="small text-dark text-wrap overflow-hidden card-text-render-target flex-grow-1 fw-medium" style="font-size: 11px; line-height: 1.25;">${node.name}</div>
+                                    </div>`;
+                            }
                         } else if (node.type === 'infrastructure') {
                             const colorMap = {
                                 blue: '#0d6efd', silver: '#cbd5e1', purple: '#6f42c1', pink: '#d63384',
@@ -5194,9 +5363,10 @@
                             const iconColor = colorMap[node.iconColor] || node.iconColor || '#0dcaf0';
                             const disabledColor = node.isDisabled ? '#ced4da' : iconColor;
                             const labelColor = node.isDisabled ? '#6c757d' : '#212529';
+                            const iconFontSize = Math.max(16, Math.min(w - 16, h - 28));
                             foreignObj.innerHTML = `
                                 <div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card card-infrastructure-borderless ${disabledClass}">
-                                    <i class="bi ${node.icon || 'bi-server'}" style="font-size: 36px; color: ${disabledColor} !important; line-height: 1;"></i>
+                                    <i class="bi ${node.icon || 'bi-server'}" style="font-size: ${iconFontSize}px; color: ${disabledColor} !important; line-height: 1;"></i>
                                     <div class="fw-bold card-text-render-target text-truncate text-center w-100 px-2 mt-1" style="font-size: 11px; color: ${labelColor}; line-height: 1.2;">${node.name}</div>
                                 </div>`;
                         } else {
@@ -5305,7 +5475,7 @@
                         });
                     }
 
-                    if (isSelected && this.state.selectedElementIds.length === 1) g.appendChild(this.createResizeHandleSvgDOMItem(node));
+                    if (isSelected && this.state.selectedElementIds.length === 1 && !node.hideTextAndBox) g.appendChild(this.createResizeHandleSvgDOMItem(node));
                     this.attachNodeEventHandlersLayers(node, g); this.dom.layerNodes.appendChild(g);
 
                 });
@@ -5360,6 +5530,9 @@
             updatePropertiesInspectorView() {
                 const boxIds = ['box-props-standard-name', 'box-props-status-state', 'box-props-icon-customization', 'box-props-flow-routing', 'box-props-step-activity', 'box-props-text-offset', 'box-props-textbox-textarea', 'box-props-headline-customization', 'box-props-security', 'box-props-zdepth', 'box-props-custom-image', 'box-props-isometric-toggle', 'box-props-swimlane'];
                 boxIds.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('d-none'); });
+
+                const textContentInput = document.getElementById('props-input-text-content');
+                if (textContentInput) textContentInput.disabled = false;
 
                 const count = this.state.selectedElementIds.length;
                 if (count === 0 && !this.state.selectedFlowId) {
@@ -5418,6 +5591,9 @@
                             btn.classList.remove('active');
                         }
                     });
+                    const hideTextAndBox = !!targetItem.hideTextAndBox;
+                    document.getElementById('props-step-hide-details').checked = hideTextAndBox;
+                    if (textContentInput) textContentInput.disabled = hideTextAndBox;
                     document.getElementById('props-input-notes').value = targetItem.notes || '';
                     return;
                 }
@@ -5472,7 +5648,7 @@
                     if (thicknessSelect) {
                         thicknessSelect.value = targetItem.thickness || 2;
                     }
-                    const activeColor = targetItem.color || 'red';
+                    const activeColor = targetItem.color || 'black';
                     document.querySelectorAll('#props-flow-color-grid .color-swatch-btn').forEach(btn => {
                         if (btn.getAttribute('data-color') === activeColor) {
                             btn.classList.add('active');
