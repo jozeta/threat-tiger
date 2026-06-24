@@ -4,6 +4,8 @@
 
 Built entirely as a single-page HTML application, Threat Tiger requires no installation, database setup, or internet connection to run. Your architectural data and threat assessments remain entirely local to your machine.
 
+A demosite is availible here: [https://www.1z.nu/threat-tiger.html](https://github.com/jozeta/threat-tiger)
+
 ![Threat Tiger Screenshot](Screenshot.png)
 
 ---
