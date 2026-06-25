@@ -1084,14 +1084,33 @@
                 display: block !important;
             }
 
-            .ptr-status-open   { color: #c0392b !important; }
-            .ptr-status-partial { color: #d68910 !important; }
-            .ptr-status-resolved { color: #1e8449 !important; }
+            .ptr-status-open {
+                color: #c0392b !important;
+            }
 
-            .ptr-severity-critical { color: #c0392b !important; }
-            .ptr-severity-high     { color: #d35400 !important; }
-            .ptr-severity-medium   { color: #d4ac0d !important; }
-            .ptr-severity-low      { color: #1a5276 !important; }
+            .ptr-status-partial {
+                color: #d68910 !important;
+            }
+
+            .ptr-status-resolved {
+                color: #1e8449 !important;
+            }
+
+            .ptr-severity-critical {
+                color: #c0392b !important;
+            }
+
+            .ptr-severity-high {
+                color: #d35400 !important;
+            }
+
+            .ptr-severity-medium {
+                color: #d4ac0d !important;
+            }
+
+            .ptr-severity-low {
+                color: #1a5276 !important;
+            }
 
             .ptr-desc-block {
                 border-top: 1px solid #e9ecef !important;
@@ -1336,6 +1355,16 @@
 
         .dark-theme-canvas text {
             fill: #cbd5e1 !important;
+        }
+
+        /* FC flowchart shape labels stay dark on their pale fills in dark mode */
+        .dark-theme-canvas text.fc-shape-label {
+            fill: #0f172a !important;
+        }
+
+        /* But white text stays white on dark fills */
+        .dark-theme-canvas text.fc-shape-label[data-dark-fill="true"] {
+            fill: #f8fafc !important;
         }
 
         .dark-theme-canvas text[fill="#b70918"] {
@@ -1806,132 +1835,229 @@
                                     <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
                                         data-type="swimlane" id="pal-swimlane">
                                         <i class="bi bi-grid-3x3-gap text-success fs-5 me-3"></i>
-                                        <div><div class="fw-semibold small">Swimlane Grid Layout</div></div>
+                                        <div>
+                                            <div class="fw-semibold small">Swimlane Grid Layout</div>
+                                        </div>
                                     </div>
                                     <div class="palette-popover-panel">
-                                        <div class="popover-header-title text-success"><i class="bi bi-grid-3x3-gap"></i> Swimlane Grid Layout</div>
+                                        <div class="popover-header-title text-success"><i
+                                                class="bi bi-grid-3x3-gap"></i> Swimlane Grid Layout</div>
                                         <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
-                                        <div class="small text-light opacity-75 mb-2">A dynamic matrix grid component that automatically groups, bounds, and resizes relative to elements placed inside its cells. Supports adding/deleting rows and columns.</div>
+                                        <div class="small text-light opacity-75 mb-2">A dynamic matrix grid component
+                                            that automatically groups, bounds, and resizes relative to elements placed
+                                            inside its cells. Supports adding/deleting rows and columns.</div>
                                     </div>
                                 </div>
                                 <!-- FC: Process (Rectangle) -->
                                 <div class="palette-item-container">
-                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="fc_process" id="pal-fc-process">
-                                        <svg width="28" height="20" class="me-3 flex-shrink-0"><rect x="1" y="1" width="26" height="18" rx="1" fill="#fff" stroke="#495057" stroke-width="1.8"/></svg>
-                                        <div><div class="fw-semibold small">Process (Rectangle)</div></div>
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="fc_process" id="pal-fc-process">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                            <rect x="1" y="1" width="26" height="18" rx="1" fill="#fff" stroke="#495057"
+                                                stroke-width="1.8" />
+                                        </svg>
+                                        <div>
+                                            <div class="fw-semibold small">Process (Rectangle)</div>
+                                        </div>
                                     </div>
                                     <div class="palette-popover-panel">
-                                        <div class="popover-header-title" style="color:#adb5bd;">&#9633; Process (Rectangle)</div>
+                                        <div class="popover-header-title" style="color:#adb5bd;">&#9633; Process
+                                            (Rectangle)</div>
                                         <div class="small fw-bold text-white-50 mb-1">Flowchart Definition:</div>
-                                        <div class="small text-light opacity-75 mb-2">Represents a step or action in a process. The standard rectangular symbol used for any general operation or task.</div>
+                                        <div class="small text-light opacity-75 mb-2">Represents a step or action in a
+                                            process. The standard rectangular symbol used for any general operation or
+                                            task.</div>
                                     </div>
                                 </div>
                                 <!-- FC: Decision (Diamond) -->
                                 <div class="palette-item-container">
-                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="fc_decision" id="pal-fc-decision">
-                                        <svg width="28" height="20" class="me-3 flex-shrink-0"><polygon points="14,1 27,10 14,19 1,10" fill="#fff" stroke="#495057" stroke-width="1.8"/></svg>
-                                        <div><div class="fw-semibold small">Decision (Diamond)</div></div>
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="fc_decision" id="pal-fc-decision">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                            <polygon points="14,1 27,10 14,19 1,10" fill="#fff" stroke="#495057"
+                                                stroke-width="1.8" />
+                                        </svg>
+                                        <div>
+                                            <div class="fw-semibold small">Decision (Diamond)</div>
+                                        </div>
                                     </div>
                                     <div class="palette-popover-panel">
-                                        <div class="popover-header-title" style="color:#adb5bd;">&#9670; Decision (Diamond)</div>
+                                        <div class="popover-header-title" style="color:#adb5bd;">&#9670; Decision
+                                            (Diamond)</div>
                                         <div class="small fw-bold text-white-50 mb-1">Flowchart Definition:</div>
-                                        <div class="small text-light opacity-75 mb-2">Represents a decision point with branching paths (Yes/No, True/False). A diamond shape indicating a conditional check.</div>
+                                        <div class="small text-light opacity-75 mb-2">Represents a decision point with
+                                            branching paths (Yes/No, True/False). A diamond shape indicating a
+                                            conditional check.</div>
                                     </div>
                                 </div>
                                 <!-- FC: Terminator (Oval) -->
                                 <div class="palette-item-container">
-                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="fc_terminator" id="pal-fc-terminator">
-                                        <svg width="28" height="20" class="me-3 flex-shrink-0"><rect x="1" y="3" width="26" height="14" rx="7" fill="#fff" stroke="#495057" stroke-width="1.8"/></svg>
-                                        <div><div class="fw-semibold small">Terminator (Oval)</div></div>
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="fc_terminator" id="pal-fc-terminator">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                            <rect x="1" y="3" width="26" height="14" rx="7" fill="#fff" stroke="#495057"
+                                                stroke-width="1.8" />
+                                        </svg>
+                                        <div>
+                                            <div class="fw-semibold small">Terminator (Oval)</div>
+                                        </div>
                                     </div>
                                     <div class="palette-popover-panel">
-                                        <div class="popover-header-title" style="color:#adb5bd;">&#9711; Terminator (Oval)</div>
+                                        <div class="popover-header-title" style="color:#adb5bd;">&#9711; Terminator
+                                            (Oval)</div>
                                         <div class="small fw-bold text-white-50 mb-1">Flowchart Definition:</div>
-                                        <div class="small text-light opacity-75 mb-2">Marks the Start or End point of a process flow. A rounded stadium/pill shape used at the beginning and termination of a flowchart.</div>
+                                        <div class="small text-light opacity-75 mb-2">Marks the Start or End point of a
+                                            process flow. A rounded stadium/pill shape used at the beginning and
+                                            termination of a flowchart.</div>
                                     </div>
                                 </div>
                                 <!-- FC: Data I/O (Parallelogram) -->
                                 <div class="palette-item-container">
-                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="fc_data" id="pal-fc-data">
-                                        <svg width="28" height="20" class="me-3 flex-shrink-0"><polygon points="5,1 27,1 23,19 1,19" fill="#fff" stroke="#495057" stroke-width="1.8"/></svg>
-                                        <div><div class="fw-semibold small">Data / I-O</div></div>
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="fc_data" id="pal-fc-data">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                            <polygon points="5,1 27,1 23,19 1,19" fill="#fff" stroke="#495057"
+                                                stroke-width="1.8" />
+                                        </svg>
+                                        <div>
+                                            <div class="fw-semibold small">Data / I-O</div>
+                                        </div>
                                     </div>
                                     <div class="palette-popover-panel">
-                                        <div class="popover-header-title" style="color:#adb5bd;">&#9649; Data / I-O</div>
+                                        <div class="popover-header-title" style="color:#adb5bd;">&#9649; Data / I-O
+                                        </div>
                                         <div class="small fw-bold text-white-50 mb-1">Flowchart Definition:</div>
-                                        <div class="small text-light opacity-75 mb-2">Represents input or output data. A parallelogram indicating data entering or leaving a process step.</div>
+                                        <div class="small text-light opacity-75 mb-2">Represents input or output data. A
+                                            parallelogram indicating data entering or leaving a process step.</div>
                                     </div>
                                 </div>
                                 <!-- FC: Document -->
                                 <div class="palette-item-container">
-                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="fc_document" id="pal-fc-document">
-                                        <svg width="28" height="20" class="me-3 flex-shrink-0"><path d="M1,1 H27 V14 Q20.5,20 14,14 Q7.5,8 1,14 Z" fill="#fff" stroke="#495057" stroke-width="1.8"/></svg>
-                                        <div><div class="fw-semibold small">Document</div></div>
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="fc_document" id="pal-fc-document">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                            <path d="M1,1 H27 V14 Q20.5,20 14,14 Q7.5,8 1,14 Z" fill="#fff"
+                                                stroke="#495057" stroke-width="1.8" />
+                                        </svg>
+                                        <div>
+                                            <div class="fw-semibold small">Document</div>
+                                        </div>
                                     </div>
                                     <div class="palette-popover-panel">
-                                        <div class="popover-header-title" style="color:#adb5bd;">&#128196; Document</div>
+                                        <div class="popover-header-title" style="color:#adb5bd;">&#128196; Document
+                                        </div>
                                         <div class="small fw-bold text-white-50 mb-1">Flowchart Definition:</div>
-                                        <div class="small text-light opacity-75 mb-2">Represents a document or report produced or used by a process. Has a rectangular top and a wavy bottom edge.</div>
+                                        <div class="small text-light opacity-75 mb-2">Represents a document or report
+                                            produced or used by a process. Has a rectangular top and a wavy bottom edge.
+                                        </div>
                                     </div>
                                 </div>
                                 <!-- FC: Manual Input -->
                                 <div class="palette-item-container">
-                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="fc_manual_input" id="pal-fc-manual-input">
-                                        <svg width="28" height="20" class="me-3 flex-shrink-0"><polygon points="1,6 27,1 27,19 1,19" fill="#fff" stroke="#495057" stroke-width="1.8"/></svg>
-                                        <div><div class="fw-semibold small">Manual Input</div></div>
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="fc_manual_input" id="pal-fc-manual-input">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                            <polygon points="1,6 27,1 27,19 1,19" fill="#fff" stroke="#495057"
+                                                stroke-width="1.8" />
+                                        </svg>
+                                        <div>
+                                            <div class="fw-semibold small">Manual Input</div>
+                                        </div>
                                     </div>
                                     <div class="palette-popover-panel">
-                                        <div class="popover-header-title" style="color:#adb5bd;">&#9641; Manual Input</div>
+                                        <div class="popover-header-title" style="color:#adb5bd;">&#9641; Manual Input
+                                        </div>
                                         <div class="small fw-bold text-white-50 mb-1">Flowchart Definition:</div>
-                                        <div class="small text-light opacity-75 mb-2">Represents a step where data is manually entered by a person. A trapezoid with a slanted top edge indicating keyboard or form input.</div>
+                                        <div class="small text-light opacity-75 mb-2">Represents a step where data is
+                                            manually entered by a person. A trapezoid with a slanted top edge indicating
+                                            keyboard or form input.</div>
                                     </div>
                                 </div>
                                 <!-- FC: Preparation (Hexagon) -->
                                 <div class="palette-item-container">
-                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="fc_preparation" id="pal-fc-preparation">
-                                        <svg width="28" height="20" class="me-3 flex-shrink-0"><polygon points="6,1 22,1 27,10 22,19 6,19 1,10" fill="#fff" stroke="#495057" stroke-width="1.8"/></svg>
-                                        <div><div class="fw-semibold small">Preparation (Hexagon)</div></div>
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="fc_preparation" id="pal-fc-preparation">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                            <polygon points="6,1 22,1 27,10 22,19 6,19 1,10" fill="#fff"
+                                                stroke="#495057" stroke-width="1.8" />
+                                        </svg>
+                                        <div>
+                                            <div class="fw-semibold small">Preparation (Hexagon)</div>
+                                        </div>
                                     </div>
                                     <div class="palette-popover-panel">
-                                        <div class="popover-header-title" style="color:#adb5bd;">&#11041; Preparation</div>
+                                        <div class="popover-header-title" style="color:#adb5bd;">&#11041; Preparation
+                                        </div>
                                         <div class="small fw-bold text-white-50 mb-1">Flowchart Definition:</div>
-                                        <div class="small text-light opacity-75 mb-2">Represents initialization or preparatory steps, such as setting a loop counter. A hexagon with pointed left and right sides.</div>
+                                        <div class="small text-light opacity-75 mb-2">Represents initialization or
+                                            preparatory steps, such as setting a loop counter. A hexagon with pointed
+                                            left and right sides.</div>
                                     </div>
                                 </div>
                                 <!-- FC: Connector (Circle) -->
                                 <div class="palette-item-container">
-                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="fc_connector" id="pal-fc-connector">
-                                        <svg width="28" height="20" class="me-3 flex-shrink-0"><circle cx="14" cy="10" r="9" fill="#fff" stroke="#495057" stroke-width="1.8"/></svg>
-                                        <div><div class="fw-semibold small">Connector (Circle)</div></div>
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="fc_connector" id="pal-fc-connector">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                            <circle cx="14" cy="10" r="9" fill="#fff" stroke="#495057"
+                                                stroke-width="1.8" />
+                                        </svg>
+                                        <div>
+                                            <div class="fw-semibold small">Connector (Circle)</div>
+                                        </div>
                                     </div>
                                     <div class="palette-popover-panel">
                                         <div class="popover-header-title" style="color:#adb5bd;">&#9711; Connector</div>
                                         <div class="small fw-bold text-white-50 mb-1">Flowchart Definition:</div>
-                                        <div class="small text-light opacity-75 mb-2">A small circle used as an on-page or off-page connector to link separate sections of a flowchart, avoiding long crossing lines.</div>
+                                        <div class="small text-light opacity-75 mb-2">A small circle used as an on-page
+                                            or off-page connector to link separate sections of a flowchart, avoiding
+                                            long crossing lines.</div>
                                     </div>
                                 </div>
                                 <!-- FC: Stored Data -->
                                 <div class="palette-item-container">
-                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="fc_stored_data" id="pal-fc-stored-data">
-                                        <svg width="28" height="20" class="me-3 flex-shrink-0"><path d="M5,1 H24 A5,9 0 0 1 24,19 H5 A5,9 0 0 1 5,1 Z" fill="#fff" stroke="#495057" stroke-width="1.8"/></svg>
-                                        <div><div class="fw-semibold small">Stored Data</div></div>
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="fc_stored_data" id="pal-fc-stored-data">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                            <path d="M5,1 H24 A5,9 0 0 1 24,19 H5 A5,9 0 0 1 5,1 Z" fill="#fff"
+                                                stroke="#495057" stroke-width="1.8" />
+                                        </svg>
+                                        <div>
+                                            <div class="fw-semibold small">Stored Data</div>
+                                        </div>
                                     </div>
                                     <div class="palette-popover-panel">
-                                        <div class="popover-header-title" style="color:#adb5bd;">&#9000; Stored Data</div>
+                                        <div class="popover-header-title" style="color:#adb5bd;">&#9000; Stored Data
+                                        </div>
                                         <div class="small fw-bold text-white-50 mb-1">Flowchart Definition:</div>
-                                        <div class="small text-light opacity-75 mb-2">Represents data stored somewhere in a system — on disk, memory, or a file. A rounded-right D-shaped symbol.</div>
+                                        <div class="small text-light opacity-75 mb-2">Represents data stored somewhere
+                                            in a system — on disk, memory, or a file. A rounded-right D-shaped symbol.
+                                        </div>
                                     </div>
                                 </div>
                                 <!-- FC: Database (Cylinder) -->
                                 <div class="palette-item-container">
-                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center" data-type="fc_database" id="pal-fc-database">
-                                        <svg width="28" height="20" class="me-3 flex-shrink-0"><rect x="3" y="5" width="22" height="12" fill="#fff" stroke="#495057" stroke-width="1.8"/><ellipse cx="14" cy="5" rx="11" ry="4" fill="#fff" stroke="#495057" stroke-width="1.8"/><ellipse cx="14" cy="17" rx="11" ry="4" fill="#f8f9fa" stroke="#495057" stroke-width="1.2"/></svg>
-                                        <div><div class="fw-semibold small">Database (Cylinder)</div></div>
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="fc_database" id="pal-fc-database">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                            <rect x="3" y="5" width="22" height="12" fill="#fff" stroke="#495057"
+                                                stroke-width="1.8" />
+                                            <ellipse cx="14" cy="5" rx="11" ry="4" fill="#fff" stroke="#495057"
+                                                stroke-width="1.8" />
+                                            <ellipse cx="14" cy="17" rx="11" ry="4" fill="#f8f9fa" stroke="#495057"
+                                                stroke-width="1.2" />
+                                        </svg>
+                                        <div>
+                                            <div class="fw-semibold small">Database (Cylinder)</div>
+                                        </div>
                                     </div>
                                     <div class="palette-popover-panel">
-                                        <div class="popover-header-title" style="color:#adb5bd;">&#128445; Database (Cylinder)</div>
+                                        <div class="popover-header-title" style="color:#adb5bd;">&#128445; Database
+                                            (Cylinder)</div>
                                         <div class="small fw-bold text-white-50 mb-1">Flowchart Definition:</div>
-                                        <div class="small text-light opacity-75 mb-2">Represents a database or structured data store with a 3D cylindrical appearance. Common in system/architecture diagrams.</div>
+                                        <div class="small text-light opacity-75 mb-2">Represents a database or
+                                            structured data store with a 3D cylindrical appearance. Common in
+                                            system/architecture diagrams.</div>
                                     </div>
                                 </div>
                             </div>
@@ -2444,60 +2570,116 @@
 
                             <!-- Flowchart Shape Properties -->
                             <div id="box-props-flowchart" class="card card-body p-2 bg-light border d-none">
-                                <h6 class="small fw-bold text-dark border-bottom pb-1 mb-2"><i class="bi bi-bounding-box me-1 text-primary"></i>Flowchart Shape Style</h6>
+                                <h6 class="small fw-bold text-dark border-bottom pb-1 mb-2"><i
+                                        class="bi bi-bounding-box me-1 text-primary"></i>Flowchart Shape Style</h6>
                                 <div class="mb-2">
-                                    <label class="extra-small text-muted fw-bold mb-1"><i class="bi bi-palette me-1"></i>Fill Color</label>
-                                    <div class="d-flex flex-wrap gap-2 p-1 bg-white border rounded" id="props-fc-fill-grid"
+                                    <label class="extra-small text-muted fw-bold mb-1"><i
+                                            class="bi bi-palette me-1"></i>Fill Color</label>
+                                    <div class="d-flex flex-wrap gap-2 p-1 bg-white border rounded"
+                                        id="props-fc-fill-grid"
                                         style="display:grid !important; grid-template-columns:repeat(4,1fr); gap:6px; justify-items:center; align-items:center;">
-                                        <button type="button" class="color-swatch-btn" data-color="#ffffff" style="background:#ffffff; border:1px solid #dee2e6;" title="White"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#f8f9fa" style="background:#f8f9fa;" title="Light Grey"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#dee2e6" style="background:#dee2e6;" title="Grey"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#212529" style="background:#212529;" title="Black"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#0d6efd" style="background:#0d6efd;" title="Blue"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#198754" style="background:#198754;" title="Green"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#dc3545" style="background:#dc3545;" title="Red"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#ffc107" style="background:#ffc107;" title="Yellow"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#fd7e14" style="background:#fd7e14;" title="Orange"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#6f42c1" style="background:#6f42c1;" title="Purple"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#0dcaf0" style="background:#0dcaf0;" title="Cyan"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#20c997" style="background:#20c997;" title="Teal"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#d63384" style="background:#d63384;" title="Pink"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#1e3a8a" style="background:#1e3a8a;" title="Navy"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#78350f" style="background:#78350f;" title="Brown"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#84cc16" style="background:#84cc16;" title="Lime"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#ffffff"
+                                            style="background:#ffffff; border:1px solid #dee2e6;"
+                                            title="White"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#d1d5db"
+                                            style="background:#d1d5db;" title="Silver"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#9ca3af"
+                                            style="background:#9ca3af;" title="Grey"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#2d3748"
+                                            style="background:#2d3748;" title="Dark"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#dbeafe"
+                                            style="background:#dbeafe; border:1px solid #bfdbfe;"
+                                            title="Pale Blue"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#dcfce7"
+                                            style="background:#dcfce7; border:1px solid #bbf7d0;"
+                                            title="Pale Green"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#fee2e2"
+                                            style="background:#fee2e2; border:1px solid #fecaca;"
+                                            title="Pale Red"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#fef9c3"
+                                            style="background:#fef9c3; border:1px solid #fef08a;"
+                                            title="Pale Yellow"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#ffedd5"
+                                            style="background:#ffedd5; border:1px solid #fed7aa;"
+                                            title="Pale Orange"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#f5f3ff"
+                                            style="background:#f5f3ff; border:1px solid #ede9fe;"
+                                            title="Pale Purple"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#ffe4e6"
+                                            style="background:#ffe4e6; border:1px solid #fecdd3;"
+                                            title="Pale Rose"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#ccfbf1"
+                                            style="background:#ccfbf1; border:1px solid #99f6e4;"
+                                            title="Pale Teal"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#fce7f3"
+                                            style="background:#fce7f3; border:1px solid #fbcfe8;"
+                                            title="Pale Pink"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#fef3c7"
+                                            style="background:#fef3c7; border:1px solid #fde68a;"
+                                            title="Pale Brown"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#fffbeb"
+                                            style="background:#fffbeb; border:1px solid #fde68a;"
+                                            title="Pale Amber"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#ecfccb"
+                                            style="background:#ecfccb; border:1px solid #d9f99d;"
+                                            title="Pale Lime"></button>
                                     </div>
-                                    <input type="color" class="form-control form-control-sm mt-1 shadow-none" id="props-fc-fill-custom" value="#ffffff" title="Custom fill color">
+                                    <input type="color" class="form-control form-control-sm mt-1 shadow-none"
+                                        id="props-fc-fill-custom" value="#ffffff" title="Custom fill color">
                                 </div>
                                 <div class="mb-2">
-                                    <label class="extra-small text-muted fw-bold mb-1"><i class="bi bi-border-style me-1"></i>Stroke Color</label>
-                                    <div class="d-flex flex-wrap gap-2 p-1 bg-white border rounded" id="props-fc-stroke-grid"
+                                    <label class="extra-small text-muted fw-bold mb-1"><i
+                                            class="bi bi-border-style me-1"></i>Stroke Color</label>
+                                    <div class="d-flex flex-wrap gap-2 p-1 bg-white border rounded"
+                                        id="props-fc-stroke-grid"
                                         style="display:grid !important; grid-template-columns:repeat(4,1fr); gap:6px; justify-items:center; align-items:center;">
-                                        <button type="button" class="color-swatch-btn" data-color="#212529" style="background:#212529;" title="Black"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#495057" style="background:#495057;" title="Dark Grey"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#adb5bd" style="background:#adb5bd;" title="Grey"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#ffffff" style="background:#ffffff; border:1px solid #dee2e6;" title="White"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#0d6efd" style="background:#0d6efd;" title="Blue"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#198754" style="background:#198754;" title="Green"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#dc3545" style="background:#dc3545;" title="Red"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#ffc107" style="background:#ffc107;" title="Yellow"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#fd7e14" style="background:#fd7e14;" title="Orange"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#6f42c1" style="background:#6f42c1;" title="Purple"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#0dcaf0" style="background:#0dcaf0;" title="Cyan"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#20c997" style="background:#20c997;" title="Teal"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#d63384" style="background:#d63384;" title="Pink"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#1e3a8a" style="background:#1e3a8a;" title="Navy"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#78350f" style="background:#78350f;" title="Brown"></button>
-                                        <button type="button" class="color-swatch-btn" data-color="#84cc16" style="background:#84cc16;" title="Lime"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#374151"
+                                            style="background:#374151;" title="Dark (White fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#6b7280"
+                                            style="background:#6b7280;" title="Mid Grey (Silver fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#374151"
+                                            style="background:#374151;" title="Dark Grey (Grey fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#1a202c"
+                                            style="background:#1a202c;" title="Near Black (Dark fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#2563eb"
+                                            style="background:#2563eb;" title="Blue (Pale Blue fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#16a34a"
+                                            style="background:#16a34a;" title="Green (Pale Green fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#dc2626"
+                                            style="background:#dc2626;" title="Red (Pale Red fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#ca8a04"
+                                            style="background:#ca8a04;" title="Amber (Pale Yellow fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#ea580c"
+                                            style="background:#ea580c;" title="Orange (Pale Orange fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#7c3aed"
+                                            style="background:#7c3aed;" title="Violet (Pale Purple fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#e11d48"
+                                            style="background:#e11d48;" title="Rose (Pale Rose fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#0d9488"
+                                            style="background:#0d9488;" title="Teal (Pale Teal fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#db2777"
+                                            style="background:#db2777;" title="Pink (Pale Pink fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#92400e"
+                                            style="background:#92400e;" title="Brown (Pale Brown fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#b45309"
+                                            style="background:#b45309;" title="Amber (Pale Amber fill)"></button>
+                                        <button type="button" class="color-swatch-btn" data-color="#65a30d"
+                                            style="background:#65a30d;" title="Lime (Pale Lime fill)"></button>
                                     </div>
-                                    <input type="color" class="form-control form-control-sm mt-1 shadow-none" id="props-fc-stroke-custom" value="#212529" title="Custom stroke color">
+                                    <input type="color" class="form-control form-control-sm mt-1 shadow-none"
+                                        id="props-fc-stroke-custom" value="#7c3aed" title="Custom stroke color">
                                 </div>
                                 <div class="mb-1">
-                                    <label class="extra-small text-muted fw-bold mb-1"><i class="bi bi-border-width me-1"></i>Border Line Width: <span id="props-fc-stroke-width-lbl">2</span>px</label>
-                                    <input type="range" class="form-range" id="props-fc-stroke-width" min="1" max="10" step="0.5" value="2">
+                                    <label class="extra-small text-muted fw-bold mb-1"><i
+                                            class="bi bi-border-width me-1"></i>Border Line Width: <span
+                                            id="props-fc-stroke-width-lbl">2</span>px</label>
+                                    <input type="range" class="form-range" id="props-fc-stroke-width" min="1" max="10"
+                                        step="0.5" value="2">
                                 </div>
                                 <div class="mb-1">
                                     <label class="extra-small text-muted fw-bold mb-1">Label</label>
-                                    <input type="text" class="form-control form-control-sm shadow-none" id="props-fc-label">
+                                    <input type="text" class="form-control form-control-sm shadow-none"
+                                        id="props-fc-label">
                                 </div>
                             </div>
 
@@ -2756,7 +2938,9 @@
                                 <label class="form-label small fw-semibold text-muted mb-1">
                                     <i class="bi bi-shield-check text-success me-1"></i>Mitigation Explanation
                                 </label>
-                                <textarea class="form-control shadow-none" id="modal-threat-mitigation-explanation" rows="3" placeholder="Describe how this threat has been mitigated or partially mitigated..."></textarea>
+                                <textarea class="form-control shadow-none" id="modal-threat-mitigation-explanation"
+                                    rows="3"
+                                    placeholder="Describe how this threat has been mitigated or partially mitigated..."></textarea>
                             </div>
                         </div>
                         <div class="row g-3 mb-0 border rounded p-3 bg-light">
@@ -3153,33 +3337,24 @@
                 } else if (el.type && el.type.startsWith('fc_')) {
                     w = el.width || 160;
                     h = el.height || 80;
-                    // For non-rectangular fc shapes, snap anchor to the actual shape edge
+                    // For non-rectangular fc shapes, snap anchor to the actual shape edge.
+                    // Try exact match first, then prefix match (e.g. old 'right-2' → 'right')
                     const anchors = this.getFcAnchorPoints(el.type, w, h);
-                    const found = anchors.find(a => a.id === anchorId);
+                    const dirPrefix = anchorId ? anchorId.split('-')[0] : '';
+                    const found = anchors.find(a => a.id === anchorId)
+                               || anchors.find(a => a.id === dirPrefix);
                     if (found) return { x: this.snapValue(el.x + found.cx), y: this.snapValue(el.y + found.cy) };
                 }
 
                 let rx = 0.5;
                 let ry = 0.5;
-                if (!anchorId) anchorId = 'right-2';
+                if (!anchorId) anchorId = 'right';
 
-                if (anchorId.startsWith('top-')) {
-                    ry = 0;
-                    const idx = parseInt(anchorId.split('-')[1]) || 2;
-                    rx = idx === 1 ? 0.25 : (idx === 2 ? 0.5 : 0.75);
-                } else if (anchorId.startsWith('bottom-')) {
-                    ry = 1;
-                    const idx = parseInt(anchorId.split('-')[1]) || 2;
-                    rx = idx === 1 ? 0.25 : (idx === 2 ? 0.5 : 0.75);
-                } else if (anchorId.startsWith('left-')) {
-                    rx = 0;
-                    const idx = parseInt(anchorId.split('-')[1]) || 2;
-                    ry = idx === 1 ? 0.25 : (idx === 2 ? 0.5 : 0.75);
-                } else if (anchorId.startsWith('right-')) {
-                    rx = 1;
-                    const idx = parseInt(anchorId.split('-')[1]) || 2;
-                    ry = idx === 1 ? 0.25 : (idx === 2 ? 0.5 : 0.75);
-                }
+                // 4-anchor system: one center point per side
+                if (anchorId.startsWith('top'))         { ry = 0; rx = 0.5; }
+                else if (anchorId.startsWith('bottom')) { ry = 1; rx = 0.5; }
+                else if (anchorId.startsWith('left'))   { rx = 0; ry = 0.5; }
+                else if (anchorId.startsWith('right'))  { rx = 1; ry = 0.5; }
 
                 const dx = rx * w;
                 const dy = ry * h;
@@ -4640,12 +4815,7 @@
 
                                 if (hoverEl) {
                                     // Snap to closest anchor on hovered node
-                                    const anchors = [
-                                        'top-1', 'top-2', 'top-3',
-                                        'bottom-1', 'bottom-2', 'bottom-3',
-                                        'left-1', 'left-2', 'left-3',
-                                        'right-1', 'right-2', 'right-3'
-                                    ];
+                                    const anchors = ['top', 'bottom', 'left', 'right'];
                                     let minD = Infinity;
                                     let bestAnchor = null;
                                     anchors.forEach(a => {
@@ -4794,16 +4964,9 @@
                             const dstNode = this.state.elements.find(e => e.id === dropTargetId);
 
                             // Find closest anchor on target node
-                            const dstW = dstNode.width || 240;
-                            const dstH = dstNode.height || 80;
-                            const anchors = [
-                                'top-1', 'top-2', 'top-3',
-                                'bottom-1', 'bottom-2', 'bottom-3',
-                                'left-1', 'left-2', 'left-3',
-                                'right-1', 'right-2', 'right-3'
-                            ];
+                            const anchors = ['top', 'bottom', 'left', 'right'];
                             let minD = Infinity;
-                            let targetAnchor = 'left-2'; // default fallback
+                            let targetAnchor = 'left'; // default fallback
                             anchors.forEach(a => {
                                 const pt = this.getAnchorCoordinates(dstNode, a);
                                 const d = Math.hypot(canvasSpaceCoords.x - pt.x, canvasSpaceCoords.y - pt.y);
@@ -4816,7 +4979,7 @@
                             this.state.flows.push({
                                 id: flowId, name: '',
                                 sourceId: this.phantomWireSourceId,
-                                sourceAnchor: this.phantomWireSourceAnchor || 'right-2',
+                                sourceAnchor: this.phantomWireSourceAnchor || 'right',
                                 targetId: dropTargetId,
                                 targetAnchor: targetAnchor,
                                 notes: '',
@@ -5078,7 +5241,23 @@
                     ...(type === 'boundary' && { width: 320, height: 240 }),
                     ...(type === 'custom_image' && { width: w, height: h, imageUrl: '' }),
                     ...(type === 'swimlane' && { width: w, height: h, columns: ['Column 1', 'Column 2'], rows: ['Row 1', 'Row 2'] }),
-                    ...(type.startsWith('fc_') && { width: w, height: h, fcFillColor: '#eef2ff', fcStrokeColor: '#4f46e5', fcStrokeWidth: 1.5 })
+                    ...(type.startsWith('fc_') && (() => {
+                        // Per-shape default fill + stroke colors
+                        const fcColorMap = {
+                            fc_process:      { fcFillColor: '#f5f3ff', fcStrokeColor: '#2563eb' }, // Pale Purple / Blue
+                            fc_decision:     { fcFillColor: '#fef3c7', fcStrokeColor: '#92400e' }, // Pale Brown  / Brown
+                            fc_terminator:   { fcFillColor: '#fee2e2', fcStrokeColor: '#dc2626' }, // Pale Red    / Red
+                            fc_data:         { fcFillColor: '#fce7f3', fcStrokeColor: '#db2777' }, // Pale Pink   / Pink
+                            fc_document:     { fcFillColor: '#ccfbf1', fcStrokeColor: '#0d9488' }, // Pale Teal   / Teal
+                            fc_manual_input: { fcFillColor: '#ffedd5', fcStrokeColor: '#ea580c' }, // Pale Orange / Orange
+                            fc_preparation:  { fcFillColor: '#d1d5db', fcStrokeColor: '#6b7280' }, // Silver      / Mid Grey
+                            fc_connector:    { fcFillColor: '#fef9c3', fcStrokeColor: '#ca8a04' }, // Pale Yellow / Amber
+                            fc_stored_data:  { fcFillColor: '#dbeafe', fcStrokeColor: '#2563eb' }, // Pale Blue   / Blue
+                            fc_database:     { fcFillColor: '#ecfccb', fcStrokeColor: '#65a30d' }, // Pale Lime   / Lime
+                        };
+                        const colors = fcColorMap[type] || { fcFillColor: '#f5f3ff', fcStrokeColor: '#7c3aed' };
+                        return { width: w, height: h, ...colors, fcStrokeWidth: 2 };
+                    })()), 
                 };
 
                 this.state.elements.push(elementObj);
@@ -5967,24 +6146,40 @@
                     const h = node.height || (node.type === 'custom_image' ? 120 : (node.type === 'infrastructure' ? 70 : (node.type === 'step_activity' ? 50 : 80)));
 
                     if (node.type && node.type.startsWith('fc_')) {
-                        const fill = node.fcFillColor || '#eef2ff';
-                        const stroke = node.fcStrokeColor || '#4f46e5';
-                        const sw = node.fcStrokeWidth || 1.5;  // absolute, not scaled
+                        const fill = node.fcFillColor || '#f5f3ff';
+                        const stroke = node.fcStrokeColor || '#2563eb';
+                        const sw = node.fcStrokeWidth || 2;  // absolute, not scaled
+                        const isDarkCanvas = (this.canvasTheme === 'dark');
                         this.renderFlowchartShapeSvg(g, node.type, w, h, fill, stroke, sw, isSelected);
 
-                        // Label text centered
+                        // Label text — centered within the visible shape area
                         const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                         lbl.setAttribute('x', w / 2);
-                        lbl.setAttribute('y', h / 2);
+                        // For shapes where visible area doesn't span full height, center within it
+                        let lblY = h / 2;
+                        if (node.type === 'fc_document') {
+                            // Visible area is top 72% of bounding box; center within that
+                            lblY = (h * 0.72) / 2;
+                        } else if (node.type === 'fc_manual_input') {
+                            // Top-left corner is at sl=h*0.2, top-right at 0; avg top edge = h*0.1
+                            lblY = (h * 0.1 + h) / 2;
+                        }
+                        lbl.setAttribute('y', lblY);
                         lbl.setAttribute('dominant-baseline', 'middle');
                         lbl.setAttribute('text-anchor', 'middle');
                         lbl.setAttribute('font-size', '12px');
                         lbl.setAttribute('font-weight', '600');
                         lbl.setAttribute('font-family', 'Inter, system-ui, sans-serif');
-                        lbl.setAttribute('fill', '#212529');
-                        lbl.setAttribute('class', 'card-text-render-target');
+                        // Dark fill → white text; pale fills → very dark text (both light and dark canvas)
+                        const isDarkFill = (() => {
+                            const r = parseInt(fill.slice(1, 3), 16), g2 = parseInt(fill.slice(3, 5), 16), b = parseInt(fill.slice(5, 7), 16);
+                            return (0.299 * r + 0.587 * g2 + 0.114 * b) < 100;
+                        })();
+                        const textColor = isDarkFill ? '#f8fafc' : '#0f172a';
+                        lbl.setAttribute('fill', textColor);
+                        lbl.setAttribute('class', 'fc-shape-label');
+                        if (isDarkFill) lbl.setAttribute('data-dark-fill', 'true');
                         lbl.setAttribute('pointer-events', 'none');
-                        // wrap long text: simple approach — truncate if needed
                         lbl.textContent = node.name || '';
                         g.appendChild(lbl);
 
@@ -6153,18 +6348,10 @@
                         const anchors = node.type && node.type.startsWith('fc_')
                             ? this.getFcAnchorPoints(node.type, w, h)
                             : [
-                                { id: 'top-1', cx: 0.25 * w, cy: 0 },
-                                { id: 'top-2', cx: 0.5 * w, cy: 0 },
-                                { id: 'top-3', cx: 0.75 * w, cy: 0 },
-                                { id: 'bottom-1', cx: 0.25 * w, cy: h },
-                                { id: 'bottom-2', cx: 0.5 * w, cy: h },
-                                { id: 'bottom-3', cx: 0.75 * w, cy: h },
-                                { id: 'left-1', cx: 0, cy: 0.25 * h },
-                                { id: 'left-2', cx: 0, cy: 0.5 * h },
-                                { id: 'left-3', cx: 0, cy: 0.75 * h },
-                                { id: 'right-1', cx: w, cy: 0.25 * h },
-                                { id: 'right-2', cx: w, cy: 0.5 * h },
-                                { id: 'right-3', cx: w, cy: 0.75 * h }
+                                { id: 'top',    cx: 0.5 * w, cy: 0 },
+                                { id: 'bottom', cx: 0.5 * w, cy: h },
+                                { id: 'left',   cx: 0,       cy: 0.5 * h },
+                                { id: 'right',  cx: w,       cy: 0.5 * h }
                             ];
                         anchors.forEach(a => {
                             const indicatorDot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
@@ -6243,195 +6430,121 @@
              * Each anchor lies exactly on the visible geometry edge.
              */
             getFcAnchorPoints(type, w, h) {
+                // Simplified: one center anchor per side for all fc_* shapes
                 if (type === 'fc_decision') {
-                    // Diamond: top, right, bottom, left cardinal points + mid edges
+                    // Diamond: cardinal points exactly at the 4 tips
                     return [
-                        { id: 'top-1',    cx: w * 0.375, cy: h * 0.25 },
-                        { id: 'top-2',    cx: w / 2,     cy: 0 },
-                        { id: 'top-3',    cx: w * 0.625, cy: h * 0.25 },
-                        { id: 'bottom-1', cx: w * 0.375, cy: h * 0.75 },
-                        { id: 'bottom-2', cx: w / 2,     cy: h },
-                        { id: 'bottom-3', cx: w * 0.625, cy: h * 0.75 },
-                        { id: 'left-1',   cx: w * 0.125, cy: h * 0.375 },
-                        { id: 'left-2',   cx: 0,         cy: h / 2 },
-                        { id: 'left-3',   cx: w * 0.125, cy: h * 0.625 },
-                        { id: 'right-1',  cx: w * 0.875, cy: h * 0.375 },
-                        { id: 'right-2',  cx: w,         cy: h / 2 },
-                        { id: 'right-3',  cx: w * 0.875, cy: h * 0.625 },
+                        { id: 'top',    cx: w / 2, cy: 0 },
+                        { id: 'bottom', cx: w / 2, cy: h },
+                        { id: 'left',   cx: 0,     cy: h / 2 },
+                        { id: 'right',  cx: w,     cy: h / 2 },
                     ];
                 } else if (type === 'fc_connector') {
-                    // Circle / ellipse: anchors on the ellipse edge
-                    const rx = w / 2, ry = h / 2;
+                    // Circle / ellipse: top/bottom/left/right poles
                     return [
-                        { id: 'top-1',    cx: rx - rx * 0.707, cy: ry - ry * 0.707 },
-                        { id: 'top-2',    cx: rx,              cy: 0 },
-                        { id: 'top-3',    cx: rx + rx * 0.707, cy: ry - ry * 0.707 },
-                        { id: 'bottom-1', cx: rx - rx * 0.707, cy: ry + ry * 0.707 },
-                        { id: 'bottom-2', cx: rx,              cy: h },
-                        { id: 'bottom-3', cx: rx + rx * 0.707, cy: ry + ry * 0.707 },
-                        { id: 'left-1',   cx: 0,               cy: ry - ry * 0.707 },
-                        { id: 'left-2',   cx: 0,               cy: ry },
-                        { id: 'left-3',   cx: 0,               cy: ry + ry * 0.707 },
-                        { id: 'right-1',  cx: w,               cy: ry - ry * 0.707 },
-                        { id: 'right-2',  cx: w,               cy: ry },
-                        { id: 'right-3',  cx: w,               cy: ry + ry * 0.707 },
+                        { id: 'top',    cx: w / 2, cy: 0 },
+                        { id: 'bottom', cx: w / 2, cy: h },
+                        { id: 'left',   cx: 0,     cy: h / 2 },
+                        { id: 'right',  cx: w,     cy: h / 2 },
                     ];
                 } else if (type === 'fc_data') {
-                    // Parallelogram: slant s = h*0.2
+                    // Parallelogram: center of each edge
                     const s = h * 0.2;
                     return [
-                        { id: 'top-1',    cx: s + (w - s) * 0.25, cy: 0 },
-                        { id: 'top-2',    cx: s + (w - s) * 0.5,  cy: 0 },
-                        { id: 'top-3',    cx: s + (w - s) * 0.75, cy: 0 },
-                        { id: 'bottom-1', cx: (w - s) * 0.25,     cy: h },
-                        { id: 'bottom-2', cx: (w - s) * 0.5,      cy: h },
-                        { id: 'bottom-3', cx: (w - s) * 0.75,     cy: h },
-                        { id: 'left-1',   cx: s * 0.75,           cy: h * 0.25 },
-                        { id: 'left-2',   cx: s * 0.5,            cy: h * 0.5 },
-                        { id: 'left-3',   cx: s * 0.25,           cy: h * 0.75 },
-                        { id: 'right-1',  cx: w - s * 0.25,       cy: h * 0.25 },
-                        { id: 'right-2',  cx: w - s * 0.5,        cy: h * 0.5 },
-                        { id: 'right-3',  cx: w - s * 0.75,       cy: h * 0.75 },
+                        { id: 'top',    cx: s + (w - s) * 0.5, cy: 0 },
+                        { id: 'bottom', cx: (w - s) * 0.5,     cy: h },
+                        { id: 'left',   cx: s * 0.5,           cy: h / 2 },
+                        { id: 'right',  cx: w - s * 0.5,       cy: h / 2 },
                     ];
                 } else if (type === 'fc_preparation') {
-                    // Hexagon with pointed L/R sides, flat top/bottom
+                    // Hexagon: flat top/bottom center, pointed left/right tips
                     const px = w * 0.15;
                     return [
-                        { id: 'top-1',    cx: px + (w - 2*px) * 0.25, cy: 0 },
-                        { id: 'top-2',    cx: w / 2,                  cy: 0 },
-                        { id: 'top-3',    cx: px + (w - 2*px) * 0.75, cy: 0 },
-                        { id: 'bottom-1', cx: px + (w - 2*px) * 0.25, cy: h },
-                        { id: 'bottom-2', cx: w / 2,                  cy: h },
-                        { id: 'bottom-3', cx: px + (w - 2*px) * 0.75, cy: h },
-                        { id: 'left-1',   cx: px * 0.5,               cy: h * 0.25 },
-                        { id: 'left-2',   cx: 0,                      cy: h / 2 },
-                        { id: 'left-3',   cx: px * 0.5,               cy: h * 0.75 },
-                        { id: 'right-1',  cx: w - px * 0.5,           cy: h * 0.25 },
-                        { id: 'right-2',  cx: w,                      cy: h / 2 },
-                        { id: 'right-3',  cx: w - px * 0.5,           cy: h * 0.75 },
+                        { id: 'top',    cx: w / 2, cy: 0 },
+                        { id: 'bottom', cx: w / 2, cy: h },
+                        { id: 'left',   cx: 0,     cy: h / 2 },
+                        { id: 'right',  cx: w,     cy: h / 2 },
                     ];
                 } else if (type === 'fc_manual_input') {
-                    // Trapezoid: top-left at (0,sl), top-right at (w,0)
+                    // Trapezoid: center of each edge
                     const sl = h * 0.2;
                     return [
-                        { id: 'top-1',    cx: w * 0.25, cy: sl * 0.75 },
-                        { id: 'top-2',    cx: w * 0.5,  cy: sl * 0.5 },
-                        { id: 'top-3',    cx: w * 0.75, cy: sl * 0.25 },
-                        { id: 'bottom-1', cx: w * 0.25, cy: h },
-                        { id: 'bottom-2', cx: w * 0.5,  cy: h },
-                        { id: 'bottom-3', cx: w * 0.75, cy: h },
-                        { id: 'left-1',   cx: 0,        cy: sl + (h - sl) * 0.25 },
-                        { id: 'left-2',   cx: 0,        cy: sl + (h - sl) * 0.5 },
-                        { id: 'left-3',   cx: 0,        cy: sl + (h - sl) * 0.75 },
-                        { id: 'right-1',  cx: w,        cy: h * 0.25 },
-                        { id: 'right-2',  cx: w,        cy: h * 0.5 },
-                        { id: 'right-3',  cx: w,        cy: h * 0.75 },
+                        { id: 'top',    cx: w / 2, cy: sl * 0.5 },
+                        { id: 'bottom', cx: w / 2, cy: h },
+                        { id: 'left',   cx: 0,     cy: sl + (h - sl) * 0.5 },
+                        { id: 'right',  cx: w,     cy: h / 2 },
                     ];
                 } else if (type === 'fc_database') {
-                    // Cylinder: top ellipse cap + sides + bottom ellipse
-                    const ey = h * 0.15;
+                    // Cylinder: top center of cap, bottom center, mid left/right
                     return [
-                        { id: 'top-1',    cx: w * 0.25, cy: ey },
-                        { id: 'top-2',    cx: w / 2,    cy: 0 },
-                        { id: 'top-3',    cx: w * 0.75, cy: ey },
-                        { id: 'bottom-1', cx: w * 0.25, cy: h - ey },
-                        { id: 'bottom-2', cx: w / 2,    cy: h },
-                        { id: 'bottom-3', cx: w * 0.75, cy: h - ey },
-                        { id: 'left-1',   cx: 0,        cy: h * 0.35 },
-                        { id: 'left-2',   cx: 0,        cy: h * 0.5 },
-                        { id: 'left-3',   cx: 0,        cy: h * 0.65 },
-                        { id: 'right-1',  cx: w,        cy: h * 0.35 },
-                        { id: 'right-2',  cx: w,        cy: h * 0.5 },
-                        { id: 'right-3',  cx: w,        cy: h * 0.65 },
+                        { id: 'top',    cx: w / 2, cy: 0 },
+                        { id: 'bottom', cx: w / 2, cy: h },
+                        { id: 'left',   cx: 0,     cy: h / 2 },
+                        { id: 'right',  cx: w,     cy: h / 2 },
                     ];
                 } else if (type === 'fc_stored_data') {
-                    // D-shape with arcs on both sides
-                    const rx = w * 0.15;
+                    // D-shape: top/bottom center, left/right mid
                     return [
-                        { id: 'top-1',    cx: w * 0.25, cy: 0 },
-                        { id: 'top-2',    cx: w * 0.5,  cy: 0 },
-                        { id: 'top-3',    cx: w * 0.75, cy: 0 },
-                        { id: 'bottom-1', cx: w * 0.25, cy: h },
-                        { id: 'bottom-2', cx: w * 0.5,  cy: h },
-                        { id: 'bottom-3', cx: w * 0.75, cy: h },
-                        { id: 'left-1',   cx: rx * 0.5, cy: h * 0.25 },
-                        { id: 'left-2',   cx: 0,        cy: h * 0.5 },
-                        { id: 'left-3',   cx: rx * 0.5, cy: h * 0.75 },
-                        { id: 'right-1',  cx: w - rx * 0.13, cy: h * 0.25 },
-                        { id: 'right-2',  cx: w,             cy: h * 0.5 },
-                        { id: 'right-3',  cx: w - rx * 0.13, cy: h * 0.75 },
+                        { id: 'top',    cx: w / 2, cy: 0 },
+                        { id: 'bottom', cx: w / 2, cy: h },
+                        { id: 'left',   cx: 0,     cy: h / 2 },
+                        { id: 'right',  cx: w,     cy: h / 2 },
                     ];
                 } else if (type === 'fc_document') {
-                    // wavy bottom — top edge is flat, bottom waves down
+                    // Wavy bottom: top center flat, bottom center at wave midpoint
                     const wy = h * 0.75;
                     return [
-                        { id: 'top-1',    cx: w * 0.25, cy: 0 },
-                        { id: 'top-2',    cx: w * 0.5,  cy: 0 },
-                        { id: 'top-3',    cx: w * 0.75, cy: 0 },
-                        { id: 'bottom-1', cx: w * 0.25, cy: wy + (h - wy) * 0.4 },
-                        { id: 'bottom-2', cx: w * 0.5,  cy: wy },
-                        { id: 'bottom-3', cx: w * 0.75, cy: wy + (h - wy) * 0.4 },
-                        { id: 'left-1',   cx: 0,        cy: h * 0.25 },
-                        { id: 'left-2',   cx: 0,        cy: h * 0.5 },
-                        { id: 'left-3',   cx: 0,        cy: h * 0.75 },
-                        { id: 'right-1',  cx: w,        cy: h * 0.25 },
-                        { id: 'right-2',  cx: w,        cy: h * 0.5 },
-                        { id: 'right-3',  cx: w,        cy: h * 0.65 },
+                        { id: 'top',    cx: w / 2, cy: 0 },
+                        { id: 'bottom', cx: w / 2, cy: wy },
+                        { id: 'left',   cx: 0,     cy: h / 2 },
+                        { id: 'right',  cx: w,     cy: h / 2 },
                     ];
                 } else {
-                    // fc_process, fc_terminator — rectangular-ish bounding box anchors
+                    // fc_process, fc_terminator and any other fc_* shapes
                     return [
-                        { id: 'top-1',    cx: 0.25 * w, cy: 0 },
-                        { id: 'top-2',    cx: 0.5 * w,  cy: 0 },
-                        { id: 'top-3',    cx: 0.75 * w, cy: 0 },
-                        { id: 'bottom-1', cx: 0.25 * w, cy: h },
-                        { id: 'bottom-2', cx: 0.5 * w,  cy: h },
-                        { id: 'bottom-3', cx: 0.75 * w, cy: h },
-                        { id: 'left-1',   cx: 0,        cy: 0.25 * h },
-                        { id: 'left-2',   cx: 0,        cy: 0.5 * h },
-                        { id: 'left-3',   cx: 0,        cy: 0.75 * h },
-                        { id: 'right-1',  cx: w,        cy: 0.25 * h },
-                        { id: 'right-2',  cx: w,        cy: 0.5 * h },
-                        { id: 'right-3',  cx: w,        cy: 0.75 * h },
+                        { id: 'top',    cx: w / 2, cy: 0 },
+                        { id: 'bottom', cx: w / 2, cy: h },
+                        { id: 'left',   cx: 0,     cy: h / 2 },
+                        { id: 'right',  cx: w,     cy: h / 2 },
                     ];
                 }
             }
 
+
             renderFlowchartShapeSvg(g, type, w, h, fill, stroke, sw, isSelected) {
                 const ns = 'http://www.w3.org/2000/svg';
 
-                // ── Shadow / glow filter ──────────────────────────────────────────────
-                // Every fc shape gets a soft colored ambient shadow (like card-process).
-                // When selected, a stronger blue ring glow is added on top.
-                const filterId = `fc-shadow-${type.replace('_','')}`;
-                const svgRoot = g.closest('svg') || g.ownerSVGElement;
-                if (svgRoot && !svgRoot.querySelector(`#${filterId}`)) {
-                    const defs = svgRoot.querySelector('defs') || (() => {
-                        const d = document.createElementNS(ns, 'defs'); svgRoot.prepend(d); return d;
-                    })();
-                    const filt = document.createElementNS(ns, 'filter');
-                    filt.setAttribute('id', filterId);
-                    filt.setAttribute('x', '-30%'); filt.setAttribute('y', '-30%');
-                    filt.setAttribute('width', '160%'); filt.setAttribute('height', '180%');
-                    // Offset shadow going downward
-                    const feBlur = document.createElementNS(ns, 'feGaussianBlur');
-                    feBlur.setAttribute('in', 'SourceAlpha'); feBlur.setAttribute('stdDeviation', '6');
-                    const feOffset = document.createElementNS(ns, 'feOffset');
-                    feOffset.setAttribute('dx', '0'); feOffset.setAttribute('dy', '6'); feOffset.setAttribute('result', 'shadow');
-                    const feFlood = document.createElementNS(ns, 'feFlood');
-                    feFlood.setAttribute('flood-color', stroke); feFlood.setAttribute('flood-opacity', '0.28'); feFlood.setAttribute('result', 'color');
-                    const feComposite = document.createElementNS(ns, 'feComposite');
-                    feComposite.setAttribute('in', 'color'); feComposite.setAttribute('in2', 'shadow'); feComposite.setAttribute('operator', 'in'); feComposite.setAttribute('result', 'coloredShadow');
-                    const feMerge = document.createElementNS(ns, 'feMerge');
-                    const m1 = document.createElementNS(ns, 'feMergeNode'); m1.setAttribute('in', 'coloredShadow');
-                    const m2 = document.createElementNS(ns, 'feMergeNode'); m2.setAttribute('in', 'SourceGraphic');
-                    feMerge.appendChild(m1); feMerge.appendChild(m2);
-                    filt.appendChild(feBlur); filt.appendChild(feOffset); filt.appendChild(feFlood);
-                    filt.appendChild(feComposite); filt.appendChild(feMerge);
-                    defs.appendChild(filt);
+                // ── Always-on fill-hue glow ───────────────────────────────────────────
+                // Pale fills lose their color when simply darkened. Instead we extract
+                // the fill's HUE via HSL, then synthesize a vivid shadow color at
+                // saturation=0.80, lightness=0.45 — the same hue but richly colored.
+                // Achromatic fills (white/grey) fall back to neutral grey.
+                const fr = parseInt(fill.slice(1, 3), 16) / 255;
+                const fg = parseInt(fill.slice(3, 5), 16) / 255;
+                const fb = parseInt(fill.slice(5, 7), 16) / 255;
+                const maxC = Math.max(fr, fg, fb), minC = Math.min(fr, fg, fb), delta = maxC - minC;
+                let hue = 0;
+                if (delta > 0.001) {
+                    if (maxC === fr) hue = 60 * (((fg - fb) / delta) % 6);
+                    else if (maxC === fg) hue = 60 * ((fb - fr) / delta + 2);
+                    else hue = 60 * ((fr - fg) / delta + 4);
+                    if (hue < 0) hue += 360;
                 }
-                const shadowStyle = `filter: url(#${filterId});`;
-                const selRingStyle = isSelected ? `outline: none; filter: url(#${filterId}) drop-shadow(0 0 5px rgba(13,110,253,0.85));` : shadowStyle;
+                // Build vivid shadow color: same hue, sat=0.80, lit=0.45
+                const satG = delta > 0.001 ? 0.80 : 0;
+                const litG = 0.45;
+                const cG = (1 - Math.abs(2 * litG - 1)) * satG;
+                const xG = cG * (1 - Math.abs((hue / 60) % 2 - 1));
+                const mG = litG - cG / 2;
+                const hS = Math.floor(hue / 60) % 6;
+                const [rG, gG, bG] = hS === 0 ? [cG, xG, 0] : hS === 1 ? [xG, cG, 0] : hS === 2 ? [0, cG, xG] : hS === 3 ? [0, xG, cG] : hS === 4 ? [xG, 0, cG] : [cG, 0, xG];
+                const gr = Math.round((rG + mG) * 255);
+                const gg = Math.round((gG + mG) * 255);
+                const gb = Math.round((bG + mG) * 255);
+                const ambientGlow = `filter: drop-shadow(0 8px 22px rgba(${gr},${gg},${gb},0.30));`;
+                const selRingStyle = isSelected
+                    ? `filter: drop-shadow(0 8px 22px rgba(${gr},${gg},${gb},0.75)) drop-shadow(0 0 10px rgba(${gr},${gg},${gb},0.60));`
+                    : ambientGlow;
 
                 let el;
 
@@ -6443,7 +6556,7 @@
 
                 } else if (type === 'fc_decision') {
                     el = document.createElementNS(ns, 'polygon');
-                    el.setAttribute('points', `${w/2},0 ${w},${h/2} ${w/2},${h} 0,${h/2}`);
+                    el.setAttribute('points', `${w / 2},0 ${w},${h / 2} ${w / 2},${h} 0,${h / 2}`);
 
                 } else if (type === 'fc_terminator') {
                     const r = h / 2;
@@ -6455,7 +6568,7 @@
                 } else if (type === 'fc_data') {
                     const s = h * 0.2;
                     el = document.createElementNS(ns, 'polygon');
-                    el.setAttribute('points', `${s},0 ${w},0 ${w-s},${h} 0,${h}`);
+                    el.setAttribute('points', `${s},0 ${w},0 ${w - s},${h} 0,${h}`);
 
                 } else if (type === 'fc_document') {
                     // Rect top, wavy bottom contained within bounding box
@@ -6464,8 +6577,8 @@
                     el = document.createElementNS(ns, 'path');
                     el.setAttribute('d',
                         `M0,0 H${w} V${wy}` +
-                        ` Q${w*0.75},${wy + amp*2} ${w/2},${wy}` +
-                        ` Q${w*0.25},${wy - amp} 0,${wy} Z`
+                        ` Q${w * 0.75},${wy + amp * 2} ${w / 2},${wy}` +
+                        ` Q${w * 0.25},${wy - amp} 0,${wy} Z`
                     );
 
                 } else if (type === 'fc_manual_input') {
@@ -6476,7 +6589,7 @@
                 } else if (type === 'fc_preparation') {
                     const px = w * 0.15;
                     el = document.createElementNS(ns, 'polygon');
-                    el.setAttribute('points', `${px},0 ${w-px},0 ${w},${h/2} ${w-px},${h} ${px},${h} 0,${h/2}`);
+                    el.setAttribute('points', `${px},0 ${w - px},0 ${w},${h / 2} ${w - px},${h} ${px},${h} 0,${h / 2}`);
 
                 } else if (type === 'fc_connector') {
                     el = document.createElementNS(ns, 'ellipse');
@@ -6487,7 +6600,7 @@
                 } else if (type === 'fc_stored_data') {
                     const rx = w * 0.15;
                     el = document.createElementNS(ns, 'path');
-                    el.setAttribute('d', `M${rx},0 H${w-rx} A${rx},${h/2} 0 0 1 ${w-rx},${h} H${rx} A${rx},${h/2} 0 0 1 ${rx},0 Z`);
+                    el.setAttribute('d', `M${rx},0 H${w - rx} A${rx},${h / 2} 0 0 1 ${w - rx},${h} H${rx} A${rx},${h / 2} 0 0 1 ${rx},0 Z`);
 
                 } else if (type === 'fc_database') {
                     const ey = h * 0.15;
@@ -7440,7 +7553,24 @@
             }
             loadSessionFromLocalStorage() {
                 const data = localStorage.getItem('stride_workbench_session_manifest_v26');
-                if (data) { this.state = Object.assign(new ThreatModelSession(), JSON.parse(data)); return true; } return false;
+                if (data) {
+                    this.state = Object.assign(new ThreatModelSession(), JSON.parse(data));
+                    // ── Migrate legacy 3-per-side anchor IDs → single-center anchor IDs ──────
+                    // Old IDs: 'top-1','top-2','top-3','left-1'… → New: 'top','left'…
+                    const normAnchor = id => {
+                        if (!id) return id;
+                        const dir = id.split('-')[0];
+                        return ['top','bottom','left','right'].includes(dir) ? dir : id;
+                    };
+                    if (this.state.flows) {
+                        this.state.flows.forEach(f => {
+                            f.sourceAnchor = normAnchor(f.sourceAnchor);
+                            f.targetAnchor = normAnchor(f.targetAnchor);
+                        });
+                    }
+                    return true;
+                }
+                return false;
             }
 
             getDefaultThreatSuggestions() {
