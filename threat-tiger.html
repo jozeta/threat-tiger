@@ -3337,13 +3337,14 @@
                 } else if (el.type && el.type.startsWith('fc_')) {
                     w = el.width || 160;
                     h = el.height || 80;
-                    // For non-rectangular fc shapes, snap anchor to the actual shape edge.
-                    // Try exact match first, then prefix match (e.g. old 'right-2' → 'right')
+                    // For fc shapes, anchor exactly on the shape-geometry edge.
+                    // Try exact match first, then direction-prefix match (legacy 'right-2' → 'right')
                     const anchors = this.getFcAnchorPoints(el.type, w, h);
                     const dirPrefix = anchorId ? anchorId.split('-')[0] : '';
                     const found = anchors.find(a => a.id === anchorId)
                                || anchors.find(a => a.id === dirPrefix);
-                    if (found) return { x: this.snapValue(el.x + found.cx), y: this.snapValue(el.y + found.cy) };
+                    // Return exact geometric coordinates — no snapValue() so we never overshoot
+                    if (found) return { x: el.x + found.cx, y: el.y + found.cy };
                 }
 
                 let rx = 0.5;
@@ -3369,10 +3370,11 @@
                         ux = 0.57735027 * dx - 1.0 * dy;
                         uy = 0.57735027 * dx + 1.0 * dy;
                     }
-                    return { x: this.snapValue(el.x + ux), y: this.snapValue(el.y + uy) };
+                    return { x: el.x + ux, y: el.y + uy };
                 }
 
-                return { x: this.snapValue(el.x + dx), y: this.snapValue(el.y + dy) };
+                // Return exact geometric coordinates — no snapValue() so we never land inside shapes
+                return { x: el.x + dx, y: el.y + dy };
             }
 
             isPointInsideElement(el, canvasSpaceCoords) {
