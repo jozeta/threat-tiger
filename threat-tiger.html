@@ -5,9 +5,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" crossorigin="anonymous">
     <style>
         :root {
             --sidebar-width: 290px;
@@ -214,6 +214,11 @@
             top: 0;
             left: 0;
             user-select: none;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        #canvas-svg foreignObject * {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
         .canvas-grid {
@@ -2153,6 +2158,8 @@
                         class="bi bi-zoom-out"></i></button>
                 <button class="btn btn-sm btn-light border-0" id="btn-canvas-zoom-reset" title="Zoom to fit"><i
                         class="bi bi-fullscreen"></i></button>
+                <button class="btn btn-sm btn-light border-0 text-primary" id="btn-canvas-save-png"
+                    title="Save as PNG"><i class="bi bi-filetype-png"></i></button>
                 <button class="btn btn-sm btn-light border-0 text-success" id="btn-canvas-print"
                     title="Print/Export Canvas"><i class="bi bi-printer"></i></button>
                 <div class="dropdown d-inline-block">
@@ -2339,14 +2346,11 @@
                                         for="props-flow-dashed-switch">Dashed Line Communication Track</label>
                                 </div>
                                 <div class="mb-2 mt-2">
-                                    <label class="extra-small text-muted fw-bold mb-1">Line Thickness</label>
-                                    <select class="form-select form-select-sm shadow-none"
-                                        id="props-flow-thickness-select">
-                                        <option value="1">1px - Thin Line</option>
-                                        <option value="2">2px - Standard Line</option>
-                                        <option value="3">3px - Medium Line</option>
-                                        <option value="4">4px - Thick Line</option>
-                                    </select>
+                                    <label class="extra-small text-muted fw-bold mb-1"><i
+                                            class="bi bi-border-width me-1"></i>Line Thickness: <span
+                                            id="props-flow-thickness-lbl">2</span>px</label>
+                                    <input type="range" class="form-range" id="props-flow-thickness-slider" min="1" max="10"
+                                        step="0.5" value="2">
                                 </div>
                                 <div class="mb-0">
                                     <label class="extra-small text-muted fw-bold mb-1"><i
@@ -3736,6 +3740,203 @@
                 });
             }
 
+            async fetchFontAsBase64(url) {
+                try {
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                    const blob = await response.blob();
+                    return new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(blob);
+                    });
+                } catch (e) {
+                    console.warn(`[ThreatTiger] Font preload failed for ${url}:`, e);
+                    return null;
+                }
+            }
+
+            async getEmbeddedStylesheetsCssText() {
+                let cssText = '';
+
+                // Copy all local style rules from internal style tags
+                document.querySelectorAll('style').forEach(style => {
+                    cssText += style.textContent + '\n';
+                });
+
+                // Try to read rules from external stylesheets
+                for (const sheet of document.styleSheets) {
+                    try {
+                        if (sheet.cssRules) {
+                            for (const rule of sheet.cssRules) {
+                                // Skip external font-face and import rules to prevent canvas tainting
+                                if (rule.type === 5 || rule.type === 3 || rule.cssText.startsWith('@font-face') || rule.cssText.startsWith('@import')) {
+                                    continue;
+                                }
+                                cssText += rule.cssText + '\n';
+                            }
+                        }
+                    } catch (e) {
+                        console.warn("[ThreatTiger] Could not read CSS rules from stylesheet:", sheet.href, e);
+                    }
+                }
+
+                // Append custom embedded woff2 font faces if fetched successfully
+                if (!this.cachedBootstrapIconsBase64) {
+                    this.cachedBootstrapIconsBase64 = await this.fetchFontAsBase64(
+                        'https://cdn.jsdelivr.net/npm/bootstrap-icons/font/fonts/bootstrap-icons.woff2'
+                    );
+                }
+                if (!this.cachedFontAwesomeBase64) {
+                    this.cachedFontAwesomeBase64 = await this.fetchFontAsBase64(
+                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2'
+                    );
+                }
+
+                if (this.cachedBootstrapIconsBase64) {
+                    cssText += `
+                        @font-face {
+                            font-family: "bootstrap-icons";
+                            src: url("${this.cachedBootstrapIconsBase64}") format("woff2");
+                            font-weight: normal;
+                            font-style: normal;
+                        }
+                    `;
+                }
+                if (this.cachedFontAwesomeBase64) {
+                    cssText += `
+                        @font-face {
+                            font-family: "Font Awesome 6 Free";
+                            font-style: normal;
+                            font-weight: 900;
+                            font-display: block;
+                            src: url("${this.cachedFontAwesomeBase64}") format("woff2");
+                        }
+                    `;
+                }
+
+                return cssText;
+            }
+
+            async exportCanvasAsPng() {
+                const btn = document.getElementById('btn-canvas-save-png');
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>';
+                btn.disabled = true;
+
+                try {
+                    // 1. Temporarily clear selections and active state
+                    const savedSelectedIds = [...this.state.selectedElementIds];
+                    const savedSelectedFlowId = this.state.selectedFlowId;
+                    this.clearActiveSelectionPointers();
+
+                    // 2. Hide the grid pattern
+                    const gridRect = document.getElementById('canvas-grid-rect');
+                    let originalGridVisibility = '';
+                    if (gridRect) {
+                        originalGridVisibility = gridRect.style.visibility;
+                        gridRect.style.visibility = 'hidden';
+                    }
+
+                    // 3. Get bounds of actual elements on the canvas
+                    const bbox = this.getIsometricBoundingBox();
+                    const padding = 50;
+                    const minX = bbox.minX - padding;
+                    const minY = bbox.minY - padding;
+                    const maxX = bbox.maxX + padding;
+                    const maxY = bbox.maxY + padding;
+                    const width = Math.max(100, maxX - minX);
+                    const height = Math.max(100, maxY - minY);
+
+                    // 4. Clone the canvas SVG
+                    const svgEl = document.getElementById('canvas-svg');
+                    const clone = svgEl.cloneNode(true);
+
+                    // 5. Setup clone dimensions & viewbox
+                    clone.setAttribute('width', width);
+                    clone.setAttribute('height', height);
+                    clone.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
+
+                    // Remove zoom/pan transforms from the clone's transform group
+                    const transformGroup = clone.querySelector('#canvas-transform-group');
+                    if (transformGroup) {
+                        transformGroup.removeAttribute('transform');
+                    }
+
+                    // If dark mode is active on the workspace, add dark-theme-canvas to the clone's class list
+                    const isDark = document.querySelector('.workspace-wrapper').classList.contains('dark-theme-canvas');
+                    if (isDark) {
+                        clone.classList.add('dark-theme-canvas');
+                    }
+
+                    // 6. Inline document styles and base64 fonts
+                    const cssText = await this.getEmbeddedStylesheetsCssText();
+                    const svgStyle = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+                    svgStyle.textContent = cssText;
+                    clone.insertBefore(svgStyle, clone.firstChild);
+
+                    // 7. Serialize the cloned SVG to a string
+                    const serializer = new XMLSerializer();
+                    const svgString = serializer.serializeToString(clone);
+
+                    // 8. Load SVG string into an Image object
+                    const url = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgString);
+
+                    const img = new Image();
+                    await new Promise((resolve, reject) => {
+                        img.onload = resolve;
+                        img.onerror = (e) => reject(new Error("Image failed to load: " + e));
+                        img.src = url;
+                    });
+
+                    // 9. Draw the image to a canvas element
+                    const canvas = document.createElement('canvas');
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+
+                    // Fill canvas background matching current theme (white in light mode)
+                    ctx.fillStyle = isDark ? '#1e1e24' : '#ffffff';
+                    ctx.fillRect(0, 0, width, height);
+
+                    // Draw the SVG image
+                    ctx.drawImage(img, 0, 0);
+
+                    // 10. Generate PNG and trigger download
+                    const pngUrl = canvas.toDataURL('image/png');
+                    const downloadLink = document.createElement('a');
+                    downloadLink.href = pngUrl;
+                    const projectName = (this.state.projectTitle || 'threat-tiger')
+                        .toLowerCase()
+                        .replace(/[^a-z0-9]+/g, '-')
+                        .replace(/(^-|-$)/g, '');
+                    downloadLink.download = `${projectName || 'threat-model'}-canvas.png`;
+                    document.body.appendChild(downloadLink);
+                    downloadLink.click();
+                    document.body.removeChild(downloadLink);
+
+                    // 11. Restore grid and selection
+                    if (gridRect) {
+                        gridRect.style.visibility = originalGridVisibility;
+                    }
+                    if (savedSelectedIds.length > 0) {
+                        this.state.selectedElementIds = savedSelectedIds;
+                    }
+                    if (savedSelectedFlowId) {
+                        this.state.selectedFlowId = savedSelectedFlowId;
+                    }
+                    this.refreshAppViewVisualWorkspace();
+
+                } catch (err) {
+                    console.error("[ThreatTiger] Export canvas as PNG failed:", err);
+                    alert("Export failed: " + err.message);
+                } finally {
+                    btn.innerHTML = originalHtml;
+                    btn.disabled = false;
+                }
+            }
+
             buildPrintThreatReport() {
                 const rpt = document.getElementById('print-threat-report');
                 if (!rpt) return;
@@ -4112,6 +4313,7 @@
                 document.getElementById('btn-canvas-zoom-in').addEventListener('click', () => { this.zoomScale = Math.min(this.zoomScale + 0.1, 2.5); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-out').addEventListener('click', () => { this.zoomScale = Math.max(this.zoomScale - 0.1, 0.4); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-reset').addEventListener('click', () => this.zoomToFit());
+                document.getElementById('btn-canvas-save-png').addEventListener('click', () => this.exportCanvasAsPng());
                 document.getElementById('btn-canvas-print').addEventListener('click', () => window.print());
                 const optNe = document.getElementById('opt-view-ne-iso');
                 const optNw = document.getElementById('opt-view-nw-iso');
@@ -4494,14 +4696,17 @@
                     });
                 }
 
-                const propsFlowThicknessSelect = document.getElementById('props-flow-thickness-select');
-                if (propsFlowThicknessSelect) {
-                    propsFlowThicknessSelect.addEventListener('change', (ev) => {
+                const propsFlowThicknessSlider = document.getElementById('props-flow-thickness-slider');
+                if (propsFlowThicknessSlider) {
+                    propsFlowThicknessSlider.addEventListener('input', (ev) => {
                         if (this.state.selectedFlowId) {
                             const flow = this.state.flows.find(f => f.id === this.state.selectedFlowId);
                             if (flow) {
-                                flow.thickness = parseInt(ev.target.value);
-                                this.logEvent("CHANGE", `Altered line thickness to ${flow.thickness}px for communication stream "${flow.name}"`);
+                                const val = parseFloat(ev.target.value);
+                                flow.thickness = val;
+                                const lbl = document.getElementById('props-flow-thickness-lbl');
+                                if (lbl) lbl.textContent = val;
+                                this.logEvent("CHANGE", `Altered line thickness to ${val}px for communication stream "${flow.name}"`);
                                 this.saveSessionToLocalStorage(); this.renderSvgDiagramElements();
                             }
                         }
@@ -4900,10 +5105,102 @@
                     if (this.isDraggingElements) {
                         const deltaX = canvasSpaceCoords.x - this.dragStartCanvasCoords.x;
                         const deltaY = canvasSpaceCoords.y - this.dragStartCanvasCoords.y;
-                        this.initialDragPositions.forEach(pos => {
+
+                        if (this.initialDragPositions.length === 1) {
+                            const pos = this.initialDragPositions[0];
                             const el = this.state.elements.find(item => item.id === pos.id);
-                            if (el) { el.x = this.snapValue(pos.x + deltaX); el.y = this.snapValue(pos.y + deltaY); }
-                        });
+                            if (el) {
+                                // Default grid snapped position
+                                let newX = this.snapValue(pos.x + deltaX);
+                                let newY = this.snapValue(pos.y + deltaY);
+
+                                // Find connected flows (lines)
+                                const connectedFlows = this.state.flows.filter(f => f.sourceId === el.id || f.targetId === el.id);
+
+                                if (this.isSnappingActive && connectedFlows.length > 0) {
+                                    let bestCandidate = null;
+                                    let minSnapDist = Infinity;
+
+                                    connectedFlows.forEach(f => {
+                                        const isSource = (f.sourceId === el.id);
+                                        const otherId = isSource ? f.targetId : f.sourceId;
+                                        const otherEl = this.state.elements.find(item => item.id === otherId);
+                                        if (!otherEl) return;
+
+                                        // B is the stationary anchor point coordinates
+                                        const B = this.getAnchorCoordinates(otherEl, isSource ? f.targetAnchor : f.sourceAnchor);
+
+                                        // Current offset of dragged element's anchor relative to its origin (el.x, el.y)
+                                        const currentAnchor = this.getAnchorCoordinates(el, isSource ? f.sourceAnchor : f.targetAnchor);
+                                        const offsetX = currentAnchor.x - el.x;
+                                        const offsetY = currentAnchor.y - el.y;
+
+                                        // Dragged anchor position (without angle snapping, just grid snapped)
+                                        const A_drag = {
+                                            x: newX + offsetX,
+                                            y: newY + offsetY
+                                        };
+
+                                        // Compute angle of A_drag relative to B
+                                        const dx = A_drag.x - B.x;
+                                        const dy = A_drag.y - B.y;
+                                        const dist = Math.hypot(dx, dy);
+                                        if (dist < 10) return; // avoid division by zero or jitter near overlap
+
+                                        const angleRad = Math.atan2(dy, dx);
+                                        let angleDeg = angleRad * 180 / Math.PI;
+                                        if (angleDeg < 0) angleDeg += 360;
+
+                                        // Find nearest 45 degree angle (0, 45, 90, 135, 180, 225, 270, 315)
+                                        const snapK = Math.round(angleDeg / 45);
+                                        const targetAngleDeg = (snapK * 45) % 360;
+                                        const targetAngleRad = targetAngleDeg * Math.PI / 180;
+
+                                        // Direction vector for target angle
+                                        const cosT = Math.cos(targetAngleRad);
+                                        const sinT = Math.sin(targetAngleRad);
+
+                                        // Project dragged anchor onto the snapped line passing through B
+                                        // Projection: B + t * dir
+                                        const t = dx * cosT + dy * sinT;
+                                        const A_snap = {
+                                            x: B.x + t * cosT,
+                                            y: B.y + t * sinT
+                                        };
+
+                                        // Calculate adjustment distance
+                                        const snapDist = Math.hypot(A_snap.x - A_drag.x, A_snap.y - A_drag.y);
+
+                                        // Snapping threshold (25 pixels is a good responsive value)
+                                        const threshold = 25;
+                                        if (snapDist <= threshold && snapDist < minSnapDist) {
+                                            minSnapDist = snapDist;
+                                            bestCandidate = {
+                                                x: A_snap.x - offsetX,
+                                                y: A_snap.y - offsetY
+                                            };
+                                        }
+                                    });
+
+                                    if (bestCandidate) {
+                                        newX = bestCandidate.x;
+                                        newY = bestCandidate.y;
+                                    }
+                                }
+
+                                el.x = newX;
+                                el.y = newY;
+                            }
+                        } else {
+                            // Multiple elements dragged: standard offset move
+                            this.initialDragPositions.forEach(pos => {
+                                const el = this.state.elements.find(item => item.id === pos.id);
+                                if (el) {
+                                    el.x = this.snapValue(pos.x + deltaX);
+                                    el.y = this.snapValue(pos.y + deltaY);
+                                }
+                            });
+                        }
                         this.renderSvgDiagramElements();
                     }
                 });
@@ -5574,8 +5871,9 @@
             ensureColorMarkerExists(colorHex, thickness = 2) {
                 const defs = this.dom.svg.querySelector('defs');
                 const cleanHex = colorHex.replace('#', '');
-                const markerId = `arrowhead-${cleanHex}-t${thickness}`;
-                const reverseMarkerId = `arrowhead-${cleanHex}-t${thickness}-reverse`;
+                const cleanThickness = thickness.toString().replace('.', '_');
+                const markerId = `arrowhead-${cleanHex}-t${cleanThickness}`;
+                const reverseMarkerId = `arrowhead-${cleanHex}-t${cleanThickness}-reverse`;
 
                 // Proportional scale calculations (userSpaceOnUse)
                 let w = 8 + thickness * 2.5;
@@ -5850,7 +6148,7 @@
                         }
                     }
 
-                    const thickness = parseInt(f.thickness || 2);
+                    const thickness = parseFloat(f.thickness || 2);
                     let arrW = 8 + thickness * 2.5;
                     if (thickness >= 3) arrW += 1.5;
 
@@ -6803,9 +7101,12 @@
                     }
                     document.getElementById('props-input-text-offset').value = targetItem.textOffset || 0.5;
 
-                    const thicknessSelect = document.getElementById('props-flow-thickness-select');
-                    if (thicknessSelect) {
-                        thicknessSelect.value = targetItem.thickness || 2;
+                    const thicknessSlider = document.getElementById('props-flow-thickness-slider');
+                    const thicknessLbl = document.getElementById('props-flow-thickness-lbl');
+                    if (thicknessSlider) {
+                        const val = targetItem.thickness || 2;
+                        thicknessSlider.value = val;
+                        if (thicknessLbl) thicknessLbl.textContent = val;
                     }
                     const activeColor = targetItem.color || 'black';
                     document.querySelectorAll('#props-flow-color-grid .color-swatch-btn').forEach(btn => {
