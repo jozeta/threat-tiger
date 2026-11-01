@@ -1,70 +1,1722 @@
 {
+  "schemaVersion": 2,
   "process": [
-    { "category": "Spoofing", "title": "Service Identity Mimicry targeting [name]", "desc": "Malicious system processes spoof verification profiles or intercept routing instructions streams to inherit valid handshake states." },
-    { "category": "Spoofing", "title": "Unauthenticated Inter-Process Communication Endpoint Exposure", "desc": "Deserialized callback pipelines accept unverified local connection loops, allowing adjacent container processes to simulate master commands." },
-    { "category": "Spoofing", "title": "Server-Side Request Forgery (SSRF) Loop Proxy Exploitation", "desc": "Inadequate validation of resource paths parameters allows attackers to coerce the service process into scanning hidden corporate loop infrastructure interfaces." },
-    { "category": "Spoofing", "title": "DNS Cache Poisoning & Routing Redirection", "desc": "Lack of secure DNS resolution constraints allows local infrastructure daemons to process forged names mappings, routing traffic to adversary pods." },
-    { "category": "Tampering", "title": "Runtime Memory Manipulation and Assembly Injection", "desc": "Absence of strict input validation allows arbitrary command arguments or malicious assembly packages to alter binary runtime execution." },
-    { "category": "Tampering", "title": "Insecure Local Binaries Subversion and DLL Hijacking", "desc": "Inadequate write permissions on runtime execution paths enable local actors to replace core dependencies with malicious modules." },
-    { "category": "Tampering", "title": "Log Forgery and Malicious Command Parameter Injection", "desc": "Unsanitized user data breaks boundary parsing strings inside shell utilities, executing secondary terminal commands with service rights." },
-    { "category": "Tampering", "title": "Container Image Mirror Contamination", "desc": "Outdated build pipelines pulls unverified container layers, embedding malicious backdoors into deployed application environments." },
-    { "category": "Repudiation", "title": "Insufficient Administrative Security Modification Logs", "desc": "State mutations and user privileges shifts complete inside process memory loops without appending cryptographically signed audit tracks." },
-    { "category": "Repudiation", "title": "Log Injection via Unsanitized Downstream Payload Formatting", "desc": "Process streams forward user inputs directly into internal syslog nodes without tracing sanitization, permitting log erasure or forging." },
-    { "category": "Repudiation", "title": "Application Core Crash State Suppression", "desc": "Runtime exception loops fail to dump hardware core logs or emit telemetry markers when unhandled errors terminate process pools." },
-    { "category": "Information Disclosure", "title": "Verbose Error Stack Trace Serialization Leakage", "desc": "System exceptions serialize absolute database paths, environmental parameters, and configuration fields straight into response buffers." },
-    { "category": "Information Disclosure", "title": "Side-Channel Cryptographic Execution Disclosures", "desc": "Timing deltas in password hashing loops or token validation gates expose secret byte alignments to highly granular network observation tools." },
-    { "category": "Information Disclosure", "title": "Shared Garbage Collection Memory Leaks Pool", "desc": "Improper zeroing of processing buffers leaks raw data blocks across distinct multi-tenant sessions running on the same host kernel thread." },
-    { "category": "Information Disclosure", "title": "Memory Dump Core Inspection Vulnerability", "desc": "Process handles leave plaintext access tokens or decryption key parameters unencrypted in swap files or runtime heap sectors." },
-    { "category": "Denial of Service", "title": "Thread Pool Allocation Exhaustion and Starvation Loop", "desc": "Unconstrained execution parameters or un-throttled payload loops let hostile bursts exhaust compute threads completely, freezing operations." },
-    { "category": "Denial of Service", "title": "Algorithmic Complexity Exploitation (ReDoS / Hash Collision)", "desc": "Unbounded regular expressions processing untrusted input choke execution loops, spiking CPU utilization to 100%." },
-    { "category": "Denial of Service", "title": "Asynchronous Task Queue Flood Lock", "desc": "Incoming event workers stream unbounded payload quantities without ingestion quotas, saturating runtime memory buffers and forcing termination." },
-    { "category": "Elevation of Privilege", "title": "Insecure Context Deserialization and Privilege Scale", "desc": "Processing serialized network requests without strict type validation allows low-privilege sessions to scale permissions frames and spawn root sub-processes." },
-    { "category": "Elevation of Privilege", "title": "Environment Variable Handshake Subversion via SUID Binaries", "desc": "Process execution honors manipulated system configuration strings, enabling subprocess elevation to administrative container layer context." },
-    { "category": "Elevation of Privilege", "title": "Remote Code Execution (RCE) via Upstream Dependency CVEs", "desc": "Outdated or unvetted packaging modules contained in the compilation toolchain expose downstream microservices to arbitrary runtime hijacking." }
+    {
+      "id": "P-AUTH-01",
+      "category": "Spoofing",
+      "title": "Login or session handling of [name] can be bypassed or brute-forced",
+      "desc": "Weak authentication — no limit on login attempts, sessions that never expire, guessable tokens or a flawed password-reset flow — lets attackers log in as real users.",
+      "controls": [
+        "Use a proven identity provider or framework instead of custom login code",
+        "Rate-limit and monitor failed logins",
+        "Short-lived sessions, rotated on login and privilege change",
+        "Secure, single-use password-reset tokens"
+      ],
+      "refs": [
+        "CWE-287",
+        "OWASP API2:2023",
+        "OWASP A07:2021"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "subtypes": [
+        "web",
+        "api",
+        "identity"
+      ]
+    },
+    {
+      "id": "P-AUTH-02",
+      "category": "Spoofing",
+      "title": "Forged or tampered tokens accepted by [name]",
+      "desc": "Tokens (JWT, SAML, API keys) are accepted without fully checking the signature, signing key, issuer, audience and expiry, so attackers can mint their own tokens.",
+      "controls": [
+        "Validate signature with an allow-list of algorithms and keys",
+        "Check issuer, audience, expiry and not-before on every request",
+        "Rotate signing keys and keep them in a vault/HSM"
+      ],
+      "refs": [
+        "CWE-347",
+        "ATT&CK T1606"
+      ],
+      "likelihood": 2,
+      "impact": 5,
+      "example": "Storm-0558 (2023): a stolen Microsoft consumer signing key was accepted for enterprise tokens because of a validation flaw, giving access to email at about 25 organizations.",
+      "subtypes": [
+        "api",
+        "identity",
+        "web"
+      ]
+    },
+    {
+      "id": "P-AUTH-03",
+      "category": "Spoofing",
+      "title": "Cross-site request forgery (CSRF) against [name]",
+      "desc": "The browser automatically sends the user's cookies, so a malicious site can make a signed-in user's browser perform actions (change email, transfer money) without their intent.",
+      "controls": [
+        "SameSite=Lax/Strict cookies",
+        "Anti-CSRF tokens for state-changing requests",
+        "Check the Origin header; never change state on GET"
+      ],
+      "refs": [
+        "CWE-352"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "web"
+      ]
+    },
+    {
+      "id": "TT-P03",
+      "category": "Spoofing",
+      "title": "Unauthenticated callers reach [name]",
+      "desc": "A component that handles sensitive data or is business-critical accepts requests that are not authenticated, so anyone who can reach it can use it.",
+      "controls": [
+        "Authenticate every inbound request (OAuth2/OIDC, mTLS between services)",
+        "Deny by default at the gateway",
+        "Inventory endpoints so test or legacy APIs are not left open"
+      ],
+      "refs": [
+        "CWE-306",
+        "OWASP API2:2023",
+        "OWASP API9:2023"
+      ],
+      "likelihood": 4,
+      "impact": 5,
+      "example": "Optus (2022): a customer API reachable from the internet without authentication — attributed by the regulator to an access-control coding error — exposed data of about 9.8 million people.",
+      "when": {
+        "anyOn": [
+          "handlesSensitiveData",
+          "isCrownJewel"
+        ],
+        "inbound": {
+          "off": "authenticated"
+        }
+      }
+    },
+    {
+      "id": "P-INJ-01",
+      "category": "Tampering",
+      "title": "Injection (SQL, NoSQL, OS command, template) in [name]",
+      "desc": "User-controlled input is built into a query, command or template, letting an attacker read or change data or run commands with the service's rights.",
+      "controls": [
+        "Parameterised queries / ORM; never concatenate input",
+        "Avoid shell calls; pass arguments as arrays",
+        "Allow-list validation on input",
+        "Least-privilege database and OS accounts"
+      ],
+      "refs": [
+        "CWE-89",
+        "CWE-78",
+        "CWE-943",
+        "OWASP A03:2021"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "example": "MOVEit Transfer (2023, CVE-2023-34362): an unauthenticated SQL injection was used for mass data theft from thousands of organizations."
+    },
+    {
+      "id": "P-INJ-02",
+      "category": "Tampering",
+      "title": "Mass assignment lets users change protected fields",
+      "desc": "The API binds the whole request body to an object, so a user can set fields they should not control — role, price, owner, verification status.",
+      "controls": [
+        "Explicit allow-lists (DTOs) for writable fields",
+        "Separate read and write models",
+        "Server-side authorization per field"
+      ],
+      "refs": [
+        "CWE-915",
+        "OWASP API3:2023"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "api",
+        "web"
+      ]
+    },
+    {
+      "id": "P-LOGIC-01",
+      "category": "Tampering",
+      "title": "Race conditions in business transactions",
+      "desc": "Concurrent requests exploit check-then-act gaps: a coupon used twice, a balance withdrawn twice, stock oversold.",
+      "controls": [
+        "Database transactions with row locks or atomic updates",
+        "Idempotency keys on payment and order APIs",
+        "Unique constraints for one-time actions"
+      ],
+      "refs": [
+        "CWE-362",
+        "CWE-367"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "api",
+        "web"
+      ]
+    },
+    {
+      "id": "P-FILE-01",
+      "category": "Tampering",
+      "title": "Path traversal or malicious file upload",
+      "desc": "File names like ../../etc/passwd or uploaded scripts let attackers read or overwrite files, or run code on the server.",
+      "controls": [
+        "Generate server-side file names; never use user paths",
+        "Store uploads outside the web root, on separate storage",
+        "Check type by content, limit size, scan for malware"
+      ],
+      "refs": [
+        "CWE-22",
+        "CWE-434"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "subtypes": [
+        "web",
+        "api",
+        "file-share"
+      ]
+    },
+    {
+      "id": "P-API-01",
+      "category": "Tampering",
+      "title": "Data from third-party APIs is trusted without validation",
+      "desc": "Responses from partners or external APIs are used as if they were safe — following their redirects, storing their HTML, passing their values into queries.",
+      "controls": [
+        "Validate and sanitise third-party data like user input",
+        "Use TLS and verify certificates for outgoing calls",
+        "Timeouts and limits on responses; do not follow redirects blindly"
+      ],
+      "refs": [
+        "OWASP API10:2023",
+        "CWE-20"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "api"
+      ]
+    },
+    {
+      "id": "P-SUPPLY-01",
+      "category": "Tampering",
+      "title": "Compromised dependency or build pipeline ships malicious code in [name]",
+      "desc": "A malicious package, a hijacked maintainer account or a tampered build system inserts a backdoor into what you deploy, signed as your own software.",
+      "controls": [
+        "Pin dependency versions and verify checksums/signatures",
+        "Protect CI/CD: least-privilege tokens, protected branches, reviewed pipeline changes",
+        "SBOM, dependency scanning, private package mirror"
+      ],
+      "refs": [
+        "CWE-494",
+        "ATT&CK T1195",
+        "OWASP A08:2021"
+      ],
+      "likelihood": 2,
+      "impact": 5,
+      "example": "SolarWinds (2020): attackers modified the build system so that signed Orion updates contained the SUNBURST backdoor. xz Utils (2024, CVE-2024-3094): a backdoor inserted by a co-maintainer who had built trust over about two years.",
+      "subtypes": [
+        "ci-cd"
+      ]
+    },
+    {
+      "id": "TT-P02",
+      "category": "Repudiation",
+      "title": "Security events in [name] are not logged",
+      "desc": "Logins, failed access checks, permission changes and access to sensitive records are not recorded with who, what, when and from where, so misuse cannot be detected or proven.",
+      "controls": [
+        "Log security events with user, action, target, time and source IP",
+        "Ship logs to a central store the service cannot modify",
+        "Alert on suspicious patterns (many failures, privilege changes)"
+      ],
+      "refs": [
+        "CWE-778",
+        "OWASP A09:2021"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "when": {
+        "off": "loggingEnabled"
+      }
+    },
+    {
+      "id": "P-LOG-02",
+      "category": "Repudiation",
+      "title": "Log injection forges or hides log entries",
+      "desc": "User input is written to logs unchanged, so newlines and control characters create fake entries or break log parsing and alerting.",
+      "controls": [
+        "Structured (JSON) logging",
+        "Encode or strip control characters from logged values"
+      ],
+      "refs": [
+        "CWE-117"
+      ],
+      "likelihood": 2,
+      "impact": 2
+    },
+    {
+      "id": "P-LOG-03",
+      "category": "Repudiation",
+      "title": "An attacker on [name] can delete or alter its logs",
+      "desc": "Logs are only stored where the compromised service or host can modify them, so the first thing an attacker does is erase their tracks.",
+      "controls": [
+        "Forward logs in real time to a separate, append-only store",
+        "Alert when log forwarding stops"
+      ],
+      "refs": [
+        "ATT&CK T1070"
+      ],
+      "likelihood": 2,
+      "impact": 3
+    },
+    {
+      "id": "TT-P05",
+      "category": "Information Disclosure",
+      "title": "Broken object-level authorization (IDOR) in [name]",
+      "desc": "The service returns or changes a record when the caller supplies its ID, without checking that the caller is allowed to access that particular record.",
+      "controls": [
+        "Check ownership/permission for every object access, server-side",
+        "Use unguessable IDs as defence in depth (not as the control)",
+        "Automated tests that request other users' objects"
+      ],
+      "refs": [
+        "CWE-639",
+        "OWASP API1:2023",
+        "OWASP A01:2021"
+      ],
+      "likelihood": 4,
+      "impact": 5,
+      "example": "First American Financial (2019): changing a number in a document URL exposed about 885 million mortgage records without any login.",
+      "subtypes": [
+        "api",
+        "web"
+      ],
+      "when": {
+        "on": "handlesSensitiveData",
+        "inbound": {
+          "crossesBoundary": true
+        }
+      }
+    },
+    {
+      "id": "P-DATA-01",
+      "category": "Information Disclosure",
+      "title": "API responses expose more data than the client needs",
+      "desc": "Endpoints return full objects (internal IDs, emails, flags, other users' fields) and rely on the front-end to hide them.",
+      "controls": [
+        "Explicit response schemas per endpoint",
+        "Never return internal or other users' fields",
+        "Review API responses in code review and tests"
+      ],
+      "refs": [
+        "CWE-213",
+        "OWASP API3:2023"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "api"
+      ]
+    },
+    {
+      "id": "P-SECRET-01",
+      "category": "Information Disclosure",
+      "title": "Secrets hard-coded in code, scripts, images or config of [name]",
+      "desc": "Passwords, API keys and private keys committed to repositories or baked into images and scripts can be read by anyone with access to those artefacts.",
+      "controls": [
+        "Keep secrets in a vault/secret manager and inject at runtime",
+        "Secret scanning in CI and on repositories",
+        "Rotate any secret that was ever committed"
+      ],
+      "refs": [
+        "CWE-798",
+        "ATT&CK T1552"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "example": "Uber (2022): an attacker found admin credentials for the company's privileged-access system in a PowerShell script on a network share. Toyota (2022): an access key sat in a public GitHub repository for about five years."
+    },
+    {
+      "id": "TT-P06",
+      "category": "Information Disclosure",
+      "title": "Sensitive data written to logs, traces or diagnostic files",
+      "desc": "Tokens, passwords, personal data or full request bodies end up in logs, traces, crash reports or support uploads, which many more people and systems can read.",
+      "controls": [
+        "Redact secrets and personal data before logging",
+        "Never log Authorization headers, cookies or full bodies",
+        "Restrict and expire access to logs and diagnostic files"
+      ],
+      "refs": [
+        "CWE-532"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "example": "Okta (2023): HAR files uploaded to the support system contained session tokens that attackers used to hijack customer sessions.",
+      "when": {
+        "on": [
+          "handlesSensitiveData",
+          "loggingEnabled"
+        ]
+      }
+    },
+    {
+      "id": "P-ERR-01",
+      "category": "Information Disclosure",
+      "title": "Error messages reveal internal details",
+      "desc": "Stack traces, SQL errors and version strings in responses give attackers a map of the system for further attacks.",
+      "controls": [
+        "Generic error responses to clients; details only in server logs",
+        "Disable debug mode in production"
+      ],
+      "refs": [
+        "CWE-209"
+      ],
+      "likelihood": 3,
+      "impact": 2
+    },
+    {
+      "id": "P-CACHE-01",
+      "category": "Information Disclosure",
+      "title": "Personalised responses cached and served to other users",
+      "desc": "A CDN or reverse proxy caches pages or API responses that contain one user's data and serves them to others.",
+      "controls": [
+        "Cache-Control: private/no-store on personalised responses",
+        "Cache keys that include the user or vary correctly",
+        "Test caching rules after CDN changes"
+      ],
+      "refs": [
+        "CWE-524"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "example": "Steam (December 2015): a caching misconfiguration during a traffic spike showed users other people's account pages.",
+      "subtypes": [
+        "web"
+      ]
+    },
+    {
+      "id": "P-MEM-01",
+      "category": "Information Disclosure",
+      "title": "Secrets exposed in crash dumps or memory snapshots",
+      "desc": "Keys and tokens held in memory end up in core dumps, heap snapshots or debug captures that are copied to less-protected environments.",
+      "controls": [
+        "Keep signing keys in an HSM or managed key service",
+        "Disable or scrub crash dumps in production",
+        "Treat debug environments as sensitive"
+      ],
+      "refs": [
+        "CWE-528"
+      ],
+      "likelihood": 1,
+      "impact": 5,
+      "example": "Storm-0558 (2023): the stolen signing key had ended up in a crash dump that was moved to a debugging environment."
+    },
+    {
+      "id": "TT-P07",
+      "category": "Denial of Service",
+      "title": "Unrestricted resource consumption in [name]",
+      "desc": "Missing limits on request rate, payload size, page size or expensive operations let one client exhaust CPU, memory, connections or paid third-party quotas.",
+      "controls": [
+        "Rate limits and quotas per client",
+        "Limits on payload, page and batch sizes",
+        "Timeouts and bounded worker pools"
+      ],
+      "refs": [
+        "CWE-770",
+        "OWASP API4:2023"
+      ],
+      "likelihood": 4,
+      "impact": 3,
+      "when": {
+        "inbound": {
+          "source": {
+            "on": "unauthAccess"
+          }
+        }
+      }
+    },
+    {
+      "id": "P-DOS-02",
+      "category": "Denial of Service",
+      "title": "Small requests trigger very expensive work (ReDoS, decompression bombs)",
+      "desc": "Crafted input makes a regular expression, parser or decompressor do enormous amounts of work, pinning the CPU or filling memory.",
+      "controls": [
+        "Linear-time regex engines or timeouts",
+        "Limits on decompressed size and nesting depth",
+        "Input length limits"
+      ],
+      "refs": [
+        "CWE-1333",
+        "CWE-409"
+      ],
+      "likelihood": 2,
+      "impact": 3
+    },
+    {
+      "id": "P-DOS-03",
+      "category": "Denial of Service",
+      "title": "Attackers run up the cloud or third-party bill of [name]",
+      "desc": "Autoscaling, serverless functions and paid APIs (SMS, email, AI models) keep serving abusive traffic, turning an attack into a large invoice.",
+      "controls": [
+        "Budgets and billing alerts",
+        "Per-user quotas on paid actions (SMS, AI calls)",
+        "Caps on autoscaling"
+      ],
+      "refs": [
+        "OWASP API4:2023",
+        "OWASP API6:2023"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "serverless",
+        "api"
+      ]
+    },
+    {
+      "id": "P-AUTHZ-01",
+      "category": "Elevation of Privilege",
+      "title": "Missing function-level authorization in [name]",
+      "desc": "Administrative or privileged functions are reachable by normal users because the check is only done in the UI or not at all.",
+      "controls": [
+        "Deny by default; central authorization for every endpoint",
+        "Separate admin APIs and tests that call them as a normal user"
+      ],
+      "refs": [
+        "CWE-862",
+        "OWASP API5:2023",
+        "OWASP A01:2021"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "subtypes": [
+        "api",
+        "web"
+      ]
+    },
+    {
+      "id": "P-SSRF-01",
+      "category": "Elevation of Privilege",
+      "title": "Server-side request forgery (SSRF) in [name]",
+      "desc": "The service fetches URLs chosen by the user, so attackers make it call internal systems or the cloud metadata endpoint with its network position and credentials.",
+      "controls": [
+        "Allow-list destinations; block private and metadata IP ranges",
+        "Use a separate egress proxy",
+        "Require IMDSv2 / metadata protection on cloud hosts"
+      ],
+      "refs": [
+        "CWE-918",
+        "OWASP API7:2023"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "example": "Capital One (2019): SSRF via a misconfigured WAF reached the EC2 metadata service, whose over-privileged role could read S3 buckets with data on about 100 million people.",
+      "subtypes": [
+        "web",
+        "api"
+      ]
+    },
+    {
+      "id": "P-VULN-01",
+      "category": "Elevation of Privilege",
+      "title": "Known-vulnerable component allows remote code execution in [name]",
+      "desc": "An unpatched framework, library or server with a public exploit lets attackers run code inside the service.",
+      "controls": [
+        "Dependency and image scanning with a patch SLA",
+        "Inventory of components (SBOM)",
+        "WAF/virtual patching while updating"
+      ],
+      "refs": [
+        "CWE-1395",
+        "ATT&CK T1190",
+        "OWASP A06:2021"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "example": "Equifax (2017): an unpatched Apache Struts flaw (CVE-2017-5638). Log4Shell (2021, CVE-2021-44228): remote code execution through a logging library."
+    },
+    {
+      "id": "P-DESER-01",
+      "category": "Elevation of Privilege",
+      "title": "Insecure deserialization of untrusted data",
+      "desc": "Turning untrusted bytes into native objects can execute code or bypass checks.",
+      "controls": [
+        "Never deserialize untrusted native objects; use JSON with schema validation",
+        "Allow-list types if native formats are unavoidable"
+      ],
+      "refs": [
+        "CWE-502",
+        "OWASP A08:2021"
+      ],
+      "likelihood": 2,
+      "impact": 5
+    },
+    {
+      "id": "P-XSS-01",
+      "category": "Elevation of Privilege",
+      "title": "Cross-site scripting (XSS) in [name]",
+      "desc": "Untrusted content is rendered as HTML or script, so attackers run code in other users' browsers with their session.",
+      "controls": [
+        "Context-aware output encoding; framework auto-escaping",
+        "Content-Security-Policy",
+        "HttpOnly cookies"
+      ],
+      "refs": [
+        "CWE-79",
+        "OWASP A03:2021"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "web"
+      ]
+    },
+    {
+      "id": "TT-P01",
+      "category": "Elevation of Privilege",
+      "title": "Compromise of [name] gives administrator control",
+      "desc": "The component runs with administrative or root rights, so any code-execution flaw becomes full control of the host.",
+      "controls": [
+        "Run as a dedicated least-privileged account",
+        "Drop capabilities; read-only file system; containers/sandboxing"
+      ],
+      "refs": [
+        "CWE-250"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "when": {
+        "on": "runAsAdmin"
+      }
+    },
+    {
+      "id": "P-IAM-01",
+      "category": "Elevation of Privilege",
+      "title": "Over-privileged service identity of [name]",
+      "desc": "The cloud role, service account or database user used by the service can do far more than it needs, so one flaw exposes everything that identity can reach.",
+      "controls": [
+        "Least-privilege roles per service, reviewed regularly",
+        "Separate identities per environment and function",
+        "Alert on unusual use of service identities"
+      ],
+      "refs": [
+        "CWE-250",
+        "CWE-269"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "example": "Capital One (2019): the role available to the compromised server could list and read many S3 buckets."
+    },
+    {
+      "id": "TT-P04",
+      "category": "Elevation of Privilege",
+      "title": "Crown jewel [name] is reachable from a less-trusted zone",
+      "desc": "A business-critical component accepts traffic that crosses a trust boundary, so it is directly exposed to attacks from that zone.",
+      "controls": [
+        "Put a gateway or proxy in front and expose only needed operations",
+        "Strict input validation and authorization at the boundary",
+        "Network segmentation"
+      ],
+      "refs": [
+        "ATT&CK T1190"
+      ],
+      "likelihood": 4,
+      "impact": 5,
+      "when": {
+        "on": "isCrownJewel",
+        "inbound": {
+          "crossesBoundary": true
+        }
+      }
+    }
   ],
   "datastore": [
-    { "category": "Tampering", "title": "Unsanitized Injection Bypassing Schema Mapping Checks", "desc": "Malicious inputs overwrite existing fields or mutate underlying structures to execute unauthorized state changes." },
-    { "category": "Tampering", "title": "NoSQL Query Argument Injection via Boolean Abuses", "desc": "Passing object literals instead of scalars bypasses structure definitions, mutating state or truncating indices." },
-    { "category": "Tampering", "title": "Storage Snapshot Metadata Corruption Attack", "desc": "Adversaries overwrite unvalidated transaction header fields, corrupting index block pointers to freeze data extraction processes." },
-    { "category": "Tampering", "title": "SQL Injection via Unvalidated Filter Parameters", "desc": "Raw text concatenations on complex multi-table queries let external entities subvert programmatic evaluation trees." },
-    { "category": "Repudiation", "title": "Anonymous Mutation Records Injection", "desc": "Modifications drop directly into data tables without recording verified identity tokens profiles." },
-    { "category": "Repudiation", "title": "Absence of Write-Once Immutable Transaction Records Ledger", "desc": "Audit trails or high-value transactional records lack append-only locks constraints, allowing compromised keys to forge past historical log trails." },
-    { "category": "Repudiation", "title": "Transactional System Table Clear Down", "desc": "Administrative access tokens can purge table event logs without invoking out-of-band streaming alerts to security SIEM aggregates." },
-    { "category": "Information Disclosure", "title": "Mass Database Extraction via Blind Logical Traversal", "desc": "Deficient column-level validation allows malicious entities to perform full table scans and dump core intellectual property fields." },
-    { "category": "Information Disclosure", "title": "Plaintext Backup Snapshot Leaks to Multi-Tenant Storage Buckets", "desc": "Automated database exports write to external unencrypted file sectors, exposing historical indices to parallel multi-tenant read sweeps." },
-    { "category": "Information Disclosure", "title": "Unencrypted Backup and Core Table Log Leaks", "desc": "Disposing database snapshots to staging areas without secondary symmetric partition locks exposes entire schemas to unauthorized administrative groups." },
-    { "category": "Denial of Service", "title": "Storage Locking Starvation via Deadlock Query Insertion", "desc": "Unbounded long-running queries or malicious read locks saturate connection allocation slots, rendering persistence layers unavailable." },
-    { "category": "Denial of Service", "title": "Wildcard Query Index Exhaustion and RAM Thrashing", "desc": "Massive unindexed regular expression operations saturate persistence layer memory allocations, forcing server terminations." },
-    { "category": "Denial of Service", "title": "Storage Allocation Exhaustion via Unbounded Log Append", "desc": "Malicious client entities stream massive nested diagnostic inputs, flooding table storage space and halting database engine processes." }
+    {
+      "id": "D-PRIV-01",
+      "category": "Tampering",
+      "title": "Application connects to [name] with more rights than it needs",
+      "desc": "The application's database account can change schemas, read every table or act as administrator, so an injection flaw becomes full data compromise.",
+      "controls": [
+        "Separate accounts for migration, application and reporting",
+        "Grant only needed tables and operations",
+        "No shared admin accounts"
+      ],
+      "refs": [
+        "CWE-250",
+        "CWE-269"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "database",
+        "nosql"
+      ]
+    },
+    {
+      "id": "TT-D04",
+      "category": "Tampering",
+      "title": "[name] is directly reachable from another trust zone",
+      "desc": "The data store accepts connections across a trust boundary, so it is exposed to attackers in that zone instead of only to the application.",
+      "controls": [
+        "Only the owning service may connect (network rules, private endpoints)",
+        "Put a service with validation and authorization in front"
+      ],
+      "refs": [
+        "ATT&CK T1190",
+        "CWE-284"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "when": {
+        "inbound": {
+          "crossesBoundary": true
+        }
+      }
+    },
+    {
+      "id": "D-WRITE-01",
+      "category": "Tampering",
+      "title": "Data in [name] changed outside the application",
+      "desc": "Administrators, scripts or other services write directly to the store, bypassing validation, business rules and audit logging.",
+      "controls": [
+        "Restrict direct write access; change data through reviewed scripts",
+        "Audit all direct changes"
+      ],
+      "refs": [
+        "CWE-732"
+      ],
+      "likelihood": 2,
+      "impact": 4
+    },
+    {
+      "id": "D-CACHE-01",
+      "category": "Tampering",
+      "title": "Cache poisoning in [name]",
+      "desc": "Attackers get malicious or wrong values stored in a cache that other users or services then trust.",
+      "controls": [
+        "Include all relevant inputs in cache keys",
+        "Validate data before caching; short TTLs for user-influenced data"
+      ],
+      "refs": [
+        "CAPEC-141"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "cache"
+      ]
+    },
+    {
+      "id": "TT-D03",
+      "category": "Repudiation",
+      "title": "Changes to [name] are not audited",
+      "desc": "Changes to important data are not recorded with who made them and when, so unauthorised changes cannot be detected or attributed.",
+      "controls": [
+        "Database audit logging or change-data-capture to a protected store",
+        "Record user and time on every change"
+      ],
+      "refs": [
+        "CWE-778",
+        "OWASP A09:2021"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "when": {
+        "off": "auditLogged",
+        "anyOn": [
+          "isCrownJewel",
+          "storesPii",
+          "storesCredentials"
+        ]
+      }
+    },
+    {
+      "id": "D-AUDIT-02",
+      "category": "Repudiation",
+      "title": "Audit records in [name] can be rewritten by the people they record",
+      "desc": "Administrators or the application can update or delete audit and transaction records, so evidence can be removed.",
+      "controls": [
+        "Append-only / write-once storage for audit data",
+        "Separate ownership of audit logs from system administration"
+      ],
+      "refs": [
+        "ATT&CK T1070"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "logs"
+      ]
+    },
+    {
+      "id": "TT-D01",
+      "category": "Information Disclosure",
+      "title": "Sensitive data in [name] is not encrypted at rest",
+      "desc": "Stolen disks, snapshots, backups or replicas expose the data directly.",
+      "controls": [
+        "Storage or column-level encryption with managed keys",
+        "Encrypt backups and snapshots too"
+      ],
+      "refs": [
+        "CWE-311",
+        "OWASP A02:2021"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "when": {
+        "anyOn": [
+          "storesPii",
+          "storesCredentials",
+          "handlesSensitiveData"
+        ],
+        "off": "encryptedAtRest"
+      }
+    },
+    {
+      "id": "TT-D02",
+      "category": "Information Disclosure",
+      "title": "Passwords or secrets in [name] stored in a recoverable form",
+      "desc": "Passwords are stored in plaintext or with fast hashes, or secrets are stored reversibly, so a database leak gives attackers working credentials.",
+      "controls": [
+        "Passwords: Argon2id/bcrypt/scrypt with per-user salt",
+        "Secrets: keep in a vault; store references, not values",
+        "Rotate credentials after any exposure"
+      ],
+      "refs": [
+        "CWE-256",
+        "CWE-916"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "when": {
+        "on": "storesCredentials"
+      }
+    },
+    {
+      "id": "TT-D05",
+      "category": "Information Disclosure",
+      "title": "Storage bucket [name] is publicly accessible",
+      "desc": "An object storage bucket or blob container allows anonymous listing or reading, exposing everything in it to anyone who finds the URL.",
+      "controls": [
+        "Block public access at account level",
+        "Private endpoints and signed, expiring URLs",
+        "Automated checks for public buckets"
+      ],
+      "refs": [
+        "CWE-552",
+        "ATT&CK T1530"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "when": {
+        "subtype": "object-storage"
+      }
+    },
+    {
+      "id": "D-EXPOSED-01",
+      "category": "Information Disclosure",
+      "title": "[name] exposed to the internet without authentication",
+      "desc": "Database, search or cache servers that listen on public addresses without authentication are found by scanners within hours and copied or wiped.",
+      "controls": [
+        "Bind to private networks only; firewall rules",
+        "Always enable authentication, even internally",
+        "Continuous external exposure scanning"
+      ],
+      "refs": [
+        "CWE-306",
+        "ATT&CK T1190"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "example": "\"Meow\" attacks (2020): automated scripts wiped thousands of unsecured Elasticsearch and MongoDB databases.",
+      "subtypes": [
+        "nosql",
+        "cache",
+        "database"
+      ]
+    },
+    {
+      "id": "D-COPY-01",
+      "category": "Information Disclosure",
+      "title": "Backups, exports or test copies of [name] are less protected than production",
+      "desc": "Copies of production data in backup buckets, analytics exports or test environments lack the access controls of the original.",
+      "controls": [
+        "Encrypt and restrict backups and exports",
+        "Masked or synthetic data in test environments",
+        "Track where copies of the data go"
+      ],
+      "refs": [
+        "CWE-530"
+      ],
+      "likelihood": 3,
+      "impact": 4
+    },
+    {
+      "id": "D-RETENTION-01",
+      "category": "Information Disclosure",
+      "title": "Personal data in [name] kept longer than needed",
+      "desc": "Data that is no longer needed increases the damage of any breach and can violate data-protection law.",
+      "controls": [
+        "Retention periods per data type with automatic deletion",
+        "Minimise stored fields"
+      ],
+      "refs": [
+        "GDPR Art. 5(1)(e)"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "when": {
+        "on": "storesPii"
+      }
+    },
+    {
+      "id": "TT-D06",
+      "category": "Denial of Service",
+      "title": "Ransomware or a compromised admin deletes [name] and its backups",
+      "desc": "Attackers with administrative access encrypt or delete the data and the backups stored in the same account, making recovery impossible.",
+      "controls": [
+        "Immutable or offline backups in a separate account",
+        "MFA and separate credentials for backup administration",
+        "Regularly test restores"
+      ],
+      "refs": [
+        "ATT&CK T1486",
+        "ATT&CK T1490"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "example": "Code Spaces (2014): an attacker with access to the AWS console deleted data, machines and backups; the company shut down.",
+      "when": {
+        "on": "isCrownJewel"
+      }
+    },
+    {
+      "id": "D-DOS-01",
+      "category": "Denial of Service",
+      "title": "Expensive queries or lock contention take [name] down",
+      "desc": "Slow or deliberately heavy queries hold locks and connections so normal requests time out.",
+      "controls": [
+        "Query timeouts and connection pool limits",
+        "Indexes for user-driven searches; read replicas",
+        "Rate-limit expensive operations"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "database",
+        "nosql"
+      ]
+    },
+    {
+      "id": "D-DOS-02",
+      "category": "Denial of Service",
+      "title": "[name] runs out of storage",
+      "desc": "Unbounded writes — uploads, logs, queues that are never drained — fill the disk and stop the data store.",
+      "controls": [
+        "Quotas and size limits",
+        "Retention policies",
+        "Disk and queue-depth alerts"
+      ],
+      "refs": [
+        "CWE-770"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "queue",
+        "logs",
+        "file-share"
+      ]
+    }
   ],
   "interactor": [
-    { "category": "Spoofing", "title": "Client Session Hijacking and Cryptographic Claim Forgery", "desc": "Weak cookie protection parameters or session token generation algorithms allow thread actors to steal active administrative claims." },
-    { "category": "Spoofing", "title": "Credential Stuffing via Automated Brute-Force Replay Gates", "desc": "Lack of client-side rate controls or device fingerprinting lets rogue bots masquerade as legitimate client instances using compiled credential lists." },
-    { "category": "Spoofing", "title": "Man-In-The-Browser Client State Interception", "desc": "Malware extensions active inside the untrusted client engine intercept raw keystrokes and authentication values prior to transit encryption." },
-    { "category": "Spoofing", "title": "Session Fixation & Automated Token Replay Abuse", "desc": "Authentication endpoints failing to recycle identifier states on state upgrade allow malicious observers to pre-seed valid sessions." },
-    { "category": "Repudiation", "title": "Edge Transaction Repudiation via Missing Signature Verifications", "desc": "Operational entry vectors post execution data without passing mutual TLS constraints or non-repudiation tokens." },
-    { "category": "Repudiation", "title": "Client-Side Action Disavowal via Shared Session Identifiers", "desc": "Multi-user client systems or shared credentials let individual operators deny actions due to a lack of deterministic client audit anchors." },
-    { "category": "Information Disclosure", "title": "Client-Side Storage Scraping and Local Caching Leakage", "desc": "Sensitive operational values serialize inside vulnerable plaintext browser caches or unsecured local folder spaces." },
-    { "category": "Information Disclosure", "title": "Sensitive Operational Tokens Leaked into Web Browser DevTools Logs", "desc": "Diagnostic console tracing prints internal authentication tokens or infrastructure paths directly into client-side inspectable runtime logs." },
-    { "category": "Information Disclosure", "title": "Cross-Site Scripting (XSS) Token Extraction Loop", "desc": "Absence of strict cookie security flags allows injected scripts to parse inner DOM context and exfiltrate identity tokens." }
+    {
+      "id": "E-PHISH-01",
+      "category": "Spoofing",
+      "title": "Phishing steals [name]'s credentials or session",
+      "desc": "Fake login pages — including adversary-in-the-middle kits that relay one-time codes — capture passwords and session cookies.",
+      "controls": [
+        "Phishing-resistant MFA (FIDO2/passkeys)",
+        "Short sessions; bind sessions to device",
+        "User reporting of phishing"
+      ],
+      "refs": [
+        "ATT&CK T1566",
+        "ATT&CK T1557"
+      ],
+      "likelihood": 4,
+      "impact": 4,
+      "subtypes": [
+        "human",
+        "admin"
+      ]
+    },
+    {
+      "id": "TT-I01",
+      "category": "Spoofing",
+      "title": "Privileged account of [name] taken over (no MFA)",
+      "desc": "A privileged user signs in with a password only, so one leaked or guessed password gives an attacker administrative access.",
+      "controls": [
+        "Phishing-resistant MFA for all privileged and remote access",
+        "Privileged access workstations / just-in-time admin rights"
+      ],
+      "refs": [
+        "CWE-308"
+      ],
+      "likelihood": 4,
+      "impact": 5,
+      "example": "Change Healthcare (2024): attackers used stolen credentials on a remote-access portal that did not require MFA. Colonial Pipeline (2021): access was reportedly through a VPN account without MFA.",
+      "when": {
+        "on": "isPrivilegedUser",
+        "off": "mfaRequired"
+      }
+    },
+    {
+      "id": "E-MFA-01",
+      "category": "Spoofing",
+      "title": "MFA fatigue: [name] approves a push prompt they did not start",
+      "desc": "Attackers with a stolen password send repeated push notifications (often while posing as IT support) until the user accepts one.",
+      "controls": [
+        "Number matching or FIDO2 instead of simple push approval",
+        "Limit and alert on repeated MFA prompts"
+      ],
+      "refs": [
+        "ATT&CK T1621"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "example": "Uber (2022): a contractor accepted a push after being flooded with prompts and contacted by the attacker posing as IT.",
+      "subtypes": [
+        "human",
+        "admin"
+      ]
+    },
+    {
+      "id": "E-STUFF-01",
+      "category": "Spoofing",
+      "title": "Credential stuffing with passwords leaked elsewhere",
+      "desc": "Attackers try username/password pairs from other breaches or infostealer logs at scale; reused passwords let them in.",
+      "controls": [
+        "MFA",
+        "Breached-password checks",
+        "Rate limiting and bot detection on login"
+      ],
+      "refs": [
+        "CWE-307",
+        "ATT&CK T1110.004"
+      ],
+      "likelihood": 4,
+      "impact": 4,
+      "example": "Snowflake customer accounts (2024): attackers used credentials from infostealer malware against accounts without MFA and stole data from many companies.",
+      "subtypes": [
+        "human",
+        "admin"
+      ]
+    },
+    {
+      "id": "E-RECOVER-01",
+      "category": "Spoofing",
+      "title": "Account recovery or SMS codes used to take over [name]'s account",
+      "desc": "Weak password-reset flows, guessable security questions or SIM-swap attacks on SMS codes give attackers control of the account.",
+      "controls": [
+        "Strong reset tokens and notification on reset",
+        "Avoid SMS as the only second factor",
+        "Extra verification for recovery of privileged accounts"
+      ],
+      "refs": [
+        "CWE-640"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "human",
+        "admin"
+      ]
+    },
+    {
+      "id": "E-KEY-01",
+      "category": "Spoofing",
+      "title": "API keys or tokens of [name] stolen and reused",
+      "desc": "A partner's or client app's credentials leak (code, logs, device) and attackers call your API as that client.",
+      "controls": [
+        "Short-lived tokens (OAuth2 client credentials) instead of static keys",
+        "Bind keys to IP or mTLS certificate; per-client scopes",
+        "Monitor and rotate keys"
+      ],
+      "refs": [
+        "CWE-522",
+        "ATT&CK T1528"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "partner-system",
+        "mobile"
+      ]
+    },
+    {
+      "id": "E-VENDOR-01",
+      "category": "Spoofing",
+      "title": "Supplier or partner [name] used as a way in",
+      "desc": "Attackers compromise a vendor with access to your systems and use that trusted connection.",
+      "controls": [
+        "Least-privilege, monitored vendor access",
+        "Separate network segment for third-party access",
+        "MFA and time-limited accounts for vendors"
+      ],
+      "refs": [
+        "ATT&CK T1199"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "example": "Target (2013): attackers entered with credentials stolen from a refrigeration/HVAC contractor and reached payment systems.",
+      "subtypes": [
+        "partner-system"
+      ]
+    },
+    {
+      "id": "TT-I02",
+      "category": "Spoofing",
+      "title": "Bots pose as real users of [name] (fake sign-ups, scraping, enumeration)",
+      "desc": "Anonymous access lets automated clients create fake accounts, scrape data or test which emails and phone numbers are registered.",
+      "controls": [
+        "Rate limits and bot detection",
+        "Same response for existing and non-existing accounts",
+        "Protect sensitive business flows (sign-up, checkout)"
+      ],
+      "refs": [
+        "CWE-799",
+        "OWASP API6:2023"
+      ],
+      "likelihood": 4,
+      "impact": 3,
+      "when": {
+        "on": "unauthAccess"
+      }
+    },
+    {
+      "id": "TT-I03",
+      "category": "Spoofing",
+      "title": "Administrative access by [name] is exposed to the internet",
+      "desc": "A privileged user reaches admin functions across a trust boundary without a VPN or zero-trust gateway, so the admin login is open to the whole internet.",
+      "controls": [
+        "VPN or zero-trust access for admin interfaces",
+        "Admin endpoints on a separate host/network",
+        "MFA and IP restrictions"
+      ],
+      "refs": [
+        "ATT&CK T1133"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "when": {
+        "on": "isPrivilegedUser",
+        "off": "vpnRequired",
+        "anyFlow": {
+          "crossesBoundary": true
+        }
+      }
+    },
+    {
+      "id": "TT-I04",
+      "category": "Repudiation",
+      "title": "Actions by [name] cannot be attributed",
+      "desc": "Connections from this entity are not authenticated, so the system cannot prove who performed an action.",
+      "controls": [
+        "Authenticate connections",
+        "Record user, client and request IDs in audit logs"
+      ],
+      "refs": [
+        "CWE-778",
+        "OWASP A09:2021"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "when": {
+        "outbound": {
+          "off": "authenticated"
+        }
+      }
+    },
+    {
+      "id": "E-SHARED-01",
+      "category": "Repudiation",
+      "title": "Shared accounts make actions by [name] untraceable",
+      "desc": "Several people use the same account, so it is impossible to tell who did what.",
+      "controls": [
+        "Personal accounts only; no shared credentials",
+        "Privileged access management with individual check-out"
+      ],
+      "refs": [
+        "OWASP A09:2021"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "admin"
+      ]
+    },
+    {
+      "id": "E-DISPUTE-01",
+      "category": "Repudiation",
+      "title": "[name] disputes a transaction and there is no proof",
+      "desc": "A customer or partner denies placing an order, approving a payment or receiving data, and the system has no reliable evidence.",
+      "controls": [
+        "Signed receipts or confirmations for important transactions",
+        "Tamper-evident transaction logs with timestamps"
+      ],
+      "refs": [
+        "CWE-778"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "human",
+        "partner-system"
+      ]
+    },
+    {
+      "id": "E-DEVICE-01",
+      "category": "Information Disclosure",
+      "title": "Malware on [name]'s device steals sessions or data",
+      "desc": "Infostealers and keyloggers on user or administrator devices capture passwords, session cookies and files.",
+      "controls": [
+        "Managed, hardened devices for privileged users",
+        "Short sessions bound to device; re-authentication for sensitive actions",
+        "Endpoint detection and response"
+      ],
+      "refs": [
+        "ATT&CK T1539"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "example": "LastPass (2022): attackers installed a keylogger on a DevOps engineer's home computer via vulnerable third-party software and used the captured password to reach vault backups.",
+      "subtypes": [
+        "human",
+        "admin"
+      ]
+    },
+    {
+      "id": "E-INSIDER-01",
+      "category": "Information Disclosure",
+      "title": "Insider misuse of [name]'s legitimate access",
+      "desc": "Employees, support staff or administrators look up or export data they have access to but no business reason to see.",
+      "controls": [
+        "Least privilege and need-to-know access",
+        "Audit and review access to sensitive records",
+        "Just-in-time access for support"
+      ],
+      "refs": [
+        "OWASP A01:2021"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "admin"
+      ]
+    },
+    {
+      "id": "E-CLIENT-01",
+      "category": "Information Disclosure",
+      "title": "Sensitive data left on shared or lost devices of [name]",
+      "desc": "Cached pages, downloads and tokens in browser or app storage stay on shared, lost or stolen devices.",
+      "controls": [
+        "Cache-Control: no-store for sensitive pages",
+        "Keep tokens out of local storage; short sessions",
+        "Device encryption / mobile app data protection"
+      ],
+      "refs": [
+        "CWE-525"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "mobile",
+        "human"
+      ]
+    }
   ],
   "infrastructure": [
-    { "category": "Spoofing", "title": "Infrastructure Host Impersonation targeting [name]", "desc": "Malicious system hosts spoof media access control (MAC) or hostnames signatures to join corporate domains and bypass local policy." },
-    { "category": "Tampering", "title": "Firmware and Operating System Configuration Subversion", "desc": "Unauthorized administrative port access or lack of secure boot controls allows adversaries to manipulate firmware or overwrite local OS configurations." },
-    { "category": "Repudiation", "title": "Omission of Out-of-Band Audit Log Forwarding", "desc": "Infrastructure logs and event reports fail to forward securely to a centralized immutable SIEM server, allowing undetected modifications." },
-    { "category": "Information Disclosure", "title": "Plaintext Storage of Administrative System Configuration Secrets", "desc": "Infrastructure configs, network maps, and backup secrets reside in cleartext on storage blocks, exposing high-privilege credentials." },
-    { "category": "Denial of Service", "title": "Hypervisor Resource Saturation and Core Allocation Thrashing", "desc": "Hypervisor host fails to isolate core CPU or RAM limits, allowing neighbor compute units to exhaust system performance." },
-    { "category": "Elevation of Privilege", "title": "Remote Kernel Exploitation via Outdated Daemons (RCE)", "desc": "Vulnerabilities in unpatched kernel processes or administrative daemons enable remote execution, granting full root control." }
+    {
+      "id": "I-DEFAULT-01",
+      "category": "Spoofing",
+      "title": "Default or shared credentials on [name]",
+      "desc": "Devices, appliances and platforms shipped with default admin passwords — or one password shared across many devices — are taken over by automated scanning.",
+      "controls": [
+        "Change defaults at install; unique credentials per device",
+        "Disable unused services (telnet, default admin UI)"
+      ],
+      "refs": [
+        "CWE-1392",
+        "ATT&CK T1078.001"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "example": "Mirai (2016): malware logged into hundreds of thousands of IoT devices with default passwords and used them for record DDoS attacks.",
+      "subtypes": [
+        "iot",
+        "network-device"
+      ]
+    },
+    {
+      "id": "I-ROGUE-01",
+      "category": "Spoofing",
+      "title": "Rogue device impersonates [name]",
+      "desc": "A device spoofs this host's IP, MAC or hostname to receive traffic or join the network as a trusted machine.",
+      "controls": [
+        "Network access control (802.1X), device certificates",
+        "Alert on duplicate addresses"
+      ],
+      "refs": [
+        "ATT&CK T1557"
+      ],
+      "likelihood": 2,
+      "impact": 3
+    },
+    {
+      "id": "I-FW-01",
+      "category": "Tampering",
+      "title": "Firmware or system configuration of [name] changed without detection",
+      "desc": "Exposed management ports or missing secure boot let attackers modify firmware or configuration and persist.",
+      "controls": [
+        "Secure boot; signed firmware updates",
+        "Configuration baselines with drift detection",
+        "Restrict management access"
+      ],
+      "refs": [
+        "CWE-1326"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "iot",
+        "network-device",
+        "host"
+      ]
+    },
+    {
+      "id": "I-LOG-01",
+      "category": "Repudiation",
+      "title": "Logs from [name] are not collected centrally",
+      "desc": "Host, network and cloud control-plane logs stay where an attacker can disable or delete them.",
+      "controls": [
+        "Forward logs to a central SIEM in real time",
+        "Alert when logging is disabled or stops"
+      ],
+      "refs": [
+        "ATT&CK T1562.008",
+        "OWASP A09:2021"
+      ],
+      "likelihood": 3,
+      "impact": 3
+    },
+    {
+      "id": "TT-X01",
+      "category": "Information Disclosure",
+      "title": "Cloud instance credentials of [name] stolen via the metadata service",
+      "desc": "Code running on the host — or an SSRF flaw — reads temporary cloud credentials from the instance metadata endpoint.",
+      "controls": [
+        "Require IMDSv2 / metadata protection",
+        "Least-privilege instance roles",
+        "Block metadata access from containers that do not need it"
+      ],
+      "refs": [
+        "ATT&CK T1552.005"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "example": "Capital One (2019): credentials from the EC2 metadata service were used to read S3 data.",
+      "when": {
+        "subtype": "cloud-host"
+      }
+    },
+    {
+      "id": "I-SECRET-01",
+      "category": "Information Disclosure",
+      "title": "Secrets in plaintext on disks, images or snapshots of [name]",
+      "desc": "Configuration files, scripts, VM images and snapshots contain passwords and keys readable by anyone with access to them.",
+      "controls": [
+        "Secret manager; inject at runtime",
+        "Scan images and repositories for secrets",
+        "Encrypt disks and snapshots"
+      ],
+      "refs": [
+        "CWE-312"
+      ],
+      "likelihood": 3,
+      "impact": 4
+    },
+    {
+      "id": "I-THEFT-01",
+      "category": "Information Disclosure",
+      "title": "Lost or stolen [name] exposes its data",
+      "desc": "Laptops, devices and disks that leave the building — lost, stolen or decommissioned — still contain readable data.",
+      "controls": [
+        "Full-disk encryption",
+        "Remote wipe; secure decommissioning"
+      ],
+      "refs": [
+        "CWE-311"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "iot",
+        "host"
+      ]
+    },
+    {
+      "id": "I-AVAIL-01",
+      "category": "Denial of Service",
+      "title": "Single instance of [name] with no redundancy",
+      "desc": "One host, zone or network path failing — or being attacked — takes the whole service down.",
+      "controls": [
+        "Redundancy across zones",
+        "Health checks and automatic failover",
+        "Tested recovery procedures"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 3,
+      "impact": 4
+    },
+    {
+      "id": "I-NOISY-01",
+      "category": "Denial of Service",
+      "title": "Other workloads exhaust shared resources of [name]",
+      "desc": "Neighbouring workloads on the same host, cluster or account consume CPU, memory or quotas.",
+      "controls": [
+        "Resource limits and reservations",
+        "Separate accounts or clusters for critical workloads"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "container",
+        "cloud-host"
+      ]
+    },
+    {
+      "id": "TT-X02",
+      "category": "Elevation of Privilege",
+      "title": "Management interface of [name] reachable from an untrusted network",
+      "desc": "SSH, RDP, Kubernetes API, hypervisor or admin consoles are reachable across a trust boundary and are attacked with stolen credentials and exploits.",
+      "controls": [
+        "Management only via VPN/bastion/zero-trust access",
+        "MFA on all administrative access",
+        "Allow-list source addresses"
+      ],
+      "refs": [
+        "ATT&CK T1133",
+        "ATT&CK T1021"
+      ],
+      "likelihood": 4,
+      "impact": 5,
+      "when": {
+        "anyFlow": {
+          "crossesBoundary": true
+        }
+      }
+    },
+    {
+      "id": "I-PATCH-01",
+      "category": "Elevation of Privilege",
+      "title": "Unpatched OS or services on [name] allow remote takeover",
+      "desc": "Known vulnerabilities in the operating system or exposed services are exploited to run code with high privileges.",
+      "controls": [
+        "Patch management with SLAs",
+        "Minimise exposed services",
+        "Vulnerability scanning"
+      ],
+      "refs": [
+        "ATT&CK T1190"
+      ],
+      "likelihood": 3,
+      "impact": 5
+    },
+    {
+      "id": "I-ESCAPE-01",
+      "category": "Elevation of Privilege",
+      "title": "Container escape from [name] to the host",
+      "desc": "Privileged containers, mounted host paths or kernel flaws let code inside a container take over the host and its other containers.",
+      "controls": [
+        "No privileged containers or host mounts",
+        "Run as non-root; seccomp/AppArmor",
+        "Patch the host kernel and runtime"
+      ],
+      "refs": [
+        "ATT&CK T1611"
+      ],
+      "likelihood": 2,
+      "impact": 5,
+      "subtypes": [
+        "container"
+      ]
+    },
+    {
+      "id": "I-LATERAL-01",
+      "category": "Elevation of Privilege",
+      "title": "Flat network lets attackers move from [name] to other systems",
+      "desc": "Once one machine is compromised, nothing stops connections to databases, admin systems and other hosts.",
+      "controls": [
+        "Network segmentation and default-deny between zones",
+        "Monitor east-west traffic"
+      ],
+      "refs": [
+        "ATT&CK TA0008"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "example": "Target (2013): attackers moved from a vendor portal to point-of-sale systems inside the network."
+    }
   ],
   "flow": [
-    { "category": "Tampering", "title": "In-Transit Parameter Alteration (Man-in-the-Middle Vector)", "desc": "Adversaries manipulate intermediate routing parameters to rewrite business logic values inline during transit." },
-    { "category": "Tampering", "title": "TCP Sequence Guessing and In-Flight Packet Injection", "desc": "Unauthenticated transit tracks let local routers calculate sequence alignments, injecting forge control blocks into streaming connections." },
-    { "category": "Tampering", "title": "Routing Protocol BGP Route Poisoning Hijack", "desc": "Adversaries advertise malicious routing path paths, redirecting secure transit streams across malicious intermediate analysis infrastructure hosts." },
-    { "category": "Information Disclosure", "title": "Promiscuous Packet Sniffing over Unencrypted Networks", "desc": "Cleartext protocol communication streams pass credential arrays directly across infrastructure borders to network listeners." },
-    { "category": "Information Disclosure", "title": "TLS Session Resumption Key Leakage", "desc": "Reused session parameters expose ephemeral master secrets, allowing retrospective decryption of archived packet streams." },
-    { "category": "Information Disclosure", "title": "Data Exfiltration via Out-of-Bound DNS Tunneling Streams", "desc": "Compromised processes mask classified outbound payloads as standard infrastructure namespace resolutions, bypassing deep boundary firewalls." },
-    { "category": "Denial of Service", "title": "Transit Bandwidth Flood and TCP Window Exhaustion", "desc": "Hostile endpoints saturate line limits with request bursts, choking downstream gateway proxy capacity." },
-    { "category": "Denial of Service", "title": "Slowloris Incomplete Handshake Traffic Exhaustion", "desc": "Hostile senders initiate thousands of HTTP connection tracks but hold lines open by sending headers infinitely slowly, saturating ingress proxy sockets." },
-    { "category": "Denial of Service", "title": "TLS Renegotiation Exhaustion Attack", "desc": "Rogue clients trigger continuous asymmetric cryptographic handshake recalculations over single sockets, starving gateway CPU resources." }
+    {
+      "id": "TT-F01",
+      "category": "Information Disclosure",
+      "title": "Traffic on [name] can be read on the network",
+      "desc": "The flow is not encrypted and leaves its trust zone, so anyone on the network path can capture credentials and data.",
+      "controls": [
+        "TLS 1.2+ (or mTLS) on every connection",
+        "HSTS; disable plaintext fallbacks"
+      ],
+      "refs": [
+        "CWE-319",
+        "ATT&CK T1040"
+      ],
+      "likelihood": 4,
+      "impact": 4,
+      "when": {
+        "off": "encrypted",
+        "crossesBoundary": true
+      }
+    },
+    {
+      "id": "TT-F02",
+      "category": "Tampering",
+      "title": "Traffic on [name] modified in transit (man-in-the-middle)",
+      "desc": "Without transport encryption and integrity, an attacker on the path can alter requests and responses.",
+      "controls": [
+        "TLS with certificate validation; mTLS between services",
+        "Message signing for critical payloads"
+      ],
+      "refs": [
+        "CWE-319",
+        "ATT&CK T1557"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "when": {
+        "off": "encrypted",
+        "crossesBoundary": true
+      }
+    },
+    {
+      "id": "TT-F03",
+      "category": "Tampering",
+      "title": "Unauthenticated messages accepted on [name] across a trust boundary",
+      "desc": "The receiver cannot verify who sent the data, so attackers in the other zone can inject their own requests or messages.",
+      "controls": [
+        "Mutual TLS or signed tokens on the flow",
+        "Validate sender identity before processing"
+      ],
+      "refs": [
+        "CWE-306",
+        "CWE-345"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "when": {
+        "off": "authenticated",
+        "crossesBoundary": true
+      }
+    },
+    {
+      "id": "TT-F04",
+      "category": "Information Disclosure",
+      "title": "Sensitive data on [name] sent in cleartext",
+      "desc": "The flow connects to a component that holds personal data, credentials or other sensitive data, but it is not encrypted.",
+      "controls": [
+        "Encrypt in transit",
+        "Send only the fields that are needed"
+      ],
+      "refs": [
+        "CWE-319",
+        "OWASP A02:2021"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "when": {
+        "off": "encrypted",
+        "endpoint": {
+          "anyOn": [
+            "storesPii",
+            "storesCredentials",
+            "handlesSensitiveData"
+          ]
+        }
+      }
+    },
+    {
+      "id": "TT-F06",
+      "category": "Tampering",
+      "title": "Webhook or queue messages on [name] accepted without signature check",
+      "desc": "Anyone who can reach the endpoint or queue can post fake events (payments, status changes) because messages are not verified.",
+      "controls": [
+        "Verify HMAC signatures or use mTLS",
+        "Check timestamps/nonces to reject replays",
+        "Restrict who can publish to the queue"
+      ],
+      "refs": [
+        "CWE-345"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "webhook",
+        "messaging"
+      ],
+      "when": {
+        "subtype": [
+          "webhook",
+          "messaging"
+        ],
+        "off": "authenticated"
+      }
+    },
+    {
+      "id": "F-TLSVAL-01",
+      "category": "Tampering",
+      "title": "TLS certificate validation disabled for [name]",
+      "desc": "Client code skips certificate checks (often to work around test certificates), which silently allows man-in-the-middle attacks.",
+      "controls": [
+        "Never disable verification in production code",
+        "Use a private CA for internal certificates",
+        "Tests that fail on invalid certificates"
+      ],
+      "refs": [
+        "CWE-295"
+      ],
+      "likelihood": 3,
+      "impact": 4
+    },
+    {
+      "id": "F-REPLAY-01",
+      "category": "Tampering",
+      "title": "Captured requests on [name] can be replayed",
+      "desc": "Requests carry no timestamp, nonce or one-time token, so a captured request (payment, approval) can be sent again.",
+      "controls": [
+        "Nonces/timestamps with short validity",
+        "Idempotency keys for one-time actions"
+      ],
+      "refs": [
+        "CWE-294"
+      ],
+      "likelihood": 2,
+      "impact": 4
+    },
+    {
+      "id": "F-URL-01",
+      "category": "Information Disclosure",
+      "title": "Tokens or personal data in URLs of [name]",
+      "desc": "Values in query strings end up in proxy and server logs, browser history and Referer headers.",
+      "controls": [
+        "Send secrets in headers or POST bodies",
+        "Referrer-Policy; avoid personal data in URLs"
+      ],
+      "refs": [
+        "CWE-598"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "http"
+      ]
+    },
+    {
+      "id": "F-TLSWEAK-01",
+      "category": "Information Disclosure",
+      "title": "Outdated TLS settings on [name] allow downgrade or weak encryption",
+      "desc": "Old protocol versions and cipher suites allow downgrade attacks and remove forward secrecy, so recorded traffic may be decrypted later.",
+      "controls": [
+        "TLS 1.2+ only (prefer 1.3), ECDHE suites",
+        "Regular TLS configuration scans"
+      ],
+      "refs": [
+        "CWE-757",
+        "CWE-326"
+      ],
+      "likelihood": 2,
+      "impact": 4
+    },
+    {
+      "id": "TT-F05",
+      "category": "Denial of Service",
+      "title": "Flooding of [name] from an anonymous source",
+      "desc": "Anyone can send traffic on this flow into another trust zone, which makes request floods easy.",
+      "controls": [
+        "Rate limiting and DDoS protection at the edge",
+        "Patch servers for protocol-level DoS flaws",
+        "Autoscaling with limits"
+      ],
+      "refs": [
+        "CWE-770",
+        "ATT&CK T1498",
+        "ATT&CK T1499"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "example": "HTTP/2 Rapid Reset (2023, CVE-2023-44487): rapidly opening and cancelling streams produced record DDoS attacks against major providers.",
+      "when": {
+        "source": {
+          "on": "unauthAccess"
+        },
+        "crossesBoundary": true
+      }
+    },
+    {
+      "id": "F-SLOW-01",
+      "category": "Denial of Service",
+      "title": "Slow-request attacks hold connections on [name] open (Slowloris)",
+      "desc": "Clients send requests very slowly to occupy all connection slots on the receiving server.",
+      "controls": [
+        "Header/body timeouts and per-client connection limits",
+        "Reverse proxy or load balancer in front"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "http"
+      ]
+    },
+    {
+      "id": "F-PATH-01",
+      "category": "Denial of Service",
+      "title": "[name] depends on a single network path or provider",
+      "desc": "If the link, DNS, certificate or upstream provider fails, the flow stops and nothing takes over.",
+      "controls": [
+        "Redundant paths/providers for critical flows",
+        "Monitor certificate expiry and DNS",
+        "Timeouts, retries with backoff, circuit breakers"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 2,
+      "impact": 3
+    }
   ]
 }
