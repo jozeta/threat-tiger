@@ -6,7 +6,10 @@
 2. **Relevant for this component**: templates whose `subtypes` match what the component was recognised as from its icon and name (e.g. *API*, *object storage bucket*, *administrator*).
 3. **More threats**: everything else for that component type.
 
-Every suggestion should end in a decision: add it to the register, or mark it **Not applicable** with a reason. Reasons are stored in the model and listed in the Markdown report.
+Every suggestion should end in a decision:
+- **Add** it to the register. Added suggestions leave the list; a note shows how many were added.
+- **Ignore** it. This hides it for that component without a reason. It appears under "Hidden" with **Show again**, and as "Ignored" in Insights and the report.
+- Mark it **Not applicable** with a reason. The reason is stored in the model and listed in the Markdown report.
 
 ## Template fields
 
@@ -33,7 +36,7 @@ Every suggestion should end in a decision: add it to the register, or mark it **
 | `title` | yes | Short and concrete. `[name]` is replaced with the component's name. |
 | `desc` | yes | What happens and why it matters, in plain language. |
 | `controls` | recommended | Concrete, checkable controls. They are copied into the threat's description. |
-| `refs` | recommended | `CWE-n`, `CAPEC-n`, `ATT&CK Tnnnn[.nnn]` / `ATT&CK TAnnnn`, `OWASP APIn:2023`, `OWASP Ann:2021`, `GDPR Art. 5…`. These become links. |
+| `refs` | recommended | `CWE-n`, `CAPEC-n`, `ATT&CK Tnnnn[.nnn]` / `ATT&CK TAnnnn`, `OWASP APIn:2023`, `OWASP Ann:2021`, `OWASP LLMnn:2025`, `OWASP Mn:2024`, `OWASP CICD-SEC-n`, `OWASP Knn:2022`, `RFC n`, `PCI DSS …`, `GDPR Art. 5…`. These become links. |
 | `example` | optional | A **publicly documented** incident, with year. Leave it out rather than guess. |
 | `likelihood`, `impact` | optional | 1–5. These pre-fill the threat dialog and "Add all". |
 | `subtypes` | optional | Relevance hints (see the list below). |
@@ -57,8 +60,10 @@ All keys inside one object must hold.
 **Switches:** `encrypted`, `authenticated` (flows) · `runAsAdmin`, `loggingEnabled`, `handlesSensitiveData`, `isCrownJewel` (processes) · `auditLogged`, `storesCredentials`, `storesPii`, `encryptedAtRest`, `handlesSensitiveData`, `isCrownJewel` (data stores) · `unauthAccess`, `isPrivilegedUser`, `mfaRequired`, `vpnRequired` (external entities).
 
 **Subtypes** are inferred from the icon and from keywords in the name and notes:
-- **Components:** `web`, `api`, `identity`, `ci-cd`, `serverless`, `container`, `database`, `nosql`, `object-storage`, `cache`, `queue`, `file-share`, `secrets`, `logs`, `human`, `admin`, `partner-system`, `mobile`, `iot`, `cloud-host`, `host`, `network-device`, `email`.
-- **Flows**, from the name and ports: `webhook`, `messaging`, `http`, `remote-admin`.
+- **Components:** `web`, `api`, `graphql`, `identity`, `ci-cd`, `serverless`, `container`, `database`, `nosql`, `object-storage`, `cache`, `queue`, `file-share`, `secrets`, `logs`, `llm`, `payment`, `human`, `admin`, `partner-system`, `mobile`, `iot`, `cloud-host`, `host`, `network-device`, `email`, `dns`, `cdn`, `vpn`.
+- **Flows**, from the name and ports: `webhook`, `messaging`, `http`, `remote-admin`, `identity`, `email`, `database`.
+
+The **Component Label** field suggests names per component type (`NAME_SUGGESTIONS` in `threat-tiger.html`). They are chosen so that the engine recognises them; each suggestion shows the subtype it maps to.
 
 Conditions from imported template files are sanitised: unknown keys are dropped, and nothing is ever executed.
 
@@ -78,3 +83,18 @@ The threats were chosen to be **concrete, current and actionable**. Each one say
 - **Out of scope for most application teams.** BGP route hijacking: the relevant control, TLS certificate validation, is covered by its own flow threat.
 - **Duplicates.** Two separate SQL injection and two separate command injection entries were merged.
 - **Too generic to act on.** Text that restated a STRIDE category without a concrete attack or control.
+
+## 1.10.0 additions
+
+The library grew from 86 to 148 threats, mostly tied to specific kinds of components:
+- **AI / LLM services and RAG stores:** OWASP Top 10 for LLM Applications 2025 — prompt injection, sensitive information disclosure, excessive agency, improper output handling, system prompt leakage, unbounded consumption, and vector/RAG poisoning.
+- **Payments:** client-side price tampering, card data in logs or storage (PCI DSS), and card testing.
+- **GraphQL:** query depth and complexity DoS, and introspection.
+- **Web:** CORS, open redirects, clickjacking, WebSocket hijacking, and HTTP request smuggling.
+- **Identity:** OAuth/OIDC (RFC 9700), forged SAML assertions, help-desk social engineering, consent phishing, and Kerberoasting.
+- **CI/CD:** OWASP Top 10 CI/CD Security Risks — poisoned pipeline execution, secrets in pipelines, and dependency confusion.
+- **Mobile:** OWASP Mobile Top 10 2024. **IoT:** cloned device identities, unsigned firmware, and debug ports. **Kubernetes:** OWASP Kubernetes Top 10 — RBAC and secrets.
+- **Edge and cloud:** exploited VPN appliances, DNS hijacking and subdomain takeover, CDN cache deception, leaked cloud keys, public snapshots, and DDoS amplification.
+- **Data:** queues, secrets stores, log stores, search indexes and file shares.
+
+New verified examples: tj-actions/changed-files 2025, CircleCI 2023, MGM Resorts 2023, Ivanti Connect Secure 2024, Citrix Bleed 2023, GitHub memcached DDoS 2018, Bing Chat system prompt 2023, Exchange ProxyLogon 2021, Golden SAML (SolarWinds campaign), and dependency confusion 2021.

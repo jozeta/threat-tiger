@@ -249,7 +249,7 @@ test('icon recognition: variants match, look-alike names do not, and per-type me
     partner: iconSubtypesFor('bi-cloud-arrow-up-fill', 'interactor'),
   }));
   expect(r).toEqual({
-    windowsOs: ['host'], windowStack: ['web'], sdk: ['api'], dbLock: ['database'], dns: ['network-device'],
+    windowsOs: ['host'], windowStack: ['web'], sdk: ['api'], dbLock: ['database'], dns: ['dns', 'network-device'],
     cpuHost: ['host'], cpuIot: ['iot'], objectStore: ['object-storage'], partner: ['partner-system'],
   });
 });

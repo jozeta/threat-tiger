@@ -3,6 +3,24 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.10.0 — unreleased
+
+### Threat suggestions
+- **Added suggestions leave the list**; a note shows how many are already in the register.
+- **Ignore** button on every suggestion: hides it for that component without a reason; hidden ones are listed under "Hidden" with **Show again**, and counted as "Ignored" in Insights and the Markdown report. "Not applicable…" (with a reason) remains for recorded decisions.
+- **62 more threats (148 in total)**, mostly specific to what a component is recognised as: AI/LLM services and RAG stores (OWASP LLM Top 10 2025), payments (PCI DSS), GraphQL, web (CORS, open redirect, clickjacking, WebSocket hijacking, request smuggling), identity (OAuth/OIDC per RFC 9700, SAML, help-desk social engineering, consent phishing, Kerberoasting), CI/CD (OWASP CI/CD Top 10), mobile (OWASP Mobile Top 10 2024), IoT, Kubernetes (OWASP K8s Top 10), edge/VPN appliances, DNS, CDN, cloud keys and snapshots, queues, secrets stores, logs, search, file shares and email. New verified examples include tj-actions/changed-files 2025, CircleCI 2023, MGM Resorts 2023, Ivanti 2024, Citrix Bleed 2023 and the 2018 GitHub memcached DDoS.
+- **New recognised subtypes** from icon and name: AI / LLM, payment, GraphQL, DNS, CDN, VPN; data flows are additionally recognised as identity, email or database traffic (also from well-known ports).
+- References link to the OWASP LLM, Mobile, CI/CD and Kubernetes projects, RFCs and PCI DSS.
+
+### Model checks (11 new)
+- External entity connected directly to a data store (DFD rule), entity-to-entity and store-to-store flows, flows that loop back to their source, duplicate flows in the same direction, default names left in place, crown jewels without threats, threats marked mitigated without a mitigation description, threats without a description, data stores that are only written or only read, inconsistent sensitive-data switches, empty trust zones, and models with no trust boundaries at all.
+
+### Component Label autosuggest
+- Clicking the **Component Label** field shows a list of typical names for the selected item's type (process, data store, external entity, infrastructure, data flow, trust zone/line); typing filters the list (arrow keys + Enter, or click). Each name shows what the threat engine will recognise it as, so picking e.g. "S3 bucket" immediately brings bucket threats. Free text still works; a pick is one undo step.
+
+### Fixed
+- Name recognition: "Authentication service" is recognised as identity; a payment service is no longer tagged as a third party; "Oracle WebLogic" (an app server) is no longer taken for a database.
+
 ## 1.9.1 — unreleased (branch `audit-fixes`)
 
 ### Changed
