@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-0RvqOOaqRMwSOrbqWhqNn/NbOs6xAJc5XP+t9O3mWkM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-DAl4uBey+FafUQzuP/pzkL5YLFtKOWJ1fqgpj5gAVh4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
     <link href="vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css" rel="stylesheet">
@@ -660,6 +660,9 @@
         .flow-label-fo, .flow-label-fo * { pointer-events: none; }
         .flow-label-fo .rounded, .flow-label-fo .rounded * { pointer-events: auto; cursor: pointer; }
         .badge-fo { pointer-events: none; }
+        /* Trust zones: only the border band and the name label are grab handles. */
+        .zone-hit-border { fill: none; stroke: transparent; stroke-width: 12px; pointer-events: stroke; cursor: move; }
+        .zone-hit-label { fill: transparent; pointer-events: all; cursor: move; }
         .badge-fo > div { pointer-events: auto; }
         @media print { .flow-hit-area { display: none; } }
 
@@ -3261,7 +3264,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.5.1';
+        const APP_VERSION = '1.5.2';
         const SCHEMA_VERSION = 1;
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
         const LEDGER_PAGE_SIZE = 200;       // PERF-003: rows rendered per page
@@ -6144,7 +6147,16 @@
                 if (bw < 5 || bh < 5) return;
                 this.state.selectedElementIds = []; this.state.selectedFlowId = null;
                 this.state.elements.forEach(el => {
-                    if (bx <= el.x + (el.width || 240) && bx + bw >= el.x && by <= el.y + (el.height || 80) && by + bh >= el.y) this.state.selectedElementIds.push(el.id);
+                    let x1 = el.x, y1 = el.y, x2 = el.x + (el.width || 240), y2 = el.y + (el.height || 80);
+                    if (el.type === 'boundary_line') {   // a line's extent, not a default box at its start point
+                        x1 = Math.min(el.x, el.x2); x2 = Math.max(el.x, el.x2); y1 = Math.min(el.y, el.y2); y2 = Math.max(el.y, el.y2);
+                    }
+                    const overlaps = bx <= x2 && bx + bw >= x1 && by <= y2 && by + bh >= y1;
+                    const encloses = bx <= x1 && bx + bw >= x2 && by <= y1 && by + bh >= y2;
+                    // Containers (zones, swimlanes) are selected only when the box fully encloses them,
+                    // so a box drawn inside a zone selects the components, not the zone.
+                    const isContainer = el.type === 'boundary' || el.type === 'swimlane';
+                    if (isContainer ? encloses : overlaps) this.state.selectedElementIds.push(el.id);
                 });
                 this.refreshAppViewVisualWorkspace();
             }
@@ -7196,8 +7208,20 @@
                     rect.setAttribute('stroke', b.isDisabled ? '#6c757d' : '#dc3545');
                     rect.setAttribute('stroke-dasharray', '6,4'); rect.setAttribute('class', 'node-shape-rect');
                     rect.setAttribute('rx', '8'); rect.setAttribute('ry', '8'); g.appendChild(rect);
+                    // Zones are grabbed by their border or label only, so clicks inside a zone reach the canvas
+                    // (box-select the components inside it) instead of picking up the whole zone.
+                    rect.style.pointerEvents = 'none';
+                    const hitBorder = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    hitBorder.setAttribute('width', b.width); hitBorder.setAttribute('height', b.height);
+                    hitBorder.setAttribute('rx', '8'); hitBorder.setAttribute('ry', '8');
+                    hitBorder.setAttribute('class', 'zone-hit-border'); g.appendChild(hitBorder);
+                    const labelHit = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                    labelHit.setAttribute('x', '4'); labelHit.setAttribute('y', '8'); labelHit.setAttribute('height', '20');
+                    labelHit.setAttribute('width', String(Math.min(b.width - 8, toText(b.name).length * 7.5 + 14)));
+                    labelHit.setAttribute('class', 'zone-hit-label'); g.appendChild(labelHit);
 
                     const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                    txt.style.pointerEvents = 'none';
                     txt.setAttribute('x', '10'); txt.setAttribute('y', '22');
                     txt.setAttribute('fill', b.isDisabled ? '#6c757d' : '#b70918'); txt.setAttribute('font-size', '11px'); txt.setAttribute('font-weight', 'bold');
                     txt.textContent = b.name.toUpperCase(); g.appendChild(txt);

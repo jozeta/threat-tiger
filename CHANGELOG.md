@@ -3,6 +3,15 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.5.2 — unreleased (branch `audit-fixes`)
+
+### Changed
+- **Trust zones are grabbed by their border or name label** (12 px band along the edge). Clicking or dragging inside a zone now reaches the canvas, so you can box-select the components inside it.
+
+### Fixed
+- Box selection selected every zone or swimlane the box touched; containers are now selected only when the box fully encloses them.
+- Box selection used a default 240×80 box at a trust boundary line's start point instead of the line's real extent.
+
 ## 1.5.1 — unreleased (branch `audit-fixes`)
 
 ### Fixed
