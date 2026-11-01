@@ -3,6 +3,14 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.13.1
+
+### Fixed
+- The printed report no longer shows the main menu in the top-right corner: the menu closes before printing starts, and menus, notifications and dialogs are hidden on paper.
+
+### Added
+- The printed report includes **mitigations**: each threat lists its linked mitigations with status and owner ("Mitigations (1/2 done)"). A **Mitigations** section on its own page lists every mitigation with its status, owner, the threats it covers and its ticket link. The report also prints when a model has mitigations but no threats yet.
+
 ## 1.13.0
 
 ### Threat library: 244 → 601 threats

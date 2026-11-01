@@ -19,7 +19,43 @@ test('Print report triggers the browser print dialog', async ({ page }) => {
   await openApp(page, { session: demoSession() });
   await page.evaluate(() => { window.__printed = 0; window.print = () => { window.__printed++; }; });
   await clickControl(page, '#btn-print-report');
-  expect(await page.evaluate(() => window.__printed)).toBe(1);
+  await expect.poll(() => page.evaluate(() => window.__printed)).toBe(1);   // printing starts after the menu has closed
+});
+
+test('printed report: menu is closed and hidden, mitigations appear per threat and as their own section', async ({ page }) => {
+  const s = demoSession((m) => {
+    m.mitigations = [
+      { id: 'mit-001', title: 'Enforce TLS <b>1.2</b>', desc: 'All endpoints', status: 'Implemented', owner: 'Ops', ticketUrl: 'https://example.com/T-1' },
+      { id: 'mit-002', title: 'WAF rules', desc: '', status: 'Proposed', owner: '', ticketUrl: '' },
+    ];
+    m.threats[0].mitigationIds = ['mit-001', 'mit-002'];
+    m.threats[1].mitigationIds = ['mit-001'];
+  });
+  await openApp(page, { session: s });
+  await page.evaluate(() => { window.print = () => { window.__menuOpen = !!document.querySelector('.dropdown-menu.show'); window.dispatchEvent(new Event('beforeprint')); window.__printed = true; }; });
+  await page.click('#btn-main-menu');
+  await page.click('#btn-print-report');
+  await page.waitForFunction(() => window.__printed);
+  expect(await page.evaluate(() => window.__menuOpen)).toBe(false);
+  await page.emulateMedia({ media: 'print' });
+  await page.click('#btn-main-menu', { force: true }).catch(() => {});   // even an open menu must not print
+  expect(await page.evaluate(() => [...document.querySelectorAll('.dropdown-menu, #app-toast-container')].every((x) => getComputedStyle(x).display === 'none'))).toBe(true);
+  const r = await page.evaluate(() => {
+    const rpt = document.getElementById('print-threat-report');
+    return {
+      perThreat: [...rpt.querySelectorAll('.ptr-card')].map((c) => [...c.querySelectorAll('.ptr-mitlist li')].length),
+      label: rpt.querySelector('.ptr-mitlist-label').textContent,
+      rows: [...rpt.querySelectorAll('#ptr-mitigations tbody tr')].map((tr) => [...tr.cells].map((td) => td.textContent.trim())),
+      title: rpt.querySelector('#ptr-mitigations .ptr-section-title').textContent,
+      injected: !!rpt.querySelector('#ptr-mitigations b'),
+    };
+  });
+  expect(r.perThreat.slice(0, 3)).toEqual([2, 1, 0]);
+  expect(r.label).toBe('Mitigations (1/2 done)');
+  expect(r.title).toContain('1 of 2 implemented or verified');
+  expect(r.rows[0]).toEqual(['mit-001', 'Enforce TLS <b>1.2</b>All endpoints', 'Implemented', 'Ops', `${s.threats[0].id}, ${s.threats[1].id}`, 'https://example.com/T-1']);
+  expect(r.rows[1]).toEqual(['mit-002', 'WAF rules', 'Proposed', '—', s.threats[0].id, '—']);
+  expect(r.injected).toBe(false);
 });
 
 test('Mermaid export: shapes, zones, flows, escaping', async ({ page }) => {

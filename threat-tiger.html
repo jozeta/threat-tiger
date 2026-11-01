@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-K/bXZBNcvmaG5i4jeMAC6V4LoV/hAUk7DMSzPcoIMZs='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xZohlg/eQuV5kyFIa1oT1E4VK7eYS4bLiZoxqLWy/Yo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1026,6 +1026,81 @@
             #tab-panel-register .table-responsive,
             #table-threat-register {
                 display: none !important;
+            }
+
+            /* Menus, notifications and dialogs never belong on paper (the menu can still be open when printing starts) */
+            .dropdown-menu,
+            #btn-main-menu,
+            #app-toast-container,
+            .toast,
+            .modal,
+            .modal-backdrop,
+            .tooltip,
+            .popover {
+                display: none !important;
+            }
+
+            /* Mitigations in the printed report */
+            .ptr-mitlist-block {
+                margin-top: 6px !important;
+                border-top: 1px solid #cfe2ff !important;
+                padding: 5px 7px !important;
+                background: #f5f9ff !important;
+                border-radius: 4px !important;
+                white-space: normal !important;
+            }
+
+            .ptr-mitlist-label,
+            .ptr-section-title {
+                font-size: 7.5px !important;
+                font-weight: 700 !important;
+                text-transform: uppercase !important;
+                letter-spacing: 0.05em !important;
+                color: #0a58ca !important;
+                display: block !important;
+                margin-bottom: 2px !important;
+            }
+
+            .ptr-mitlist {
+                margin: 0 !important;
+                padding-left: 14px !important;
+                font-size: 9px !important;
+                color: #212529 !important;
+            }
+
+            .ptr-mit-status {
+                font-size: 8px !important;
+                font-weight: 700 !important;
+                color: #6c757d !important;
+            }
+
+            .ptr-mit-status.ptr-mit-done {
+                color: #1e8449 !important;
+            }
+
+            .ptr-section {
+                break-before: page !important;
+                page-break-before: always !important;
+                white-space: normal !important;
+            }
+
+            .ptr-section-title {
+                font-size: 12px !important;
+                color: #1a1a2e !important;
+                border-bottom: 2.5px solid #1a1a2e !important;
+                padding-bottom: 4px !important;
+                margin-bottom: 10px !important;
+            }
+
+            .ptr-mit-table td,
+            .ptr-mit-table th {
+                font-size: 9px !important;
+                vertical-align: top !important;
+                text-align: left !important;
+            }
+
+            .ptr-mit-table th {
+                background: #f1f3f5 !important;
             }
 
             /* Show the report container */
@@ -3435,7 +3510,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.13.0';
+        const APP_VERSION = '1.13.1';
         const SCHEMA_VERSION = 1;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
@@ -5139,8 +5214,9 @@
                 const rpt = document.getElementById('print-threat-report');
                 if (!rpt) return;
 
-                const threats = this.state.threats;
-                if (!threats || threats.length === 0) {
+                const threats = this.state.threats || [];
+                const mitigations = this.state.mitigations || [];
+                if (!threats.length && !mitigations.length) {
                     rpt.style.display = 'none';
                     return;
                 }
@@ -5187,6 +5263,13 @@
                         mitigationHtml = `<div class="ptr-partial-block"><span class="ptr-partial-label">◑ Partial Mitigation Notes</span><div class="ptr-partial-text">${this.escapeHtml(t.mitigationExplanation)}</div></div>`;
                     }
 
+                    const linked = (t.mitigationIds || []).map(id => this.mitigationById(id)).filter(Boolean);
+                    const linkedDone = linked.filter(m => MITIGATION_DONE.includes(m.status)).length;
+                    const mitListHtml = linked.length
+                        ? `<div class="ptr-mitlist-block"><span class="ptr-mitlist-label">Mitigations (${linkedDone}/${linked.length} done)</span><ul class="ptr-mitlist">${linked.map(m =>
+                            `<li><strong>${esc(m.id)}</strong> ${esc(m.title)} <span class="ptr-mit-status${MITIGATION_DONE.includes(m.status) ? ' ptr-mit-done' : ''}">${esc(m.status)}</span>${m.owner ? ` · ${esc(m.owner)}` : ''}</li>`).join('')}</ul></div>`
+                        : '';
+
                     cardsHtml += `
                         <div class="ptr-card">
                             <div class="ptr-card-head">
@@ -5217,16 +5300,34 @@
                                 </div>
                             </div>
                             ${descHtml}
+                            ${mitListHtml}
                             ${mitigationHtml}
                         </div>`;
                 });
 
+                // All mitigations, with the threats each one covers.
+                let mitSectionHtml = '';
+                if (mitigations.length) {
+                    const done = mitigations.filter(m => MITIGATION_DONE.includes(m.status)).length;
+                    const rows = mitigations.map(m => {
+                        const covered = this.threatsCoveredBy(m.id).map(t => esc(t.id)).join(', ') || '—';
+                        const ticket = m.ticketUrl ? esc(m.ticketUrl) : '';
+                        return `<tr><td>${esc(m.id)}</td><td><strong>${esc(m.title)}</strong>${m.desc ? `<div>${esc(m.desc)}</div>` : ''}</td>`
+                            + `<td><span class="ptr-mit-status${MITIGATION_DONE.includes(m.status) ? ' ptr-mit-done' : ''}">${esc(m.status)}</span></td>`
+                            + `<td>${esc(m.owner) || '—'}</td><td>${covered}</td><td>${ticket || '—'}</td></tr>`;
+                    }).join('');
+                    mitSectionHtml = `<div class="ptr-section" id="ptr-mitigations"><span class="ptr-section-title">Mitigations &mdash; ${done} of ${mitigations.length} implemented or verified</span>`
+                        + `<table class="ptr-mit-table"><colgroup><col style="width:9%"><col style="width:37%"><col style="width:11%"><col style="width:12%"><col style="width:13%"><col style="width:18%"></colgroup>`
+                        + `<thead><tr><th>ID</th><th>Mitigation</th><th>Status</th><th>Owner</th><th>Threats</th><th>Ticket</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+                }
+
                 rpt.innerHTML = `
                     <div class="ptr-header">
                         <h2>Threat Register Report &mdash; ${this.escapeHtml(projectTitle)}</h2>
-                        <span>Scope: ${this.escapeHtml(scope)} &nbsp;|&nbsp; ${threats.length} threat(s) &nbsp;|&nbsp; ${now}</span>
+                        <span>Scope: ${this.escapeHtml(scope)} &nbsp;|&nbsp; ${threats.length} threat(s) &nbsp;|&nbsp; ${mitigations.length} mitigation(s) &nbsp;|&nbsp; ${now}</span>
                     </div>
-                    ${cardsHtml}`;
+                    ${cardsHtml}
+                    ${mitSectionHtml}`;
 
                 rpt.style.display = 'block';
             }
@@ -5503,7 +5604,12 @@
                 document.getElementById('btn-canvas-zoom-out').addEventListener('click', () => { this.zoomScale = Math.max(this.zoomScale - 0.1, MIN_ZOOM); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-reset').addEventListener('click', () => this.zoomToFit());
                 document.getElementById('btn-canvas-save-png').addEventListener('click', () => this.exportCanvasAsPng());
-                document.getElementById('btn-print-report').addEventListener('click', () => window.print());
+                document.getElementById('btn-print-report').addEventListener('click', () => {
+                    // Close the menu first: print() blocks, so an open dropdown would otherwise end up on paper.
+                    const menuBtn = document.getElementById('btn-main-menu');
+                    if (menuBtn && window.bootstrap) bootstrap.Dropdown.getOrCreateInstance(menuBtn).hide();
+                    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+                });
                 document.getElementById('btn-export-mermaid').addEventListener('click', () => this.exportMermaidFile());
                 const optNe = document.getElementById('opt-view-ne-iso');
                 const optNw = document.getElementById('opt-view-nw-iso');
