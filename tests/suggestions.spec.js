@@ -203,3 +203,53 @@ test('templates editor keeps references, controls and conditions when the text i
   });
   expect(r).toEqual({ desc: 'Edited description', refs: ['CWE-552', 'ATT&CK T1530', 'CAPEC-1'], when: { subtype: 'object-storage' }, edited: true, controls: 3 });
 });
+
+test('icon dropdown lists icons with tailored threat suggestions first', async ({ page }) => {
+  const demo = demoSession();
+  await openApp(page, { session: demo });
+  const check = async (type) => {
+    const id = demo.elements.find((e) => e.type === type).id;
+    await page.evaluate((i) => { app.state.selectedElementIds = [i]; app.state.selectedFlowId = null; app.refreshAppViewVisualWorkspace(); }, id);
+    return page.evaluate((libraryKey) => {
+      const groups = [...document.querySelectorAll('#props-input-icon optgroup')].map((g) => g.label);
+      const mapped = [...document.querySelectorAll('#icon-group-mapped option')].map((o) => o.value);
+      const wanted = app.templateSubtypesFor(libraryKey);
+      const type = app.state.elements.find((e) => e.id === app.state.selectedElementIds[0]).type;
+      const allMapped = mapped.every((v) => iconSubtypesFor(v, type).some((s) => wanted.has(s)));
+      const notMappedLater = [...document.querySelectorAll('#props-input-icon optgroup:not(#icon-group-mapped) option')]
+        .every((o) => !iconSubtypesFor(o.value, type).some((s) => wanted.has(s)));
+      return { first: groups[0] === 'Current' ? groups[1] : groups[0], mapped, allMapped, notMappedLater };
+    }, type);
+  };
+  const ds = await check('datastore');
+  expect(ds.first).toBe('With tailored threat suggestions');
+  expect(ds.mapped).toEqual(expect.arrayContaining(['bi-bucket', 'bi-database', 'bi-memory', 'bi-inboxes']));
+  expect(ds.mapped).not.toContain('bi-sd-card');
+  expect(ds.allMapped && ds.notMappedLater).toBe(true);
+  const proc = await check('process');
+  expect(proc.mapped).toEqual(expect.arrayContaining(['bi-globe', 'bi-git']));
+  expect(proc.mapped).not.toContain('bi-cpu');
+  expect(proc.allMapped && proc.notMappedLater).toBe(true);
+  const ent = await check('interactor');
+  expect(ent.mapped).toEqual(expect.arrayContaining(['bi-person-gear', 'bi-building', 'bi-phone']));
+  expect(ent.allMapped && ent.notMappedLater).toBe(true);
+});
+
+test('icon recognition: variants match, look-alike names do not, and per-type meanings apply', async ({ page }) => {
+  await openApp(page);
+  const r = await page.evaluate(() => ({
+    windowsOs: iconSubtypesFor('bi-windows', 'infrastructure'),
+    windowStack: iconSubtypesFor('bi-window-stack', 'process'),
+    sdk: iconSubtypesFor('bi-braces-asterisk', 'process'),
+    dbLock: iconSubtypesFor('bi-database-lock', 'datastore'),
+    dns: iconSubtypesFor('bi-globe2', 'process'),
+    cpuHost: iconSubtypesFor('bi-cpu', 'infrastructure'),
+    cpuIot: iconSubtypesFor('bi-cpu', 'interactor'),
+    objectStore: iconSubtypesFor('bi-archive-fill', 'datastore'),
+    partner: iconSubtypesFor('bi-cloud-arrow-up-fill', 'interactor'),
+  }));
+  expect(r).toEqual({
+    windowsOs: ['host'], windowStack: ['web'], sdk: ['api'], dbLock: ['database'], dns: ['network-device'],
+    cpuHost: ['host'], cpuIot: ['iot'], objectStore: ['object-storage'], partner: ['partner-system'],
+  });
+});

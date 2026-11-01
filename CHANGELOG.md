@@ -3,6 +3,15 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.9.1 — unreleased (branch `audit-fixes`)
+
+### Changed
+- The **Component Subtype Graphic Icon** dropdown lists icons with tailored threat suggestions first, in a group "With tailored threat suggestions", each labelled with what it unlocks (e.g. "Object storage bucket — object storage bucket threats"). Choosing one of these makes the matching threats appear under "Relevant for this …" in Threat Templates.
+
+### Fixed
+- Icon recognition matched look-alike names ("bi-windows" counted as a web app, "bi-braces-asterisk" as NoSQL); entries now match only the icon and its variants.
+- Icons reused with different meanings per component type are recognised correctly (e.g. the CPU icon is an IoT device for external entities, a host for infrastructure; the archive icon is object storage for data stores; the globe-2 icon is a DNS server, not a web app). Several original icons that were not recognised (cache, queue, time-series and graph databases, admin shells, partner API clients, wearables) now are.
+
 ## 1.9.0 — unreleased (branch `audit-fixes`)
 
 ### Threat library (rewritten from research)

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-mtGvzD8NlLoZWp3UFmmGqQjaT2aKYu03CFCfzqZp+Y0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-+qYnvG22v80pvwS1sqdHBfkMRsW0ACauAsz+SftsYYI='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
     <link href="vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css" rel="stylesheet">
@@ -3328,7 +3328,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.9.0';
+        const APP_VERSION = '1.9.1';
         const SCHEMA_VERSION = 1;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
@@ -3408,22 +3408,53 @@
             iot: 'IoT / embedded device', 'cloud-host': 'cloud host', host: 'server / host', 'network-device': 'network device',
             email: 'email system', webhook: 'webhook', messaging: 'messaging', http: 'HTTP', 'remote-admin': 'remote administration'
         };
-        /** Icon -> subtypes (prefix match, first match wins). */
+        /** Icon -> subtypes. An entry matches the icon itself or its variants ("bi-database" matches "bi-database-lock",
+         *  not "bi-databases"); the first match wins, so specific entries come first. */
         const ICON_SUBTYPES = [
-            ['bi-bucket', ['object-storage']], ['bi-database', ['database']], ['bi-braces', ['nosql']], ['bi-inboxes', ['queue']],
-            ['bi-arrow-left-right', ['queue']], ['bi-memory', ['cache']], ['bi-safe', ['secrets']], ['bi-key', ['secrets']],
-            ['bi-folder', ['file-share']], ['bi-archive', ['file-share']], ['bi-person-badge', ['identity']], ['bi-patch-check', ['identity']],
+            ['bi-bucket', ['object-storage']], ['bi-braces-asterisk', ['api']], ['bi-database', ['database']], ['bi-braces', ['nosql']],
+            ['bi-inboxes', ['queue']], ['bi-arrow-left-right', ['queue']], ['bi-memory', ['cache']],
+            ['bi-safe', ['secrets']], ['bi-safe2', ['secrets']], ['bi-key', ['secrets']],
+            ['bi-folder', ['file-share']], ['bi-folder2', ['file-share']], ['bi-folder2-open', ['file-share']], ['bi-archive', ['file-share']], ['bi-person-badge', ['identity']], ['bi-patch-check', ['identity']],
             ['bi-shield-shaded', ['identity']], ['bi-git', ['ci-cd']], ['bi-github', ['ci-cd']], ['bi-gitlab', ['ci-cd']],
-            ['bi-gear-wide-connected', ['ci-cd']], ['bi-lightning', ['serverless']], ['bi-box', ['container']], ['bi-grid-3x3-gap', ['container']],
-            ['bi-layers', ['container']], ['bi-globe', ['web']], ['bi-window', ['web']], ['bi-browser', ['web']], ['bi-router-fill', ['api', 'network-device']],
-            ['bi-router', ['network-device']], ['bi-signpost', ['network-device']], ['bi-bezier', ['network-device']], ['bi-bricks', ['network-device']],
-            ['bi-hdd-network', ['network-device']], ['bi-ethernet', ['network-device']], ['bi-wifi', ['network-device']],
-            ['bi-envelope', ['email']], ['bi-cloud', ['cloud-host']], ['bi-phone', ['mobile']], ['bi-tablet', ['mobile']],
+            ['bi-gear-wide-connected', ['ci-cd']], ['bi-lightning', ['serverless']], ['bi-lightning-charge', ['serverless']],
+            ['bi-box', ['container']], ['bi-box-seam', ['container']], ['bi-grid-3x3-gap', ['container']], ['bi-layers', ['container']],
+            ['bi-globe2', ['network-device']], ['bi-globe', ['web']], ['bi-window', ['web']], ['bi-window-stack', ['web']],
+            ['bi-browser-chrome', ['web']], ['bi-browser-edge', ['web']], ['bi-browser-firefox', ['web']], ['bi-browser-safari', ['web']],
+            ['bi-router-fill', ['api', 'network-device']], ['bi-router', ['network-device']], ['bi-signpost-split', ['network-device']],
+            ['bi-bezier2', ['network-device']], ['bi-bricks', ['network-device']], ['bi-hdd-network', ['network-device']],
+            ['bi-ethernet', ['network-device']], ['bi-wifi', ['network-device']],
+            ['bi-envelope', ['email']], ['bi-envelope-at', ['email']], ['bi-cloud', ['cloud-host']], ['bi-amazon', ['cloud-host']],
+            ['bi-microsoft', ['cloud-host']], ['bi-google', ['cloud-host']],
+            ['bi-phone', ['mobile']], ['bi-tablet', ['mobile']], ['bi-android', ['mobile']], ['bi-android2', ['mobile']], ['bi-smartwatch', ['mobile']],
             ['bi-person-gear', ['admin', 'human']], ['bi-person-lock', ['admin', 'human']], ['bi-person', ['human']], ['bi-people', ['human']],
             ['bi-headset', ['admin', 'human']], ['bi-building', ['partner-system']], ['bi-bank', ['partner-system']], ['bi-shop', ['partner-system']],
-            ['bi-credit-card', ['partner-system']], ['bi-truck', ['iot']], ['bi-cpu', ['host']], ['bi-server', ['host']], ['bi-hdd-rack', ['host']],
-            ['bi-hdd-stack', ['host']], ['bi-motherboard', ['host']], ['bi-activity', ['logs']]
+            ['bi-credit-card', ['partner-system']], ['bi-credit-card-2-back', ['partner-system']], ['bi-paypal', ['partner-system']],
+            ['bi-truck', ['iot']], ['bi-printer', ['iot']], ['bi-camera-video', ['iot']], ['bi-telephone', ['iot']], ['bi-bluetooth', ['iot']],
+            ['bi-usb-drive', ['iot']], ['bi-cpu', ['host']], ['bi-server', ['host']], ['bi-hdd-rack', ['host']], ['bi-hdd-stack', ['host']],
+            ['bi-hdd', ['host']], ['bi-motherboard', ['host']], ['bi-pc', ['host']], ['bi-pc-display', ['host']], ['bi-pc-display-horizontal', ['host']],
+            ['bi-pc-horizontal', ['host']], ['bi-tux', ['host']], ['bi-ubuntu', ['host']], ['bi-windows', ['host']], ['bi-apple', ['host']],
+            ['bi-activity', ['logs']]
         ];
+        /** Per component type, icons whose meaning differs from the general table (the original icon lists reuse icons). */
+        const TYPE_ICON_SUBTYPES = {
+            datastore: {
+                'bi-hdd-fill': ['cache'], 'bi-envelope-paper-fill': ['queue'], 'bi-graph-up-arrow': ['database'],
+                'bi-diagram-3-fill': ['nosql'], 'bi-archive-fill': ['object-storage'], 'bi-activity': ['logs']
+            },
+            process: { 'bi-cloud-haze2-fill': ['web'], 'bi-pc-display': ['admin'] },
+            interactor: {
+                'bi-laptop': ['admin', 'human'], 'bi-terminal-fill': ['admin', 'human'], 'bi-cpu': ['iot'], 'bi-device-ssd-fill': ['iot'],
+                'bi-cloud-arrow-up-fill': ['partner-system'], 'bi-browser-safari': ['mobile', 'human'], 'bi-window': ['human'],
+                'bi-pass': ['human'], 'bi-fingerprint': ['human'], 'bi-smartwatch': ['mobile', 'human']
+            }
+        };
+        function iconSubtypesFor(icon, type) {
+            const v = toText(icon);
+            const byType = TYPE_ICON_SUBTYPES[type] && TYPE_ICON_SUBTYPES[type][v];
+            if (byType) return byType;
+            const hit = ICON_SUBTYPES.find(([prefix]) => v === prefix || v.startsWith(prefix + '-'));
+            return hit ? hit[1] : [];
+        }
         /** Name keywords -> subtype (all matches apply). */
         const NAME_SUBTYPES = [
             [/\b(s3|buckets?|blob|gcs|object ?storage|data ?lake|datalake|minio)\b/i, 'object-storage'],
@@ -6910,9 +6941,7 @@
                     if (ports.some(p => [5672, 9092, 1883, 8883].includes(p))) out.add('messaging');
                     return out;
                 }
-                const icon = toText(item.icon);
-                const hit = ICON_SUBTYPES.find(([prefix]) => icon.startsWith(prefix));
-                if (hit) hit[1].forEach(t => out.add(t));
+                iconSubtypesFor(item.icon, item.type).forEach(t => out.add(t));
                 const text = `${toText(item.name)} ${toText(item.notes)}`;
                 NAME_SUBTYPES.forEach(([re, tag]) => { if (re.test(text)) out.add(tag); });
                 if (item.secProps && item.secProps.isPrivilegedUser === 'true') out.add('admin');
@@ -7310,25 +7339,63 @@
             }
 
             /** Fills an icon <select>: the type's original options first, then grouped extra icons. */
+            /** Subtypes that templates for this library react to (relevance hints and `subtype` conditions). */
+            templateSubtypesFor(libraryKey) {
+                const out = new Set();
+                const walk = (c) => {
+                    if (!isPlainObject(c)) return;
+                    if (c.subtype) [].concat(c.subtype).forEach(x => out.add(x));
+                    [].concat(c.all || [], c.any || []).forEach(walk);
+                };
+                (this.threatSuggestions[libraryKey] || []).forEach(t => { (t.subtypes || []).forEach(x => out.add(x)); walk(t.when); });
+                return out;
+            }
+
+            /** Subtypes an icon is recognised as (same table the threat engine uses). */
+            static iconSubtypes(icon, type) { return iconSubtypesFor(icon, type); }
+
+            /**
+             * Fills an icon <select>. Icons that the threat engine recognises as a subtype with tailored threats for this
+             * component type come first ("With tailored threat suggestions"), then the type's usual icons, then the rest.
+             */
             populateIconSelect(select, item, baseOptions) {
                 select.textContent = '';
                 const seen = new Set();
                 const add = (parent, val, labelText) => {
                     if (seen.has(val)) return;
                     seen.add(val);
-                    const opt = new Option(labelText, val, false, item.icon === val);
-                    parent.appendChild(opt);
+                    parent.appendChild(new Option(labelText, val, false, item.icon === val));
                 };
+                const groups = ICON_GROUPS_FOR_TYPE[item.type] || ICON_GROUPS_FOR_TYPE.default;
+                const candidates = [...baseOptions.map(o => [o.val, o.label]), ...groups.flatMap(name => ICON_LIBRARY[name])];
+                const wanted = this.templateSubtypesFor(this.libraryKeyFor(item));
+                const mapped = [];
+                const mappedSeen = new Set();
+                candidates.forEach(([val, labelText]) => {
+                    const sub = iconSubtypesFor(val, item.type).find(x => wanted.has(x));
+                    if (sub && !mappedSeen.has(val)) { mappedSeen.add(val); mapped.push({ val, labelText, sub }); }
+                });
+                if (mapped.length) {
+                    const og = document.createElement('optgroup');
+                    og.label = 'With tailored threat suggestions';
+                    og.id = 'icon-group-mapped';
+                    mapped.sort((a, b) => (SUBTYPE_LABELS[a.sub] || a.sub).localeCompare(SUBTYPE_LABELS[b.sub] || b.sub) || a.labelText.localeCompare(b.labelText))
+                        .forEach(m => add(og, m.val, `${m.labelText} — ${SUBTYPE_LABELS[m.sub] || m.sub} threats`));
+                    select.appendChild(og);
+                }
                 const typical = document.createElement('optgroup'); typical.label = 'Typical';
                 baseOptions.forEach(o => add(typical, o.val, o.label));
-                select.appendChild(typical);
-                const groups = ICON_GROUPS_FOR_TYPE[item.type] || ICON_GROUPS_FOR_TYPE.default;
+                if (typical.children.length) select.appendChild(typical);
                 groups.forEach(name => {
                     const og = document.createElement('optgroup'); og.label = name;
                     ICON_LIBRARY[name].forEach(([val, labelText]) => add(og, val, labelText));
                     if (og.children.length) select.appendChild(og);
                 });
-                if (item.icon && !seen.has(item.icon)) add(typical, item.icon, `Current (${item.icon.replace(/^bi-/, '')})`);
+                if (item.icon && !seen.has(item.icon)) {
+                    const cur = document.createElement('optgroup'); cur.label = 'Current';
+                    add(cur, item.icon, `Current (${item.icon.replace(/^bi-/, '')})`);
+                    select.insertBefore(cur, select.firstChild);
+                }
                 select.value = item.icon || (baseOptions[0] && baseOptions[0].val) || '';
             }
 
