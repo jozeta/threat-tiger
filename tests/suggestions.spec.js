@@ -228,7 +228,7 @@ test('icon dropdown lists icons with tailored threat suggestions first', async (
   expect(ds.allMapped && ds.notMappedLater).toBe(true);
   const proc = await check('process');
   expect(proc.mapped).toEqual(expect.arrayContaining(['bi-globe', 'bi-git']));
-  expect(proc.mapped).not.toContain('bi-cpu');
+  expect(proc.mapped).not.toContain('bi-wifi');   // network devices have no process-specific threats
   expect(proc.allMapped && proc.notMappedLater).toBe(true);
   const ent = await check('interactor');
   expect(ent.mapped).toEqual(expect.arrayContaining(['bi-person-gear', 'bi-building', 'bi-phone']));
@@ -249,7 +249,23 @@ test('icon recognition: variants match, look-alike names do not, and per-type me
     partner: iconSubtypesFor('bi-cloud-arrow-up-fill', 'interactor'),
   }));
   expect(r).toEqual({
-    windowsOs: ['host'], windowStack: ['web'], sdk: ['api'], dbLock: ['database'], dns: ['network-device'],
+    windowsOs: ['host'], windowStack: ['web'], sdk: ['api'], dbLock: ['database'], dns: ['dns', 'network-device'],
     cpuHost: ['host'], cpuIot: ['iot'], objectStore: ['object-storage'], partner: ['partner-system'],
   });
+});
+
+test('library coverage: at least 5 threats for every element type × applicable STRIDE category', () => {
+  const allowed = {
+    process: ['Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'],
+    infrastructure: ['Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'],
+    datastore: ['Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service'],
+    interactor: ['Spoofing', 'Repudiation', 'Information Disclosure'],
+    flow: ['Tampering', 'Information Disclosure', 'Denial of Service'],
+  };
+  const thin = [];
+  for (const [type, cats] of Object.entries(allowed)) for (const c of cats) {
+    const n = TEMPLATES[type].filter((t) => t.category === c).length;
+    if (n < 5) thin.push(`${type}/${c}=${n}`);
+  }
+  expect(thin).toEqual([]);
 });

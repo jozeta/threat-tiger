@@ -3,6 +3,38 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.11.0 — unreleased
+
+### Threat library: 148 → 244 threats
+- Filled every gap in **element type × STRIDE category**: each applicable combination now has at least 5 threats (a new test keeps it that way). Repudiation, previously 1–3 per type, now has 5–8.
+- **More threats per recognised kind** of component and data flow, at least 3 each for almost all: container workloads, admin portals, mobile backends, legacy hosts, CDN, GraphQL, queues, email, file uploads, payments (including payee-detail fraud and chargeback evidence), external identity and payment providers, IoT devices, VPN, directory services, mail servers, caches, secrets stores, databases, buckets, and webhook, identity, email, remote-admin, database and messaging flows.
+- One new verified example: Microsoft Teams (February 2020) outage from an expired certificate.
+- Coverage table in `docs/threat-templates.md`.
+
+## 1.10.1 — unreleased
+
+### Changed
+- **Insights → "Threats suggested by your model"** now behaves like the Threat Templates panel: added suggestions leave the list, each open suggestion has **Add** and **Ignore**, and a summary shows how many were added, ignored or marked not applicable.
+- **Picking a suggested name also sets a matching icon** (e.g. "S3 bucket" → bucket, "Support agent" → headset, "Chatbot (LLM)" → AI icon), in the same undo step. Every suggested name has an icon, and each icon agrees with what the name is recognised as (checked by a test). Typing your own name leaves the icon unchanged.
+
+## 1.10.0 — unreleased
+
+### Threat suggestions
+- **Added suggestions leave the list**; a note shows how many are already in the register.
+- **Ignore** button on every suggestion: hides it for that component without a reason; hidden ones are listed under "Hidden" with **Show again**, and counted as "Ignored" in Insights and the Markdown report. "Not applicable…" (with a reason) remains for recorded decisions.
+- **62 more threats (148 in total)**, mostly specific to what a component is recognised as: AI/LLM services and RAG stores (OWASP LLM Top 10 2025), payments (PCI DSS), GraphQL, web (CORS, open redirect, clickjacking, WebSocket hijacking, request smuggling), identity (OAuth/OIDC per RFC 9700, SAML, help-desk social engineering, consent phishing, Kerberoasting), CI/CD (OWASP CI/CD Top 10), mobile (OWASP Mobile Top 10 2024), IoT, Kubernetes (OWASP K8s Top 10), edge/VPN appliances, DNS, CDN, cloud keys and snapshots, queues, secrets stores, logs, search, file shares and email. New verified examples include tj-actions/changed-files 2025, CircleCI 2023, MGM Resorts 2023, Ivanti 2024, Citrix Bleed 2023 and the 2018 GitHub memcached DDoS.
+- **New recognised subtypes** from icon and name: AI / LLM, payment, GraphQL, DNS, CDN, VPN; data flows are additionally recognised as identity, email or database traffic (also from well-known ports).
+- References link to the OWASP LLM, Mobile, CI/CD and Kubernetes projects, RFCs and PCI DSS.
+
+### Model checks (11 new)
+- External entity connected directly to a data store (DFD rule), entity-to-entity and store-to-store flows, flows that loop back to their source, duplicate flows in the same direction, default names left in place, crown jewels without threats, threats marked mitigated without a mitigation description, threats without a description, data stores that are only written or only read, inconsistent sensitive-data switches, empty trust zones, and models with no trust boundaries at all.
+
+### Component Label autosuggest
+- Clicking the **Component Label** field shows a list of typical names for the selected item's type (process, data store, external entity, infrastructure, data flow, trust zone/line); typing filters the list (arrow keys + Enter, or click). Each name shows what the threat engine will recognise it as, so picking e.g. "S3 bucket" immediately brings bucket threats. Free text still works; a pick is one undo step.
+
+### Fixed
+- Name recognition: "Authentication service" is recognised as identity; a payment service is no longer tagged as a third party; "Oracle WebLogic" (an app server) is no longer taken for a database.
+
 ## 1.9.1 — unreleased (branch `audit-fixes`)
 
 ### Changed
