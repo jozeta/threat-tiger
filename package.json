@@ -1,6 +1,6 @@
 {
   "name": "threat-tiger",
-  "version": "1.11.1",
+  "version": "1.12.0",
   "private": true,
   "description": "Dev-only tooling for Threat Tiger. The app itself is threat-tiger.html and needs no build.",
   "license": "MIT",

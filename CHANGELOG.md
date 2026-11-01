@@ -3,6 +3,15 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.12.0
+
+### Added — reusable mitigations (FEAT-003)
+- **Mitigations tab**: each mitigation has a title, description, status (Proposed, In progress, Implemented, Verified, Not applicable), owner and ticket link, and can cover **many threats**; a threat can have several mitigations.
+- **Threat dialog**: link existing mitigations (search by title/id), type a new one, or turn the template's **suggested controls** into mitigations with one click ("Add all as mitigations"); controls that match an existing mitigation reuse it instead of creating a duplicate. Saving is one undo step.
+- **Register** shows coverage per threat ("1/2 done"); **Insights** shows "Mitigations done" and "Open threats without a mitigation"; new model checks: mitigation not linked to any threat, threat marked mitigated although none of its mitigations is implemented, and threat still open although all its mitigations are implemented.
+- **Markdown report** lists all mitigations and the mitigations per threat; **CSV** gains a Mitigations column; JSON export (including the git variant) contains them. Imported mitigations are validated (status, http(s) ticket links only, duplicate ids renumbered, links to unknown mitigations removed).
+- The free-text "Mitigation notes" field on a threat remains for details.
+
 ## 1.11.1
 
 ### Changed

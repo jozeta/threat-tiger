@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-XZCXZxc2PFvrohXClB/jsDKJdLWwPqn9q1iQ+EmqjFQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-wTolzxVEXJvoA6JsQ5Ux22Kg1BzrQIFiAt5beEGBghc='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -2854,6 +2854,13 @@
                     </button>
                 </li>
                 <li class="nav-item">
+                    <button class="nav-link py-2 small fw-semibold" id="tab-mitigations-trigger" data-bs-toggle="tab"
+                        data-bs-target="#tab-panel-mitigations" type="button">
+                        <i class="bi bi-shield-check me-1 text-success"></i>Mitigations
+                        <span class="badge bg-success rounded-pill ms-1" id="badge-mitigation-count">0</span>
+                    </button>
+                </li>
+                <li class="nav-item">
                     <button class="nav-link py-2 small fw-semibold" id="tab-insights-trigger" data-bs-toggle="tab"
                         data-bs-target="#tab-panel-insights" type="button">
                         <i class="bi bi-bar-chart-line me-1 text-success"></i>Insights
@@ -2918,10 +2925,40 @@
                                     <th scope="col" style="width: 110px; cursor: pointer;" id="th-sort-score">Score <i class="bi bi-arrow-down-up opacity-50 ms-1"></i></th>
                                     <th scope="col" style="width: 140px; cursor: pointer;" id="th-sort-status">Status <i
                                             class="bi bi-arrow-down-up opacity-50 ms-1"></i></th>
+                                    <th scope="col" style="width: 120px;">Mitigations</th>
                                     <th scope="col" class="text-center d-print-none" style="width: 100px;">Actions</th>
                                 </tr>
                             </thead>
                             <tbody id="threat-register-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade h-100 p-2 overflow-auto" id="tab-panel-mitigations">
+                    <div class="d-flex justify-content-between align-items-center mb-2 px-1 gap-2 flex-wrap">
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <input type="search" class="form-control form-control-sm shadow-none" id="filter-mitigation-search" placeholder="Search mitigations…" aria-label="Search mitigations" style="width: 240px;">
+                            <select class="form-select form-select-sm shadow-none" id="filter-mitigation-status" style="width: 170px;" aria-label="Filter by status">
+                                <option value="">All statuses</option>
+                                <option value="__open">Not done yet</option>
+                                <option>Proposed</option><option>In progress</option><option>Implemented</option><option>Verified</option><option>Not applicable</option>
+                            </select>
+                        </div>
+                        <button class="btn btn-sm btn-success" id="btn-mitigation-new"><i class="bi bi-plus-circle me-1"></i>New Mitigation</button>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-hover border align-middle small" id="table-mitigations">
+                            <thead class="table-light sticky-top">
+                                <tr>
+                                    <th scope="col" style="width: 80px;">ID</th>
+                                    <th scope="col">Mitigation</th>
+                                    <th scope="col" style="width: 130px;">Status</th>
+                                    <th scope="col" style="width: 150px;">Owner</th>
+                                    <th scope="col" style="width: 260px;">Covers threats</th>
+                                    <th scope="col" style="width: 90px;">Ticket</th>
+                                </tr>
+                            </thead>
+                            <tbody id="mitigation-tbody"></tbody>
                         </table>
                     </div>
                 </div>
@@ -3015,10 +3052,28 @@
                             </div>
                         </div>
 
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-12">
+                                <label class="form-label small fw-semibold text-muted mb-1" for="threat-mitigation-input">
+                                    <i class="bi bi-shield-check text-success me-1"></i>Mitigations <span class="fw-normal">(reusable — one mitigation can cover many threats)</span>
+                                </label>
+                                <div id="threat-mitigation-chips" class="d-flex flex-wrap gap-1 mb-1"></div>
+                                <div class="position-relative">
+                                    <div class="input-group input-group-sm">
+                                        <input type="text" class="form-control shadow-none" id="threat-mitigation-input" autocomplete="off"
+                                            placeholder="Link an existing mitigation or type a new one…" aria-label="Link or create a mitigation">
+                                        <button type="button" class="btn btn-outline-success" id="btn-threat-mitigation-add">Add</button>
+                                    </div>
+                                    <div id="threat-mitigation-matches" class="list-group shadow d-none" role="listbox"
+                                        style="position:absolute; top:100%; left:0; right:0; z-index:1070; max-height:200px; overflow-y:auto; font-size:12px;"></div>
+                                </div>
+                                <div id="threat-mitigation-suggested" class="mt-2"></div>
+                            </div>
+                        </div>
                         <div class="row g-3 mb-3" id="mitigation-explanation-row" style="display:none;">
                             <div class="col-md-12">
                                 <label class="form-label small fw-semibold text-muted mb-1">
-                                    <i class="bi bi-shield-check text-success me-1"></i>Mitigation Explanation
+                                    <i class="bi bi-chat-left-text text-success me-1"></i>Mitigation notes
                                 </label>
                                 <textarea class="form-control shadow-none" id="modal-threat-mitigation-explanation"
                                     rows="3"
@@ -3260,6 +3315,55 @@
         </div>
     </div>
 
+    <!-- Mitigation editor (FEAT-003) -->
+    <div class="modal fade" id="modal-mitigation" tabindex="-1" aria-labelledby="modal-mitigation-title" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-mitigation-title">Mitigation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="mitigation-hidden-id">
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-8">
+                            <label class="form-label small fw-semibold text-muted mb-1" for="mitigation-input-title">Title</label>
+                            <input type="text" class="form-control form-control-sm" id="mitigation-input-title" maxlength="300" placeholder="e.g. Enforce MFA for all admin accounts">
+                            <div class="invalid-feedback">Give the mitigation a title.</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label small fw-semibold text-muted mb-1" for="mitigation-input-status">Status</label>
+                            <select class="form-select form-select-sm" id="mitigation-input-status"></select>
+                        </div>
+                    </div>
+                    <label class="form-label small fw-semibold text-muted mb-1" for="mitigation-input-desc">Description / how it is implemented</label>
+                    <textarea class="form-control form-control-sm mb-2" id="mitigation-input-desc" rows="3"></textarea>
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-5">
+                            <label class="form-label small fw-semibold text-muted mb-1" for="mitigation-input-owner">Owner</label>
+                            <input type="text" class="form-control form-control-sm" id="mitigation-input-owner" maxlength="200" placeholder="Team or person">
+                        </div>
+                        <div class="col-md-7">
+                            <label class="form-label small fw-semibold text-muted mb-1" for="mitigation-input-ticket">Ticket link</label>
+                            <input type="url" class="form-control form-control-sm" id="mitigation-input-ticket" placeholder="https://…">
+                            <div class="invalid-feedback">Use an http(s):// link.</div>
+                        </div>
+                    </div>
+                    <label class="form-label small fw-semibold text-muted mb-1" for="mitigation-threat-filter">Threats this mitigation covers</label>
+                    <input type="search" class="form-control form-control-sm mb-1" id="mitigation-threat-filter" placeholder="Filter threats…">
+                    <div id="mitigation-threat-list" class="border rounded p-2 small" style="max-height: 220px; overflow-y: auto;"></div>
+                </div>
+                <div class="modal-footer py-2 justify-content-between">
+                    <button type="button" class="btn btn-sm btn-outline-danger" id="btn-mitigation-delete">Delete</button>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-sm btn-success" id="btn-mitigation-save">Save</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Mark a suggestion as not applicable -->
     <div class="modal fade" id="modal-dismiss-suggestion" tabindex="-1" aria-labelledby="modal-dismiss-title" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -3329,7 +3433,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.11.1';
+        const APP_VERSION = '1.12.0';
         const SCHEMA_VERSION = 1;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
@@ -3700,6 +3804,25 @@
         // ── Model normalisation (ARCH-002 / BUG-001 / BUG-011) ────────────────────
         const STRIDE_CATEGORIES = ['Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'];
         const THREAT_STATUSES = ['Open / Unmitigated', 'Partially mitigated', 'Mitigated / Resolved'];
+        /** Lifecycle of a mitigation (FEAT-003). "Done" statuses count as covering a threat. */
+        const MITIGATION_STATUSES = ['Proposed', 'In progress', 'Implemented', 'Verified', 'Not applicable'];
+        const MITIGATION_DONE = ['Implemented', 'Verified'];
+
+        function normalizeMitigation(raw, ctx) {
+            if (!isPlainObject(raw)) { ctx.warn('Skipped a mitigation entry that was not an object.'); return null; }
+            const title = toText(raw.title).trim();
+            if (!title) { ctx.warn('Skipped a mitigation without a title.'); return null; }
+            const id = toText(raw.id).trim();
+            const ticket = toText(raw.ticketUrl).trim();
+            return {
+                id: /^[\w.-]{1,40}$/.test(id) ? id : '',
+                title: title.slice(0, 300),
+                desc: toText(raw.desc).slice(0, 5000),
+                status: MITIGATION_STATUSES.includes(toText(raw.status)) ? toText(raw.status) : 'Proposed',
+                owner: toText(raw.owner).slice(0, 200),
+                ticketUrl: /^https?:\/\/[^\s"'<>]+$/i.test(ticket) ? ticket : ''
+            };
+        }
 
         function normalizeAnchor(id) {
             const v = toText(id);
@@ -3785,6 +3908,7 @@
             t.desc = toText(raw.desc);
             t.mitigationExplanation = toText(raw.mitigationExplanation);
             if ('refs' in raw) t.refs = Array.isArray(raw.refs) ? raw.refs.map(toText).filter(Boolean).slice(0, 12) : [];
+            t.mitigationIds = Array.isArray(raw.mitigationIds) ? [...new Set(raw.mitigationIds.map(toText))].filter(id => ctx.mitigationIds && ctx.mitigationIds.has(id)) : [];
             t.likelihood = String(clampInt(raw.likelihood, 1, 5, 3));
             t.impact = String(clampInt(raw.impact, 1, 5, 3));
             const risk = ThreatModelSession.calculateRisk(t.likelihood, t.impact);
@@ -3861,6 +3985,13 @@
                 seen.add(f.id); return true;
             });
             ctx.targetIds = new Set([...ctx.nodeIds, ...flows.map(f => f.id)]);
+            // Mitigations first, so threats can only reference ones that exist.
+            const mitigations = listOf('mitigations').map(m => normalizeMitigation(m, ctx)).filter(Boolean);
+            const mitIds = new Set();
+            let maxMit = 0;
+            mitigations.forEach(m => { const x = /^mi-(\d+)$/.exec(m.id); if (x) maxMit = Math.max(maxMit, parseInt(x[1], 10)); });
+            mitigations.forEach(m => { if (!m.id || mitIds.has(m.id)) m.id = `mi-${String(++maxMit).padStart(3, '0')}`; mitIds.add(m.id); });
+            ctx.mitigationIds = mitIds;
             const threats = listOf('threats').map(t => normalizeThreat(t, ctx)).filter(Boolean);
 
             // Threat ids must be present and unique: renumber any that are not.
@@ -3885,7 +4016,7 @@
                 scopeDefinition: toText(raw.scopeDefinition) || 'Not Defined',
                 participants: toText(raw.participants),
                 activeUser: toText(raw.activeUser),
-                activityLog, elements, flows, threats,
+                activityLog, elements, flows, threats, mitigations,
                 selectedElementIds: [], selectedFlowId: null
             };
             return { session, warnings };
@@ -3929,7 +4060,7 @@
                 this.participants = "";
                 this.activeUser = "";
                 this.activityLog = [];
-                this.elements = []; this.flows = []; this.threats = [];
+                this.elements = []; this.flows = []; this.threats = []; this.mitigations = [];
                 this.selectedElementIds = []; this.selectedFlowId = null;
             }
 
@@ -4051,6 +4182,15 @@
                 document.getElementById('modal-edit-threat').addEventListener('show.bs.modal', () => threatTitleInput.classList.remove('is-invalid'));
                 document.getElementById('modal-edit-threat').addEventListener('hidden.bs.modal', () => { this.pendingTemplate = null; });
                 this.dismissModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-dismiss-suggestion'));
+                this.mitigationModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-mitigation'));
+                this.setupThreatMitigationPicker();
+                document.getElementById('btn-mitigation-new').addEventListener('click', () => this.openMitigationModal(null));
+                document.getElementById('btn-mitigation-save').addEventListener('click', () => this.commitMitigationModal());
+                document.getElementById('btn-mitigation-delete').addEventListener('click', () => this.deleteMitigation(document.getElementById('mitigation-hidden-id').value));
+                document.getElementById('mitigation-threat-filter').addEventListener('input', () => this.renderMitigationThreatList());
+                document.getElementById('filter-mitigation-search').addEventListener('input', () => this.renderMitigationTable());
+                document.getElementById('filter-mitigation-status').addEventListener('change', () => this.renderMitigationTable());
+                document.getElementById('tab-mitigations-trigger').addEventListener('shown.bs.tab', () => this.renderMitigationTable());
                 document.getElementById('btn-dismiss-save').addEventListener('click', () => this.commitDismissSuggestion());
                 document.getElementById('input-templates-search').addEventListener('input', () => this.updateThreatSuggestionsWizardView());
 
@@ -4536,7 +4676,7 @@
             // Every logged model change is one undo step. The activity log itself is not rewound.
             serializeModel() {
                 const s = this.state;
-                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats });
+                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [] });
             }
 
             resetUndoHistory() {
@@ -5174,6 +5314,7 @@
                 this.updateThreatSuggestionsWizardView(); this.renderActivityLedgerTable();
                 const insights = document.getElementById('tab-panel-insights');
                 if (insights && insights.classList.contains('active')) this.renderInsights();
+                this.renderMitigationTable();
                 this.applyControlAccessibility();
             }
 
@@ -7264,7 +7405,14 @@
                 const threatTargets = new Set(this.state.threats.map(t => t.elementId));
                 this.state.elements.filter(e => e.secProps && e.secProps.isCrownJewel === 'true' && !threatTargets.has(e.id))
                     .forEach(e => w.push({ level: 'warning', code: 'MC-CROWN', text: `Crown jewel ${nameOf(e)} has no threats recorded yet.`, id: e.id }));
-                const noPlan = this.state.threats.filter(t => (t.status === 'Mitigated / Resolved' || t.status === 'Partially mitigated') && !toText(t.mitigationExplanation).trim());
+                const mitDone = (t) => (t.mitigationIds || []).some(id => { const m = this.mitigationById(id); return m && MITIGATION_DONE.includes(m.status); });
+                const noPlan = this.state.threats.filter(t => (t.status === 'Mitigated / Resolved' || t.status === 'Partially mitigated') && !toText(t.mitigationExplanation).trim() && !mitDone(t));
+                (this.state.mitigations || []).filter(m => !this.threatsCoveredBy(m.id).length)
+                    .forEach(m => w.push({ level: 'info', code: 'MC-MIT-ORPHAN', text: `Mitigation ${m.id} "${m.title}" is not linked to any threat.` }));
+                this.state.threats.filter(t => t.status === 'Mitigated / Resolved' && (t.mitigationIds || []).length && !mitDone(t))
+                    .forEach(t => w.push({ level: 'warning', code: 'MC-MIT-STATUS', text: `Threat ${t.id} is marked mitigated, but none of its linked mitigations is implemented or verified.`, id: t.elementId }));
+                this.state.threats.filter(t => t.status === 'Open / Unmitigated' && (t.mitigationIds || []).length && (t.mitigationIds || []).every(id => { const m = this.mitigationById(id); return m && MITIGATION_DONE.includes(m.status); }))
+                    .forEach(t => w.push({ level: 'info', code: 'MC-MIT-DONE', text: `All mitigations linked to threat ${t.id} are implemented — consider updating its status.`, id: t.elementId }));
                 if (noPlan.length) w.push({ level: 'warning', code: 'MC-MITIGATION', text: `${noPlan.length} threat(s) are marked mitigated or partially mitigated without describing the mitigation (${noPlan.slice(0, 3).map(t => t.id).join(', ')}${noPlan.length > 3 ? '…' : ''}).` });
                 const noDesc = this.state.threats.filter(t => !toText(t.desc).trim());
                 if (noDesc.length) w.push({ level: 'info', code: 'MC-THREAT-DESC', text: `${noDesc.length} threat(s) have no description (${noDesc.slice(0, 3).map(t => t.id).join(', ')}${noDesc.length > 3 ? '…' : ''}).` });
@@ -7304,6 +7452,9 @@
                 const uncovered = [...modelEls, ...this.state.flows].filter(x => !withThreats.has(x.id));
                 const findings = this.evaluateAllRules();
                 const pending = findings.filter(f => !f.added && !f.dismissed);
+                const mits = this.state.mitigations || [];
+                const mitsDone = mits.filter(m => MITIGATION_DONE.includes(m.status)).length;
+                const openNoMit = open.filter(t => !(t.mitigationIds || []).length).length;
                 const notApplicable = findings.filter(f => f.dismissed && !f.dismissed.ignored);
                 const ignoredFindings = findings.filter(f => f.dismissed && f.dismissed.ignored);
                 const warnings = this.computeModelWarnings();
@@ -7319,7 +7470,9 @@
                 [['Threats', threats.length, 'text-dark'], ['Open critical / high', critHigh.length, critHigh.length ? 'text-danger' : 'text-success'],
                  ['Not fully mitigated', open.length, open.length ? 'text-warning' : 'text-success'], ['Need review', threats.filter(t => t.needsReview).length, 'text-dark'],
                  ['Without threats', uncovered.length, uncovered.length ? 'text-warning' : 'text-success'], ['Rule suggestions', pending.length, pending.length ? 'text-warning' : 'text-success'],
-                 ['Flows crossing a boundary', crossing.length, 'text-dark'], ['Marked not applicable', notApplicable.length, 'text-secondary'], ['Ignored', ignoredFindings.length, 'text-secondary']].forEach(([label, value, cls]) => {
+                 ['Flows crossing a boundary', crossing.length, 'text-dark'], ['Marked not applicable', notApplicable.length, 'text-secondary'], ['Ignored', ignoredFindings.length, 'text-secondary'],
+                 ['Mitigations done', `${mitsDone}/${mits.length}`, mits.length && mitsDone === mits.length ? 'text-success' : 'text-dark'],
+                 ['Open threats without a mitigation', openNoMit, openNoMit ? 'text-warning' : 'text-success']].forEach(([label, value, cls]) => {
                     const t = el('div', 'border rounded px-3 py-2 bg-white insight-tile'); t.style.minWidth = '130px';
                     t.append(el('div', `fs-4 fw-bold ${cls}`, String(value)), el('div', 'extra-small text-muted', label));
                     tiles.appendChild(t);
@@ -7469,8 +7622,15 @@
                         if (t.desc) out.push(para(t.desc).split(/\r?\n/).map(l => `> ${l}`).join('\n'), '');
                         if (t.mitigationExplanation) out.push(`_Mitigation:_ ${para(t.mitigationExplanation)}`, '');
                         if (Array.isArray(t.refs) && t.refs.length) out.push(`_References:_ ${t.refs.map(r => refLink(r) ? `[${r}](${refLink(r)})` : para(r)).join(', ')}`, '');
+                        const linkedMits = (t.mitigationIds || []).map(id => this.mitigationById(id)).filter(Boolean);
+                        if (linkedMits.length) out.push(`_Mitigations:_ ${linkedMits.map(m => `${m.id} ${para(m.title)} (${m.status})`).join('; ')}`, '');
                     });
                 });
+                if ((s.mitigations || []).length) {
+                    out.push('## Mitigations', '', '| ID | Mitigation | Status | Owner | Covers | Ticket |', '|---|---|---|---|---|---|');
+                    s.mitigations.forEach(m => out.push(`| ${cell(m.id)} | ${cell(m.title)} | ${cell(m.status)} | ${cell(m.owner)} | ${cell(this.threatsCoveredBy(m.id).map(t => t.id).join(', '))} | ${m.ticketUrl ? `[link](${m.ticketUrl})` : '—'} |`));
+                    out.push('');
+                }
                 out.push('## Data flows', '', '| Flow | From | To | Ports | Encrypted | Authenticated | Crosses trust boundary |', '|---|---|---|---|---|---|---|');
                 s.flows.forEach(f => {
                     const c = analysis.crossings.get(f.id) || { crosses: false, names: [] };
@@ -9505,6 +9665,7 @@
                     if (tpl.likelihood) document.getElementById('modal-threat-likelihood').value = String(tpl.likelihood);
                     if (tpl.impact) document.getElementById('modal-threat-impact').value = String(tpl.impact);
                     this.pendingTemplate = { id: entry.id, refs: tpl.refs || [], triggered: !!entry.reason };
+                    this.startThreatMitigationDraft(null, tpl.controls || []);
                 });
                 return card;
             }
@@ -9547,7 +9708,7 @@
                 });
 
                 this.dom.threatCountBadge.innerText = this.state.threats.length;
-                if (filtered.length === 0) { this.dom.threatRegisterTbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">${this.state.threats.length ? 'No threats match the current search and filters.' : 'No threats yet. Select a component and open Threat Templates, or click New Threat.'}</td></tr>`; return; }
+                if (filtered.length === 0) { this.dom.threatRegisterTbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-3">${this.state.threats.length ? 'No threats match the current search and filters.' : 'No threats yet. Select a component and open Threat Templates, or click New Threat.'}</td></tr>`; return; }
 
                 filtered.forEach(t => {
                     const tr = document.createElement('tr');
@@ -9571,6 +9732,7 @@
                         <td><span class="badge ${evalObj.badgeClass}">${evalObj.label}</span></td>
                         <td><small class="fw-bold text-dark">${evalObj.score}</small></td>
                         <td><span class="badge rounded-pill border ${t.status === 'Mitigated / Resolved' ? 'bg-success text-white border-success' : t.status === 'Partially mitigated' ? 'bg-warning text-dark border-warning' : 'bg-light text-danger'}">${esc(t.status)}</span></td>
+                        <td>${this.mitigationCoverageBadge(t)}</td>
                         <td class="text-center text-nowrap d-print-none">
                             <div class="btn-group">
                                 <button class="btn btn-xs btn-outline-primary py-0 px-2 small btn-edit" title="Edit threat ${esc(t.id)}" aria-label="Edit threat ${esc(t.id)}"><i class="bi bi-pencil-fill"></i></button>
@@ -9627,6 +9789,7 @@
                 document.getElementById('modal-threat-mitigation-explanation').value = '';
                 document.getElementById('mitigation-explanation-row').style.display = 'none';
                 document.getElementById('modal-threat-title-lbl').innerText = "New threat";
+                this.startThreatMitigationDraft(null, []);
                 this.editThreatModal.show();
             }
 
@@ -9644,6 +9807,7 @@
                 document.getElementById('modal-threat-desc').value = desc || '';
                 document.getElementById('modal-threat-mitigation-explanation').value = '';
                 document.getElementById('mitigation-explanation-row').style.display = 'none';
+                this.startThreatMitigationDraft(null, []);
                 this.editThreatModal.show();
             }
 
@@ -9662,6 +9826,7 @@
                 document.getElementById('modal-threat-mitigation-explanation').value = t.mitigationExplanation || '';
                 const showExp = (t.status === 'Mitigated / Resolved' || t.status === 'Partially mitigated');
                 document.getElementById('mitigation-explanation-row').style.display = showExp ? '' : 'none';
+                this.startThreatMitigationDraft(t, []);
                 this.editThreatModal.show();
             }
 
@@ -9684,7 +9849,8 @@
                     likelihood, impact, riskScore: calc.score, riskLabel: calc.label,
                     desc: document.getElementById('modal-threat-desc').value.trim(),
                     mitigationExplanation: showMitigationExp ? document.getElementById('modal-threat-mitigation-explanation').value.trim() : '',
-                    needsReview: false
+                    needsReview: false,
+                    mitigationIds: this.applyThreatMitigationDraft()
                 };
 
                 if (hiddenId) {
@@ -9854,14 +10020,243 @@
                 location.reload();
             }
 
+            // ── Mitigations (FEAT-003) ───────────────────────────────────────────────
+            mitigationById(id) { return (this.state.mitigations || []).find(m => m.id === id); }
+
+            generateNextMitigationId() {
+                let max = 0;
+                (this.state.mitigations || []).forEach(m => { const x = /^mi-(\d+)$/.exec(m.id); if (x) max = Math.max(max, parseInt(x[1], 10)); });
+                return `mi-${String(max + 1).padStart(3, '0')}`;
+            }
+
+            /** Finds a mitigation by title (case-insensitive) or creates a new "Proposed" one; returns its id. */
+            findOrCreateMitigation(title) {
+                if (!Array.isArray(this.state.mitigations)) this.state.mitigations = [];
+                const t = toText(title).trim();
+                const existing = this.state.mitigations.find(m => m.title.trim().toLowerCase() === t.toLowerCase());
+                if (existing) return existing.id;
+                const m = { id: this.generateNextMitigationId(), title: t.slice(0, 300), desc: '', status: 'Proposed', owner: '', ticketUrl: '' };
+                this.state.mitigations.push(m);
+                return m.id;
+            }
+
+            threatsCoveredBy(id) { return this.state.threats.filter(t => (t.mitigationIds || []).includes(id)); }
+
+            /** Small register badge: done/total linked mitigations, coloured by coverage. */
+            mitigationCoverageBadge(t) {
+                const linked = (t.mitigationIds || []).map(id => this.mitigationById(id)).filter(Boolean);
+                if (!linked.length) return '<span class="text-muted extra-small">—</span>';
+                const done = linked.filter(m => MITIGATION_DONE.includes(m.status)).length;
+                const cls = done === linked.length ? 'bg-success' : done ? 'bg-warning text-dark' : 'bg-secondary';
+                const tip = linked.map(m => `${m.id} ${m.title} (${m.status})`).join('\n');
+                return `<span class="badge ${cls}" title="${esc(tip)}">${done}/${linked.length} done</span>`;
+            }
+
+            mitigationStatusBadgeClass(status) {
+                return { 'Proposed': 'bg-secondary', 'In progress': 'bg-info text-dark', 'Implemented': 'bg-success', 'Verified': 'bg-primary', 'Not applicable': 'bg-light text-muted border' }[status] || 'bg-secondary';
+            }
+
+            // Threat dialog picker ------------------------------------------------------
+            setupThreatMitigationPicker() {
+                const input = document.getElementById('threat-mitigation-input');
+                const matches = document.getElementById('threat-mitigation-matches');
+                const addTyped = () => {
+                    const v = input.value.trim(); if (!v) return;
+                    const existing = (this.state.mitigations || []).find(m => m.title.trim().toLowerCase() === v.toLowerCase());
+                    if (existing) this.threatDraft.ids.add(existing.id); else this.threatDraft.newTitles.add(v);
+                    input.value = ''; matches.classList.add('d-none'); this.renderThreatMitigationPicker();
+                };
+                const showMatches = () => {
+                    const q = input.value.trim().toLowerCase();
+                    const list = (this.state.mitigations || []).filter(m => !this.threatDraft.ids.has(m.id) && (!q || m.title.toLowerCase().includes(q) || m.id.includes(q))).slice(0, 30);
+                    matches.textContent = '';
+                    list.forEach(m => {
+                        const opt = document.createElement('div');
+                        opt.className = 'list-group-item list-group-item-action py-1 px-2 d-flex justify-content-between gap-2'; opt.setAttribute('role', 'option'); opt.style.cursor = 'pointer';
+                        const a = document.createElement('span'); a.textContent = `${m.id} · ${m.title}`;
+                        const b = document.createElement('span'); b.className = `badge ${this.mitigationStatusBadgeClass(m.status)}`; b.textContent = m.status;
+                        opt.append(a, b);
+                        opt.addEventListener('mousedown', (ev) => { ev.preventDefault(); this.threatDraft.ids.add(m.id); input.value = ''; matches.classList.add('d-none'); this.renderThreatMitigationPicker(); });
+                        matches.appendChild(opt);
+                    });
+                    matches.classList.toggle('d-none', !list.length);
+                };
+                input.addEventListener('focus', showMatches);
+                input.addEventListener('input', showMatches);
+                input.addEventListener('blur', () => setTimeout(() => matches.classList.add('d-none'), 100));
+                input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); addTyped(); } if (ev.key === 'Escape' && !matches.classList.contains('d-none')) { ev.stopPropagation(); matches.classList.add('d-none'); } });
+                document.getElementById('btn-threat-mitigation-add').addEventListener('click', addTyped);
+            }
+
+            /** Initialises the dialog's mitigation draft for a threat (or a new one) and template controls. */
+            startThreatMitigationDraft(threat, controls) {
+                this.threatDraft = { ids: new Set(threat ? (threat.mitigationIds || []) : []), newTitles: new Set(), controls: controls || [] };
+                this.renderThreatMitigationPicker();
+            }
+
+            renderThreatMitigationPicker() {
+                const d = this.threatDraft || { ids: new Set(), newTitles: new Set(), controls: [] };
+                const chips = document.getElementById('threat-mitigation-chips');
+                chips.textContent = '';
+                const chip = (label, cls, onRemove, title) => {
+                    const c = document.createElement('span'); c.className = `badge ${cls} d-inline-flex align-items-center gap-1 threat-mitigation-chip`; c.title = title || label;
+                    c.append(label);
+                    const x = document.createElement('button'); x.type = 'button'; x.className = 'btn-close btn-close-white'; x.style.fontSize = '8px'; x.setAttribute('aria-label', `Remove ${label}`);
+                    x.addEventListener('click', onRemove); c.appendChild(x); chips.appendChild(c);
+                };
+                [...d.ids].forEach(id => { const m = this.mitigationById(id); if (m) chip(`${m.id} · ${m.title}`, this.mitigationStatusBadgeClass(m.status).includes('text-muted') ? 'bg-secondary' : this.mitigationStatusBadgeClass(m.status).replace('text-dark', ''), () => { d.ids.delete(id); this.renderThreatMitigationPicker(); }, m.status); });
+                [...d.newTitles].forEach(t => chip(`New · ${t}`, 'bg-dark', () => { d.newTitles.delete(t); this.renderThreatMitigationPicker(); }, 'Created as "Proposed" when you save'));
+                if (!d.ids.size && !d.newTitles.size) { const n = document.createElement('span'); n.className = 'text-muted extra-small'; n.textContent = 'No mitigations linked yet.'; chips.appendChild(n); }
+
+                const sug = document.getElementById('threat-mitigation-suggested');
+                sug.textContent = '';
+                const pending = (d.controls || []).filter(c => ![...d.newTitles].some(t => t.toLowerCase() === c.toLowerCase())
+                    && ![...d.ids].some(id => { const m = this.mitigationById(id); return m && m.title.toLowerCase() === c.toLowerCase(); }));
+                if (!pending.length) return;
+                const head = document.createElement('div'); head.className = 'd-flex justify-content-between align-items-center extra-small text-muted mb-1';
+                head.append('Suggested controls from the template:');
+                const all = document.createElement('button'); all.type = 'button'; all.className = 'btn btn-link btn-sm p-0 extra-small'; all.id = 'btn-threat-use-all-controls'; all.textContent = 'Add all as mitigations';
+                all.addEventListener('click', () => { pending.forEach(c => this.addControlToDraft(c)); this.renderThreatMitigationPicker(); });
+                head.appendChild(all); sug.appendChild(head);
+                pending.forEach(c => {
+                    const b = document.createElement('button'); b.type = 'button'; b.className = 'btn btn-outline-success btn-sm py-0 px-2 me-1 mb-1 extra-small text-start threat-control-suggestion';
+                    b.textContent = `+ ${c}`;
+                    b.addEventListener('click', () => { this.addControlToDraft(c); this.renderThreatMitigationPicker(); });
+                    sug.appendChild(b);
+                });
+            }
+
+            /** A suggested control links an existing mitigation with the same title, or becomes a new one. */
+            addControlToDraft(control) {
+                const existing = (this.state.mitigations || []).find(m => m.title.trim().toLowerCase() === control.trim().toLowerCase());
+                if (existing) this.threatDraft.ids.add(existing.id); else this.threatDraft.newTitles.add(control);
+            }
+
+            /** Applies the draft to the model (call before logEvent so it is part of the same undo step). */
+            applyThreatMitigationDraft() {
+                const d = this.threatDraft; if (!d) return [];
+                const ids = new Set([...d.ids].filter(id => this.mitigationById(id)));
+                [...d.newTitles].forEach(t => ids.add(this.findOrCreateMitigation(t)));
+                return [...ids];
+            }
+
+            // Mitigations tab + editor ----------------------------------------------------
+            renderMitigationTable() {
+                const tbody = document.getElementById('mitigation-tbody'); if (!tbody) return;
+                const list = this.state.mitigations || [];
+                document.getElementById('badge-mitigation-count').textContent = list.length;
+                const q = toText(document.getElementById('filter-mitigation-search').value).trim().toLowerCase();
+                const st = document.getElementById('filter-mitigation-status').value;
+                const rows = list.filter(m => (!q || [m.id, m.title, m.desc, m.owner].some(v => toText(v).toLowerCase().includes(q)))
+                    && (!st || (st === '__open' ? !MITIGATION_DONE.includes(m.status) && m.status !== 'Not applicable' : m.status === st)));
+                tbody.textContent = '';
+                if (!rows.length) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">${list.length ? 'No mitigations match the current filters.' : 'No mitigations yet. Add them from a threat (or from its suggested controls), or click New Mitigation.'}</td></tr>`;
+                    return;
+                }
+                rows.forEach(m => {
+                    const covered = this.threatsCoveredBy(m.id);
+                    const tr = document.createElement('tr'); tr.style.cursor = 'pointer'; tr.setAttribute('data-mitigation-id', m.id); tr.tabIndex = 0;
+                    tr.title = 'Click to edit';
+                    tr.innerHTML = `
+                        <td><small class="fw-bold text-muted">${esc(m.id)}</small></td>
+                        <td><div class="fw-bold text-dark">${esc(m.title)}</div>${m.desc ? `<div class="text-muted extra-small text-truncate" style="max-width: 520px;">${esc(m.desc)}</div>` : ''}</td>
+                        <td><span class="badge ${this.mitigationStatusBadgeClass(m.status)}">${esc(m.status)}</span></td>
+                        <td>${esc(m.owner) || '<span class="text-muted">—</span>'}</td>
+                        <td class="extra-small">${covered.length ? covered.slice(0, 4).map(t => `<span class="badge bg-light text-dark border me-1" title="${esc(t.title)}">${esc(t.id)}</span>`).join('') + (covered.length > 4 ? `+${covered.length - 4}` : '') : '<span class="text-warning">not linked</span>'}</td>
+                        <td>${m.ticketUrl ? `<a href="${esc(m.ticketUrl)}" target="_blank" rel="noopener noreferrer" class="extra-small mitigation-ticket-link">open <i class="bi bi-box-arrow-up-right"></i></a>` : '<span class="text-muted">—</span>'}</td>`;
+                    tr.querySelectorAll('a').forEach(a => a.addEventListener('click', ev => ev.stopPropagation()));
+                    tr.addEventListener('click', () => this.openMitigationModal(m.id));
+                    tr.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') this.openMitigationModal(m.id); });
+                    tbody.appendChild(tr);
+                });
+            }
+
+            openMitigationModal(id) {
+                const m = id ? this.mitigationById(id) : null;
+                document.getElementById('mitigation-hidden-id').value = m ? m.id : '';
+                document.getElementById('modal-mitigation-title').textContent = m ? `Edit mitigation ${m.id}` : 'New mitigation';
+                const title = document.getElementById('mitigation-input-title');
+                title.value = m ? m.title : ''; title.classList.remove('is-invalid');
+                const status = document.getElementById('mitigation-input-status');
+                status.textContent = ''; MITIGATION_STATUSES.forEach(s => status.add(new Option(s, s)));
+                status.value = m ? m.status : 'Proposed';
+                document.getElementById('mitigation-input-desc').value = m ? m.desc : '';
+                document.getElementById('mitigation-input-owner').value = m ? m.owner : '';
+                const ticket = document.getElementById('mitigation-input-ticket'); ticket.value = m ? m.ticketUrl : ''; ticket.classList.remove('is-invalid');
+                document.getElementById('btn-mitigation-delete').classList.toggle('d-none', !m);
+                document.getElementById('mitigation-threat-filter').value = '';
+                this.mitigationDraftThreats = new Set(m ? this.threatsCoveredBy(m.id).map(t => t.id) : []);
+                this.renderMitigationThreatList();
+                this.mitigationModal.show();
+            }
+
+            renderMitigationThreatList() {
+                const box = document.getElementById('mitigation-threat-list');
+                const q = toText(document.getElementById('mitigation-threat-filter').value).trim().toLowerCase();
+                const byId = new Map([...this.state.elements, ...this.state.flows].map(x => [x.id, x]));
+                box.textContent = '';
+                const list = this.state.threats.filter(t => !q || `${t.id} ${t.title} ${(byId.get(t.elementId) || {}).name || ''}`.toLowerCase().includes(q));
+                if (!list.length) { box.textContent = this.state.threats.length ? 'No threats match.' : 'No threats in the register yet.'; return; }
+                list.forEach(t => {
+                    const row = document.createElement('label'); row.className = 'd-flex gap-2 align-items-start mb-1';
+                    const cb = document.createElement('input'); cb.type = 'checkbox'; cb.className = 'form-check-input mt-1'; cb.value = t.id; cb.checked = this.mitigationDraftThreats.has(t.id);
+                    cb.addEventListener('change', () => { if (cb.checked) this.mitigationDraftThreats.add(t.id); else this.mitigationDraftThreats.delete(t.id); });
+                    const txt = document.createElement('span');
+                    txt.textContent = `${t.id} · ${t.title} — ${(byId.get(t.elementId) || {}).name || 'Unknown'}`;
+                    row.append(cb, txt); box.appendChild(row);
+                });
+            }
+
+            commitMitigationModal() {
+                const titleEl = document.getElementById('mitigation-input-title');
+                const title = titleEl.value.trim();
+                if (!title) { titleEl.classList.add('is-invalid'); titleEl.focus(); return; }
+                const ticketEl = document.getElementById('mitigation-input-ticket');
+                const ticket = ticketEl.value.trim();
+                if (ticket && !/^https?:\/\/[^\s"'<>]+$/i.test(ticket)) { ticketEl.classList.add('is-invalid'); ticketEl.focus(); return; }
+                if (!Array.isArray(this.state.mitigations)) this.state.mitigations = [];
+                const id = document.getElementById('mitigation-hidden-id').value || this.generateNextMitigationId();
+                const data = { id, title, desc: document.getElementById('mitigation-input-desc').value.trim(), status: document.getElementById('mitigation-input-status').value,
+                    owner: document.getElementById('mitigation-input-owner').value.trim(), ticketUrl: ticket };
+                const existing = this.mitigationById(id);
+                if (existing) Object.assign(existing, data); else this.state.mitigations.push(data);
+                // Many-to-many: update every threat's link to this mitigation.
+                this.state.threats.forEach(t => {
+                    const set = new Set(t.mitigationIds || []);
+                    if (this.mitigationDraftThreats.has(t.id)) set.add(id); else set.delete(id);
+                    t.mitigationIds = [...set];
+                });
+                this.mitigationModal.hide();
+                this.logEvent(existing ? 'CHANGE' : 'CREATE', `${existing ? 'Edited' : 'Added'} mitigation ${id} "${title}" (${data.status}, covers ${this.mitigationDraftThreats.size} threat(s))`);
+                this.refreshAppViewVisualWorkspace();
+            }
+
+            deleteMitigation(id) {
+                const m = this.mitigationById(id); if (!m) return;
+                const n = this.threatsCoveredBy(id).length;
+                this.mitigationModal.hide();
+                this.confirmAction({
+                    title: 'Delete this mitigation?',
+                    body: `"${m.title}" will be removed${n ? ` and unlinked from ${n} threat(s)` : ''}. You can undo this.`,
+                    confirmLabel: 'Delete mitigation',
+                    onConfirm: () => {
+                        this.state.mitigations = this.state.mitigations.filter(x => x.id !== id);
+                        this.state.threats.forEach(t => { t.mitigationIds = (t.mitigationIds || []).filter(x => x !== id); });
+                        this.logEvent('REMOVE', `Deleted mitigation ${id} "${m.title}"`);
+                        this.refreshAppViewVisualWorkspace();
+                    }
+                });
+            }
+
             exportThreatRegisterToCsvFile() {
                 if (this.state.threats.length === 0) { this.notify("The threat register is empty.", 'warning'); return; }
                 const byId = new Map([...this.state.elements, ...this.state.flows].map(x => [x.id, x]));
-                const header = ["Threat ID", "STRIDE Category", "Title", "Component", "Component ID", "Likelihood", "Impact", "Risk Score", "Severity", "Status", "Description", "Mitigation", "References"];
+                const header = ["Threat ID", "STRIDE Category", "Title", "Component", "Component ID", "Likelihood", "Impact", "Risk Score", "Severity", "Status", "Description", "Mitigation", "References", "Mitigations"];
                 const rows = this.state.threats.map(t => {
                     const risk = ThreatModelSession.calculateRisk(t.likelihood, t.impact);
                     const conn = byId.get(t.elementId);
-                    return [t.id, t.category, t.title, conn ? conn.name : 'Unknown', t.elementId, t.likelihood, t.impact, risk.score, risk.label, t.status, t.desc || '', t.mitigationExplanation || '', (t.refs || []).join(', ')];
+                    return [t.id, t.category, t.title, conn ? conn.name : 'Unknown', t.elementId, t.likelihood, t.impact, risk.score, risk.label, t.status, t.desc || '', t.mitigationExplanation || '', (t.refs || []).join(', '), (t.mitigationIds || []).map(id => { const m = this.mitigationById(id); return m ? `${m.id} ${m.title} (${m.status})` : ''; }).filter(Boolean).join('; ')];
                 });
                 const csv = [header, ...rows].map(r => r.map(ThreatModelingApp.csvCell).join(',')).join('\r\n');
                 // Blob instead of an encodeURI'd data: URL, which cut the file at the first '#' (BUG-002).
@@ -9884,7 +10279,7 @@
                 const payload = {
                     appVersion: APP_VERSION, schemaVersion: SCHEMA_VERSION,
                     projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, activeUser: s.activeUser,
-                    elements: canon(s.elements), flows: canon(s.flows), threats: canon(s.threats)
+                    elements: canon(s.elements), flows: canon(s.flows), threats: canon(s.threats), mitigations: canon(s.mitigations || [])
                 };
                 if (includeLog) payload.activityLog = s.activityLog;
                 const name = includeLog ? 'STRIDE-Threat-Model-Export.json' : `${(toText(s.projectTitle).trim() || 'threat-model').replace(/[^\w.-]+/g, '-').slice(0, 60)}.threat-model.json`;
