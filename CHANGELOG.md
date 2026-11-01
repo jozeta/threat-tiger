@@ -3,6 +3,16 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.5.0 — unreleased (branch `audit-fixes`, Stage 5)
+
+### Added
+- **Trust-boundary detection** (FEAT-006): data flows that cross a trust zone edge or a (curved) trust boundary line are detected live and labelled "crosses boundary" on the canvas.
+- **Rule-based threat suggestions** (FEAT-002): 17 rules (`THREAT_RULES` in `threat-tiger.html`) combine security switches (encrypted, authenticated, MFA, VPN, runs as admin, logging, PII, credentials, encryption at rest, audit logging, crown jewel) with boundary crossings. Matching threats appear under **"Triggered by this model"** in Threat Templates with the reason, suggested likelihood/impact and controls; add one (through the threat dialog) or **Add all** (one undoable step). Added threats remember their rule id, so they are not suggested twice.
+- **Insights tab** (FEAT-004): summary tiles, open-risk heat map (likelihood × impact), all rule suggestions with Add / Add all, STRIDE coverage per component, data flows crossing boundaries, and model checks — every item links to the canvas.
+- **Model checks** (FEAT-005): unconnected components, duplicate names, unnamed flows, threats linked to missing components, threats needing review, processes/data stores outside every trust zone.
+- **Export Markdown report** (FEAT-008): summary, risk table, embedded Mermaid diagram (renders on GitHub/GitLab), threats grouped by component with descriptions and mitigations, data flows, components, and open findings.
+- **Export JSON for git** (FEAT-009): deterministic output (sorted keys, whole-pixel coordinates, no activity log), so moving one component changes two lines in a diff. The normal export includes `appVersion`/`schemaVersion` and keeps the activity log.
+
 ## 1.4.0 — unreleased (branch `audit-fixes`)
 
 ### Changed

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-vqTI+HJ8iB94eJxO1GjrcUc3bYFgng/zl6ZhpXJfzws='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-e/cPI43aCHsX0xHqq0D6tqU09X6VamAXU6TN6QrfFDM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
     <link href="vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css" rel="stylesheet">
@@ -1566,10 +1566,12 @@
                     <li><h6 class="dropdown-header">Model</h6></li>
                     <li><button class="dropdown-item" type="button" id="btn-import"><i class="bi bi-file-earmark-arrow-up me-2"></i>Import JSON…</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-export"><i class="bi bi-file-earmark-arrow-down me-2"></i>Export JSON</button></li>
+                    <li><button class="dropdown-item" type="button" id="btn-export-no-log" title="Smaller file that diffs cleanly in git"><i class="bi bi-git me-2"></i>Export JSON for git (no activity log)</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-snapshots"><i class="bi bi-clock-history me-2"></i>History…</button></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><h6 class="dropdown-header">Reports &amp; diagrams</h6></li>
                     <li><button class="dropdown-item" type="button" id="btn-print-report"><i class="bi bi-printer me-2"></i>Print report…</button></li>
+                    <li><button class="dropdown-item" type="button" id="btn-export-markdown"><i class="bi bi-markdown me-2"></i>Export Markdown report</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-export-mermaid"><i class="bi bi-diagram-3 me-2"></i>Export Mermaid diagram</button></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><button class="dropdown-item" type="button" id="btn-help-trigger"><i class="bi bi-question-circle me-2"></i>Help &amp; License</button></li>
@@ -2825,6 +2827,12 @@
                     </button>
                 </li>
                 <li class="nav-item">
+                    <button class="nav-link py-2 small fw-semibold" id="tab-insights-trigger" data-bs-toggle="tab"
+                        data-bs-target="#tab-panel-insights" type="button">
+                        <i class="bi bi-bar-chart-line me-1 text-success"></i>Insights
+                    </button>
+                </li>
+                <li class="nav-item">
                     <button class="nav-link py-2 small fw-semibold" id="tab-notes-trigger" data-bs-toggle="tab"
                         data-bs-target="#tab-panel-notes" type="button">
                         <i class="bi bi-clock-history me-1 text-primary"></i>Activity Log
@@ -2889,6 +2897,10 @@
                             <tbody id="threat-register-tbody"></tbody>
                         </table>
                     </div>
+                </div>
+
+                <div class="tab-pane fade h-100 p-3 overflow-auto" id="tab-panel-insights">
+                    <div id="insights-content"></div>
                 </div>
 
                 <div class="tab-pane fade h-100 p-2 overflow-auto" id="tab-panel-notes">
@@ -3249,7 +3261,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.4.0';
+        const APP_VERSION = '1.5.0';
         const SCHEMA_VERSION = 1;
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
         const LEDGER_PAGE_SIZE = 200;       // PERF-003: rows rendered per page
@@ -3301,6 +3313,96 @@
         function isExternalUrl(value) {
             return /^https?:\/\//i.test(toText(value));
         }
+
+        // ── Threat rules (FEAT-002) ───────────────────────────────────────────────
+        // Each rule looks at one component or data flow (its security switches, its connections and whether
+        // its data flows cross a trust boundary) and, when `when` returns a reason, suggests a threat.
+        // Edit, add or remove rules here. `when(item, m)` gets helpers in `m`:
+        //   m.on(item, key)        security switch is on      m.off(item, key)   switch exists and is off
+        //   m.crossing(flow)       { crosses, names[] }       m.flowsOf(item) / m.inbound(item) / m.outbound(item)
+        //   m.node(id)             component by id            m.zones(item)      names of trust zones containing it
+        const SENSITIVE_KEYS = ['storesPii', 'storesCredentials', 'handlesSensitiveData'];
+        const THREAT_RULES = [
+            // ── Data flows ──
+            { id: 'TT-F01', appliesTo: 'flow', category: 'Information Disclosure', likelihood: 4, impact: 4,
+              title: 'Eavesdropping on unencrypted traffic across a trust boundary ([name])',
+              desc: 'Traffic on this flow is not encrypted and leaves its trust zone, so anyone on the network path can read it. Suggested controls: TLS 1.2+ (or mTLS), HSTS, no plaintext fallbacks.',
+              when: (f, m) => m.off(f, 'encrypted') && m.crossing(f).crosses ? `Not encrypted and crosses ${m.crossing(f).names.join(', ')}` : null },
+            { id: 'TT-F02', appliesTo: 'flow', category: 'Tampering', likelihood: 3, impact: 4,
+              title: 'Traffic modified in transit across a trust boundary ([name])',
+              desc: 'Without transport encryption and integrity protection, an attacker on the path can alter requests or responses. Suggested controls: TLS/mTLS, message signing for critical payloads.',
+              when: (f, m) => m.off(f, 'encrypted') && m.crossing(f).crosses ? `Not encrypted and crosses ${m.crossing(f).names.join(', ')}` : null },
+            { id: 'TT-F03', appliesTo: 'flow', category: 'Spoofing', likelihood: 3, impact: 4,
+              title: 'Unauthenticated requests across a trust boundary ([name])',
+              desc: 'The receiving side cannot verify who is calling across the boundary, so an attacker can impersonate a legitimate sender. Suggested controls: mutual TLS, signed tokens (OAuth2/OIDC), API keys bound to clients.',
+              when: (f, m) => m.off(f, 'authenticated') && m.crossing(f).crosses ? `Not authenticated and crosses ${m.crossing(f).names.join(', ')}` : null },
+            { id: 'TT-F04', appliesTo: 'flow', category: 'Information Disclosure', likelihood: 3, impact: 5,
+              title: 'Sensitive data sent in cleartext ([name])',
+              desc: 'This flow connects to a component that holds sensitive data (PII, credentials or other sensitive data) but is not encrypted. Suggested controls: encrypt in transit, minimise fields sent.',
+              when: (f, m) => {
+                  if (!m.off(f, 'encrypted')) return null;
+                  const ends = [m.node(f.sourceId), m.node(f.targetId)].filter(n => n && SENSITIVE_KEYS.some(k => m.on(n, k)));
+                  return ends.length ? `Not encrypted; connects to ${ends.map(n => `"${n.name}"`).join(' and ')} which holds sensitive data` : null;
+              } },
+            { id: 'TT-F05', appliesTo: 'flow', category: 'Denial of Service', likelihood: 3, impact: 3,
+              title: 'Flooding from an anonymous source across a trust boundary ([name])',
+              desc: 'Anyone can send traffic on this flow into another trust zone, which makes resource exhaustion easy. Suggested controls: rate limiting, quotas, WAF/edge protection, autoscaling limits.',
+              when: (f, m) => { const s = m.node(f.sourceId); return s && m.on(s, 'unauthAccess') && m.crossing(f).crosses ? `Source "${s.name}" allows anonymous access and the flow crosses ${m.crossing(f).names.join(', ')}` : null; } },
+
+            // ── External entities ──
+            { id: 'TT-I01', appliesTo: 'interactor', category: 'Spoofing', likelihood: 4, impact: 5,
+              title: 'Privileged account takeover without MFA ([name])',
+              desc: 'A privileged user signs in without multi-factor authentication, so a phished or reused password is enough to take over the account. Suggested controls: phishing-resistant MFA, conditional access.',
+              when: (e, m) => m.on(e, 'isPrivilegedUser') && m.off(e, 'mfaRequired') ? 'Privileged user and MFA is not required' : null },
+            { id: 'TT-I02', appliesTo: 'interactor', category: 'Spoofing', likelihood: 4, impact: 3,
+              title: 'Anonymous users act without an identity ([name])',
+              desc: 'Unauthenticated access means requests cannot be tied to a person, and abuse cannot be blocked per user. Suggested controls: require sign-in for state-changing actions, bot protection, per-client limits.',
+              when: (e, m) => m.on(e, 'unauthAccess') ? 'Unauthenticated access is allowed' : null },
+            { id: 'TT-I03', appliesTo: 'interactor', category: 'Elevation of Privilege', likelihood: 3, impact: 5,
+              title: 'Administrative access exposed outside the trusted network ([name])',
+              desc: 'A privileged user reaches the system across a trust boundary without a VPN or equivalent, exposing admin interfaces to the wider network. Suggested controls: VPN/ZTNA, admin endpoints on a separate network, IP allow-lists.',
+              when: (e, m) => m.on(e, 'isPrivilegedUser') && m.off(e, 'vpnRequired') && m.flowsOf(e).some(f => m.crossing(f).crosses) ? 'Privileged user, VPN not required, and a connection crosses a trust boundary' : null },
+            { id: 'TT-I04', appliesTo: 'interactor', category: 'Repudiation', likelihood: 3, impact: 3,
+              title: 'Actions by [name] cannot be attributed',
+              desc: 'Connections from this entity are not authenticated, so the system cannot prove who did what. Suggested controls: authenticate connections, record user and request identifiers in audit logs.',
+              when: (e, m) => m.outbound(e).some(f => m.off(f, 'authenticated')) ? 'At least one outgoing data flow is not authenticated' : null },
+
+            // ── Processes ──
+            { id: 'TT-P01', appliesTo: 'process', category: 'Elevation of Privilege', likelihood: 3, impact: 5,
+              title: 'Compromise of [name] yields administrative control',
+              desc: 'The process runs with administrative rights, so any code-execution flaw gives the attacker full control of the host. Suggested controls: run as a least-privileged account, drop capabilities, sandbox/containers.',
+              when: (p, m) => m.on(p, 'runAsAdmin') ? 'Runs with administrative privileges' : null },
+            { id: 'TT-P02', appliesTo: 'process', category: 'Repudiation', likelihood: 3, impact: 3,
+              title: 'Activity in [name] cannot be traced',
+              desc: 'Security-relevant actions are not logged, so attacks and misuse cannot be investigated. Suggested controls: structured audit logging with user, action and time; ship logs to a tamper-resistant store.',
+              when: (p, m) => m.off(p, 'loggingEnabled') ? 'Logging is not enabled' : null },
+            { id: 'TT-P03', appliesTo: 'process', category: 'Spoofing', likelihood: 4, impact: 4,
+              title: 'Unauthenticated callers reach [name]',
+              desc: 'A process that handles sensitive data or is a crown jewel accepts unauthenticated connections. Suggested controls: authenticate every inbound call, mTLS between services.',
+              when: (p, m) => (m.on(p, 'handlesSensitiveData') || m.on(p, 'isCrownJewel')) && m.inbound(p).some(f => m.off(f, 'authenticated')) ? 'Handles sensitive data or is a crown jewel, and an incoming flow is not authenticated' : null },
+            { id: 'TT-P04', appliesTo: 'process', category: 'Elevation of Privilege', likelihood: 4, impact: 5,
+              title: 'Crown jewel [name] is reachable from another trust zone',
+              desc: 'A business-critical process accepts traffic that crosses a trust boundary, so it is directly exposed to a less-trusted zone. Suggested controls: put a gateway/proxy in front, strict input validation, network segmentation.',
+              when: (p, m) => m.on(p, 'isCrownJewel') && m.inbound(p).some(f => m.crossing(f).crosses) ? 'Crown jewel with an incoming flow that crosses a trust boundary' : null },
+
+            // ── Data stores ──
+            { id: 'TT-D01', appliesTo: 'datastore', category: 'Information Disclosure', likelihood: 3, impact: 5,
+              title: 'Sensitive data in [name] is not encrypted at rest',
+              desc: 'Stolen disks, backups or snapshots expose the data directly. Suggested controls: storage or column-level encryption with managed keys, encrypted backups.',
+              when: (d, m) => SENSITIVE_KEYS.some(k => m.on(d, k)) && m.off(d, 'encryptedAtRest') ? 'Holds sensitive data and encryption at rest is off' : null },
+            { id: 'TT-D02', appliesTo: 'datastore', category: 'Information Disclosure', likelihood: 3, impact: 5,
+              title: 'Credentials stored in [name] can be stolen and reused',
+              desc: 'A breach of this store exposes credentials that can be reused elsewhere. Suggested controls: store only salted slow hashes (Argon2/bcrypt) for passwords, keep secrets in a vault, rotate keys.',
+              when: (d, m) => m.on(d, 'storesCredentials') ? 'Stores credentials' : null },
+            { id: 'TT-D03', appliesTo: 'datastore', category: 'Repudiation', likelihood: 3, impact: 4,
+              title: 'Changes to [name] are not audited',
+              desc: 'Modifications to important data are not audit-logged, so unauthorised changes cannot be detected or attributed. Suggested controls: database audit logging, append-only change history.',
+              when: (d, m) => m.off(d, 'auditLogged') && (m.on(d, 'isCrownJewel') || m.on(d, 'storesPii') || m.on(d, 'storesCredentials')) ? 'Important data and audit logging is off' : null },
+            { id: 'TT-D04', appliesTo: 'datastore', category: 'Tampering', likelihood: 3, impact: 5,
+              title: 'Crown jewel [name] can be modified from another trust zone',
+              desc: 'A business-critical data store receives writes that cross a trust boundary. Suggested controls: route writes through a validating service, least-privilege database accounts, network segmentation.',
+              when: (d, m) => m.on(d, 'isCrownJewel') && m.inbound(d).some(f => m.crossing(f).crosses) ? 'Crown jewel with an incoming flow that crosses a trust boundary' : null },
+        ];
 
         // ── Icon library for components and infrastructure nodes ──────────────────
         // Every class here exists in vendor/bootstrap-icons-1.13.2 (checked by tests/stage5.spec.js).
@@ -3708,6 +3810,10 @@
                 const threatTitleInput = document.getElementById('modal-threat-title');
                 threatTitleInput.addEventListener('input', () => threatTitleInput.classList.remove('is-invalid'));
                 document.getElementById('modal-edit-threat').addEventListener('show.bs.modal', () => threatTitleInput.classList.remove('is-invalid'));
+                document.getElementById('modal-edit-threat').addEventListener('hidden.bs.modal', () => { this.pendingRuleId = null; });
+                document.getElementById('tab-insights-trigger').addEventListener('shown.bs.tab', () => this.renderInsights());
+                document.getElementById('btn-export-markdown').addEventListener('click', () => this.exportMarkdownReport());
+                document.getElementById('btn-export-no-log').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile({ includeLog: false }));
 
                 this.bindUiEvents(); this.bindCanvasEvents(); this.bindKeyboardShortcuts();
                 this.bindWindowResizerEvents(); this.bindPrintScalingEngine();
@@ -4783,6 +4889,8 @@
                 this.renderSvgDiagramElements(); this.renderThreatRegisterTableGrid();
                 this.syncMetadataInputsAndLabels(); this.updatePropertiesInspectorView();
                 this.updateThreatSuggestionsWizardView(); this.renderActivityLedgerTable();
+                const insights = document.getElementById('tab-panel-insights');
+                if (insights && insights.classList.contains('active')) this.renderInsights();
             }
 
             generateNextThreatId() {
@@ -6520,6 +6628,359 @@
                 return { markerId, reverseMarkerId };
             }
 
+            // ── Trust boundary analysis (FEAT-006) ────────────────────────────────────
+            /** Which zones contain each component, and which data flows cross a zone edge or boundary line. */
+            computeTrustAnalysis() {
+                const els = this.state.elements;
+                const center = (e) => ({ x: e.x + (e.width || 0) / 2, y: e.y + (e.height || 0) / 2 });
+                const zones = els.filter(e => e.type === 'boundary');
+                const lines = els.filter(e => e.type === 'boundary_line');
+                const byId = new Map(els.map(e => [e.id, e]));
+                const inZone = (pt, z) => pt.x >= z.x && pt.x <= z.x + (z.width || 0) && pt.y >= z.y && pt.y <= z.y + (z.height || 0);
+                const nodeZones = new Map();
+                els.filter(e => e.type !== 'boundary' && e.type !== 'boundary_line').forEach(e => {
+                    const c = center(e); nodeZones.set(e.id, zones.filter(z => inZone(c, z)));
+                });
+                const lineSamples = lines.map(l => {
+                    const mx = (l.x + l.x2) / 2, my = (l.y + l.y2) / 2;
+                    const cx = mx + (l.bendX || 0), cy = my + (l.bendY || 0);
+                    if (!l.bendX && !l.bendY) return [{ x: l.x, y: l.y }, { x: l.x2, y: l.y2 }];
+                    const pts = [];
+                    for (let i = 0; i <= 16; i++) { const t = i / 16, u = 1 - t; pts.push({ x: u * u * l.x + 2 * u * t * cx + t * t * l.x2, y: u * u * l.y + 2 * u * t * cy + t * t * l.y2 }); }
+                    return pts;
+                });
+                const orient = (a, b, c) => Math.sign((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x));
+                const segX = (p1, p2, q1, q2) => orient(p1, p2, q1) * orient(p1, p2, q2) < 0 && orient(q1, q2, p1) * orient(q1, q2, p2) < 0;
+                const polyX = (a, b) => { for (let i = 0; i < a.length - 1; i++) for (let j = 0; j < b.length - 1; j++) if (segX(a[i], a[i + 1], b[j], b[j + 1])) return true; return false; };
+                const crossings = new Map();
+                this.state.flows.forEach(f => {
+                    const a = byId.get(f.sourceId), b = byId.get(f.targetId);
+                    if (!a || !b) { crossings.set(f.id, { crosses: false, names: [] }); return; }
+                    const za = new Set((nodeZones.get(a.id) || []).map(z => z.id)), zb = new Set((nodeZones.get(b.id) || []).map(z => z.id));
+                    const crossedZones = zones.filter(z => za.has(z.id) !== zb.has(z.id));
+                    const path = [center(a), ...(Array.isArray(f.points) ? f.points : []), center(b)];
+                    const crossedLines = lines.filter((l, i) => polyX(path, lineSamples[i]));
+                    const names = [...crossedZones, ...crossedLines].map(x => `"${toText(x.name) || 'trust boundary'}"`);
+                    crossings.set(f.id, { crosses: names.length > 0, names: [...new Set(names)] });
+                });
+                return { zones, nodeZones, crossings };
+            }
+
+            // ── Rule engine (FEAT-002) ────────────────────────────────────────────────
+            ruleHelpers(analysis) {
+                const els = new Map(this.state.elements.map(e => [e.id, e]));
+                return {
+                    on: (item, key) => !!(item && item.secProps && item.secProps[key] === 'true'),
+                    off: (item, key) => !!(item && item.secProps && item.secProps[key] === 'false'),
+                    crossing: (f) => analysis.crossings.get(f.id) || { crosses: false, names: [] },
+                    node: (id) => els.get(id),
+                    flowsOf: (item) => this.state.flows.filter(f => f.sourceId === item.id || f.targetId === item.id),
+                    inbound: (item) => this.state.flows.filter(f => f.targetId === item.id || (f.isBidirectional && f.sourceId === item.id)),
+                    outbound: (item) => this.state.flows.filter(f => f.sourceId === item.id || (f.isBidirectional && f.targetId === item.id)),
+                    zones: (item) => (analysis.nodeZones.get(item.id) || []).map(z => z.name)
+                };
+            }
+
+            /** Rules that fire for one component/flow: [{ rule, reason, title, added }]. */
+            evaluateRules(item, analysis = this.computeTrustAnalysis()) {
+                const kind = item.sourceId !== undefined && item.targetId !== undefined ? 'flow' : item.type;
+                const m = this.ruleHelpers(analysis);
+                const out = [];
+                THREAT_RULES.filter(r => r.appliesTo === kind).forEach(rule => {
+                    let reason = null;
+                    try { reason = rule.when(item, m); } catch (err) { console.warn('[ThreatTiger] Rule failed', rule.id, err); }
+                    if (!reason) return;
+                    const title = rule.title.replace('[name]', toText(item.name) || 'unnamed');
+                    const added = this.state.threats.some(t => t.elementId === item.id && (t.ruleId === rule.id || toText(t.title).trim().toLowerCase() === title.toLowerCase()));
+                    out.push({ rule, reason, title, added, item });
+                });
+                return out;
+            }
+
+            /** All rule findings across the model. */
+            evaluateAllRules() {
+                const analysis = this.computeTrustAnalysis();
+                const items = [...this.state.elements.filter(e => ['process', 'datastore', 'interactor'].includes(e.type)), ...this.state.flows];
+                return items.flatMap(item => this.evaluateRules(item, analysis));
+            }
+
+            /** Adds the given rule findings to the register in one undoable step. */
+            addRuleThreats(findings) {
+                const fresh = findings.filter(f => !f.added);
+                if (!fresh.length) { this.notify('Those suggestions are already in the register.', 'info'); return; }
+                fresh.forEach(f => {
+                    const risk = ThreatModelSession.calculateRisk(f.rule.likelihood, f.rule.impact);
+                    this.state.threats.push({
+                        id: this.generateNextThreatId(), title: f.title, category: f.rule.category, elementId: f.item.id,
+                        status: 'Open / Unmitigated', likelihood: String(f.rule.likelihood), impact: String(f.rule.impact),
+                        riskScore: risk.score, riskLabel: risk.label, desc: `${f.rule.desc}\n\nWhy suggested: ${f.reason}.`,
+                        mitigationExplanation: '', ruleId: f.rule.id
+                    });
+                });
+                this.logEvent('CREATE', `Added ${fresh.length} threat(s) from model rules`);
+                this.refreshAppViewVisualWorkspace();
+                this.notify(`Added ${fresh.length} threat(s) to the register.`, 'success', { label: 'Undo', onClick: () => this.undo() });
+            }
+
+            /** "Triggered by this model" section at the top of the Threat Templates panel. */
+            renderTriggeredRules(item) {
+                const findings = this.evaluateRules(item).filter(f => !this.disabledStrideFilters.has(f.rule.category));
+                if (!findings.length) return;
+                const box = document.createElement('div');
+                box.className = 'border rounded p-2 mb-3';
+                box.style.cssText = 'background: rgba(255, 193, 7, 0.12); border-color: rgba(255, 193, 7, 0.6) !important;';
+                const head = document.createElement('div'); head.className = 'd-flex justify-content-between align-items-center mb-2 gap-2';
+                const h = document.createElement('div'); h.className = 'fw-bold small text-dark';
+                h.innerHTML = '<i class="bi bi-lightning-charge-fill text-warning me-1"></i>';
+                h.append(`Triggered by this model (${findings.length})`);
+                head.appendChild(h);
+                const pending = findings.filter(f => !f.added);
+                if (pending.length) {
+                    const all = document.createElement('button'); all.type = 'button'; all.className = 'btn btn-warning btn-sm py-0 px-2 extra-small text-nowrap';
+                    all.textContent = `Add all (${pending.length})`; all.id = 'btn-add-triggered';
+                    all.addEventListener('click', () => this.addRuleThreats(pending));
+                    head.appendChild(all);
+                }
+                box.appendChild(head);
+                findings.forEach(f => {
+                    const card = document.createElement('div');
+                    card.className = 'card card-body p-2 mb-1 small triggered-rule-card';
+                    card.style.cursor = f.added ? 'default' : 'pointer';
+                    const top = document.createElement('div'); top.className = 'd-flex justify-content-between gap-2';
+                    const t = document.createElement('div'); t.className = 'fw-bold text-dark'; t.style.lineHeight = '1.25'; t.textContent = f.title;
+                    const risk = ThreatModelSession.calculateRisk(f.rule.likelihood, f.rule.impact);
+                    const badges = document.createElement('div'); badges.className = 'd-flex gap-1 flex-shrink-0 align-items-start';
+                    const cat = document.createElement('span'); cat.className = `badge stride-${f.rule.category.charAt(0)} extra-small`; cat.textContent = f.rule.category.charAt(0); cat.title = f.rule.category;
+                    const sev = document.createElement('span'); sev.className = `badge ${risk.badgeClass} extra-small`; sev.textContent = risk.label;
+                    badges.append(cat, sev);
+                    if (f.added) { const ok = document.createElement('span'); ok.className = 'badge bg-success extra-small'; ok.textContent = 'Added'; badges.appendChild(ok); }
+                    top.append(t, badges);
+                    const why = document.createElement('div'); why.className = 'text-muted extra-small mt-1'; why.textContent = `Why: ${f.reason}`;
+                    card.append(top, why);
+                    if (!f.added) card.addEventListener('click', () => {
+                        this.openThreatModalForTemplate(f.rule.category, f.title, item.id, `${f.rule.desc}\n\nWhy suggested: ${f.reason}.`);
+                        document.getElementById('modal-threat-likelihood').value = String(f.rule.likelihood);
+                        document.getElementById('modal-threat-impact').value = String(f.rule.impact);
+                        this.pendingRuleId = f.rule.id;
+                    });
+                    box.appendChild(card);
+                });
+                this.dom.threatSuggestionsList.appendChild(box);
+            }
+
+            // ── Model warnings (FEAT-005) ─────────────────────────────────────────────
+            computeModelWarnings() {
+                const w = [];
+                const modelTypes = ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'];
+                const connected = new Set(this.state.flows.flatMap(f => [f.sourceId, f.targetId]));
+                this.state.elements.filter(e => modelTypes.includes(e.type) && !connected.has(e.id))
+                    .forEach(e => w.push({ level: 'warning', text: `"${e.name || e.id}" is not connected to any data flow.`, id: e.id }));
+                const names = new Map();
+                this.state.elements.filter(e => modelTypes.includes(e.type)).forEach(e => { const k = toText(e.name).trim().toLowerCase(); if (k) names.set(k, [...(names.get(k) || []), e]); });
+                names.forEach(list => { if (list.length > 1) w.push({ level: 'info', text: `${list.length} components are named "${list[0].name}" — threats and reports are easier to read with unique names.`, id: list[0].id }); });
+                this.state.flows.filter(f => !toText(f.name).trim()).forEach(f => {
+                    const a = this.state.elements.find(e => e.id === f.sourceId), b = this.state.elements.find(e => e.id === f.targetId);
+                    w.push({ level: 'info', text: `A data flow from "${a ? a.name : '?'}" to "${b ? b.name : '?'}" has no name.`, id: f.id });
+                });
+                const ids = new Set([...this.state.elements, ...this.state.flows].map(x => x.id));
+                const orphans = this.state.threats.filter(t => !ids.has(t.elementId));
+                if (orphans.length) w.push({ level: 'warning', text: `${orphans.length} threat(s) are linked to components that no longer exist (${orphans.slice(0, 3).map(t => t.id).join(', ')}${orphans.length > 3 ? '…' : ''}).` });
+                const review = this.state.threats.filter(t => t.needsReview);
+                if (review.length) w.push({ level: 'warning', text: `${review.length} threat(s) were repaired when loaded and need review.` });
+                const zones = this.state.elements.filter(e => e.type === 'boundary');
+                if (zones.length) {
+                    const analysis = this.computeTrustAnalysis();
+                    const outside = this.state.elements.filter(e => ['process', 'datastore'].includes(e.type) && !(analysis.nodeZones.get(e.id) || []).length);
+                    if (outside.length) w.push({ level: 'info', text: `${outside.length} process(es)/data store(s) are outside every trust zone: ${outside.slice(0, 4).map(e => `"${e.name}"`).join(', ')}${outside.length > 4 ? '…' : ''}.` });
+                }
+                return w;
+            }
+
+            // ── Insights dashboard (FEAT-004) ─────────────────────────────────────────
+            renderInsights() {
+                const root = document.getElementById('insights-content');
+                if (!root) return;
+                const threats = this.state.threats;
+                const open = threats.filter(t => t.status !== 'Mitigated / Resolved');
+                const risk = (t) => ThreatModelSession.calculateRisk(t.likelihood, t.impact);
+                const critHigh = open.filter(t => ['Critical', 'High'].includes(risk(t).label));
+                const modelEls = this.state.elements.filter(e => ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(e.type));
+                const withThreats = new Set(threats.map(t => t.elementId));
+                const uncovered = [...modelEls, ...this.state.flows].filter(x => !withThreats.has(x.id));
+                const findings = this.evaluateAllRules();
+                const pending = findings.filter(f => !f.added);
+                const warnings = this.computeModelWarnings();
+                const analysis = this.computeTrustAnalysis();
+                const crossing = this.state.flows.filter(f => (analysis.crossings.get(f.id) || {}).crosses);
+
+                root.textContent = '';
+                const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+                const focusLink = (label, id) => { const a = el('button', 'btn btn-link btn-sm p-0 align-baseline extra-small', label); a.type = 'button'; a.addEventListener('click', () => this.focusCanvasItem(id)); return a; };
+
+                // Tiles
+                const tiles = el('div', 'd-flex flex-wrap gap-2 mb-3');
+                [['Threats', threats.length, 'text-dark'], ['Open critical / high', critHigh.length, critHigh.length ? 'text-danger' : 'text-success'],
+                 ['Not fully mitigated', open.length, open.length ? 'text-warning' : 'text-success'], ['Need review', threats.filter(t => t.needsReview).length, 'text-dark'],
+                 ['Without threats', uncovered.length, uncovered.length ? 'text-warning' : 'text-success'], ['Rule suggestions', pending.length, pending.length ? 'text-warning' : 'text-success'],
+                 ['Flows crossing a boundary', crossing.length, 'text-dark']].forEach(([label, value, cls]) => {
+                    const t = el('div', 'border rounded px-3 py-2 bg-white insight-tile'); t.style.minWidth = '130px';
+                    t.append(el('div', `fs-4 fw-bold ${cls}`, String(value)), el('div', 'extra-small text-muted', label));
+                    tiles.appendChild(t);
+                });
+                root.appendChild(tiles);
+
+                const row = el('div', 'row g-3');
+                const col = (w) => { const c = el('div', `col-12 col-xl-${w}`); row.appendChild(c); return c; };
+
+                // Heat map of not-mitigated threats
+                const hm = col(4);
+                hm.appendChild(el('div', 'fw-bold small mb-1', 'Open risk (likelihood × impact)'));
+                const table = el('table', 'table table-sm table-bordered text-center mb-0 small'); table.style.maxWidth = '280px';
+                const tb = el('tbody');
+                for (let imp = 5; imp >= 1; imp--) {
+                    const tr = el('tr'); tr.appendChild(el('th', 'text-muted fw-normal extra-small', `I${imp}`));
+                    for (let lik = 1; lik <= 5; lik++) {
+                        const n = open.filter(t => Number(t.likelihood) === lik && Number(t.impact) === imp).length;
+                        const score = lik * imp;
+                        const td = el('td', '', n ? String(n) : '');
+                        td.style.background = score >= 15 ? 'rgba(220,53,69,0.35)' : score >= 10 ? 'rgba(220,53,69,0.18)' : score >= 5 ? 'rgba(255,193,7,0.25)' : 'rgba(25,135,84,0.15)';
+                        td.style.fontWeight = n ? '700' : '400'; td.title = `Likelihood ${lik} × Impact ${imp} = ${score}: ${n} open threat(s)`;
+                        tr.appendChild(td);
+                    }
+                    tb.appendChild(tr);
+                }
+                const lastRow = el('tr'); lastRow.appendChild(el('th', '', ''));
+                for (let lik = 1; lik <= 5; lik++) lastRow.appendChild(el('th', 'text-muted fw-normal extra-small', `L${lik}`));
+                tb.appendChild(lastRow); table.appendChild(tb); hm.appendChild(table);
+
+                // Rule suggestions
+                const rs = col(8);
+                const rsHead = el('div', 'd-flex justify-content-between align-items-center mb-1');
+                rsHead.appendChild(el('div', 'fw-bold small', `Threats suggested by your model (${pending.length} not yet in the register)`));
+                if (pending.length) { const b = el('button', 'btn btn-warning btn-sm py-0 px-2 extra-small', `Add all ${pending.length}`); b.type = 'button'; b.id = 'btn-insights-add-all'; b.addEventListener('click', () => this.addRuleThreats(pending)); rsHead.appendChild(b); }
+                rs.appendChild(rsHead);
+                if (!findings.length) rs.appendChild(el('div', 'text-muted extra-small', 'No rule matches. Set security switches on components and flows (e.g. "encrypted", "stores PII") and draw trust boundaries to get suggestions.'));
+                else {
+                    const list = el('div', 'list-group list-group-flush border rounded'); list.style.maxHeight = '220px'; list.style.overflowY = 'auto';
+                    findings.forEach(f => {
+                        const it = el('div', 'list-group-item py-1 px-2 extra-small d-flex justify-content-between gap-2 align-items-start');
+                        const txt = el('div');
+                        const tt = el('div', `fw-bold ${f.added ? 'text-muted text-decoration-line-through' : 'text-dark'}`, f.title);
+                        const wy = el('div', 'text-muted'); wy.append(`${f.rule.id} · ${f.rule.category} · ${f.reason} · `, focusLink('show', f.item.id));
+                        txt.append(tt, wy); it.appendChild(txt);
+                        if (!f.added) { const b = el('button', 'btn btn-outline-warning btn-sm py-0 px-2 extra-small text-nowrap', 'Add'); b.type = 'button'; b.addEventListener('click', () => this.addRuleThreats([f])); it.appendChild(b); }
+                        else it.appendChild(el('span', 'badge bg-success', 'Added'));
+                        list.appendChild(it);
+                    });
+                    rs.appendChild(list);
+                }
+
+                // STRIDE coverage
+                const cov = col(7);
+                cov.appendChild(el('div', 'fw-bold small mb-1', 'STRIDE coverage per component (number of threats)'));
+                const cats = STRIDE_CATEGORIES;
+                const applicable = { process: cats, infrastructure: cats, custom_image: cats, datastore: ['Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service'], interactor: ['Spoofing', 'Repudiation', 'Information Disclosure'], flow: ['Tampering', 'Information Disclosure', 'Denial of Service'] };
+                const ct = el('table', 'table table-sm table-hover align-middle small mb-0');
+                const th = el('thead', 'table-light'); const hr = el('tr'); hr.appendChild(el('th', '', 'Component'));
+                cats.forEach(c => { const h = el('th', 'text-center', c.charAt(0)); h.title = c; hr.appendChild(h); }); th.appendChild(hr); ct.appendChild(th);
+                const cb = el('tbody');
+                [...modelEls, ...this.state.flows].forEach(x => {
+                    const kind = x.sourceId !== undefined ? 'flow' : x.type;
+                    const tr = el('tr'); const name = el('td'); name.appendChild(focusLink(toText(x.name) || (kind === 'flow' ? '(unnamed flow)' : x.id), x.id)); tr.appendChild(name);
+                    cats.forEach(c => {
+                        const n = threats.filter(t => t.elementId === x.id && t.category === c).length;
+                        const td = el('td', 'text-center', !(applicable[kind] || cats).includes(c) ? '·' : (n ? String(n) : '—'));
+                        if ((applicable[kind] || cats).includes(c) && !n) td.className += ' text-warning fw-bold';
+                        if (n) td.className += ' text-success fw-bold';
+                        tr.appendChild(td);
+                    });
+                    cb.appendChild(tr);
+                });
+                ct.appendChild(cb);
+                const covWrap = el('div', 'border rounded'); covWrap.style.maxHeight = '240px'; covWrap.style.overflowY = 'auto'; covWrap.appendChild(ct); cov.appendChild(covWrap);
+                cov.appendChild(el('div', 'text-muted extra-small mt-1', '— = applicable STRIDE category with no threat yet · · = not applicable to this element type'));
+
+                // Warnings + crossings
+                const wc = col(5);
+                wc.appendChild(el('div', 'fw-bold small mb-1', `Model checks (${warnings.length})`));
+                if (!warnings.length) wc.appendChild(el('div', 'text-success extra-small mb-2', 'No problems found.'));
+                const wl = el('ul', 'list-unstyled extra-small mb-3');
+                warnings.forEach(x => { const li = el('li', 'mb-1'); li.append(x.level === 'warning' ? '⚠ ' : 'ℹ ', x.text, ' '); if (x.id) li.appendChild(focusLink('show', x.id)); wl.appendChild(li); });
+                wc.appendChild(wl);
+                wc.appendChild(el('div', 'fw-bold small mb-1', `Data flows crossing a trust boundary (${crossing.length})`));
+                const cl = el('ul', 'list-unstyled extra-small');
+                crossing.forEach(f => {
+                    const enc = f.secProps && f.secProps.encrypted === 'true', auth = f.secProps && f.secProps.authenticated === 'true';
+                    const li = el('li', 'mb-1'); li.append(`${enc ? '🔒' : '🔓'} ${f.name || '(unnamed)'} — crosses ${analysis.crossings.get(f.id).names.join(', ')}${enc ? '' : ' · not encrypted'}${auth ? '' : ' · not authenticated'} `);
+                    li.appendChild(focusLink('show', f.id)); cl.appendChild(li);
+                });
+                wc.appendChild(cl);
+                root.appendChild(row);
+            }
+
+            // ── Markdown report (FEAT-008) ────────────────────────────────────────────
+            buildMarkdownReport() {
+                const cell = (s) => toText(s).replace(/\|/g, '\\|').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r?\n+/g, ' ').trim() || '—';
+                const para = (s) => toText(s).replace(/</g, '&lt;').replace(/>/g, '&gt;').trim();
+                const s = this.state;
+                const risk = (t) => ThreatModelSession.calculateRisk(t.likelihood, t.impact);
+                const byId = new Map([...s.elements, ...s.flows].map(x => [x.id, x]));
+                const analysis = this.computeTrustAnalysis();
+                const statuses = THREAT_STATUSES;
+                const out = [];
+                out.push(`# ${para(s.projectTitle) || 'Threat model'}`, '');
+                out.push(`_Threat model report generated by Threat Tiger ${APP_VERSION} on ${new Date().toISOString().slice(0, 10)}._`, '');
+                out.push('| | |', '|---|---|', `| Scope | ${cell(s.scopeDefinition)} |`, `| Participants | ${cell(s.participants)} |`,
+                    `| Components | ${s.elements.filter(e => ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(e.type)).length} |`,
+                    `| Data flows | ${s.flows.length} |`, `| Threats | ${s.threats.length} |`, '');
+                out.push('## Risk summary', '', `| Severity | ${statuses.join(' | ')} | Total |`, `|---|${statuses.map(() => '---:').join('|')}|---:|`);
+                ['Critical', 'High', 'Medium', 'Low'].forEach(sev => {
+                    const list = s.threats.filter(t => risk(t).label === sev);
+                    out.push(`| ${sev} | ${statuses.map(st => list.filter(t => t.status === st).length).join(' | ')} | ${list.length} |`);
+                });
+                out.push('', '## Diagram', '', '```mermaid', this.buildMermaidDiagram().trimEnd(), '```', '');
+                out.push('## Threats', '');
+                if (!s.threats.length) out.push('_No threats recorded._', '');
+                const groups = new Map();
+                [...s.threats].sort((a, b) => risk(b).score - risk(a).score).forEach(t => { const k = t.elementId; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(t); });
+                groups.forEach((list, id) => {
+                    const target = byId.get(id);
+                    out.push(`### ${para(target ? target.name : 'Unknown component')}${target ? ` (${target.sourceId !== undefined ? 'data flow' : target.type.replace(/_/g, ' ')})` : ''}`, '');
+                    out.push('| ID | STRIDE | Threat | Risk | Status |', '|---|---|---|---|---|');
+                    list.forEach(t => out.push(`| ${cell(t.id)} | ${cell(t.category)} | ${cell(t.title)} | ${risk(t).label} (${risk(t).score}) | ${cell(t.status)} |`));
+                    out.push('');
+                    list.forEach(t => {
+                        out.push(`**${cell(t.id)} — ${para(t.title)}**  `, `${t.category} · likelihood ${t.likelihood} × impact ${t.impact} = ${risk(t).score} (${risk(t).label}) · ${t.status}${t.needsReview ? ' · needs review' : ''}`, '');
+                        if (t.desc) out.push(para(t.desc).split(/\r?\n/).map(l => `> ${l}`).join('\n'), '');
+                        if (t.mitigationExplanation) out.push(`_Mitigation:_ ${para(t.mitigationExplanation)}`, '');
+                    });
+                });
+                out.push('## Data flows', '', '| Flow | From | To | Ports | Encrypted | Authenticated | Crosses trust boundary |', '|---|---|---|---|---|---|---|');
+                s.flows.forEach(f => {
+                    const c = analysis.crossings.get(f.id) || { crosses: false, names: [] };
+                    const yn = (k) => f.secProps && f.secProps[k] === 'true' ? 'yes' : 'no';
+                    out.push(`| ${cell(f.name)} | ${cell((byId.get(f.sourceId) || {}).name)} | ${cell((byId.get(f.targetId) || {}).name)} | ${cell(f.ports)} | ${yn('encrypted')} | ${yn('authenticated')} | ${c.crosses ? cell(c.names.join(', ')) : 'no'} |`);
+                });
+                out.push('', '## Components', '', '| Component | Type | Trust zone | Security properties | Notes |', '|---|---|---|---|---|');
+                s.elements.filter(e => ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(e.type)).forEach(e => {
+                    const props = Object.entries(e.secProps || {}).filter(([, v]) => v === 'true').map(([k]) => k.replace(/([A-Z])/g, ' $1').toLowerCase()).join(', ');
+                    out.push(`| ${cell(e.name)} | ${e.type.replace(/_/g, ' ')} | ${cell((analysis.nodeZones.get(e.id) || []).map(z => z.name).join(', '))} | ${cell(props)} | ${cell(e.notes)} |`);
+                });
+                const pending = this.evaluateAllRules().filter(f => !f.added);
+                const warnings = this.computeModelWarnings();
+                if (pending.length || warnings.length) {
+                    out.push('', '## Open findings', '');
+                    if (pending.length) { out.push('### Suggested by model rules (not yet in the register)', ''); pending.forEach(f => out.push(`- **${para(f.title)}** (${f.rule.category}, ${f.rule.id}) — ${para(f.reason)}`)); out.push(''); }
+                    if (warnings.length) { out.push('### Model checks', ''); warnings.forEach(x => out.push(`- ${para(x.text)}`)); out.push(''); }
+                }
+                return out.join('\n') + '\n';
+            }
+
+            exportMarkdownReport() {
+                const name = (toText(this.state.projectTitle).trim() || 'threat-model').replace(/[^\w.-]+/g, '-').slice(0, 60);
+                this.downloadBlob(new Blob([this.buildMarkdownReport()], { type: 'text/markdown;charset=utf-8' }), `${name}-report.md`);
+            }
+
             /** Fills an icon <select>: the type's original options first, then grouped extra icons. */
             populateIconSelect(select, item, baseOptions) {
                 select.textContent = '';
@@ -6554,6 +7015,7 @@
 
             renderSvgDiagramElements() {
                 if (this.pendingDiagramFrame) { cancelAnimationFrame(this.pendingDiagramFrame); this.pendingDiagramFrame = null; }
+                this.trustAnalysis = this.computeTrustAnalysis();
                 this.layoutSwimlanes();
                 this.dom.layerSwimlanes.innerHTML = '';
                 this.state.elements.filter(e => e.type === 'swimlane').forEach(swim => {
@@ -7018,7 +7480,8 @@
                     let textX = textPos.x;
                     let textY = textPos.y;
                     const hasPorts = (f.ports && f.ports.trim() !== '');
-                    const showBadge = (f.name && f.name.trim() !== '') || hasPorts;
+                    const crossing = (this.trustAnalysis && this.trustAnalysis.crossings.get(f.id)) || { crosses: false, names: [] };
+                    const showBadge = (f.name && f.name.trim() !== '') || hasPorts || crossing.crosses;
                     const isAuthActive = (f.secProps && f.secProps.authenticated === 'true');
                     const hasThreats = this.state.threats.some(t => t.elementId === f.id);
 
@@ -7057,6 +7520,7 @@
                             <div class="${badgeClass}" style="font-size: 10px; line-height: 1.1; border-color: ${labelBorderColor} !important; border-width: ${isSelected ? '2px' : '1px'} !important; user-select: none; padding: 1px 3px; max-width: 100%;">
                                 <div class="fw-bold text-truncate ${labelTextClass}" style="max-width: 150px; padding: 0 !important; margin: 0 !important;">${esc(f.name)}</div>
                                 ${hasPorts ? `<div class="${portTextClass} extra-small" style="font-size: 9px; font-weight: 500; margin-top: 1px;">Port: ${esc(toText(f.ports).trim())}</div>` : ''}
+                                ${crossing.crosses ? `<div class="extra-small fw-bold ${hasThreats && !f.isDisabled ? 'text-warning' : ''}" style="font-size: 9px; ${hasThreats && !f.isDisabled ? '' : 'color: #b45309;'}" title="Crosses ${esc(crossing.names.join(', '))}"><i class="bi bi-bricks me-1"></i>crosses boundary</div>` : ''}
                             </div>
                         `;
                     }
@@ -8137,8 +8601,9 @@
                 });
 
                 this.dom.threatSuggestionsList.innerHTML = '';
+                this.renderTriggeredRules(item);
                 const activeScenarios = allScenarios.filter(sc => !this.disabledStrideFilters.has(sc.category));
-                if (activeScenarios.length === 0) { this.dom.threatSuggestionsList.innerHTML = `<div class="text-center text-muted extra-small py-3">All templates filtered out.</div>`; return; }
+                if (activeScenarios.length === 0) { const msg = document.createElement('div'); msg.className = 'text-center text-muted extra-small py-3'; msg.textContent = 'All templates filtered out.'; this.dom.threatSuggestionsList.appendChild(msg); return; }
 
                 // Grouping & Sorting logic
                 const sortBy = document.getElementById('select-templates-sort') ? document.getElementById('select-templates-sort').value : 'group-category-title';
@@ -8428,7 +8893,7 @@
                 }
                 else {
                     const freshId = this.generateNextThreatId();
-                    this.state.threats.push(Object.assign({ id: freshId }, dataPayload));
+                    this.state.threats.push(Object.assign({ id: freshId }, dataPayload, this.pendingRuleId ? { ruleId: this.pendingRuleId } : {}));
                     this.logEvent("CREATE", `Added threat ${freshId} "${title}"`);
                 }
                 this.saveSessionToLocalStorage(); this.editThreatModal.hide(); this.refreshAppViewVisualWorkspace();
@@ -8578,10 +9043,27 @@
                 this.downloadBlob(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }), "STRIDE-Threat-Register.csv");
             }
 
-            exportWorkspaceJsonPayloadFile() {
-                const payload = Object.assign({ appVersion: APP_VERSION, schemaVersion: SCHEMA_VERSION }, JSON.parse(JSON.stringify(this.state)));
-                delete payload.selectedElementIds; delete payload.selectedFlowId;
-                this.downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `STRIDE-Threat-Model-Export.json`);
+            /**
+             * Exports the model. Output is deterministic (sorted keys, whole-pixel coordinates) so that a small
+             * change to the model produces a small diff in git (FEAT-009). includeLog=false omits the activity log.
+             */
+            exportWorkspaceJsonPayloadFile({ includeLog = true } = {}) {
+                const GEOMETRY = new Set(['x', 'y', 'width', 'height', 'x2', 'y2', 'bendX', 'bendY']);
+                const canon = (v, key) => {
+                    if (Array.isArray(v)) return v.map(x => canon(x));
+                    if (isPlainObject(v)) return Object.fromEntries(Object.keys(v).sort().map(k => [k, canon(v[k], k)]));
+                    if (typeof v === 'number' && (GEOMETRY.has(key) || key === undefined)) return Math.round(v);
+                    return v;
+                };
+                const s = JSON.parse(JSON.stringify(this.state));
+                const payload = {
+                    appVersion: APP_VERSION, schemaVersion: SCHEMA_VERSION,
+                    projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, activeUser: s.activeUser,
+                    elements: canon(s.elements), flows: canon(s.flows), threats: canon(s.threats)
+                };
+                if (includeLog) payload.activityLog = s.activityLog;
+                const name = includeLog ? 'STRIDE-Threat-Model-Export.json' : `${(toText(s.projectTitle).trim() || 'threat-model').replace(/[^\w.-]+/g, '-').slice(0, 60)}.threat-model.json`;
+                this.downloadBlob(new Blob([JSON.stringify(payload, null, 2) + '\n'], { type: 'application/json' }), name);
                 this.isCanvasUnsaved = false;
             }
 
