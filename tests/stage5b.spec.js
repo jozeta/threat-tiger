@@ -59,10 +59,13 @@ test('FEAT-002: suggestions appear in Threat Templates and "Add all" is idempote
   await page.click('button[data-bs-target="#tab-panel-suggest"]');
   // API: runs as admin (P01), logging off (P02), sensitive + unauthenticated inbound (P03),
   // crown jewel reachable across the DMZ edge (P04), sensitive + inbound crossing -> object-level authorization (P05).
-  await expect(page.locator('#suggest-section-triggered')).toContainText('Triggered by this model (5)');
+  // 1.13.0 adds structural triggers (incoming flows from users, outgoing calls to data stores, ...).
+  const expected = await page.evaluate(() => app.evaluateRules(app.state.elements.find((e) => e.id === 'api')).filter((f) => f.source === 'model').map((f) => f.rule.id).sort());
+  expect(expected).toEqual(expect.arrayContaining(['TT-P01', 'TT-P02', 'TT-P03', 'TT-P04', 'TT-P05', 'P-INJ-01']));
+  await expect(page.locator('#suggest-section-triggered')).toContainText(`Triggered by this model (${expected.length})`);
   await page.click('#btn-add-triggered');
   const t = await page.evaluate(() => app.state.threats.map((x) => ({ ruleId: x.ruleId, elementId: x.elementId, status: x.status })));
-  expect(t.map((x) => x.ruleId).sort()).toEqual(['TT-P01', 'TT-P02', 'TT-P03', 'TT-P04', 'TT-P05']);
+  expect(t.map((x) => x.ruleId).sort()).toEqual(expected);
   expect(t.every((x) => x.ruleId && x.elementId === 'api' && x.status === 'Open / Unmitigated')).toBe(true);
   await expect(page.locator('#btn-add-triggered')).toHaveCount(0);   // all added
   await page.click('#btn-undo');

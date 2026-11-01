@@ -61,7 +61,7 @@ test('icon dropdown offers grouped extra icons and applies the choice', async ({
   const ds = demo.elements.find((e) => e.type === 'datastore');
   await page.evaluate((id) => { app.state.selectedElementIds = [id]; app.refreshAppViewVisualWorkspace(); }, ds.id);
   const groups = await page.locator('#props-input-icon optgroup').evaluateAll((g) => g.map((x) => x.label));
-  expect(groups).toEqual(expect.arrayContaining(['Typical', 'Databases & storage', 'Security & identity']));
+  expect(groups).toEqual(expect.arrayContaining(['Database — tailored threats', 'Object storage bucket — tailored threats', 'Security control — tailored threats']));
   await page.selectOption('#props-input-icon', 'bi-database-lock');
   expect(await page.evaluate((id) => app.state.elements.find((e) => e.id === id).icon, ds.id)).toBe('bi-database-lock');
 });

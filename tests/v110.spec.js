@@ -168,6 +168,7 @@ test('picking a suggested name also sets a matching icon (one undo step); every 
   // Icons agree with what the name is recognised as (no conflicting subtype from the icon).
   const conflicts = await page.evaluate(() => ['process', 'datastore', 'interactor', 'infrastructure'].flatMap((k) => Object.entries(NAME_ICONS[k]).filter(([n, i]) => {
     const byName = app.subtypesOf({ id: 'p', type: k, name: n, icon: '' });
+    if (k !== 'interactor') byName.delete('human');   // "User profile service" is not a person
     const byIcon = iconSubtypesFor(i, k);
     return byName.size && byIcon.length && !byIcon.some((x) => byName.has(x)) && !(k === 'interactor' && byIcon.includes('human'));
   }).map(([n, i]) => `${k}:${n}->${i}`)));

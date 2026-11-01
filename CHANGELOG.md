@@ -3,6 +3,23 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.13.0
+
+### Threat library: 244 → 601 threats
+- **Baseline threats per component type** now appear in Insights from the model's structure, without any switches being set. New condition keys `type` (component type at a flow end) and `zoned` (inside a trust boundary or not), and `{}` meaning "any flow" (e.g. `inbound: {}`). Generic threats such as injection, secrets in code, over-privileged identities, unpatched hosts and flat networks now trigger where they apply. New baselines include shared static credentials between services, missing timeouts, rules enforced only in the client, direct writes to data stores by external entities, sensitive data leaving its zone, stored injection via flows into data stores, and unauthenticated service-to-service calls.
+- **Every icon in the "Component Subtype Graphic Icon" lists now brings tailored threats** for that component type (only four decorative icons excepted). There are 27 new kinds of component, recognised from icon and name: configuration files, blockchain/ledger, removable media, local disks, packages and build artifacts, scheduled jobs, AI/ML compute, kiosks, workstations, application code, scripts, test/staging environments, integrations, monitoring, analytics/data warehouses, security controls, open/unencrypted components, biometrics, threat actors, bots, documents, health data, executables, social/chat platforms, CMS, online shops and QR codes.
+- 100 threats now carry a real, publicly documented incident (26 new; see `docs/threat-templates.md`).
+- OWASP Automated Threats (OAT), PCI DSS and HIPAA references link to their sources.
+
+### Changed
+- **Insights** lists threats recognised from the icon or name ("recognised as: …") as well as model-triggered ones, which come first. New **filters** by component, STRIDE category and reason; **Add N shown** adds only what the filters show. Lists over 150 rows are capped until **Show all**.
+- The **icon picker** groups tailored icons per kind of component instead of one long list.
+- Suggested names gained new entries for the new kinds; a few name icons changed so the icon and name agree (ETL pipeline, data warehouse, VPN gateway).
+- The **Markdown report** lists model-triggered findings one by one and summarises the recognised ones per component.
+
+### Fixed
+- Deleting a mitigation from its editor occasionally left the confirmation dialog half-open; tab contents are now rendered before the tab fades in.
+
 ## 1.12.0
 
 ### Added — reusable mitigations (FEAT-003)

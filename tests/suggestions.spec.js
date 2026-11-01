@@ -40,7 +40,8 @@ test('template conditions only use known keys, switches and subtypes', async ({ 
         if (['inbound', 'outbound', 'anyFlow', 'endpoint', 'source', 'target', 'not'].includes(k)) walk(v, id);
         if (['any', 'all'].includes(k)) v.forEach((x) => walk(x, id));
       });
-      if (JSON.stringify(sanitizeCondition(c)) !== JSON.stringify(c)) problems.push(`${id}: changed by sanitizer`);
+      // {} on a flow key means "any flow"; the sanitizer keeps it inside its parent, so only check non-empty objects.
+      if (Object.keys(c).length && JSON.stringify(sanitizeCondition(c)) !== JSON.stringify(c)) problems.push(`${id}: changed by sanitizer`);
     };
     Object.values(tpls).filter(Array.isArray).flat().forEach((t) => {
       if (t.when) walk(t.when, t.id);
@@ -212,27 +213,28 @@ test('icon dropdown lists icons with tailored threat suggestions first', async (
     await page.evaluate((i) => { app.state.selectedElementIds = [i]; app.state.selectedFlowId = null; app.refreshAppViewVisualWorkspace(); }, id);
     return page.evaluate((libraryKey) => {
       const groups = [...document.querySelectorAll('#props-input-icon optgroup')].map((g) => g.label);
-      const mapped = [...document.querySelectorAll('#icon-group-mapped option')].map((o) => o.value);
+      const mapped = [...document.querySelectorAll('#props-input-icon optgroup[data-tailored] option')].map((o) => o.value);
       const wanted = app.templateSubtypesFor(libraryKey);
       const type = app.state.elements.find((e) => e.id === app.state.selectedElementIds[0]).type;
+      const groupsOk = [...document.querySelectorAll('#props-input-icon optgroup[data-tailored]')].every((g) => [...g.children].every((o) => iconSubtypesFor(o.value, type).includes(g.dataset.tailored)));
       const allMapped = mapped.every((v) => iconSubtypesFor(v, type).some((s) => wanted.has(s)));
-      const notMappedLater = [...document.querySelectorAll('#props-input-icon optgroup:not(#icon-group-mapped) option')]
+      const notMappedLater = [...document.querySelectorAll('#props-input-icon optgroup:not([data-tailored]) option')]
         .every((o) => !iconSubtypesFor(o.value, type).some((s) => wanted.has(s)));
-      return { first: groups[0] === 'Current' ? groups[1] : groups[0], mapped, allMapped, notMappedLater };
+      return { first: groups[0] === 'Current' ? groups[1] : groups[0], mapped, allMapped, notMappedLater, groupsOk };
     }, type);
   };
   const ds = await check('datastore');
-  expect(ds.first).toBe('With tailored threat suggestions');
+  expect(ds.first).toMatch(/— tailored threats$/);
   expect(ds.mapped).toEqual(expect.arrayContaining(['bi-bucket', 'bi-database', 'bi-memory', 'bi-inboxes']));
-  expect(ds.mapped).not.toContain('bi-sd-card');
-  expect(ds.allMapped && ds.notMappedLater).toBe(true);
+  expect(ds.mapped).toContain('bi-sd-card');   // 1.13.0: removable media has its own threats
+  expect(ds.allMapped && ds.notMappedLater && ds.groupsOk).toBe(true);
   const proc = await check('process');
   expect(proc.mapped).toEqual(expect.arrayContaining(['bi-globe', 'bi-git']));
-  expect(proc.mapped).not.toContain('bi-wifi');   // network devices have no process-specific threats
-  expect(proc.allMapped && proc.notMappedLater).toBe(true);
+  expect(proc.mapped).toContain('bi-wifi');   // 1.13.0: network-device threats reused for processes (gateways, proxies)
+  expect(proc.allMapped && proc.notMappedLater && proc.groupsOk).toBe(true);
   const ent = await check('interactor');
   expect(ent.mapped).toEqual(expect.arrayContaining(['bi-person-gear', 'bi-building', 'bi-phone']));
-  expect(ent.allMapped && ent.notMappedLater).toBe(true);
+  expect(ent.allMapped && ent.notMappedLater && ent.groupsOk).toBe(true);
 });
 
 test('icon recognition: variants match, look-alike names do not, and per-type meanings apply', async ({ page }) => {

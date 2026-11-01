@@ -2,9 +2,11 @@
 
 `threat_templates.json` is Threat Tiger's threat library. Each component type has its own list: `process`, `datastore`, `interactor` (external entity), `infrastructure` and `flow` (data flow). The Threat Templates panel shows a component's list in three groups:
 
-1. **Triggered by this model**: templates whose `when` condition holds for the component, shown with the reason ("not encrypted; crosses "DMZ"").
+1. **Triggered by this model**: templates whose `when` condition holds for the component, shown with the reason ("not encrypted; crosses "DMZ"", "incoming flow "HTTPS" comes from "Customer" (external entity)").
 2. **Relevant for this component**: templates whose `subtypes` match what the component was recognised as from its icon and name (e.g. *API*, *object storage bucket*, *administrator*).
 3. **More threats**: everything else for that component type.
+
+The **Insights** tab collects open suggestions for the whole model from groups 1 and 2. Each row shows why it is suggested: the condition's reason, or "recognised as: …" when the icon or name matched. Filters narrow the list by component, STRIDE category and reason ("from switches, flows and boundaries" or "from the icon or name"). **Add all** / **Add N shown** adds what the filters show. Long lists show the first 150 rows until you choose **Show all**. The Markdown report lists model-triggered findings one by one and summarises the recognised ones per component.
 
 Every suggestion should end in a decision:
 - **Add** it to the register. Added suggestions leave the list; a note shows how many were added.
@@ -52,8 +54,10 @@ All keys inside one object must hold.
 | `off: "key"` | component / flow | The switch exists and is off |
 | `anyOn: ["k1","k2"]` | component / flow | At least one is on |
 | `crossesBoundary: true` | flow | The flow crosses a trust zone edge or a trust boundary line |
+| `type: "datastore"` or `[...]` | component (usually inside `source` / `target` / `endpoint`) | The component is of this type: `process`, `datastore`, `interactor`, `infrastructure` |
+| `zoned: true` / `false` | component | The component is (not) drawn inside a trust boundary |
 | `subtype: "name"` or `[...]` | component / flow | The item was recognised as one of these subtypes |
-| `inbound` / `outbound` / `anyFlow: {…}` | component | At least one connected flow (incoming / outgoing / any) satisfies the inner condition |
+| `inbound` / `outbound` / `anyFlow: {…}` | component | At least one connected flow (incoming / outgoing / any) satisfies the inner condition; `{}` means any such flow |
 | `endpoint` / `source` / `target: {…}` | flow | Either end / the source / the target component satisfies the inner condition |
 | `any: [ … ]`, `all: [ … ]`, `not: { … }` | any | Logical combinations |
 
@@ -61,6 +65,7 @@ All keys inside one object must hold.
 
 **Subtypes** are inferred from the icon and from keywords in the name and notes:
 - **Components:** `web`, `api`, `graphql`, `identity`, `ci-cd`, `serverless`, `container`, `database`, `nosql`, `object-storage`, `cache`, `queue`, `file-share`, `secrets`, `logs`, `llm`, `payment`, `human`, `admin`, `partner-system`, `mobile`, `iot`, `cloud-host`, `host`, `network-device`, `email`, `dns`, `cdn`, `vpn`.
+- **Added in 1.13.0:** `config`, `ledger`, `removable-media`, `local-disk`, `supply-chain`, `scheduler`, `ml-compute`, `kiosk`, `workstation`, `app-code`, `script`, `non-prod`, `integration`, `monitoring`, `analytics`, `security-control`, `open-access`, `biometric`, `threat-actor`, `bot`, `documents`, `health-data`, `executable`, `social`, `cms`, `ecommerce`, `qr`.
 - **Flows**, from the name and ports: `webhook`, `messaging`, `http`, `remote-admin`, `identity`, `email`, `database`.
 
 The **Component Label** field suggests names per component type (`NAME_SUGGESTIONS` in `threat-tiger.html`). They are chosen so that the engine recognises them; each suggestion shows the subtype it maps to.
@@ -114,3 +119,21 @@ New threats were added wherever the library was thin. The aim was **at least 5 p
 | datastore | 46 | — | 11 | 8 | 18 | 9 | — |
 | interactor | 36 | 17 | — | 8 | 11 | — | — |
 | flow | 35 | — | 13 | — | 14 | 8 | — |
+
+## 1.13.0: per-component baselines and icon threats
+
+**Baselines per component type.** Generic threats now trigger from how a component is connected, so every connected component gets suggestions without any switches being set. For example: a process receiving flows from users (injection, error leakage, client-side-only rules, ReDoS); a process calling data stores (over-privileged identity, secrets in code); a process with outgoing calls (no timeouts); a data store written by an external entity directly; sensitive data leaving its zone; an infrastructure node outside every trust boundary (flat network); and flows into data stores (stored injection), to external entities (data leaving your control) or between services without authentication.
+
+**Every icon means something.** Each icon offered for a component type is recognised as a kind of component with at least two tailored threats; only four decorative infrastructure icons (trash, award, columns, P) are not. The icon picker groups icons by that kind ("Database — tailored threats", …). Where a kind already had curated threats for another component type, they are reused (same text, id prefixed with the new type), for example database threats for a database server drawn as infrastructure. New suggested names (batch job, Jupyter server, .env file, package registry, attacker, GPU server, WordPress server, …) pick a matching icon.
+
+New verified examples, each checked against at least two independent reports: exposed .env files (Unit 42, 2024), Ronin bridge (2022), Poly Network (2021), Raspberry Robin (2022), xz utils (2024), Codecov (2021), malicious Hugging Face models (JFrog, 2024), ShadowRay (2024), LeftoverLocals (2024), Uber (2016), Midnight Blizzard via a test tenant (2024), Salesloft Drift OAuth tokens (2025), Dropbox Sign (2024), Grafana CVE-2021-43798, Snowflake customer accounts (2024), CrowdStrike content update (2024), Suprema BioStar 2 (2019), 23andMe (2023), Facebook scraping (2021), Follina (2022), Change Healthcare (2024), 3CX (2023), Twitter (2020), WordPress File Manager (2020), British Airways (2018) and MyEtherWallet BGP hijack (2018).
+
+| Type | Total | S | T | R | I | D | E | Triggered by conditions |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| process | 186 | 24 | 43 | 19 | 43 | 28 | 29 | 22 |
+| infrastructure | 210 | 24 | 43 | 24 | 57 | 27 | 35 | 7 |
+| datastore | 103 | — | 27 | 21 | 39 | 16 | — | 13 |
+| interactor | 63 | 30 | — | 13 | 20 | — | — | 6 |
+| flow | 39 | — | 15 | — | 15 | 9 | — | 14 |
+
+601 threats in total, 100 with a real incident example.
