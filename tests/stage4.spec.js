@@ -108,3 +108,22 @@ test('no console errors through the main Stage 4 flows', async ({ page }) => {
   await expect(page.locator('#btn-undo')).toBeDisabled();   // nothing to undo yet on a fresh load
   expect(errors).toEqual([]);
 });
+
+test('reworded built-in templates replace old unmodified copies but keep user-edited ones', async ({ page }) => {
+  const fs = require('node:fs');
+  const old = { process: [
+    { category: 'Spoofing', title: 'Service Identity Mimicry targeting [name]', desc: 'Malicious system processes spoof verification profiles or intercept routing instructions streams to inherit valid handshake states.', isUnsaved: false },
+    { category: 'Spoofing', title: 'Unauthenticated Inter-Process Communication Endpoint Exposure', desc: 'My own edited description.', isUnsaved: false },
+  ], datastore: [], interactor: [], infrastructure: [], flow: [] };
+  await openApp(page);
+  // Seed an old-style stored library, then reload (the helper only clears storage on the first load).
+  await page.evaluate((o) => localStorage.setItem('stride_workbench_threat_templates', JSON.stringify(o)), old);
+  await page.reload();
+  await page.waitForFunction(() => window.app && window.app.state);
+  await page.waitForTimeout(300);
+  const titles = await page.evaluate(() => app.threatSuggestions.process.map((t) => t.title));
+  const current = JSON.parse(fs.readFileSync(require('node:path').join(__dirname, '..', 'threat_templates.json'), 'utf8')).process.map((t) => t.title);
+  expect(titles).not.toContain('Service Identity Mimicry targeting [name]');
+  expect(titles).toContain('Unauthenticated Inter-Process Communication Endpoint Exposure');   // user-edited: kept
+  for (const t of current) expect(titles).toContain(t);
+});

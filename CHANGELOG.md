@@ -3,6 +3,16 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.8.0 — unreleased (branch `audit-fixes`)
+
+### Changed
+- **All 58 built-in threat templates reworded** in plain, technically accurate language: each says what the attacker does, what it leads to, and typical controls. Component types, STRIDE categories and `[name]` placeholders are unchanged. Some were corrected (e.g. "TLS session resumption key leakage" is now "Recorded traffic can be decrypted later (no forward secrecy)").
+- Unmodified copies of the old templates stored in a browser are replaced automatically; templates you edited are kept.
+- **Help text rewritten**: what threat modeling is, what STRIDE's six categories mean in one sentence each, and how to use Threat Templates, security switches, the register and Insights together. The logo now scrolls with the help text instead of taking up a third of the dialog.
+
+### Not changed
+- No module split (ARCH-001): the app stays one editable file; tests and `npm run sync` cover the main maintenance risks.
+
 ## 1.7.0 — unreleased (branch `audit-fixes`, Stage 6 part 1)
 
 ### Security / deployment
