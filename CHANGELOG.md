@@ -3,6 +3,11 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.5.1 — unreleased (branch `audit-fixes`)
+
+### Fixed
+- **Typed text was lost when clicking the canvas.** Component and data-flow fields (name, notes, ports, text, etc.) save when the field loses focus, but a click on the canvas re-rendered the Properties panel before the browser moved focus, discarding the typed text — only Tab worked. Fields are now saved at the start of any click (and when the page is hidden or closed), and the click itself still selects what was clicked.
+
 ## 1.5.0 — unreleased (branch `audit-fixes`, Stage 5)
 
 ### Added

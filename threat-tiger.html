@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-e/cPI43aCHsX0xHqq0D6tqU09X6VamAXU6TN6QrfFDM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-0RvqOOaqRMwSOrbqWhqNn/NbOs6xAJc5XP+t9O3mWkM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
     <link href="vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css" rel="stylesheet">
@@ -3261,7 +3261,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.5.0';
+        const APP_VERSION = '1.5.1';
         const SCHEMA_VERSION = 1;
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
         const LEDGER_PAGE_SIZE = 200;       // PERF-003: rows rendered per page
@@ -3843,10 +3843,29 @@
                 this.bindBeforeUnloadEvent();
             }
 
+            /**
+             * Saves the field being edited. Inspector fields save on 'change', which the browser fires only when
+             * the field loses focus — but canvas mousedown handlers re-render the inspector first, so a click on the
+             * canvas used to discard the typed text. Blurring here makes 'change' fire while the selection is intact.
+             */
+            commitActiveField(exceptTarget) {
+                const el = document.activeElement;
+                if (!el || el === document.body) return;
+                const editable = el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
+                if (!editable || (exceptTarget && el.contains(exceptTarget))) return;
+                // When committing because of a click, the click's target must survive: re-rendering now would
+                // replace the element under the pointer and the click would be lost. Defer renders by one frame.
+                this.deferRenders = !!exceptTarget;
+                try { el.blur(); } finally { this.deferRenders = false; }
+            }
+
             bindBeforeUnloadEvent() {
-                window.addEventListener('pagehide', () => this.flushSave());
-                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') this.flushSave(); });
+                // Capture phase on window runs before every canvas/component handler (pointerdown precedes mousedown).
+                window.addEventListener('pointerdown', (ev) => this.commitActiveField(ev.target), true);
+                window.addEventListener('pagehide', () => { this.commitActiveField(); this.flushSave(); });
+                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') { this.commitActiveField(); this.flushSave(); } });
                 window.addEventListener('beforeunload', (event) => {
+                    this.commitActiveField();
                     this.flushSave();
                     const hasUnsavedTemplates = Object.keys(this.threatSuggestions).some(type =>
                         Array.isArray(this.threatSuggestions[type]) && this.threatSuggestions[type].some(t => t.isUnsaved)
@@ -4886,6 +4905,8 @@
             }
 
             refreshAppViewVisualWorkspace() {
+                if (this.deferRenders) { this.scheduleFullRefresh(); return; }
+                if (this.pendingRefreshFrame) { cancelAnimationFrame(this.pendingRefreshFrame); this.pendingRefreshFrame = null; }
                 this.renderSvgDiagramElements(); this.renderThreatRegisterTableGrid();
                 this.syncMetadataInputsAndLabels(); this.updatePropertiesInspectorView();
                 this.updateThreatSuggestionsWizardView(); this.renderActivityLedgerTable();
@@ -7004,6 +7025,11 @@
                 select.value = item.icon || (baseOptions[0] && baseOptions[0].val) || '';
             }
 
+            scheduleFullRefresh() {
+                if (this.pendingRefreshFrame) return;
+                this.pendingRefreshFrame = requestAnimationFrame(() => { this.pendingRefreshFrame = null; this.refreshAppViewVisualWorkspace(); });
+            }
+
             /** Coalesces renders to one per animation frame (PERF-004). */
             scheduleDiagramRender() {
                 if (this.pendingDiagramFrame) return;
@@ -7014,6 +7040,7 @@
             }
 
             renderSvgDiagramElements() {
+                if (this.deferRenders) { this.scheduleDiagramRender(); return; }
                 if (this.pendingDiagramFrame) { cancelAnimationFrame(this.pendingDiagramFrame); this.pendingDiagramFrame = null; }
                 this.trustAnalysis = this.computeTrustAnalysis();
                 this.layoutSwimlanes();
