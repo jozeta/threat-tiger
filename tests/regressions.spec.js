@@ -62,11 +62,11 @@ test('BUG-004: a data store only gets data-store templates', async ({ page }) =>
 test('BUG-005: a deleted built-in template stays deleted after reload', async ({ page }) => {
   await openApp(page);
   const title = await page.evaluate(() => {
-    window.confirm = () => true;
     const victim = app.threatSuggestions.process[0];
     app.deleteTemplate(victim, 'process');
     return victim.title;
   });
+  await page.click('#btn-confirm-delete');
   await page.reload();
   await page.waitForFunction(() => window.app && window.app.state);
   await page.waitForTimeout(300);

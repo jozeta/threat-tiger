@@ -3,6 +3,27 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.3.0 — unreleased (branch `audit-fixes`, Stage 4)
+
+### Security / offline
+- Bootstrap 5.3.2, Bootstrap Icons 1.13.2 and Font Awesome 6.5.1 are bundled in `vendor/`; the app makes no requests to other hosts and works offline, including when opened directly as a file (SEC-004, ARCH-006).
+- Content-Security-Policy blocks injected inline scripts (defence in depth on top of SEC-001). `npm run sync` keeps its script hash current.
+- Vendored files are pinned in `vendor/checksums.json` and verified by `npm run sync -- --check` and the tests.
+- Default threat templates are embedded in the page as a fallback when `threat_templates.json` cannot be fetched.
+
+### Changed
+- First visit shows Help as a dismissible welcome with "Open demo model" / "Start modeling"; no license acceptance gate (UI-001).
+- Your name is set in a small dialog (click "You:" in the header) instead of a browser prompt, and remembered per browser (UI-002).
+- All browser alert/confirm/prompt dialogs replaced with styled dialogs and notifications (UI-006).
+- Plainer wording in the register, activity log and dialogs (UI-004); help text formatting fixed and image alt text added (UI-005).
+- Help logo served as an 840 px WebP: 756 KB → 52 KB (PERF-006).
+
+### Added
+- Undo / redo for every model change (toolbar buttons, Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z, Ctrl+Y) (FEAT-001). Deleting a threat shows an Undo button.
+- Clicking a threat in the register selects and centres its component on the canvas (FEAT-016).
+- Register filters for STRIDE category and status, including "Not fully mitigated" and "Needs review" (UI-007).
+- `npm run serve` — a small local web server (no dependencies).
+
 ## 1.2.0 — unreleased (branch `audit-fixes`, Stage 3)
 
 ### Changed

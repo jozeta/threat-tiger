@@ -16,7 +16,8 @@ module.exports = defineConfig({
     acceptDownloads: true,
   },
   webServer: {
-    command: `python3 -m http.server ${PORT} --bind 127.0.0.1`,
+    command: `node scripts/serve.mjs`,
+    env: { PORT: String(PORT) },
     url: `http://127.0.0.1:${PORT}/threat-tiger.html`,
     reuseExistingServer: true,
     stdout: 'ignore',

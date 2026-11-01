@@ -5,9 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.min.css" rel="stylesheet" crossorigin="anonymous">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet" crossorigin="anonymous">
+    <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5/QIxe5RwKGP/bUuQYCZid2VXzVFUYbfx2hqU3Tm3sQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
+    <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
+    <link href="vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css" rel="stylesheet">
+    <link href="vendor/fontawesome-6.5.1/css/all.min.css" rel="stylesheet">
     <style>
         :root {
             --sidebar-width: 290px;
@@ -1516,6 +1519,9 @@
         .dark-theme-canvas .swimlane-row-text {
             fill: #94a3b8 !important;
         }
+        /* FEAT-016: briefly highlight the component a threat belongs to */
+        @keyframes focus-pulse-kf { 0%, 100% { filter: none; } 40% { filter: drop-shadow(0 0 10px rgba(13, 110, 253, 0.95)); } }
+        .focus-pulse { animation: focus-pulse-kf 0.8s ease-in-out 2; }
     </style>
 </head>
 
@@ -1524,16 +1530,16 @@
     <div class="app-container" id="main-layout-container">
         <header class="navbar navbar-dark bg-dark px-3 shadow-sm d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <span class="navbar-brand mb-0 h1 fs-5 me-1"><img src="Threat_tigerS.png"></i>Threat Tiger </span>
+                <span class="navbar-brand mb-0 h1 fs-5 me-1"><img src="Threat_tigerS.png" alt="" width="75" height="43">Threat Tiger </span>
                 <span class="text-white-50 align-self-center mt-1 me-2" style="font-size: 11px; letter-spacing: 0.3px;">
                     Threat Modeling With A Bite · v<span data-app-version></span></span>
 
                 <div id="operator-container-div"
                     class="d-flex align-items-center gap-1 border-start border-secondary ps-3 ms-1 me-3">
-                    <span class="text-white-50 extra-small" style="font-size: 10px;">Operator:</span>
+                    <span class="text-white-50 extra-small" style="font-size: 10px;">You:</span>
                     <span class="badge bg-primary text-light fw-bold" id="lbl-active-operator"
                         style="cursor: pointer; font-size: 11px;"
-                        title="Click to modify baseline session operator runtime profile">Configuring...</span>
+                        title="Click to change your name (used in the activity log)" role="button" tabindex="0">Configuring...</span>
                 </div>
 
                 <span class="badge bg-secondary text-light pt-1" id="project-title-badge">New Threat Model
@@ -2154,6 +2160,10 @@
 
             <div class="position-absolute bottom-0 start-0 m-3 d-flex gap-2 bg-white p-1 rounded shadow-sm border"
                 style="z-index: 10;">
+                <button class="btn btn-sm btn-light border-0" id="btn-undo" title="Undo (Ctrl/Cmd+Z)" aria-label="Undo" disabled><i
+                        class="bi bi-arrow-counterclockwise"></i></button>
+                <button class="btn btn-sm btn-light border-0" id="btn-redo" title="Redo (Ctrl/Cmd+Shift+Z)" aria-label="Redo" disabled><i
+                        class="bi bi-arrow-clockwise"></i></button>
                 <button class="btn btn-sm btn-light border-0" id="btn-canvas-zoom-in" title="Zoom In"><i
                         class="bi bi-zoom-in"></i></button>
                 <button class="btn btn-sm btn-light border-0" id="btn-canvas-zoom-out" title="Zoom Out"><i
@@ -2800,7 +2810,7 @@
                 <li class="nav-item">
                     <button class="nav-link py-2 small fw-semibold" id="tab-notes-trigger" data-bs-toggle="tab"
                         data-bs-target="#tab-panel-notes" type="button">
-                        <i class="bi bi-clock-history me-1 text-primary"></i>Operational Activity Log Ledger
+                        <i class="bi bi-clock-history me-1 text-primary"></i>Activity Log
                     </button>
                 </li>
             </ul>
@@ -2810,7 +2820,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-2 px-1 gap-2 flex-wrap">
                         <div class="d-flex align-items-center gap-2">
                             <input type="text" class="form-control form-control-sm shadow-none"
-                                id="filter-threat-search" placeholder="Search parameters logs..." style="width:240px;">
+                                id="filter-threat-search" placeholder="Search threats…" aria-label="Search threats" style="width:240px;">
                             <select class="form-select form-select-sm shadow-none" id="filter-threat-severity"
                                 style="width: 140px;">
                                 <option value="">All Severities</option>
@@ -2819,12 +2829,23 @@
                                 <option value="Medium">Medium</option>
                                 <option value="Low">Low</option>
                             </select>
+                            <select class="form-select form-select-sm shadow-none" id="filter-threat-category" style="width: 170px;" aria-label="Filter by STRIDE category">
+                                <option value="">All categories</option>
+                                <option>Spoofing</option><option>Tampering</option><option>Repudiation</option>
+                                <option>Information Disclosure</option><option>Denial of Service</option><option>Elevation of Privilege</option>
+                            </select>
+                            <select class="form-select form-select-sm shadow-none" id="filter-threat-status" style="width: 170px;" aria-label="Filter by status">
+                                <option value="">All statuses</option>
+                                <option value="__not-mitigated">Not fully mitigated</option>
+                                <option>Open / Unmitigated</option><option>Partially mitigated</option><option>Mitigated / Resolved</option>
+                                <option value="__review">Needs review</option>
+                            </select>
                         </div>
                         <div class="d-flex gap-2">
                             <button class="btn btn-sm btn-outline-danger" id="btn-register-export-csv"><i
                                     class="bi bi-filetype-csv me-1"></i>Export CSV</button>
                             <button class="btn btn-sm btn-success" id="btn-register-add-custom"><i
-                                    class="bi bi-plus-circle me-1"></i>Add Custom Threat</button>
+                                    class="bi bi-plus-circle me-1"></i>New Threat</button>
                         </div>
                     </div>
 
@@ -2835,17 +2856,14 @@
                                 <tr>
                                     <th scope="col" style="width: 80px; cursor: pointer;" id="th-sort-id">ID <i
                                             class="bi bi-arrow-down-up opacity-50 ms-1"></i></th>
-                                    <th scope="col" style="width: 140px; cursor: pointer;" id="th-sort-category">STRIDE
-                                        Metric <i class="bi bi-arrow-down-up opacity-50 ms-1"></i></th>
-                                    <th scope="col" style="width: 380px; cursor: pointer;" id="th-sort-title">Title
-                                        Scenario Profile Description <i class="bi bi-arrow-down-up opacity-50 ms-1"></i>
+                                    <th scope="col" style="width: 140px; cursor: pointer;" id="th-sort-category">STRIDE <i class="bi bi-arrow-down-up opacity-50 ms-1"></i></th>
+                                    <th scope="col" style="width: 380px; cursor: pointer;" id="th-sort-title">Title <i class="bi bi-arrow-down-up opacity-50 ms-1"></i>
                                     </th>
                                     <th scope="col" style="width: 180px; cursor: pointer;" id="th-sort-component">
-                                        Associated Component <i class="bi bi-arrow-down-up opacity-50 ms-1"></i></th>
+                                        Component <i class="bi bi-arrow-down-up opacity-50 ms-1"></i></th>
                                     <th scope="col" style="width: 110px; cursor: pointer;" id="th-sort-severity">
                                         Severity <i class="bi bi-arrow-down-up opacity-50 ms-1"></i></th>
-                                    <th scope="col" style="width: 110px; cursor: pointer;" id="th-sort-score">Risk
-                                        Rating <i class="bi bi-arrow-down-up opacity-50 ms-1"></i></th>
+                                    <th scope="col" style="width: 110px; cursor: pointer;" id="th-sort-score">Score <i class="bi bi-arrow-down-up opacity-50 ms-1"></i></th>
                                     <th scope="col" style="width: 140px; cursor: pointer;" id="th-sort-status">Status <i
                                             class="bi bi-arrow-down-up opacity-50 ms-1"></i></th>
                                     <th scope="col" class="text-center d-print-none" style="width: 100px;">Actions</th>
@@ -3069,22 +3087,21 @@
         </div>
     </div>
 
-    <div class="modal fade" id="modal-help" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="modal-help" tabindex="-1" aria-labelledby="modal-help-title" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-dark text-white py-3">
-                    <h5 class="modal-title fw-bold fs-6 d-flex align-items-center"><i
-                            class="bi bi-question-circle-fill text-primary me-2"></i>Documentation &amp; License
-                        Manifest <span class="badge bg-secondary ms-2 fw-normal">v<span data-app-version></span></span></h5>
+                    <h5 class="modal-title fw-bold fs-6 d-flex align-items-center" id="modal-help-title"><i
+                            class="bi bi-question-circle-fill text-primary me-2"></i>Help &amp; License <span class="badge bg-secondary ms-2 fw-normal">v<span data-app-version></span></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
-                </div><img src="Threat_tiger.png">
+                </div><img src="Threat_tiger_840.webp" alt="Threat Tiger — Threat modeling with a bite" width="840" height="328" loading="lazy" style="width: 100%; height: auto;">
                 <div class="modal-body p-4 text-muted small" style="line-height: 1.6;">
                     <h5 class="fw-bold text-dark mb-2"><i class="bi bi-sliders me-2 text-primary"></i>1. Core Threat
                         Modeling Engineering Methodology</h5>
                     <p class="mb-3">This architecture threat modeling tool facilitates highly structured, continuous
                         secure-by-design architectural audits. Threat identification protocols follow the strict
-                        **STRIDE matrix standard framework** to thoroughly evaluate structural security postures:</p>
+                        <strong>STRIDE</strong> framework to thoroughly evaluate structural security postures:</p>
                     <ul class="mb-4">
                         <li><strong>Spoofing (Authentication):</strong> Validating entity endpoints against
                             configuration impersonation vectors or weak identity claims signatures.</li>
@@ -3129,8 +3146,9 @@
                     </div>
                 </div>
                 <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-dark btn-sm px-4" id="btn-accept-license">I Accept Terms &amp;
-                        Conditions</button>
+                    <button type="button" class="btn btn-outline-primary btn-sm px-3" id="btn-welcome-demo"><i
+                            class="bi bi-diagram-3 me-1"></i>Open demo model</button>
+                    <button type="button" class="btn btn-dark btn-sm px-4" id="btn-welcome-start">Start modeling</button>
                 </div>
             </div>
         </div>
@@ -3158,13 +3176,34 @@
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header py-2">
-                    <h5 class="modal-title fs-6 fw-bold" id="modal-confirm-delete-title">Delete selection and its threats?</h5>
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-confirm-delete-title">Are you sure?</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body small" id="modal-confirm-delete-body"></div>
+                <div class="modal-body small" id="modal-confirm-delete-body" style="white-space: pre-line;"></div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-confirm-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-danger" id="btn-confirm-delete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Your name (replaces prompt(), UI-002) -->
+    <div class="modal fade" id="modal-operator" tabindex="-1" aria-labelledby="modal-operator-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-operator-title">Your name</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="input-operator-name" class="form-label small text-muted">Shown in the activity log and added to participants. Remembered in this browser.</label>
+                    <input type="text" class="form-control form-control-sm" id="input-operator-name" maxlength="80" autocomplete="name">
+                    <div class="invalid-feedback">Please enter a name.</div>
+                </div>
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-sm btn-danger" id="btn-confirm-delete">Delete</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="btn-operator-save">Save</button>
                 </div>
             </div>
         </div>
@@ -3186,11 +3225,14 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="vendor/bootstrap-5.3.2/bootstrap.bundle.min.js"></script>
+
+    <!-- Copy of threat_templates.json, used when the file cannot be fetched (e.g. opened via file://). Kept in sync by `npm run sync`. -->
+    <script type="application/json" id="embedded-threat-templates">{"process":[{"category":"Spoofing","title":"Service Identity Mimicry targeting [name]","desc":"Malicious system processes spoof verification profiles or intercept routing instructions streams to inherit valid handshake states."},{"category":"Spoofing","title":"Unauthenticated Inter-Process Communication Endpoint Exposure","desc":"Deserialized callback pipelines accept unverified local connection loops, allowing adjacent container processes to simulate master commands."},{"category":"Spoofing","title":"Server-Side Request Forgery (SSRF) Loop Proxy Exploitation","desc":"Inadequate validation of resource paths parameters allows attackers to coerce the service process into scanning hidden corporate loop infrastructure interfaces."},{"category":"Spoofing","title":"DNS Cache Poisoning & Routing Redirection","desc":"Lack of secure DNS resolution constraints allows local infrastructure daemons to process forged names mappings, routing traffic to adversary pods."},{"category":"Tampering","title":"Runtime Memory Manipulation and Assembly Injection","desc":"Absence of strict input validation allows arbitrary command arguments or malicious assembly packages to alter binary runtime execution."},{"category":"Tampering","title":"Insecure Local Binaries Subversion and DLL Hijacking","desc":"Inadequate write permissions on runtime execution paths enable local actors to replace core dependencies with malicious modules."},{"category":"Tampering","title":"Log Forgery and Malicious Command Parameter Injection","desc":"Unsanitized user data breaks boundary parsing strings inside shell utilities, executing secondary terminal commands with service rights."},{"category":"Tampering","title":"Container Image Mirror Contamination","desc":"Outdated build pipelines pulls unverified container layers, embedding malicious backdoors into deployed application environments."},{"category":"Repudiation","title":"Insufficient Administrative Security Modification Logs","desc":"State mutations and user privileges shifts complete inside process memory loops without appending cryptographically signed audit tracks."},{"category":"Repudiation","title":"Log Injection via Unsanitized Downstream Payload Formatting","desc":"Process streams forward user inputs directly into internal syslog nodes without tracing sanitization, permitting log erasure or forging."},{"category":"Repudiation","title":"Application Core Crash State Suppression","desc":"Runtime exception loops fail to dump hardware core logs or emit telemetry markers when unhandled errors terminate process pools."},{"category":"Information Disclosure","title":"Verbose Error Stack Trace Serialization Leakage","desc":"System exceptions serialize absolute database paths, environmental parameters, and configuration fields straight into response buffers."},{"category":"Information Disclosure","title":"Side-Channel Cryptographic Execution Disclosures","desc":"Timing deltas in password hashing loops or token validation gates expose secret byte alignments to highly granular network observation tools."},{"category":"Information Disclosure","title":"Shared Garbage Collection Memory Leaks Pool","desc":"Improper zeroing of processing buffers leaks raw data blocks across distinct multi-tenant sessions running on the same host kernel thread."},{"category":"Information Disclosure","title":"Memory Dump Core Inspection Vulnerability","desc":"Process handles leave plaintext access tokens or decryption key parameters unencrypted in swap files or runtime heap sectors."},{"category":"Denial of Service","title":"Thread Pool Allocation Exhaustion and Starvation Loop","desc":"Unconstrained execution parameters or un-throttled payload loops let hostile bursts exhaust compute threads completely, freezing operations."},{"category":"Denial of Service","title":"Algorithmic Complexity Exploitation (ReDoS / Hash Collision)","desc":"Unbounded regular expressions processing untrusted input choke execution loops, spiking CPU utilization to 100%."},{"category":"Denial of Service","title":"Asynchronous Task Queue Flood Lock","desc":"Incoming event workers stream unbounded payload quantities without ingestion quotas, saturating runtime memory buffers and forcing termination."},{"category":"Elevation of Privilege","title":"Insecure Context Deserialization and Privilege Scale","desc":"Processing serialized network requests without strict type validation allows low-privilege sessions to scale permissions frames and spawn root sub-processes."},{"category":"Elevation of Privilege","title":"Environment Variable Handshake Subversion via SUID Binaries","desc":"Process execution honors manipulated system configuration strings, enabling subprocess elevation to administrative container layer context."},{"category":"Elevation of Privilege","title":"Remote Code Execution (RCE) via Upstream Dependency CVEs","desc":"Outdated or unvetted packaging modules contained in the compilation toolchain expose downstream microservices to arbitrary runtime hijacking."}],"datastore":[{"category":"Tampering","title":"Unsanitized Injection Bypassing Schema Mapping Checks","desc":"Malicious inputs overwrite existing fields or mutate underlying structures to execute unauthorized state changes."},{"category":"Tampering","title":"NoSQL Query Argument Injection via Boolean Abuses","desc":"Passing object literals instead of scalars bypasses structure definitions, mutating state or truncating indices."},{"category":"Tampering","title":"Storage Snapshot Metadata Corruption Attack","desc":"Adversaries overwrite unvalidated transaction header fields, corrupting index block pointers to freeze data extraction processes."},{"category":"Tampering","title":"SQL Injection via Unvalidated Filter Parameters","desc":"Raw text concatenations on complex multi-table queries let external entities subvert programmatic evaluation trees."},{"category":"Repudiation","title":"Anonymous Mutation Records Injection","desc":"Modifications drop directly into data tables without recording verified identity tokens profiles."},{"category":"Repudiation","title":"Absence of Write-Once Immutable Transaction Records Ledger","desc":"Audit trails or high-value transactional records lack append-only locks constraints, allowing compromised keys to forge past historical log trails."},{"category":"Repudiation","title":"Transactional System Table Clear Down","desc":"Administrative access tokens can purge table event logs without invoking out-of-band streaming alerts to security SIEM aggregates."},{"category":"Information Disclosure","title":"Mass Database Extraction via Blind Logical Traversal","desc":"Deficient column-level validation allows malicious entities to perform full table scans and dump core intellectual property fields."},{"category":"Information Disclosure","title":"Plaintext Backup Snapshot Leaks to Multi-Tenant Storage Buckets","desc":"Automated database exports write to external unencrypted file sectors, exposing historical indices to parallel multi-tenant read sweeps."},{"category":"Information Disclosure","title":"Unencrypted Backup and Core Table Log Leaks","desc":"Disposing database snapshots to staging areas without secondary symmetric partition locks exposes entire schemas to unauthorized administrative groups."},{"category":"Denial of Service","title":"Storage Locking Starvation via Deadlock Query Insertion","desc":"Unbounded long-running queries or malicious read locks saturate connection allocation slots, rendering persistence layers unavailable."},{"category":"Denial of Service","title":"Wildcard Query Index Exhaustion and RAM Thrashing","desc":"Massive unindexed regular expression operations saturate persistence layer memory allocations, forcing server terminations."},{"category":"Denial of Service","title":"Storage Allocation Exhaustion via Unbounded Log Append","desc":"Malicious client entities stream massive nested diagnostic inputs, flooding table storage space and halting database engine processes."}],"interactor":[{"category":"Spoofing","title":"Client Session Hijacking and Cryptographic Claim Forgery","desc":"Weak cookie protection parameters or session token generation algorithms allow thread actors to steal active administrative claims."},{"category":"Spoofing","title":"Credential Stuffing via Automated Brute-Force Replay Gates","desc":"Lack of client-side rate controls or device fingerprinting lets rogue bots masquerade as legitimate client instances using compiled credential lists."},{"category":"Spoofing","title":"Man-In-The-Browser Client State Interception","desc":"Malware extensions active inside the untrusted client engine intercept raw keystrokes and authentication values prior to transit encryption."},{"category":"Spoofing","title":"Session Fixation & Automated Token Replay Abuse","desc":"Authentication endpoints failing to recycle identifier states on state upgrade allow malicious observers to pre-seed valid sessions."},{"category":"Repudiation","title":"Edge Transaction Repudiation via Missing Signature Verifications","desc":"Operational entry vectors post execution data without passing mutual TLS constraints or non-repudiation tokens."},{"category":"Repudiation","title":"Client-Side Action Disavowal via Shared Session Identifiers","desc":"Multi-user client systems or shared credentials let individual operators deny actions due to a lack of deterministic client audit anchors."},{"category":"Information Disclosure","title":"Client-Side Storage Scraping and Local Caching Leakage","desc":"Sensitive operational values serialize inside vulnerable plaintext browser caches or unsecured local folder spaces."},{"category":"Information Disclosure","title":"Sensitive Operational Tokens Leaked into Web Browser DevTools Logs","desc":"Diagnostic console tracing prints internal authentication tokens or infrastructure paths directly into client-side inspectable runtime logs."},{"category":"Information Disclosure","title":"Cross-Site Scripting (XSS) Token Extraction Loop","desc":"Absence of strict cookie security flags allows injected scripts to parse inner DOM context and exfiltrate identity tokens."}],"infrastructure":[{"category":"Spoofing","title":"Infrastructure Host Impersonation targeting [name]","desc":"Malicious system hosts spoof media access control (MAC) or hostnames signatures to join corporate domains and bypass local policy."},{"category":"Tampering","title":"Firmware and Operating System Configuration Subversion","desc":"Unauthorized administrative port access or lack of secure boot controls allows adversaries to manipulate firmware or overwrite local OS configurations."},{"category":"Repudiation","title":"Omission of Out-of-Band Audit Log Forwarding","desc":"Infrastructure logs and event reports fail to forward securely to a centralized immutable SIEM server, allowing undetected modifications."},{"category":"Information Disclosure","title":"Plaintext Storage of Administrative System Configuration Secrets","desc":"Infrastructure configs, network maps, and backup secrets reside in cleartext on storage blocks, exposing high-privilege credentials."},{"category":"Denial of Service","title":"Hypervisor Resource Saturation and Core Allocation Thrashing","desc":"Hypervisor host fails to isolate core CPU or RAM limits, allowing neighbor compute units to exhaust system performance."},{"category":"Elevation of Privilege","title":"Remote Kernel Exploitation via Outdated Daemons (RCE)","desc":"Vulnerabilities in unpatched kernel processes or administrative daemons enable remote execution, granting full root control."}],"flow":[{"category":"Tampering","title":"In-Transit Parameter Alteration (Man-in-the-Middle Vector)","desc":"Adversaries manipulate intermediate routing parameters to rewrite business logic values inline during transit."},{"category":"Tampering","title":"TCP Sequence Guessing and In-Flight Packet Injection","desc":"Unauthenticated transit tracks let local routers calculate sequence alignments, injecting forge control blocks into streaming connections."},{"category":"Tampering","title":"Routing Protocol BGP Route Poisoning Hijack","desc":"Adversaries advertise malicious routing path paths, redirecting secure transit streams across malicious intermediate analysis infrastructure hosts."},{"category":"Information Disclosure","title":"Promiscuous Packet Sniffing over Unencrypted Networks","desc":"Cleartext protocol communication streams pass credential arrays directly across infrastructure borders to network listeners."},{"category":"Information Disclosure","title":"TLS Session Resumption Key Leakage","desc":"Reused session parameters expose ephemeral master secrets, allowing retrospective decryption of archived packet streams."},{"category":"Information Disclosure","title":"Data Exfiltration via Out-of-Bound DNS Tunneling Streams","desc":"Compromised processes mask classified outbound payloads as standard infrastructure namespace resolutions, bypassing deep boundary firewalls."},{"category":"Denial of Service","title":"Transit Bandwidth Flood and TCP Window Exhaustion","desc":"Hostile endpoints saturate line limits with request bursts, choking downstream gateway proxy capacity."},{"category":"Denial of Service","title":"Slowloris Incomplete Handshake Traffic Exhaustion","desc":"Hostile senders initiate thousands of HTTP connection tracks but hold lines open by sending headers infinitely slowly, saturating ingress proxy sockets."},{"category":"Denial of Service","title":"TLS Renegotiation Exhaustion Attack","desc":"Rogue clients trigger continuous asymmetric cryptographic handshake recalculations over single sockets, starving gateway CPU resources."}]}</script>
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.2.0';
+        const APP_VERSION = '1.3.0';
         const SCHEMA_VERSION = 1;
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
         const LEDGER_PAGE_SIZE = 200;       // PERF-003: rows rendered per page
@@ -3582,8 +3624,11 @@
                 this.templateModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-edit-template'));
                 this.confirmDeleteModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-confirm-delete'));
                 this.snapshotsModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-snapshots'));
+                this.operatorModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-operator'));
                 document.querySelectorAll('[data-app-version]').forEach(el => { el.textContent = APP_VERSION; });
                 document.getElementById('btn-snapshots').addEventListener('click', () => this.openSnapshotsModal());
+                document.getElementById('btn-undo').addEventListener('click', () => this.undo());
+                document.getElementById('btn-redo').addEventListener('click', () => this.redo());
                 document.getElementById('btn-storage-failure-export').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile());
                 const threatTitleInput = document.getElementById('modal-threat-title');
                 threatTitleInput.addEventListener('input', () => threatTitleInput.classList.remove('is-invalid'));
@@ -3606,14 +3651,11 @@
                     this.saveSessionToLocalStorage();
                 }
 
-                const isLicenseAccepted = localStorage.getItem('license_accepted') === 'true';
-                if (!isLicenseAccepted) {
-                    const closeBtn = document.querySelector('#modal-help .btn-close');
-                    if (closeBtn) closeBtn.style.display = 'none';
-                    this.helpModal.show();
-                } else {
-                    this.assertValidOperatorProfileAuthentication();
-                }
+                // First visit: show Help as a dismissible welcome (no license gate — MIT needs no acceptance).
+                this.assertValidOperatorProfileAuthentication();
+                const seenWelcome = localStorage.getItem('threat_tiger_welcome_seen') === 'true' || localStorage.getItem('license_accepted') === 'true';
+                if (!seenWelcome) this.helpModal.show();
+                this.resetUndoHistory();
                 try { this.refreshAppViewVisualWorkspace(); }
                 catch (err) { this.quarantineStoredSession(err); this.refreshAppViewVisualWorkspace(); }
                 this.isCanvasUnsaved = false;
@@ -3981,16 +4023,16 @@
                 }
             }
 
+            rememberedOperatorName() {
+                try { return localStorage.getItem('threat_tiger_operator_name') || 'Architect Operator'; }
+                catch (_) { return 'Architect Operator'; }
+            }
+
+            /** Makes sure the session has an operator name, without blocking dialogs (UI-002). */
             assertValidOperatorProfileAuthentication() {
                 if (!this.state.activeUser || this.state.activeUser.trim() === "") {
-                    let defaultName = "Architect Operator";
-                    let promptedName = window.location.search.includes('test=true') ? defaultName : prompt("Please input your Operator identity profile name for transaction auditing logs:", defaultName);
-                    if (!promptedName || promptedName.trim() === "") {
-                        promptedName = defaultName;
-                    }
-                    this.state.activeUser = promptedName.trim();
+                    this.state.activeUser = this.rememberedOperatorName();
                     this.addOperatorToParticipantsIfNeeded(this.state.activeUser);
-                    this.logEvent("CONFIGURE", `Initialized engineering session profile under identity token: "${this.state.activeUser}"`);
                     this.saveSessionToLocalStorage();
                 } else {
                     this.addOperatorToParticipantsIfNeeded(this.state.activeUser);
@@ -3998,20 +4040,27 @@
             }
 
             forceChangeActiveOperatorProfile() {
-                let current = this.state.activeUser || "Architect Operator";
-                let promptedName = prompt("Modify Active Security Operator Session Identity Profile:", current);
-                if (promptedName && promptedName.trim() !== "") {
-                    const legacyUser = this.state.activeUser;
-                    this.state.activeUser = promptedName.trim();
-                    this.addOperatorToParticipantsIfNeeded(this.state.activeUser);
-                    this.logEvent("CONFIGURE", `Session operator changed context from "${legacyUser}" to "${this.state.activeUser}"`);
-                    this.saveSessionToLocalStorage();
-                    this.refreshAppViewVisualWorkspace();
-                }
+                const input = document.getElementById('input-operator-name');
+                input.value = this.state.activeUser || this.rememberedOperatorName();
+                this.operatorModal.show();
+                setTimeout(() => { input.focus(); input.select(); }, 200);
             }
 
-            logEvent(actionType, messageDescription) {
+            commitOperatorName() {
+                const name = document.getElementById('input-operator-name').value.trim();
+                if (!name) { document.getElementById('input-operator-name').classList.add('is-invalid'); return; }
+                const previous = this.state.activeUser;
+                this.state.activeUser = name;
+                try { localStorage.setItem('threat_tiger_operator_name', name); } catch (_) { /* preference only */ }
+                this.addOperatorToParticipantsIfNeeded(name);
+                if (previous !== name) this.logEvent("CONFIGURE", `Your name changed from "${previous}" to "${name}"`, { undoable: false });
+                this.operatorModal.hide();
+                this.refreshAppViewVisualWorkspace();
+            }
+
+                        logEvent(actionType, messageDescription, { undoable = true } = {}) {
                 if (!Array.isArray(this.state.activityLog)) this.state.activityLog = [];
+                if (undoable) this.recordUndoPoint();
                 const entry = {
                     timestamp: new Date().toISOString(),   // BUG-014: unambiguous, sortable; shown in local time
                     operator: this.state.activeUser || "Unknown Operator",
@@ -4022,6 +4071,61 @@
                 if (this.state.activityLog.length > MAX_ACTIVITY_LOG) this.state.activityLog.length = MAX_ACTIVITY_LOG;
                 this.saveSessionToLocalStorage();
                 this.prependLedgerRow(entry);
+            }
+
+            // ── Undo / redo (FEAT-001) ──────────────────────────────────────────────
+            // Every logged model change is one undo step. The activity log itself is not rewound.
+            serializeModel() {
+                const s = this.state;
+                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats });
+            }
+
+            resetUndoHistory() {
+                this.undoStack = []; this.redoStack = [];
+                this.undoBaseline = this.serializeModel();
+                this.updateUndoButtons();
+            }
+
+            recordUndoPoint() {
+                if (this.undoBaseline === undefined) { this.resetUndoHistory(); return; }
+                const current = this.serializeModel();
+                if (current === this.undoBaseline) return;
+                this.undoStack.push(this.undoBaseline);
+                let total = this.undoStack.reduce((n, s) => n + s.length, 0);
+                while (this.undoStack.length > 100 || (total > 30e6 && this.undoStack.length > 1)) total -= this.undoStack.shift().length;
+                this.undoBaseline = current;
+                this.redoStack = [];
+                this.updateUndoButtons();
+            }
+
+            applyModelSnapshot(json) {
+                const m = JSON.parse(json);
+                Object.assign(this.state, m);
+                this.state.selectedElementIds = []; this.state.selectedFlowId = null;
+                this.undoBaseline = json;
+                this.refreshAppViewVisualWorkspace();
+                this.updateUndoButtons();
+            }
+
+            undo() {
+                this.recordUndoPoint();   // capture edits that were not logged yet
+                if (!this.undoStack.length) { this.notify('Nothing to undo.', 'info'); return; }
+                this.redoStack.push(this.undoBaseline);
+                this.applyModelSnapshot(this.undoStack.pop());
+                this.logEvent('CHANGE', 'Undo', { undoable: false });
+            }
+
+            redo() {
+                if (!this.redoStack.length) { this.notify('Nothing to redo.', 'info'); return; }
+                this.undoStack.push(this.undoBaseline);
+                this.applyModelSnapshot(this.redoStack.pop());
+                this.logEvent('CHANGE', 'Redo', { undoable: false });
+            }
+
+            updateUndoButtons() {
+                const u = document.getElementById('btn-undo'), r = document.getElementById('btn-redo');
+                if (u) u.disabled = !(this.undoStack && this.undoStack.length);
+                if (r) r.disabled = !(this.redoStack && this.redoStack.length);
             }
 
             static formatTimestamp(ts) {
@@ -4178,12 +4282,12 @@
                 // Append custom embedded woff2 font faces if fetched successfully
                 if (!this.cachedBootstrapIconsBase64) {
                     this.cachedBootstrapIconsBase64 = await this.fetchFontAsBase64(
-                        'https://cdn.jsdelivr.net/npm/bootstrap-icons/font/fonts/bootstrap-icons.woff2'
+                        'vendor/bootstrap-icons-1.13.2/fonts/bootstrap-icons.woff2'
                     );
                 }
                 if (!this.cachedFontAwesomeBase64) {
                     this.cachedFontAwesomeBase64 = await this.fetchFontAsBase64(
-                        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/webfonts/fa-solid-900.woff2'
+                        'vendor/fontawesome-6.5.1/webfonts/fa-solid-900.woff2'
                     );
                 }
 
@@ -4323,7 +4427,7 @@
 
                 } catch (err) {
                     console.error("[ThreatTiger] Export canvas as PNG failed:", err);
-                    alert("Export failed: " + err.message);
+                    this.notify("PNG export failed: " + err.message);
                 } finally {
                     btn.innerHTML = originalHtml;
                     btn.disabled = false;
@@ -4630,34 +4734,22 @@
                 });
                 this.dom.lblActiveOperator.addEventListener('click', () => this.forceChangeActiveOperatorProfile());
 
-                // EULA dialog close/dismiss override and acceptance handling
-                const acceptBtn = document.getElementById('btn-accept-license');
-                if (acceptBtn) {
-                    acceptBtn.addEventListener('click', () => {
-                        localStorage.setItem('license_accepted', 'true');
-                        const closeBtn = document.querySelector('#modal-help .btn-close');
-                        if (closeBtn) closeBtn.style.display = '';
-                        this.needsOperatorPromptAfterLicenseAccept = true;
-                        this.helpModal.hide(); // Hide programmatically now that data-bs-dismiss has been removed
-                    });
-                }
+                // Welcome / help footer actions
+                document.getElementById('btn-welcome-start').addEventListener('click', () => this.helpModal.hide());
+                document.getElementById('btn-welcome-demo').addEventListener('click', () => this.openDemoModel());
+                document.getElementById('btn-operator-save').addEventListener('click', () => this.commitOperatorName());
+                document.getElementById('input-operator-name').addEventListener('keydown', (ev) => {
+                    ev.target.classList.remove('is-invalid');
+                    if (ev.key === 'Enter') { ev.preventDefault(); this.commitOperatorName(); }
+                });
 
                 const helpModalEl = document.getElementById('modal-help');
                 if (helpModalEl) {
-                    helpModalEl.addEventListener('hide.bs.modal', (event) => {
-                        const isLicenseAccepted = localStorage.getItem('license_accepted') === 'true';
-                        if (!isLicenseAccepted) {
-                            event.preventDefault();
-                        }
+                    helpModalEl.addEventListener('hide.bs.modal', () => {
+                        try { localStorage.setItem('threat_tiger_welcome_seen', 'true'); } catch (_) { /* preference only */ }
                     });
 
-                    helpModalEl.addEventListener('hidden.bs.modal', () => {
-                        if (this.needsOperatorPromptAfterLicenseAccept) {
-                            this.needsOperatorPromptAfterLicenseAccept = false;
-                            this.assertValidOperatorProfileAuthentication();
-                            this.refreshAppViewVisualWorkspace();
-                        }
-                    });
+
                 }
 
                 const propsInputDisabled = document.getElementById('props-input-disabled');
@@ -4806,6 +4898,8 @@
 
                 document.getElementById('filter-threat-search').addEventListener('input', () => this.renderThreatRegisterTableGrid());
                 document.getElementById('filter-threat-severity').addEventListener('change', () => this.renderThreatRegisterTableGrid());
+                document.getElementById('filter-threat-category').addEventListener('change', () => this.renderThreatRegisterTableGrid());
+                document.getElementById('filter-threat-status').addEventListener('change', () => this.renderThreatRegisterTableGrid());
 
                 document.getElementById('props-input-name').addEventListener('change', (ev) => {
                     if (this.state.selectedElementIds.length === 1) {
@@ -5677,16 +5771,16 @@
                                 secProps: { encrypted: 'false', authenticated: 'false' }, isBidirectional: false, isDashed: false, ports: '', bendX: 0, bendY: 0, textOffset: 0.5,
                                 points: [], curveStyle: this.isIsometric ? 'sharp' : 'smooth'
                             });
-                            this.logEvent("CREATE", `Linked network architecture components via unified flow line. Connected "${srcNode ? srcNode.name : 'Unknown'}" to "${dstNode ? dstNode.name : 'Unknown'}"`);
+                            this.logEvent("CREATE", `Connected "${srcNode ? srcNode.name : 'Unknown'}" to "${dstNode ? dstNode.name : 'Unknown'}"`);
                             this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace(); this.handleFlowSelectionEvent(flowId);
                         }
                         this.phantomWireSourceId = null; this.phantomWireSourceAnchor = null; return;
                     }
                     if (this.resizingElementId || this.isDraggingElements) {
                         if (this.resizingElementId) {
-                            this.logEvent("CHANGE", `Resized dimensional borders geometry coordinates bounding box matrix for component asset ID: ${this.resizingElementId}`);
+                            this.logEvent("CHANGE", `Resized component ${this.resizingElementId}`);
                         } else if (this.isDraggingElements && this.initialDragPositions.length > 0) {
-                            this.logEvent("CHANGE", `Relocated architectural topology position matrix nodes coordinates layouts for ${this.initialDragPositions.length} element layout groups`);
+                            this.logEvent("CHANGE", `Moved ${this.initialDragPositions.length} component(s)`);
                         }
                         this.resizingElementId = null; this.isDraggingElements = false; this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace();
                     }
@@ -5696,6 +5790,10 @@
             bindKeyboardShortcuts() {
                 window.addEventListener('keydown', (ev) => {
                     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(ev.target.tagName)) return;
+                    if (document.querySelector('.modal.show')) return;   // keys belong to the open dialog
+                    const mod = ev.ctrlKey || ev.metaKey;
+                    if (mod && ev.key.toLowerCase() === 'z') { ev.preventDefault(); if (ev.shiftKey) this.redo(); else this.undo(); return; }
+                    if (mod && ev.key.toLowerCase() === 'y') { ev.preventDefault(); this.redo(); return; }
                     if (ev.key === 'Delete' || ev.key === 'Backspace') this.executeTargetedActiveSelectionRemovalTask();
 
                     if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'c') {
@@ -5943,7 +6041,7 @@
                 };
 
                 this.state.elements.push(elementObj);
-                this.logEvent("CREATE", `Instantiated structural design component node asset type: "${type.toUpperCase()}" labeled as "${defaultName}"`);
+                this.logEvent("CREATE", `Added ${type.replace(/_/g, ' ')} "${defaultName}"`);
                 this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace();
                 this.handleElementSelectionEvent(id);
             }
@@ -5983,17 +6081,37 @@
                 this.applySelectionRemoval(plan);
             }
 
+            /**
+             * Styled replacement for confirm(). onCancel runs when the dialog is dismissed without confirming.
+             */
+            confirmAction({ title, body, confirmLabel = 'Confirm', cancelLabel = 'Cancel', variant = 'danger', onConfirm, onCancel }) {
+                document.getElementById('modal-confirm-delete-title').textContent = title;
+                document.getElementById('modal-confirm-delete-body').textContent = body;
+                document.getElementById('btn-confirm-cancel').textContent = cancelLabel;
+                const old = document.getElementById('btn-confirm-delete');
+                const btn = old.cloneNode(false);
+                btn.textContent = confirmLabel;
+                btn.className = `btn btn-sm btn-${variant}`;
+                old.replaceWith(btn);
+                let confirmed = false;
+                btn.addEventListener('click', () => { confirmed = true; this.confirmDeleteModal.hide(); if (onConfirm) onConfirm(); });
+                const modalEl = document.getElementById('modal-confirm-delete');
+                modalEl.addEventListener('hidden.bs.modal', () => { if (!confirmed && onCancel) onCancel(); }, { once: true });
+                this.confirmDeleteModal.show();
+                setTimeout(() => btn.focus(), 200);
+            }
+
             confirmSelectionRemoval(plan) {
                 const parts = [];
                 if (plan.nodeIds.size) parts.push(`${plan.nodeIds.size} component${plan.nodeIds.size === 1 ? '' : 's'}`);
                 if (plan.flowIds.size) parts.push(`${plan.flowIds.size} data flow${plan.flowIds.size === 1 ? '' : 's'}`);
                 parts.push(`${plan.threats.length} linked threat${plan.threats.length === 1 ? '' : 's'}`);
-                const body = document.getElementById('modal-confirm-delete-body');
-                body.textContent = `This deletes ${parts.join(', ')}. Threat descriptions and mitigation notes are deleted too. A snapshot is saved first, so you can restore it from History.`;
-                const btn = document.getElementById('btn-confirm-delete');
-                const fresh = btn.cloneNode(true); btn.replaceWith(fresh);
-                fresh.addEventListener('click', () => { this.confirmDeleteModal.hide(); this.applySelectionRemoval(plan); });
-                this.confirmDeleteModal.show();
+                this.confirmAction({
+                    title: 'Delete selection and its threats?',
+                    body: `This deletes ${parts.join(', ')}. Threat descriptions and mitigation notes are deleted too.\nYou can undo this (Ctrl/Cmd+Z) or restore a snapshot from History.`,
+                    confirmLabel: 'Delete',
+                    onConfirm: () => this.applySelectionRemoval(plan)
+                });
             }
 
             applySelectionRemoval(plan) {
@@ -7848,12 +7966,7 @@
                     itemDiv.querySelector('.btn-delete-threat').addEventListener('click', (e) => {
                         e.preventDefault();
                         e.stopPropagation();
-                        if (confirm(`Are you sure you want to remove the threat "${t.title}" from this component?`)) {
-                            this.state.threats = this.state.threats.filter(item => item.id !== t.id);
-                            this.logEvent("REMOVE", `Purged vulnerability profile item entry [${t.id}] titled: "${t.title}"`);
-                            this.saveSessionToLocalStorage();
-                            this.refreshAppViewVisualWorkspace();
-                        }
+                        this.deleteThreatWithUndo(t.id);
                     });
 
                     threatsContainer.appendChild(itemDiv);
@@ -8025,6 +8138,8 @@
             renderThreatRegisterTableGrid() {
                 const search = document.getElementById('filter-threat-search').value.trim().toLowerCase();
                 const severity = document.getElementById('filter-threat-severity').value;
+                const category = document.getElementById('filter-threat-category').value;
+                const status = document.getElementById('filter-threat-status').value;
                 this.dom.threatRegisterTbody.innerHTML = '';
 
                 // One lookup table per render instead of a linear search per row (PERF-005).
@@ -8035,6 +8150,10 @@
                 // Search covers what the user sees, including the component name (BUG-008).
                 let filtered = this.state.threats.filter(t => {
                     if (severity && ThreatModelSession.calculateRisk(t.likelihood, t.impact).label !== severity) return false;
+                    if (category && t.category !== category) return false;
+                    if (status === '__not-mitigated' && t.status === 'Mitigated / Resolved') return false;
+                    if (status === '__review' && !t.needsReview) return false;
+                    if (status && !status.startsWith('__') && t.status !== status) return false;
                     if (!search) return true;
                     return [t.id, t.title, nameOf(t), t.category, t.status, t.desc, t.mitigationExplanation]
                         .some(v => toText(v).toLowerCase().includes(search));
@@ -8054,7 +8173,7 @@
                 });
 
                 this.dom.threatCountBadge.innerText = this.state.threats.length;
-                if (filtered.length === 0) { this.dom.threatRegisterTbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">No matching log profiles recorded.</td></tr>`; return; }
+                if (filtered.length === 0) { this.dom.threatRegisterTbody.innerHTML = `<tr><td colspan="8" class="text-center text-muted py-3">${this.state.threats.length ? 'No threats match the current search and filters.' : 'No threats yet. Select a component and open Threat Templates, or click New Threat.'}</td></tr>`; return; }
 
                 filtered.forEach(t => {
                     const tr = document.createElement('tr');
@@ -8086,12 +8205,12 @@
                         </td>`;
 
                     tr.querySelector('.btn-edit').addEventListener('click', () => this.openThreatModalForEditing(t.id));
-                    tr.querySelector('.btn-delete').addEventListener('click', () => {
-                        const deletedThreat = this.state.threats.find(item => item.id === t.id);
-                        this.state.threats = this.state.threats.filter(item => item.id !== t.id);
-                        this.logEvent("REMOVE", `Purged vulnerability profile item entry [${t.id}] titled: "${deletedThreat ? deletedThreat.title : 'Custom'}"`);
-                        this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace();
-                    });
+                    tr.querySelector('.btn-delete').addEventListener('click', (ev) => { ev.stopPropagation(); this.deleteThreatWithUndo(t.id); });
+                    tr.querySelector('.btn-edit').addEventListener('click', (ev) => ev.stopPropagation());
+                    // FEAT-016: clicking a row shows its component on the canvas
+                    tr.style.cursor = 'pointer';
+                    tr.title = 'Click to show this component on the canvas';
+                    tr.addEventListener('click', (ev) => { if (!ev.target.closest('button')) this.focusCanvasItem(t.elementId); });
                     this.dom.threatRegisterTbody.appendChild(tr);
                 });
 
@@ -8127,13 +8246,13 @@
 
             openThreatModalForCreation() {
                 this.repopulateThreatModalDropdownTargets();
-                if (document.getElementById('modal-threat-link-element').children.length === 0) { alert("Compile nodes before registering risks."); return; }
+                if (document.getElementById('modal-threat-link-element').children.length === 0) { this.notify("Add a component to the diagram first, then add threats to it.", 'warning'); return; }
                 document.getElementById('form-modal-threat-editor').reset();
                 document.getElementById('modal-threat-hidden-id').value = '';
                 document.getElementById('modal-threat-desc').value = '';
                 document.getElementById('modal-threat-mitigation-explanation').value = '';
                 document.getElementById('mitigation-explanation-row').style.display = 'none';
-                document.getElementById('modal-threat-title-lbl').innerText = "Instantiate Custom Blank Threat Profile Entry";
+                document.getElementById('modal-threat-title-lbl').innerText = "New threat";
                 this.editThreatModal.show();
             }
 
@@ -8141,7 +8260,7 @@
                 this.repopulateThreatModalDropdownTargets();
                 document.getElementById('form-modal-threat-editor').reset();
                 document.getElementById('modal-threat-hidden-id').value = '';
-                document.getElementById('modal-threat-title-lbl').innerText = "Evaluate & Modify Threat Definition Parameter";
+                document.getElementById('modal-threat-title-lbl').innerText = "New threat from template";
                 document.getElementById('modal-threat-title').value = title;
                 document.getElementById('modal-threat-category').value = category;
                 document.getElementById('modal-threat-link-element').value = targetElementId;
@@ -8158,7 +8277,7 @@
                 this.repopulateThreatModalDropdownTargets();
                 const t = this.state.threats.find(item => item.id === id); if (!t) return;
                 document.getElementById('modal-threat-hidden-id').value = t.id;
-                document.getElementById('modal-threat-title-lbl').innerText = `Modify Threat - ID: ${t.id}`;
+                document.getElementById('modal-threat-title-lbl').innerText = `Edit threat ${t.id}`;
                 document.getElementById('modal-threat-title').value = t.title;
                 document.getElementById('modal-threat-category').value = t.category;
                 document.getElementById('modal-threat-link-element').value = t.elementId;
@@ -8198,13 +8317,13 @@
                     const m = this.state.threats.find(item => item.id === hiddenId);
                     if (m) {
                         Object.assign(m, dataPayload);
-                        this.logEvent("CHANGE", `Modified logged threat record attributes on entry [${hiddenId}] titled: "${title}"`);
+                        this.logEvent("CHANGE", `Edited threat ${hiddenId} "${title}"`);
                     }
                 }
                 else {
                     const freshId = this.generateNextThreatId();
                     this.state.threats.push(Object.assign({ id: freshId }, dataPayload));
-                    this.logEvent("CREATE", `Appended new threat log profile into active register [${freshId}] titled: "${title}"`);
+                    this.logEvent("CREATE", `Added threat ${freshId} "${title}"`);
                 }
                 this.saveSessionToLocalStorage(); this.editThreatModal.hide(); this.refreshAppViewVisualWorkspace();
             }
@@ -8231,6 +8350,42 @@
                 const a = document.createElement('a'); a.href = url; a.download = filename;
                 document.body.appendChild(a); a.click(); a.remove();
                 setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+
+            deleteThreatWithUndo(threatId) {
+                const t = this.state.threats.find(item => item.id === threatId);
+                if (!t) return;
+                this.state.threats = this.state.threats.filter(item => item.id !== threatId);
+                this.logEvent("REMOVE", `Deleted threat ${t.id} "${t.title}"`);
+                this.refreshAppViewVisualWorkspace();
+                this.notify(`Deleted threat ${t.id}.`, 'secondary', { label: 'Undo', onClick: () => this.undo() });
+            }
+
+            /** Selects a component or flow and centres the canvas on it (FEAT-016). */
+            focusCanvasItem(id) {
+                const node = this.state.elements.find(e => e.id === id);
+                const flow = node ? null : this.state.flows.find(f => f.id === id);
+                if (!node && !flow) { this.notify('This threat is not linked to a component on the canvas.', 'warning'); return; }
+                let cx, cy;
+                if (node) {
+                    cx = node.x + (node.width || 0) / 2; cy = node.y + (node.height || 0) / 2;
+                    this.state.selectedElementIds = [node.id]; this.state.selectedFlowId = null;
+                } else {
+                    const a = this.state.elements.find(e => e.id === flow.sourceId), b = this.state.elements.find(e => e.id === flow.targetId);
+                    cx = ((a ? a.x + (a.width || 0) / 2 : 0) + (b ? b.x + (b.width || 0) / 2 : 0)) / 2;
+                    cy = ((a ? a.y + (a.height || 0) / 2 : 0) + (b ? b.y + (b.height || 0) / 2 : 0)) / 2;
+                    this.state.selectedElementIds = []; this.state.selectedFlowId = flow.id;
+                }
+                if (this.isIsometric && this.projectCoordinates) { const p = this.projectCoordinates(cx, cy); cx = p.x; cy = p.y; }
+                const rect = this.dom.svg.getBoundingClientRect();
+                this.panX = rect.width / 2 - cx * this.zoomScale;
+                this.panY = rect.height / 2 - cy * this.zoomScale;
+                this.applySvgViewportTransformations();
+                this.refreshAppViewVisualWorkspace();
+                this.dom.svg.querySelectorAll(`[data-id="${CSS.escape(id)}"]`).forEach(el => {
+                    el.classList.remove('focus-pulse'); void el.getBoundingClientRect(); el.classList.add('focus-pulse');
+                    setTimeout(() => el.classList.remove('focus-pulse'), 1600);
+                });
             }
 
             exportThreatRegisterToCsvFile() {
@@ -8277,10 +8432,44 @@
                 const external = result.session.elements.filter(el => isExternalUrl(el.imageUrl));
                 if (external.length > 0) {
                     const hosts = [...new Set(external.map(el => { try { return new URL(el.imageUrl).host; } catch (_) { return '?'; } }))];
-                    const ok = confirm(`This model loads ${external.length} image(s) from external websites (${hosts.join(', ')}).\n\nLoading them lets those websites see that you opened the model. Load them?`);
-                    if (!ok) { external.forEach(el => { el.imageUrl = ''; }); result.warnings.push(`Did not load ${external.length} external image(s).`); }
+                    this.confirmAction({
+                        title: 'Load images from other websites?',
+                        body: `This model loads ${external.length} image(s) from ${hosts.join(', ')}.\nLoading them lets those websites see that you opened the model.`,
+                        confirmLabel: 'Load images', cancelLabel: 'Import without them', variant: 'primary',
+                        onConfirm: () => this.applyImportedSession(result, fileName),
+                        onCancel: () => {
+                            external.forEach(el => { el.imageUrl = ''; });
+                            result.warnings.push(`Did not load ${external.length} external image(s).`);
+                            this.applyImportedSession(result, fileName);
+                        }
+                    });
+                    return true;
                 }
+                return this.applyImportedSession(result, fileName);
+            }
 
+            async openDemoModel() {
+                const load = async () => {
+                    try {
+                        const res = await fetch('demo.json');
+                        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                        this.helpModal.hide();
+                        this.importWorkspaceJsonText(await res.text(), 'demo.json');
+                    } catch (err) {
+                        this.notify('The demo model could not be loaded here (it needs the app to be served over http). Use Import JSON and choose demo.json instead.', 'warning');
+                    }
+                };
+                if (this.state.elements.length === 0) { await load(); return; }
+                this.helpModal.hide();
+                this.confirmAction({
+                    title: 'Replace your model with the demo?',
+                    body: 'A snapshot of your current model is saved first, so you can restore it from History.',
+                    confirmLabel: 'Open demo', variant: 'primary', onConfirm: load
+                });
+            }
+
+            /** Applies a normalised import result. */
+            applyImportedSession(result, fileName) {
                 const previous = this.state;
                 this.takeSnapshot('Before import', true);
                 try {
@@ -8294,7 +8483,8 @@
                     this.notify(`Could not import "${fileName}": ${err.message}`);
                     return false;
                 }
-                this.logEvent("CONFIGURE", `Imported "${fileName}": ${this.state.elements.length} components, ${this.state.flows.length} data flows, ${this.state.threats.length} threats.`);
+                this.logEvent("CONFIGURE", `Imported "${fileName}": ${this.state.elements.length} components, ${this.state.flows.length} data flows, ${this.state.threats.length} threats.`, { undoable: false });
+                this.resetUndoHistory();
                 this.isCanvasUnsaved = false;
                 if (result.warnings.length) {
                     const shown = result.warnings.slice(0, 4).join(' ');
@@ -8307,20 +8497,26 @@
             }
 
             resetSession() {
-                if (confirm("Are you sure you want to reset and delete everything? This will clear all components, flows, and threats from the canvas and start a new session.")) {
-                    this.state = new ThreatModelSession();
-                    this.state.activeUser = "";
-                    this.assertValidOperatorProfileAuthentication();
-                    this.setViewMode('flat');
-                    this.canvasTheme = 'light';
-                    localStorage.setItem('canvas_theme', 'light');
-                    this.applyCanvasTheme();
-                    this.clearActiveSelectionPointers();
-                    this.logEvent("CONFIGURE", "Reset workspace. Started a new threat modeling session (canvas cleared).");
-                    this.saveSessionToLocalStorage();
-                    this.isCanvasUnsaved = false;
-                    this.refreshAppViewVisualWorkspace();
-                }
+                this.confirmAction({
+                    title: 'Start a new, empty model?',
+                    body: 'This clears all components, data flows and threats. A snapshot is saved first, so you can restore it from History.',
+                    confirmLabel: 'Clear and start over',
+                    onConfirm: () => {
+                        this.takeSnapshot('Before reset', true);
+                        this.state = new ThreatModelSession();
+                        this.state.activeUser = this.rememberedOperatorName();
+                        this.addOperatorToParticipantsIfNeeded(this.state.activeUser);
+                        this.setViewMode('flat');
+                        this.canvasTheme = 'light';
+                        localStorage.setItem('canvas_theme', 'light');
+                        this.applyCanvasTheme();
+                        this.clearActiveSelectionPointers();
+                        this.logEvent("CONFIGURE", "Started a new, empty model.", { undoable: false });
+                        this.resetUndoHistory();
+                        this.isCanvasUnsaved = false;
+                        this.refreshAppViewVisualWorkspace();
+                    }
+                });
             }
 
             /** localStorage write that reports failure instead of throwing (BUG-006). */
@@ -8468,7 +8664,8 @@
                 this.state = Object.assign(new ThreatModelSession(), session);
                 this.state.activeUser = operator || this.state.activeUser;
                 this.snapshotsModal.hide();
-                this.logEvent("CONFIGURE", `Restored snapshot from ${new Date(snap.savedAt).toLocaleString()} (${snap.label}).`);
+                this.logEvent("CONFIGURE", `Restored snapshot from ${new Date(snap.savedAt).toLocaleString()} (${snap.label}).`, { undoable: false });
+                this.resetUndoHistory();
                 this.refreshAppViewVisualWorkspace();
                 this.notify('Snapshot restored.', 'success');
             }
@@ -8559,6 +8756,8 @@
                 }
 
                 try {
+                    // file:// pages cannot fetch local files; go straight to the embedded copy.
+                    if (location.protocol === 'file:') throw new Error('Opened from file://');
                     const response = await fetch('threat_templates.json');
                     if (response.ok) {
                         const data = await response.json();
@@ -8578,13 +8777,32 @@
                             return;
                         }
                     }
-                    this.templatesFileMissing = true;
+                    this.templatesFileMissing = !this.mergeEmbeddedTemplates();
                 } catch (e) {
-                    console.warn('Failed to fetch threat_templates.json. Using local storage or defaults.', e);
-                    this.templatesFileMissing = true;
+                    console.warn('Failed to fetch threat_templates.json; using the copy embedded in the page.', e);
+                    this.templatesFileMissing = !this.mergeEmbeddedTemplates();
                 }
 
                 this.showTemplatesMissingAlertIfNeeded();
+            }
+
+            /** Falls back to the templates embedded in the HTML (works offline and via file://). */
+            mergeEmbeddedTemplates() {
+                try {
+                    const data = JSON.parse(document.getElementById('embedded-threat-templates').textContent);
+                    if (!data || !('process' in data)) return false;
+                    const tombstones = this.getTemplateTombstones();
+                    const wanted = {};
+                    Object.keys(data).forEach(type => {
+                        wanted[type] = Array.isArray(data[type]) ? data[type].filter(t => !tombstones.has(this.templateKey(type, t))) : data[type];
+                    });
+                    this.mergeThreatSuggestions(wanted, false);
+                    this.saveThreatTemplatesToLocalStorage();
+                    return true;
+                } catch (err) {
+                    console.warn('[ThreatTiger] Embedded templates unavailable', err);
+                    return false;
+                }
             }
 
             templateKey(type, t) {
@@ -8667,7 +8885,7 @@
                 const desc = document.getElementById('modal-template-desc').value.trim();
 
                 if (!title || !desc) {
-                    alert('Please fill out all fields.');
+                    this.notify('Please fill in the title and description.', 'warning');
                     return;
                 }
 
@@ -8707,7 +8925,7 @@
                 }
                 if (index === -1) return;
 
-                if (confirm(`Are you sure you want to delete the template "${templateObj.title}"?`)) {
+                this.confirmAction({ title: 'Delete this template?', body: `"${templateObj.title}" will no longer be suggested.`, confirmLabel: 'Delete template', onConfirm: () => {
                     this.threatSuggestions[foundType].splice(index, 1);
                     this.addTemplateTombstone(this.templateKey(foundType, templateObj));
                     this.logEvent("CONFIGURE", `Deleted threat template "${templateObj.title}" for type "${foundType}"`);
@@ -8717,7 +8935,7 @@
 
                     this.saveThreatTemplatesToLocalStorage();
                     this.updateThreatSuggestionsWizardView();
-                }
+                } });
             }
 
             exportThreatTemplatesBackup() {
@@ -8771,10 +8989,10 @@
                                 this.logEvent("CONFIGURE", `Successfully loaded and merged external templates backup file.`);
                                 this.updateThreatSuggestionsWizardView();
                             } else {
-                                alert("Invalid template backup file structure.");
+                                this.notify("That file is not a Threat Tiger template backup.");
                             }
                         } catch (err) {
-                            alert("Failed to parse templates JSON file: " + err.message);
+                            this.notify("Could not read the templates file: " + err.message);
                         }
                     };
                     reader.readAsText(file);

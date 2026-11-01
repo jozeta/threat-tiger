@@ -1,0 +1,12 @@
+{
+  "vendor/bootstrap-5.3.2/bootstrap.bundle.min.js": "sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL",
+  "vendor/bootstrap-5.3.2/bootstrap.min.css": "sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN",
+  "vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css": "sha384-nWN3KqaaVcbEsCjLSV+2jMjh62Iny/+mN3srM8TZeM8N6aj7eDl5wwYggjAJ4/sJ",
+  "vendor/bootstrap-icons-1.13.2/fonts/bootstrap-icons.woff": "sha384-djaUP7PFk2XOEMATfi4TSaFL2X2190OquAlsbym0RbgKyPKjHvXKFm72Jfno/5VC",
+  "vendor/bootstrap-icons-1.13.2/fonts/bootstrap-icons.woff2": "sha384-3244+MXg/RYJtpyex6rHizzzKnMvpfOn/NclFlkM8AIgKtYHT8CLQEJx6xyDFEpr",
+  "vendor/fontawesome-6.5.1/css/all.min.css": "sha384-t1nt8BQoYMLFN5p42tRAtuAAFQaCQODekUVeKKZrEnEyp4H2R0RHFz0KWpmj7i8g",
+  "vendor/fontawesome-6.5.1/webfonts/fa-brands-400.woff2": "sha384-bkcB7e1rvHdmNnhkhQO4nuNk9I0RiTPMW8QUEuAB43yV0a+pj+4wcq0TqdEjkAG0",
+  "vendor/fontawesome-6.5.1/webfonts/fa-regular-400.woff2": "sha384-2hgsGQjjgVclDGAvWslIa+GwYh3Bn/ztuvakT4ICpV95tadfxcw0WMPHsEKjsPVT",
+  "vendor/fontawesome-6.5.1/webfonts/fa-solid-900.woff2": "sha384-YxWlWCDksuL6Ljn1HkJNPH8l+jSRIWPpMpPw3pFa0QnmLXjwV/uPwpDm/b9vn/o1",
+  "vendor/fontawesome-6.5.1/webfonts/fa-v4compatibility.woff2": "sha384-6yorJ/xqzXG3JEHRf9/CTu1dz8bBnMqYf652Dy8345NBoSPcA7DDsScvfnCbJEOf"
+}

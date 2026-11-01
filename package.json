@@ -1,12 +1,13 @@
 {
   "name": "threat-tiger",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "description": "Dev-only tooling for Threat Tiger. The app itself is threat-tiger.html and needs no build.",
   "license": "MIT",
   "scripts": {
     "test": "playwright test",
-    "serve": "python3 -m http.server 4173 --bind 127.0.0.1"
+    "serve": "node scripts/serve.mjs",
+    "sync": "node scripts/sync.mjs"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1"
