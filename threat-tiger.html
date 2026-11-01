@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-DAl4uBey+FafUQzuP/pzkL5YLFtKOWJ1fqgpj5gAVh4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-T6OkbWvZwzva0XkGyw+4yHqpoFkkRGDWWm3nRv89x78='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
     <link href="vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css" rel="stylesheet">
@@ -660,6 +660,26 @@
         .flow-label-fo, .flow-label-fo * { pointer-events: none; }
         .flow-label-fo .rounded, .flow-label-fo .rounded * { pointer-events: auto; cursor: pointer; }
         .badge-fo { pointer-events: none; }
+        /* UI-003: visible keyboard focus on canvas items and keyboard-operable cards */
+        #canvas-svg [tabindex]:focus { outline: none; }
+        #canvas-svg [tabindex]:focus-visible { outline: 3px solid #0d6efd; outline-offset: 4px; filter: drop-shadow(0 0 6px rgba(13, 110, 253, 0.8)); }
+        .palette-item:focus-visible, .card[role="button"]:focus-visible, #threat-register-tbody tr:focus-visible { outline: 3px solid #0d6efd; outline-offset: 2px; }
+
+        /* UI-008: narrow windows — header and register toolbar wrap instead of overflowing */
+        html, body { max-width: 100%; overflow-x: hidden; }
+        @media (max-width: 1100px) {
+            header .text-white-50.align-self-center { display: none; }
+            #project-title-badge { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        }
+        @media (max-width: 760px) {
+            #operator-container-div, #project-title-badge { display: none !important; }
+            #tab-panel-register > div:first-child > div { flex-wrap: wrap; width: 100%; }
+            #filter-threat-search, #filter-threat-severity, #filter-threat-category, #filter-threat-status { width: 100% !important; flex: 1 1 140px; }
+            #bottom-tabs .nav-link { padding-left: 0.5rem; padding-right: 0.5rem; }
+        }
+
+        div:has(> #btn-undo) { flex-wrap: wrap; max-width: calc(100% - 2rem); }
+
         /* Trust zones: only the border band and the name label are grab handles. */
         .zone-hit-border { fill: none; stroke: transparent; stroke-width: 12px; pointer-events: stroke; cursor: move; }
         .zone-hit-label { fill: transparent; pointer-events: all; cursor: move; }
@@ -2120,7 +2140,7 @@
         </div>
 
         <main class="workspace-wrapper">
-            <svg id="canvas-svg">
+            <svg id="canvas-svg" role="application" aria-roledescription="diagram canvas" aria-label="Threat model diagram" aria-describedby="canvas-keyboard-help">
                 <defs>
                     <pattern id="grid-pattern" width="20" height="20" patternUnits="userSpaceOnUse">
                         <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e9ecef" stroke-width="1" />
@@ -3186,6 +3206,8 @@
         </div>
     </div>
 
+    <p id="canvas-keyboard-help" class="visually-hidden">Press Tab to move between components and data flows, Enter to select, arrow keys to move the selection (Shift for larger steps), Delete to remove it, Escape to deselect, Ctrl or Cmd plus Z to undo.</p>
+
     <!-- Notifications (replaces alert()) -->
     <div id="app-toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 2000;"></div>
 
@@ -3264,8 +3286,9 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.5.2';
+        const APP_VERSION = '1.6.0';
         const SCHEMA_VERSION = 1;
+        const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
         const LEDGER_PAGE_SIZE = 200;       // PERF-003: rows rendered per page
 
@@ -3819,6 +3842,7 @@
                 document.getElementById('btn-export-no-log').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile({ includeLog: false }));
 
                 this.bindUiEvents(); this.bindCanvasEvents(); this.bindKeyboardShortcuts();
+                this.bindResponsiveLayout();
                 this.bindWindowResizerEvents(); this.bindPrintScalingEngine();
                 this.bindPalettePopoverEvents();
 
@@ -4158,6 +4182,18 @@
                 localStorage.setItem('canvas_theme', this.canvasTheme);
                 this.applyCanvasTheme();
                 this.refreshAppViewVisualWorkspace();
+            }
+
+            /** UI-008: collapse the side panels when the window gets narrow, re-open them when it widens. */
+            bindResponsiveLayout() {
+                const apply = () => {
+                    const w = window.innerWidth;
+                    const wantRightOpen = w >= 1100, wantLeftOpen = w >= 760;
+                    if (this.lastLayoutRight !== wantRightOpen) { if (this.isRightCollapsed === wantRightOpen) this.toggleRightPanel(); this.lastLayoutRight = wantRightOpen; }
+                    if (this.lastLayoutLeft !== wantLeftOpen) { if (this.isLeftCollapsed === wantLeftOpen) this.toggleLeftPanel(); this.lastLayoutLeft = wantLeftOpen; }
+                };
+                apply();
+                let t; window.addEventListener('resize', () => { clearTimeout(t); t = setTimeout(apply, 120); });
             }
 
             toggleLeftPanel() {
@@ -4915,6 +4951,7 @@
                 this.updateThreatSuggestionsWizardView(); this.renderActivityLedgerTable();
                 const insights = document.getElementById('tab-panel-insights');
                 if (insights && insights.classList.contains('active')) this.renderInsights();
+                this.applyControlAccessibility();
             }
 
             generateNextThreatId() {
@@ -5000,7 +5037,7 @@
                 }
 
                 document.getElementById('btn-canvas-zoom-in').addEventListener('click', () => { this.zoomScale = Math.min(this.zoomScale + 0.1, 2.5); this.applySvgViewportTransformations(); });
-                document.getElementById('btn-canvas-zoom-out').addEventListener('click', () => { this.zoomScale = Math.max(this.zoomScale - 0.1, 0.4); this.applySvgViewportTransformations(); });
+                document.getElementById('btn-canvas-zoom-out').addEventListener('click', () => { this.zoomScale = Math.max(this.zoomScale - 0.1, MIN_ZOOM); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-reset').addEventListener('click', () => this.zoomToFit());
                 document.getElementById('btn-canvas-save-png').addEventListener('click', () => this.exportCanvasAsPng());
                 document.getElementById('btn-print-report').addEventListener('click', () => window.print());
@@ -5619,7 +5656,7 @@
 
                 svg.addEventListener('wheel', (ev) => {
                     ev.preventDefault();
-                    this.zoomScale = ev.deltaY < 0 ? Math.min(this.zoomScale + 0.05, 2.5) : Math.max(this.zoomScale - 0.05, 0.4);
+                    this.zoomScale = ev.deltaY < 0 ? Math.min(this.zoomScale + 0.05, 2.5) : Math.max(this.zoomScale - 0.05, MIN_ZOOM);
                     this.applySvgViewportTransformations();
                 }, { passive: false });
 
@@ -5999,6 +6036,7 @@
                 window.addEventListener('keydown', (ev) => {
                     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(ev.target.tagName)) return;
                     if (document.querySelector('.modal.show')) return;   // keys belong to the open dialog
+                    if (this.handleCanvasKeyboard(ev)) return;
                     const mod = ev.ctrlKey || ev.metaKey;
                     if (mod && ev.key.toLowerCase() === 'z') { ev.preventDefault(); if (ev.shiftKey) this.redo(); else this.undo(); return; }
                     if (mod && ev.key.toLowerCase() === 'y') { ev.preventDefault(); this.redo(); return; }
@@ -6013,6 +6051,43 @@
                         this.pasteSelection();
                     }
                 });
+            }
+
+            /** Keyboard operation of the canvas (UI-003). Returns true when the key was handled. */
+            handleCanvasKeyboard(ev) {
+                const t = ev.target;
+                const onCanvasItem = t && t.closest && this.dom.svg.contains(t) && (t.getAttribute('data-id') || t.getAttribute('data-flow-id'));
+                if (onCanvasItem && (ev.key === 'Enter' || ev.key === ' ')) {
+                    ev.preventDefault();
+                    if (t.getAttribute('data-flow-id')) this.handleFlowSelectionEvent(t.getAttribute('data-flow-id'));
+                    else this.handleElementSelectionEvent(t.getAttribute('data-id'));
+                    return true;
+                }
+                // Activate non-button controls marked role="button" (palette items, template cards).
+                if (!onCanvasItem && t && t.getAttribute && t.getAttribute('role') === 'button' && t.tagName !== 'BUTTON' && (ev.key === 'Enter' || ev.key === ' ')) {
+                    ev.preventDefault(); t.click(); return true;
+                }
+                if (ev.key === 'Escape' && (this.state.selectedElementIds.length || this.state.selectedFlowId)) {
+                    this.clearActiveSelectionPointers(); return true;
+                }
+                const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+                if (arrows[ev.key] && this.state.selectedElementIds.length && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+                    ev.preventDefault();
+                    const step = (this.isSnappingActive ? this.gridSize : 10) * (ev.shiftKey ? 5 : 1);
+                    const [dx, dy] = arrows[ev.key];
+                    const ids = new Set(this.state.selectedElementIds);
+                    this.state.elements.filter(e => ids.has(e.id)).forEach(e => {
+                        e.x += dx * step; e.y += dy * step;
+                        if (e.x2 !== undefined && e.y2 !== undefined) { e.x2 += dx * step; e.y2 += dy * step; }
+                    });
+                    this.renderSvgDiagramElements();
+                    this.saveSessionToLocalStorage();
+                    // One activity entry / undo step per burst of key presses.
+                    clearTimeout(this.keyboardMoveTimer);
+                    this.keyboardMoveTimer = setTimeout(() => this.logEvent('CHANGE', `Moved ${ids.size} component(s) with the keyboard`), 600);
+                    return true;
+                }
+                return false;
             }
 
             copySelection() {
@@ -6111,7 +6186,7 @@
                 let newScale = Math.min(scaleX, scaleY);
 
                 // Clamp scale
-                newScale = Math.max(0.4, Math.min(newScale, 2.5));
+                newScale = Math.max(MIN_ZOOM, Math.min(newScale, 2.5));
                 this.zoomScale = newScale;
 
                 const contentCenterX = bbox.minX + contentWidth / 2;
@@ -7054,6 +7129,53 @@
             renderSvgDiagramElements() {
                 if (this.deferRenders) { this.scheduleDiagramRender(); return; }
                 if (this.pendingDiagramFrame) { cancelAnimationFrame(this.pendingDiagramFrame); this.pendingDiagramFrame = null; }
+                // UI-003: remember which canvas item had keyboard focus; the render replaces every element.
+                const active = document.activeElement;
+                const focusKey = active && this.dom.svg.contains(active)
+                    ? (active.getAttribute('data-flow-id') ? `[data-flow-id="${CSS.escape(active.getAttribute('data-flow-id'))}"]` : (active.getAttribute('data-id') ? `[data-id="${CSS.escape(active.getAttribute('data-id'))}"]` : null))
+                    : null;
+                this.renderSvgDiagramElementsCore();
+                this.applyCanvasAccessibility();
+                if (focusKey) { const el = this.dom.svg.querySelector(focusKey); if (el) el.focus({ preventScroll: true }); }
+            }
+
+            /** Gives every canvas item a keyboard stop and a name screen readers can announce (UI-003). */
+            applyCanvasAccessibility() {
+                const threatCount = new Map();
+                this.state.threats.forEach(t => threatCount.set(t.elementId, (threatCount.get(t.elementId) || 0) + 1));
+                const typeLabel = { process: 'Process', datastore: 'Data store', interactor: 'External entity', infrastructure: 'Infrastructure', boundary: 'Trust zone', boundary_line: 'Trust boundary line', textbox: 'Text', headline: 'Headline', step_activity: 'Step', swimlane: 'Swimlane', custom_image: 'Image' };
+                const byId = new Map(this.state.elements.map(e => [e.id, e]));
+                this.dom.svg.querySelectorAll('g[data-id]').forEach(g => {
+                    const el = byId.get(g.getAttribute('data-id'));
+                    if (!el || g.parentElement.closest('g[data-id]')) return;
+                    const n = threatCount.get(el.id) || 0;
+                    g.setAttribute('tabindex', '0');
+                    g.setAttribute('role', 'button');
+                    g.setAttribute('aria-pressed', this.state.selectedElementIds.includes(el.id) ? 'true' : 'false');
+                    g.setAttribute('aria-label', `${typeLabel[el.type] || el.type.replace(/^fc_/, 'Shape ').replace(/_/g, ' ')}: ${el.name || 'unnamed'}${n ? `, ${n} threat${n === 1 ? '' : 's'}` : ''}`);
+                });
+                this.dom.svg.querySelectorAll('g[data-flow-id]').forEach(g => {
+                    const f = this.state.flows.find(x => x.id === g.getAttribute('data-flow-id'));
+                    if (!f) return;
+                    const a = byId.get(f.sourceId), b = byId.get(f.targetId), n = threatCount.get(f.id) || 0;
+                    g.setAttribute('tabindex', '0');
+                    g.setAttribute('role', 'button');
+                    g.setAttribute('aria-pressed', this.state.selectedFlowId === f.id ? 'true' : 'false');
+                    g.setAttribute('aria-label', `Data flow ${f.name || 'unnamed'} from ${a ? a.name : '?'} to ${b ? b.name : '?'}${n ? `, ${n} threat${n === 1 ? '' : 's'}` : ''}`);
+                });
+            }
+
+            /** Icon-only buttons get their tooltip as accessible name; palette items become keyboard buttons. */
+            applyControlAccessibility(root = document) {
+                root.querySelectorAll('button:not([aria-label])').forEach(b => {
+                    if (!b.textContent.trim()) b.setAttribute('aria-label', b.getAttribute('title') || b.getAttribute('data-bs-original-title') || 'Button');
+                });
+                root.querySelectorAll('.palette-item:not([tabindex])').forEach(el => {
+                    el.setAttribute('tabindex', '0'); el.setAttribute('role', 'button');
+                });
+            }
+
+            renderSvgDiagramElementsCore() {
                 this.trustAnalysis = this.computeTrustAnalysis();
                 this.layoutSwimlanes();
                 this.dom.layerSwimlanes.innerHTML = '';
@@ -7395,6 +7517,7 @@
                     }
 
                     const gLine = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    gLine.setAttribute('data-flow-id', f.id);
                     const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     line.setAttribute('d', pathD);
                     // Wide invisible stroke so thin lines are easy to click (selection fix).
@@ -8727,6 +8850,7 @@
                 const card = document.createElement('div');
                 card.className = "card card-body p-2 mb-2 border-start border-3 border-danger small palette-item position-relative shadow-sm";
                 card.style.cursor = 'pointer';
+                card.setAttribute('tabindex', '0'); card.setAttribute('role', 'button');
                 card.innerHTML = `
                     <div class="d-flex justify-content-between align-items-start mb-1">
                         <div class="fw-bold text-dark text-wrap me-2" style="max-width:160px; word-break: break-word; line-height: 1.25;">${esc(sc.title)}</div>
@@ -8821,8 +8945,8 @@
                         <td><span class="badge rounded-pill border ${t.status === 'Mitigated / Resolved' ? 'bg-success text-white border-success' : t.status === 'Partially mitigated' ? 'bg-warning text-dark border-warning' : 'bg-light text-danger'}">${esc(t.status)}</span></td>
                         <td class="text-center text-nowrap d-print-none">
                             <div class="btn-group">
-                                <button class="btn btn-xs btn-outline-primary py-0 px-2 small btn-edit"><i class="bi bi-pencil-fill"></i></button>
-                                <button class="btn btn-xs btn-outline-danger py-0 px-2 small btn-delete"><i class="bi bi-trash-fill"></i></button>
+                                <button class="btn btn-xs btn-outline-primary py-0 px-2 small btn-edit" title="Edit threat ${esc(t.id)}" aria-label="Edit threat ${esc(t.id)}"><i class="bi bi-pencil-fill"></i></button>
+                                <button class="btn btn-xs btn-outline-danger py-0 px-2 small btn-delete" title="Delete threat ${esc(t.id)}" aria-label="Delete threat ${esc(t.id)}"><i class="bi bi-trash-fill"></i></button>
                             </div>
                         </td>`;
 

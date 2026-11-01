@@ -3,6 +3,18 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.6.0 — unreleased (branch `audit-fixes`)
+
+### Accessibility (UI-003)
+- Every component, trust zone and data flow is a keyboard stop with a spoken name (e.g. "Data store: MsSQL, 2 threats", "Data flow HTTPS from Admin Client to Webfront").
+- Keyboard: **Tab** moves between items, **Enter/Space** selects, **arrow keys** move the selection (Shift = 5× larger steps; a burst of key presses is one undo step), **Delete** removes, **Escape** deselects. Focus stays on the item when the canvas re-renders and is clearly outlined.
+- Palette items and template cards can be activated with Enter/Space; icon-only buttons have accessible names; the canvas has a description of the keyboard controls for screen readers.
+
+### Responsive layout (UI-008)
+- Below 1100 px wide the Properties panel collapses automatically, below 760 px the palette too (they re-open when the window widens; your own toggles are respected otherwise).
+- Header and register filters wrap on narrow screens, the canvas toolbar wraps, and the page never scrolls sideways (checked down to 390 px).
+- Minimum zoom lowered from 40% to 15% so zoom-to-fit shows large diagrams on small screens.
+
 ## 1.5.2 — unreleased (branch `audit-fixes`)
 
 ### Changed
