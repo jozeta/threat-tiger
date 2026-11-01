@@ -2,9 +2,9 @@
 
 **Threat Tiger** is an interactive, offline-first, client-side threat modeling web application designed to help developers, software architects, and security engineers design, analyze, and secure their system architectures.
 
-Built entirely as a single-page HTML application, Threat Tiger requires no installation, database setup, or internet connection to run. Your architectural data and threat assessments remain entirely local to your machine.
+Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-A demosite is availible here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
+A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
 ![Threat Tiger Screenshot](Screenshot.png)
 
@@ -12,41 +12,83 @@ A demosite is availible here: [https://jozeta.github.io/threat-tiger/threat-tige
 
 ## 🚀 Key Features
 
-*   **Interactive Architecture Canvas**: Use a drag-and-drop grid interface to map system designs. Add key components such as Processes, Data Stores, External Entities, Trust Boundaries, Step Activities, Comments, and Infrastructure Nodes.
-*   **Dynamic Swimlane Grids**: Group design assets into matrix quadrants using Swimlane components that dynamically resize based on elements placed within them. Headers (row headers / column headers) automatically collapse and hide if all of their respective titles are left empty.
-*   **Custom Graphic Imports**: Import your own custom graphic assets or logos directly onto the design canvas. Custom image components support the full range of STRIDE threat template suggestions.
-*   **Threat Templates**: Select any canvas component to receive structured threat suggestions categorized by the classic **STRIDE** methodology (Spoofing, Tampering, Repudiation, Information Disclosure, Denial of Service, Elevation of Privilege).
-*   **Active Threat Register**: Document and track identified threats directly within the application. Search, filter, and sort threats by category, status, and severity, then write custom description details and mitigation steps.
-*   **Operational Activity Log Ledger**: Review a live ledger tracking all session changes, component additions, and threat modifications during your session.
-*   **Visual Highlights & Dark Mode Enhancements**: Selected components (including swimlanes, infrastructure nodes, and custom images) feature a distinct blue outline and selection glow. In Dark Mode, the threat bug badge is rendered with high-visibility bright red background elements.
-*   **Import / Export JSON**: Save your work at any time. Threat Tiger supports importing and exporting full project configurations (canvas state + threat registers) in JSON format.
-*   **Print-Friendly Layout**: Print your diagrams and active threat registers directly to PDF or paper using standard browser print utilities.
+*   **Interactive architecture canvas**: drag and drop processes, data stores, external entities, trust zones and trust boundary lines, infrastructure nodes, steps, text, flowchart shapes, swimlanes and your own images. More than 200 icons (servers, code, web, infrastructure, databases, security, people).
+*   **Trust-boundary analysis**: data flows that cross a trust zone or boundary line are detected live and marked on the canvas.
+*   **Threat suggestions**: per-component STRIDE templates, plus **rule-based suggestions** that react to your security settings (encryption, authentication, MFA, VPN, PII, credentials, encryption at rest, crown jewels…) and to boundary crossings — each with the reason it was suggested and suggested controls.
+*   **Threat register**: likelihood × impact scoring, status and mitigation tracking, search and filters (severity, STRIDE category, status, "needs review"). Click a threat to jump to its component.
+*   **Insights**: summary tiles, open-risk heat map, STRIDE coverage per component, boundary crossings and model checks (unconnected components, duplicate names, …).
+*   **Undo / redo**, automatic **History** snapshots, and an activity log.
+*   **Import / export**: JSON (full, or a git-friendly variant that diffs cleanly), CSV, Markdown report (with an embedded Mermaid diagram), Mermaid diagram, PNG and a print-ready report.
+*   **Keyboard and screen-reader friendly**, works on narrow screens, light and dark canvas themes, isometric views.
 
 ---
 
 ## 🛠️ How to Get Started
 
 1.  Download or clone this repository.
-2.  Open [threat-tiger.html](file:///threat-tiger.html) in any modern web browser (Chrome, Firefox, Edge, Safari).
-3.  Configure your **Session Meta & Context** (Scope, Participants, and Operator name).
-4.  Drag components from the **Diagram Component Palette** onto the canvas, wire them together with data flows, and inspect their properties.
-5.  Use the **Threat Templates** on selected components to identify security risks and append them to your **Active Threat Register**.
+2.  Open `threat-tiger.html` in a modern browser (Chrome, Edge, Firefox, Safari) — double-clicking the file works, everything is local.
+    For the full experience (e.g. opening the demo model from the welcome screen) serve the folder over http, for example with `npm run serve` (see below) or `python3 -m http.server`.
+3.  On first visit, choose **Open demo model** or **Start modeling**. Click **You:** in the header to set the name used in the activity log.
+4.  Add components from the palette, connect them with data flows, and set their security properties in **Properties**.
+5.  Open **Threat Templates** on a selected component to add threats — suggestions triggered by your model are listed first. Use the **Insights** tab to see what is still missing.
+
+All other actions (import, export, reports, History, help) are in the **☰ menu** at the top right.
+
+### Keyboard
+
+| Key | Action |
+|---|---|
+| Tab / Shift+Tab | Move between components and data flows on the canvas |
+| Enter / Space | Select the focused item |
+| Arrow keys (Shift for larger steps) | Move the selection |
+| Delete / Backspace | Delete the selection (asks first if threats would be deleted) |
+| Escape | Deselect |
+| Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or Ctrl+Y | Undo / redo |
+| Ctrl/Cmd+C, Ctrl/Cmd+V | Copy / paste components (with the data flows between them) |
 
 ---
 
-## 🛠️ Docker
+## 🔒 Your data
 
-1.  download the docker file
-2.  run: sudo docker build -t threat-tiger . && docker run -d --name threat-tiger -p 8080:80 threat-tiger
-3.  navigate to: http://localhost:8080/threat-tiger.html
+*   Everything is stored **only in your browser** (localStorage for the current model, IndexedDB for History snapshots). Nothing is uploaded.
+*   Anyone with access to your browser profile can read it. Use **☰ → Clear all data in this browser…** on shared machines, and keep exported files somewhere appropriate — threat models describe weaknesses of real systems.
+*   If you host Threat Tiger yourself, give it its **own origin** (domain or sub-domain). Browser storage is shared by every page on the same origin.
+*   When an imported model loads images from other websites, Threat Tiger asks first, because loading them tells those websites that the model was opened.
+*   The activity log is a convenience history, not a tamper-proof audit trail.
 
 ---
 
-## 💻 Tech Stack
+## 🐳 Docker
 
-*   **HTML5 & SVG** for rendering the interactive canvas and shapes.
-*   **CSS & Bootstrap 5** for modern responsive layout grids and components.
-*   **Vanilla JavaScript** for all diagram state management, threat calculations, and JSON export/import utilities.
+The image is built from the files in this folder and served by unprivileged nginx with security headers.
+
+```sh
+docker build -t threat-tiger .
+docker run -d --name threat-tiger -p 8080:8080 threat-tiger
+```
+
+Then open <http://localhost:8080/>.
+
+---
+
+## 💻 Development
+
+The app is `threat-tiger.html` (HTML, CSS and vanilla JavaScript in one file). Front-end libraries — Bootstrap 5.3.2, Bootstrap Icons 1.13.2 and Font Awesome 6.5.1 — are bundled in `vendor/` (see `vendor/README.md`). `threat_templates.json` holds the threat templates; the rule-based suggestions are the `THREAT_RULES` list in `threat-tiger.html`.
+
+Development tooling is optional and only needs Node.js:
+
+```sh
+npm install        # installs Playwright (dev only)
+npm test           # end-to-end tests in your installed Microsoft Edge
+npm run serve      # http://127.0.0.1:4173/threat-tiger.html
+npm run sync       # run after editing the script or threat_templates.json
+```
+
+`npm run sync` updates the parts of `threat-tiger.html` that are generated: the Content-Security-Policy hash of the inline script and the embedded copy of the templates. It also verifies the vendored files against `vendor/checksums.json`. The tests fail if you forget to run it.
+
+To run the tests in Chrome instead of Edge: `PW_CHANNEL=chrome npm test`. To test a running deployment, e.g. the Docker container: `PW_BASE_URL=http://127.0.0.1:8080 npm test`.
+
+The version is `APP_VERSION` in `threat-tiger.html` (shown in Help & License and stored in exported files). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 
@@ -60,4 +102,4 @@ For bug reports, feature requests, or general feedback, you can:
 
 ## 📄 License
 
-This project is licensed under the MIT License. See [threat-tiger.html](file:///threat-tiger.html) for full license details.
+This project is licensed under the MIT License. See [LICENSE](LICENSE) for details. Bundled third-party assets keep their own licenses (see `vendor/README.md`).

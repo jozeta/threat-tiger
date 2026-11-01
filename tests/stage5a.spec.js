@@ -103,3 +103,24 @@ test('selection: invisible connection dots and label boxes do not capture clicks
   expect(r.label).toBe('none');
   expect(['none', 'n/a']).toContain(r.badgeFo);
 });
+
+test('SEC-006: "Clear all data in this browser" removes the model, snapshots and preferences', async ({ page }) => {
+  await openApp(page, { session: demoSession() });
+  await page.evaluate(async () => { app.takeSnapshot('test', true); localStorage.setItem('threat_tiger_operator_name', 'X'); await new Promise((r) => setTimeout(r, 300)); });
+  expect(await page.evaluate(async () => (await SnapshotStore.list()).length)).toBeGreaterThan(0);
+  await clickControl(page, '#btn-clear-local-data');
+  await Promise.all([page.waitForEvent('load'), page.click('#btn-confirm-delete')]);
+  await page.waitForFunction(() => window.app && window.app.state);
+  const r = await page.evaluate(async () => ({
+    elements: app.state.elements.length,
+    keys: Object.keys(localStorage).filter((k) => /^(stride_workbench_session|threat_tiger_operator|threat_tiger_template)/.test(k)),
+    snapshots: (await SnapshotStore.list()).length,
+  }));
+  expect(r).toEqual({ elements: 0, keys: [], snapshots: 0 });
+});
+
+test('SEC-008: the activity log says it is not a tamper-proof audit trail', async ({ page }) => {
+  await openApp(page, { session: demoSession() });
+  await page.click('#tab-notes-trigger');
+  await expect(page.locator('#activity-log-note')).toContainText('not a tamper-proof audit trail');
+});

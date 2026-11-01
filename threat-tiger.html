@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-T6OkbWvZwzva0XkGyw+4yHqpoFkkRGDWWm3nRv89x78='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-l2vn87oCpJoSBbE+FDkU3j3P8Fw9wz/7y9zJOdxZNVI='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
     <link href="vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css" rel="stylesheet">
@@ -1599,6 +1599,7 @@
                     <li><hr class="dropdown-divider"></li>
                     <li><button class="dropdown-item" type="button" id="btn-help-trigger"><i class="bi bi-question-circle me-2"></i>Help &amp; License</button></li>
                     <li><button class="dropdown-item text-danger" type="button" id="btn-reset-session"><i class="bi bi-trash me-2"></i>Reset canvas…</button></li>
+                    <li><button class="dropdown-item text-danger" type="button" id="btn-clear-local-data" title="Remove every model, snapshot, template change and preference stored by Threat Tiger in this browser"><i class="bi bi-eraser me-2"></i>Clear all data in this browser…</button></li>
                 </ul>
             </div>
         </header>
@@ -2927,6 +2928,7 @@
                 </div>
 
                 <div class="tab-pane fade h-100 p-2 overflow-auto" id="tab-panel-notes">
+                    <p class="text-muted extra-small mb-2 px-1" id="activity-log-note"><i class="bi bi-info-circle me-1"></i>A history of changes made in this browser, for reference. Names are self-reported and entries can be edited in exported files, so this is not a tamper-proof audit trail.</p>
                     <div class="table-responsive" style="max-height: 100%;">
                         <table class="table table-sm table-striped border align-middle small mb-0"
                             id="table-activity-ledger" style="width: 100%;">
@@ -3286,7 +3288,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.6.0';
+        const APP_VERSION = '1.7.0';
         const SCHEMA_VERSION = 1;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
@@ -3831,6 +3833,7 @@
                 document.querySelectorAll('[data-app-version]').forEach(el => { el.textContent = APP_VERSION; });
                 document.getElementById('btn-snapshots').addEventListener('click', () => this.openSnapshotsModal());
                 document.getElementById('btn-undo').addEventListener('click', () => this.undo());
+                document.getElementById('btn-clear-local-data').addEventListener('click', () => this.confirmClearLocalData());
                 document.getElementById('btn-redo').addEventListener('click', () => this.redo());
                 document.getElementById('btn-storage-failure-export').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile());
                 const threatTitleInput = document.getElementById('modal-threat-title');
@@ -9204,6 +9207,27 @@
                 this.notify('Mermaid diagram exported. Paste it into a ```mermaid block in GitHub/GitLab Markdown or open it at mermaid.live.', 'success');
             }
 
+            /** SEC-006: threat models are sensitive; let users wipe everything this app stored in the browser. */
+            confirmClearLocalData() {
+                this.confirmAction({
+                    title: 'Clear all Threat Tiger data in this browser?',
+                    body: 'This permanently removes the current model, all History snapshots, your template changes and preferences from this browser. Export anything you want to keep first. Files you exported are not affected.',
+                    confirmLabel: 'Clear everything',
+                    onConfirm: () => this.clearLocalData()
+                });
+            }
+
+            async clearLocalData() {
+                this.clearingData = true;   // stop pending/unload saves from writing the data back
+                clearTimeout(this.saveTimer); this.saveTimer = null;
+                const prefixes = ['stride_workbench_', 'threat_tiger_', 'canvas_'];
+                Object.keys(localStorage).filter(k => prefixes.some(p => k.startsWith(p)) || k === 'license_accepted').forEach(k => localStorage.removeItem(k));
+                if (SnapshotStore.db) { SnapshotStore.db.close(); SnapshotStore.db = null; }
+                await new Promise(resolve => { try { const r = indexedDB.deleteDatabase('threat-tiger'); r.onsuccess = r.onerror = r.onblocked = () => resolve(); } catch (_) { resolve(); } });
+                this.isCanvasUnsaved = false;
+                location.reload();
+            }
+
             exportThreatRegisterToCsvFile() {
                 if (this.state.threats.length === 0) { this.notify("The threat register is empty.", 'warning'); return; }
                 const byId = new Map([...this.state.elements, ...this.state.flows].map(x => [x.id, x]));
@@ -9379,6 +9403,7 @@
 
             /** Schedules a save; many changes in quick succession cost one write (PERF-001). */
             saveSessionToLocalStorage() {
+                if (this.clearingData) return;
                 this.isCanvasUnsaved = true;
                 if (this.saveTimer) return;
                 this.saveTimer = setTimeout(() => this.flushSave(), 250);
@@ -9386,7 +9411,7 @@
 
             /** Writes a pending save immediately (also runs when the page is hidden or closed). */
             flushSave() {
-                if (!this.saveTimer) return;
+                if (this.clearingData || !this.saveTimer) return;
                 clearTimeout(this.saveTimer);
                 this.saveTimer = null;
                 this.safeSetItem('stride_workbench_session_manifest_v26', JSON.stringify(this.state));

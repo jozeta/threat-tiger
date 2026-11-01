@@ -3,6 +3,17 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.7.0 — unreleased (branch `audit-fixes`, Stage 6 part 1)
+
+### Security / deployment
+- **Docker image rebuilt** (SEC-007): built from the local files instead of cloning GitHub at build time; base image `nginxinc/nginx-unprivileged:1.30.5-alpine` pinned by digest; runs as a non-root user with read-only content; no git in the image; `.dockerignore` sends only the app files; health check. `deploy/nginx.conf` adds security headers (CSP `frame-ancestors 'none'`, `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, `Cross-Origin-Opener-Policy`), hides dot-files and sets cache rules. Verified by building the image and running the browser test suite against the container. `dockerfile` renamed to `Dockerfile`.
+- **Clear all data in this browser** (☰ menu) removes the model, History snapshots, template changes and preferences (SEC-006).
+- The activity log states that it is a convenience history, not a tamper-proof audit trail (SEC-008).
+
+### Documentation
+- README rewritten for the current feature set, offline use, data/privacy notes, keyboard shortcuts, Docker and development workflow.
+- Tests can target a running deployment: `PW_BASE_URL=http://127.0.0.1:8080 npm test`.
+
 ## 1.6.0 — unreleased (branch `audit-fixes`)
 
 ### Accessibility (UI-003)

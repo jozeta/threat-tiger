@@ -1,0 +1,10 @@
+# Only the files the app needs are sent to the Docker build.
+*
+!threat-tiger.html
+!threat_templates.json
+!demo.json
+!favicon.ico
+!Threat_tigerS.png
+!Threat_tiger_840.webp
+!vendor/**
+!deploy/nginx.conf
