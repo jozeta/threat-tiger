@@ -94,7 +94,9 @@ test('BUG-008: register search matches component names', async ({ page }) => {
   const demo = demoSession();
   await openApp(page, { session: demo });
   const target = demo.elements.find((e) => e.id === demo.threats[3].elementId);
-  const expected = demo.threats.filter((t) => t.elementId === target.id).length;
+  // Several components can share a name (the demo has two "MsSQL" stores): count threats on all of them.
+  const sameName = new Set(demo.elements.filter((e) => e.name === target.name).map((e) => e.id));
+  const expected = demo.threats.filter((t) => sameName.has(t.elementId)).length;
   await page.fill('#filter-threat-search', target.name);
   await expect(await registerRows(page)).toHaveCount(expected);
 });

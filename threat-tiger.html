@@ -2895,7 +2895,8 @@
                             <div class="col-md-8">
                                 <label class="form-label small fw-semibold text-muted mb-1">Threat Context Title /
                                     Scenario Definition</label>
-                                <input type="text" class="form-control shadow-none" id="modal-threat-title" required>
+                                <input type="text" class="form-control shadow-none" id="modal-threat-title" required aria-describedby="modal-threat-title-feedback">
+                                <div class="invalid-feedback" id="modal-threat-title-feedback">Give the threat a title.</div>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label small fw-semibold text-muted mb-1">STRIDE Category Vector
@@ -3189,8 +3190,10 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.1.0';
+        const APP_VERSION = '1.2.0';
         const SCHEMA_VERSION = 1;
+        const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
+        const LEDGER_PAGE_SIZE = 200;       // PERF-003: rows rendered per page
 
         // ── Output encoding (SEC-001 / SEC-002) ───────────────────────────────────
         /** Escape any value for safe use inside HTML text or a quoted attribute. */
@@ -3351,7 +3354,25 @@
          * dropping keeps the register clean (but silently loses work unless the warning is read).
          */
         function applyThreatRecordPolicy(t, problems, ctx) {
-            // TODO(user): implement the repair-or-drop policy (5–10 lines). Placeholder keeps the record unchanged.
+            // Policy: always repair, never drop — losing someone's analysis is worse than a messy register.
+            // Repaired records are flagged so the register shows a "Review" badge until the threat is saved again.
+            const matchCI = (value, list) => list.find(v => v.toLowerCase() === value.trim().toLowerCase());
+            const unresolved = [];
+            if (problems.includes('missing-title')) { t.title = 'Untitled threat'; unresolved.push('missing-title'); }
+            if (problems.includes('unknown-category')) {
+                const known = matchCI(t.category, STRIDE_CATEGORIES);   // "spoofing" -> "Spoofing" is a safe fix
+                if (known) t.category = known; else { t.category = t.category || 'Uncategorized'; unresolved.push('unknown-category'); }
+            }
+            if (problems.includes('unknown-status')) {
+                const known = matchCI(t.status, THREAT_STATUSES);
+                // An unrecognised status must never look mitigated: default to open.
+                if (known) t.status = known; else { t.status = 'Open / Unmitigated'; unresolved.push('unknown-status'); }
+            }
+            if (problems.includes('missing-target')) unresolved.push('missing-target');   // kept; shown as "Unknown" component
+            if (unresolved.length) {
+                t.needsReview = true;
+                ctx.warn(`Threat "${t.title}" needs review (${unresolved.join(', ').replace(/-/g, ' ')}).`);
+            }
             return t;
         }
 
@@ -3564,6 +3585,9 @@
                 document.querySelectorAll('[data-app-version]').forEach(el => { el.textContent = APP_VERSION; });
                 document.getElementById('btn-snapshots').addEventListener('click', () => this.openSnapshotsModal());
                 document.getElementById('btn-storage-failure-export').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile());
+                const threatTitleInput = document.getElementById('modal-threat-title');
+                threatTitleInput.addEventListener('input', () => threatTitleInput.classList.remove('is-invalid'));
+                document.getElementById('modal-edit-threat').addEventListener('show.bs.modal', () => threatTitleInput.classList.remove('is-invalid'));
 
                 this.bindUiEvents(); this.bindCanvasEvents(); this.bindKeyboardShortcuts();
                 this.bindWindowResizerEvents(); this.bindPrintScalingEngine();
@@ -3597,7 +3621,10 @@
             }
 
             bindBeforeUnloadEvent() {
+                window.addEventListener('pagehide', () => this.flushSave());
+                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') this.flushSave(); });
                 window.addEventListener('beforeunload', (event) => {
+                    this.flushSave();
                     const hasUnsavedTemplates = Object.keys(this.threatSuggestions).some(type =>
                         Array.isArray(this.threatSuggestions[type]) && this.threatSuggestions[type].some(t => t.isUnsaved)
                     ) || (localStorage.getItem('stride_workbench_templates_deleted_unsaved') === 'true');
@@ -3827,7 +3854,6 @@
                 localStorage.setItem('canvas_view_mode', mode);
                 localStorage.setItem('canvas_is_isometric', this.isIsometric);
                 this.applyViewMode();
-                this.logEvent("CHANGE", `Switched canvas display view mode context to ${mode}`);
                 this.zoomToFit();
                 this.refreshAppViewVisualWorkspace();
             } applyCanvasTheme() {
@@ -3886,7 +3912,6 @@
                 this.canvasTheme = this.canvasTheme === 'dark' ? 'light' : 'dark';
                 localStorage.setItem('canvas_theme', this.canvasTheme);
                 this.applyCanvasTheme();
-                this.logEvent("CHANGE", `Switched canvas theme to ${this.canvasTheme}`);
                 this.refreshAppViewVisualWorkspace();
             }
 
@@ -3986,47 +4011,97 @@
             }
 
             logEvent(actionType, messageDescription) {
-                const timestamp = new Date().toLocaleString();
-                const operatorName = this.state.activeUser || "Unknown Operator";
-                if (!this.state.activityLog) this.state.activityLog = [];
-
-                this.state.activityLog.unshift({
-                    timestamp: timestamp,
-                    operator: operatorName,
+                if (!Array.isArray(this.state.activityLog)) this.state.activityLog = [];
+                const entry = {
+                    timestamp: new Date().toISOString(),   // BUG-014: unambiguous, sortable; shown in local time
+                    operator: this.state.activeUser || "Unknown Operator",
                     type: actionType,
                     message: messageDescription
-                });
-
+                };
+                this.state.activityLog.unshift(entry);
+                if (this.state.activityLog.length > MAX_ACTIVITY_LOG) this.state.activityLog.length = MAX_ACTIVITY_LOG;
                 this.saveSessionToLocalStorage();
-                this.renderActivityLedgerTable();
+                this.prependLedgerRow(entry);
             }
 
-            renderActivityLedgerTable() {
-                if (!this.dom.activityLedgerTbody) return;
-                this.dom.activityLedgerTbody.innerHTML = '';
-
-                const logs = this.state.activityLog || [];
-                if (logs.length === 0) {
-                    this.dom.activityLedgerTbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-2">No activity records recorded in ledger.</td></tr>`;
-                    return;
+            static formatTimestamp(ts) {
+                const text = toText(ts);
+                if (/^\d{4}-\d{2}-\d{2}T/.test(text)) {
+                    const d = new Date(text);
+                    if (!isNaN(d)) return d.toLocaleString();
                 }
+                return text;
+            }
 
-                logs.forEach(log => {
-                    const tr = document.createElement('tr');
-                    let actionBadgeClass = "bg-secondary text-light";
-                    if (log.type === "CREATE") actionBadgeClass = "bg-success text-light";
-                    else if (log.type === "REMOVE") actionBadgeClass = "bg-danger text-light";
-                    else if (log.type === "CHANGE") actionBadgeClass = "bg-warning text-dark";
-                    else if (log.type === "CONFIGURE") actionBadgeClass = "bg-primary text-light";
-
-                    tr.innerHTML = `
-                        <td class="text-muted" style="font-size:11px;">${esc(log.timestamp)}</td>
+            createLedgerRow(log) {
+                const tr = document.createElement('tr');
+                tr.className = 'ledger-row';
+                let actionBadgeClass = "bg-secondary text-light";
+                if (log.type === "CREATE") actionBadgeClass = "bg-success text-light";
+                else if (log.type === "REMOVE") actionBadgeClass = "bg-danger text-light";
+                else if (log.type === "CHANGE") actionBadgeClass = "bg-warning text-dark";
+                else if (log.type === "CONFIGURE") actionBadgeClass = "bg-primary text-light";
+                tr.innerHTML = `
+                        <td class="text-muted" style="font-size:11px;" title="${esc(log.timestamp)}">${esc(ThreatModelingApp.formatTimestamp(log.timestamp))}</td>
                         <td><span class="fw-bold text-dark"><i class="bi bi-person-fill me-1"></i>${esc(log.operator)}</span></td>
                         <td><span class="badge ${actionBadgeClass} w-100 d-block text-center extra-small">${esc(log.type)}</span></td>
                         <td class="text-secondary fw-medium" style="word-break: break-word;">${esc(log.message)}</td>
                     `;
-                    this.dom.activityLedgerTbody.appendChild(tr);
-                });
+                return tr;
+            }
+
+            /** Renders the newest entries only (PERF-003); skips work when nothing changed. */
+            renderActivityLedgerTable(force = false) {
+                const tbody = this.dom.activityLedgerTbody;
+                if (!tbody) return;
+                if (!this.ledgerLimit) this.ledgerLimit = LEDGER_PAGE_SIZE;
+                const logs = this.state.activityLog || [];
+                if (!force && this.ledgerRenderedFor === logs && this.ledgerTopEntry === logs[0]
+                    && this.ledgerRenderedTotal === logs.length && this.ledgerRenderedLimit === this.ledgerLimit) return;
+
+                tbody.textContent = '';
+                if (logs.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-2">No activity recorded yet.</td></tr>`;
+                } else {
+                    const frag = document.createDocumentFragment();
+                    logs.slice(0, this.ledgerLimit).forEach(log => frag.appendChild(this.createLedgerRow(log)));
+                    tbody.appendChild(frag);
+                    this.renderLedgerMoreRow();
+                }
+                this.ledgerRenderedFor = logs; this.ledgerTopEntry = logs[0];
+                this.ledgerRenderedTotal = logs.length; this.ledgerRenderedLimit = this.ledgerLimit;
+            }
+
+            renderLedgerMoreRow() {
+                const tbody = this.dom.activityLedgerTbody;
+                const existing = tbody.querySelector('#ledger-more-row');
+                if (existing) existing.remove();
+                const total = (this.state.activityLog || []).length;
+                const hidden = total - Math.min(total, this.ledgerLimit);
+                if (hidden <= 0) return;
+                const tr = document.createElement('tr'); tr.id = 'ledger-more-row';
+                const td = document.createElement('td'); td.colSpan = 4; td.className = 'text-center py-2';
+                const btn = document.createElement('button');
+                btn.type = 'button'; btn.className = 'btn btn-sm btn-outline-secondary';
+                btn.textContent = `Show ${Math.min(LEDGER_PAGE_SIZE, hidden)} older entries (${hidden} not shown)`;
+                btn.addEventListener('click', () => { this.ledgerLimit += LEDGER_PAGE_SIZE; this.renderActivityLedgerTable(true); });
+                td.appendChild(btn); tr.appendChild(td); tbody.appendChild(tr);
+            }
+
+            /** Adds one row instead of rebuilding the ledger on every action (PERF-001). */
+            prependLedgerRow(entry) {
+                const tbody = this.dom.activityLedgerTbody;
+                if (!tbody) return;
+                if (this.ledgerRenderedFor !== this.state.activityLog || !tbody.querySelector('tr.ledger-row')) {
+                    this.renderActivityLedgerTable(true);
+                    return;
+                }
+                tbody.insertBefore(this.createLedgerRow(entry), tbody.firstChild);
+                const rows = tbody.querySelectorAll('tr.ledger-row');
+                for (let i = rows.length - 1; i >= this.ledgerLimit; i--) rows[i].remove();
+                this.renderLedgerMoreRow();
+                this.ledgerTopEntry = this.state.activityLog[0];
+                this.ledgerRenderedTotal = this.state.activityLog.length;
             }
 
             bindPrintScalingEngine() {
@@ -4275,10 +4350,12 @@
                 };
 
                 let cardsHtml = '';
+                const nodeById = new Map(this.state.elements.map(e => [e.id, e]));
+                const flowById = new Map(this.state.flows.map(f => [f.id, f]));
                 threats.forEach((t, idx) => {
                     const evalObj = ThreatModelSession.calculateRisk(t.likelihood, t.impact);
-                    const connectedNode = this.state.elements.find(e => e.id === t.elementId);
-                    const connectedFlow = !connectedNode ? this.state.flows.find(f => f.id === t.elementId) : null;
+                    const connectedNode = nodeById.get(t.elementId);
+                    const connectedFlow = !connectedNode ? flowById.get(t.elementId) : null;
                     const componentName = connectedNode ? connectedNode.name : (connectedFlow ? connectedFlow.name : 'Unknown');
                     const isCrownJewel = connectedNode && connectedNode.secProps && connectedNode.secProps.isCrownJewel === 'true';
 
@@ -5297,7 +5374,7 @@
                                 const baseMidX = (bl.x + bl.x2) / 2; const baseMidY = (bl.y + bl.y2) / 2;
                                 bl.bendX = 2 * (canvasSpaceCoords.x - baseMidX); bl.bendY = 2 * (canvasSpaceCoords.y + 24 - baseMidY);
                             }
-                            this.renderSvgDiagramElements();
+                            this.scheduleDiagramRender();
                         }
                         else if (flow) {
                             if (this.activeFlowDragMode === 'bend') {
@@ -5309,7 +5386,7 @@
                                     flow.bendX = 2 * (canvasSpaceCoords.x - ((p1.x + p2.x) / 2));
                                     flow.bendY = 2 * (canvasSpaceCoords.y + 24 - ((p1.y + p2.y) / 2));
                                 }
-                                this.renderSvgDiagramElements();
+                                this.scheduleDiagramRender();
                             }
                             else if (this.activeFlowDragMode === 'flow_point') {
                                 const gridX = this.snapValue(canvasSpaceCoords.x);
@@ -5322,7 +5399,7 @@
                                     }
                                     flow.points[this.activeFlowDragPointIndex] = { x: gridX, y: gridY };
                                 }
-                                this.renderSvgDiagramElements();
+                                this.scheduleDiagramRender();
                             }
                             else if (this.activeFlowDragMode === 'flow_source' || this.activeFlowDragMode === 'flow_target') {
                                 // Find if mouse is over any element
@@ -5361,7 +5438,7 @@
                                     // Not over any node, follow the mouse
                                     this.flowDragCurrentPos = canvasSpaceCoords;
                                 }
-                                this.renderSvgDiagramElements();
+                                this.scheduleDiagramRender();
                             }
                         }
                         return;
@@ -5406,7 +5483,7 @@
                             }
                             targetEl.width = Math.max(minW, this.snapValue(this.resizeStartDims.width + (canvasSpaceCoords.x - this.resizeStartCanvasCoords.x)));
                             targetEl.height = Math.max(minH, this.snapValue(this.resizeStartDims.height + (canvasSpaceCoords.y - this.resizeStartCanvasCoords.y)));
-                            this.renderSvgDiagramElements();
+                            this.scheduleDiagramRender();
                         }
                         return;
                     }
@@ -5515,7 +5592,7 @@
                                 }
                             });
                         }
-                        this.renderSvgDiagramElements();
+                        this.scheduleDiagramRender();
                     }
                 });
 
@@ -5634,73 +5711,66 @@
 
             copySelection() {
                 if (this.state.selectedElementIds.length === 0) return;
-                const copiedElements = [];
-                const copiedThreats = [];
-
-                this.state.selectedElementIds.forEach(id => {
-                    const el = this.state.elements.find(item => item.id === id);
-                    if (el) {
-                        copiedElements.push(JSON.parse(JSON.stringify(el)));
-
-                        // Find all threats associated with this element
-                        const threats = this.state.threats.filter(t => t.elementId === id);
-                        threats.forEach(t => {
-                            copiedThreats.push(JSON.parse(JSON.stringify(t)));
-                        });
-                    }
-                });
-
-                if (copiedElements.length > 0) {
-                    this.clipboard = {
-                        elements: copiedElements,
-                        threats: copiedThreats
-                    };
-                    this.logEvent("CONFIGURE", `Copied ${copiedElements.length} elements to clipboard`);
+                const ids = new Set(this.state.selectedElementIds);
+                const clone = (o) => JSON.parse(JSON.stringify(o));
+                const elements = this.state.elements.filter(e => ids.has(e.id)).map(clone);
+                // Flows whose both ends are copied come along (BUG-013).
+                const flows = this.state.flows.filter(f => ids.has(f.sourceId) && ids.has(f.targetId)).map(clone);
+                const linked = new Set([...elements.map(e => e.id), ...flows.map(f => f.id)]);
+                const threats = this.state.threats.filter(t => linked.has(t.elementId)).map(clone);
+                if (elements.length > 0) {
+                    this.clipboard = { elements, flows, threats };
+                    this.pasteCount = 0;
                 }
             }
 
             pasteSelection() {
                 if (!this.clipboard || !this.clipboard.elements || this.clipboard.elements.length === 0) return;
-
+                this.pasteCount = (this.pasteCount || 0) + 1;
+                const offset = 30 * this.pasteCount;   // each paste lands further away instead of stacking
+                const stamp = Date.now();
+                const rand = () => Math.floor(Math.random() * 100000);
+                const idMap = {};
                 const newElementIds = [];
-                const oldToNewIdMap = {};
 
                 this.clipboard.elements.forEach((el, index) => {
-                    const oldId = el.id;
-                    const newId = `el-${Date.now()}-${index}-${Math.floor(Math.random() * 1000)}`;
-                    oldToNewIdMap[oldId] = newId;
-
                     const pastedEl = JSON.parse(JSON.stringify(el));
-                    pastedEl.id = newId;
-                    pastedEl.x = (pastedEl.x || 0) + 30;
-                    pastedEl.y = (pastedEl.y || 0) + 30;
+                    pastedEl.id = `el-${stamp}-${index}-${rand()}`;
+                    idMap[el.id] = pastedEl.id;
+                    pastedEl.x = (pastedEl.x || 0) + offset;
+                    pastedEl.y = (pastedEl.y || 0) + offset;
                     if (pastedEl.x2 !== undefined && pastedEl.y2 !== undefined) {
-                        pastedEl.x2 = (pastedEl.x2 || 0) + 30;
-                        pastedEl.y2 = (pastedEl.y2 || 0) + 30;
+                        pastedEl.x2 = (pastedEl.x2 || 0) + offset;
+                        pastedEl.y2 = (pastedEl.y2 || 0) + offset;
                     }
-                    if (pastedEl.name) {
-                        pastedEl.name = pastedEl.name + " - copy";
-                    }
-
+                    if (pastedEl.name) pastedEl.name = pastedEl.name + " - copy";
                     this.state.elements.push(pastedEl);
-                    newElementIds.push(newId);
+                    newElementIds.push(pastedEl.id);
+                });
+
+                (this.clipboard.flows || []).forEach((f, index) => {
+                    const pastedFlow = JSON.parse(JSON.stringify(f));
+                    pastedFlow.id = `fl-${stamp}-${index}-${rand()}`;
+                    idMap[f.id] = pastedFlow.id;
+                    pastedFlow.sourceId = idMap[f.sourceId];
+                    pastedFlow.targetId = idMap[f.targetId];
+                    if (Array.isArray(pastedFlow.points)) pastedFlow.points = pastedFlow.points.map(p => ({ x: p.x + offset, y: p.y + offset }));
+                    this.state.flows.push(pastedFlow);
                 });
 
                 this.clipboard.threats.forEach(t => {
-                    const newElementId = oldToNewIdMap[t.elementId];
-                    if (newElementId) {
-                        const pastedThreat = JSON.parse(JSON.stringify(t));
-                        pastedThreat.id = this.generateNextThreatId();
-                        pastedThreat.elementId = newElementId;
-                        this.state.threats.push(pastedThreat);
-                    }
+                    const target = idMap[t.elementId];
+                    if (!target) return;
+                    const pastedThreat = JSON.parse(JSON.stringify(t));
+                    pastedThreat.id = this.generateNextThreatId();
+                    pastedThreat.elementId = target;
+                    this.state.threats.push(pastedThreat);
                 });
 
                 this.state.selectedElementIds = newElementIds;
                 this.state.selectedFlowId = null;
-
-                this.logEvent("CREATE", `Pasted ${newElementIds.length} elements from clipboard`);
-                this.saveSessionToLocalStorage();
+                const flowCount = (this.clipboard.flows || []).length;
+                this.logEvent("CREATE", `Pasted ${newElementIds.length} component(s)${flowCount ? ` and ${flowCount} data flow(s)` : ''} from the clipboard`);
                 this.refreshAppViewVisualWorkspace();
             }
 
@@ -5748,7 +5818,6 @@
                 this.panY = canvasCenterY - contentCenterY * newScale;
 
                 this.applySvgViewportTransformations();
-                this.logEvent("CHANGE", `Zoomed canvas to fit all elements (scale: ${Math.round(newScale * 100)}%)`);
             }
 
             convertClientScreenCoordinatesToCanvasSpace(clientX, clientY) {
@@ -6257,7 +6326,17 @@
                 return { markerId, reverseMarkerId };
             }
 
+            /** Coalesces renders to one per animation frame (PERF-004). */
+            scheduleDiagramRender() {
+                if (this.pendingDiagramFrame) return;
+                this.pendingDiagramFrame = requestAnimationFrame(() => {
+                    this.pendingDiagramFrame = null;
+                    this.renderSvgDiagramElements();
+                });
+            }
+
             renderSvgDiagramElements() {
+                if (this.pendingDiagramFrame) { cancelAnimationFrame(this.pendingDiagramFrame); this.pendingDiagramFrame = null; }
                 this.layoutSwimlanes();
                 this.dom.layerSwimlanes.innerHTML = '';
                 this.state.elements.filter(e => e.type === 'swimlane').forEach(swim => {
@@ -7944,25 +8023,31 @@
             }
 
             renderThreatRegisterTableGrid() {
-                const search = document.getElementById('filter-threat-search').value.toLowerCase();
+                const search = document.getElementById('filter-threat-search').value.trim().toLowerCase();
                 const severity = document.getElementById('filter-threat-severity').value;
                 this.dom.threatRegisterTbody.innerHTML = '';
 
-                let filtered = this.state.threats.filter(t => (t.title.toLowerCase().includes(search) || t.elementId.toLowerCase().includes(search)) && (!severity || t.riskLabel === severity));
+                // One lookup table per render instead of a linear search per row (PERF-005).
+                const nodeById = new Map(this.state.elements.map(e => [e.id, e]));
+                const flowById = new Map(this.state.flows.map(f => [f.id, f]));
+                const nameOf = (t) => { const c = nodeById.get(t.elementId) || flowById.get(t.elementId); return c ? toText(c.name) : 'Unknown'; };
+
+                // Search covers what the user sees, including the component name (BUG-008).
+                let filtered = this.state.threats.filter(t => {
+                    if (severity && ThreatModelSession.calculateRisk(t.likelihood, t.impact).label !== severity) return false;
+                    if (!search) return true;
+                    return [t.id, t.title, nameOf(t), t.category, t.status, t.desc, t.mitigationExplanation]
+                        .some(v => toText(v).toLowerCase().includes(search));
+                });
 
                 filtered.sort((a, b) => {
                     let valA, valB;
-                    if (this.currentSortColumn === 'componentName') {
-                        const connA = this.state.elements.find(e => e.id === a.elementId) || this.state.flows.find(f => f.id === a.elementId);
-                        const connB = this.state.elements.find(e => e.id === b.elementId) || this.state.flows.find(f => f.id === b.elementId);
-                        valA = connA ? connA.name : 'Unknown';
-                        valB = connB ? connB.name : 'Unknown';
-                    } else {
-                        valA = a[this.currentSortColumn] || '';
-                        valB = b[this.currentSortColumn] || '';
-                    }
-                    if (this.currentSortColumn === 'riskScore') { valA = parseInt(valA, 10) || 0; valB = parseInt(valB, 10) || 0; }
-                    else { valA = String(valA).toLowerCase(); valB = String(valB).toLowerCase(); }
+                    if (this.currentSortColumn === 'componentName') { valA = nameOf(a); valB = nameOf(b); }
+                    else if (this.currentSortColumn === 'riskScore') {
+                        valA = ThreatModelSession.calculateRisk(a.likelihood, a.impact).score;
+                        valB = ThreatModelSession.calculateRisk(b.likelihood, b.impact).score;
+                    } else { valA = a[this.currentSortColumn] || ''; valB = b[this.currentSortColumn] || ''; }
+                    if (this.currentSortColumn !== 'riskScore') { valA = String(valA).toLowerCase(); valB = String(valB).toLowerCase(); }
                     if (valA < valB) return this.currentSortOrder === 'asc' ? -1 : 1;
                     if (valA > valB) return this.currentSortOrder === 'asc' ? 1 : -1;
                     return 0;
@@ -7975,8 +8060,8 @@
                     const tr = document.createElement('tr');
                     const evalObj = ThreatModelSession.calculateRisk(t.likelihood, t.impact);
 
-                    const connectedNode = this.state.elements.find(e => e.id === t.elementId);
-                    const connectedFlow = !connectedNode ? this.state.flows.find(f => f.id === t.elementId) : null;
+                    const connectedNode = nodeById.get(t.elementId);
+                    const connectedFlow = !connectedNode ? flowById.get(t.elementId) : null;
                     const componentName = connectedNode ? connectedNode.name : (connectedFlow ? connectedFlow.name : 'Unknown');
 
                     const isCrownJewelActive = connectedNode && connectedNode.secProps && connectedNode.secProps.isCrownJewel === 'true';
@@ -7988,7 +8073,7 @@
                     tr.innerHTML = `
                         <td><small class="fw-bold text-muted">${esc(t.id)}</small></td>
                         <td><span class="badge stride-${esc(toText(t.category).charAt(0))} px-2 py-1">${esc(t.category)}</span></td>
-                        <td class="fw-bold text-dark text-wrap" style="word-break: break-word;">${goldCrownPrefixHtml}${esc(t.title)}</td>
+                        <td class="fw-bold text-dark text-wrap" style="word-break: break-word;">${goldCrownPrefixHtml}${t.needsReview ? '<span class="badge bg-warning text-dark me-1" title="This threat was repaired when its file was loaded. Edit and save it to confirm.">Review</span>' : ''}${esc(t.title)}</td>
                         <td class="text-dark fw-medium text-wrap" style="word-break: break-word;">${esc(componentName)}</td>
                         <td><span class="badge ${evalObj.badgeClass}">${evalObj.label}</span></td>
                         <td><small class="fw-bold text-dark">${evalObj.score}</small></td>
@@ -8024,7 +8109,7 @@
                     tokens.forEach(tok => {
                         const cleanToken = tok.trim();
                         if (cleanToken) {
-                            this.dom.sessionSummaryParts.innerHTML += `<span class="badge bg-secondary text-light" style="font-size: 10px; font-weight: 500;">${esc(cleanToken)}</span>`;
+                            const badge = document.createElement('span'); badge.className = 'badge bg-secondary text-light'; badge.style.cssText = 'font-size: 10px; font-weight: 500;'; badge.textContent = cleanToken; this.dom.sessionSummaryParts.appendChild(badge);
                         }
                     });
                 } else {
@@ -8089,7 +8174,10 @@
 
             commitThreatModalFormEditorData() {
                 const hiddenId = document.getElementById('modal-threat-hidden-id').value;
-                const title = document.getElementById('modal-threat-title').value.trim(); if (!title) return;
+                const titleInput = document.getElementById('modal-threat-title');
+                const title = titleInput.value.trim();
+                if (!title) { titleInput.classList.add('is-invalid'); titleInput.focus(); return; }
+                titleInput.classList.remove('is-invalid');
                 const likelihood = document.getElementById('modal-threat-likelihood').value;
                 const impact = document.getElementById('modal-threat-impact').value;
                 const calc = ThreatModelSession.calculateRisk(likelihood, impact);
@@ -8102,7 +8190,8 @@
                     status,
                     likelihood, impact, riskScore: calc.score, riskLabel: calc.label,
                     desc: document.getElementById('modal-threat-desc').value.trim(),
-                    mitigationExplanation: showMitigationExp ? document.getElementById('modal-threat-mitigation-explanation').value.trim() : ''
+                    mitigationExplanation: showMitigationExp ? document.getElementById('modal-threat-mitigation-explanation').value.trim() : '',
+                    needsReview: false
                 };
 
                 if (hiddenId) {
@@ -8259,9 +8348,19 @@
                 }
             }
 
+            /** Schedules a save; many changes in quick succession cost one write (PERF-001). */
             saveSessionToLocalStorage() {
-                this.safeSetItem('stride_workbench_session_manifest_v26', JSON.stringify(this.state));
                 this.isCanvasUnsaved = true;
+                if (this.saveTimer) return;
+                this.saveTimer = setTimeout(() => this.flushSave(), 250);
+            }
+
+            /** Writes a pending save immediately (also runs when the page is hidden or closed). */
+            flushSave() {
+                if (!this.saveTimer) return;
+                clearTimeout(this.saveTimer);
+                this.saveTimer = null;
+                this.safeSetItem('stride_workbench_session_manifest_v26', JSON.stringify(this.state));
                 this.takeSnapshot('Autosave');
             }
 
@@ -8464,8 +8563,13 @@
                     if (response.ok) {
                         const data = await response.json();
                         if (data && typeof data === 'object' && ('process' in data || 'datastore' in data)) {
-                            // Merge fetched templates into this.threatSuggestions without marking as unsaved
-                            this.mergeThreatSuggestions(data, false);
+                            // Merge fetched templates, skipping ones the user deleted or renamed (BUG-005)
+                            const tombstones = this.getTemplateTombstones();
+                            const wanted = {};
+                            Object.keys(data).forEach(type => {
+                                wanted[type] = Array.isArray(data[type]) ? data[type].filter(t => !tombstones.has(this.templateKey(type, t))) : data[type];
+                            });
+                            this.mergeThreatSuggestions(wanted, false);
                             this.templatesFileMissing = false;
                             console.log('Successfully loaded threat templates from threat_templates.json and merged');
                             localStorage.removeItem('stride_workbench_templates_deleted_unsaved');
@@ -8481,6 +8585,22 @@
                 }
 
                 this.showTemplatesMissingAlertIfNeeded();
+            }
+
+            templateKey(type, t) {
+                return [type, toText(t && t.category).trim().toLowerCase(), toText(t && t.title).trim().toLowerCase()].join('|');
+            }
+
+            getTemplateTombstones() {
+                try { return new Set(JSON.parse(localStorage.getItem('threat_tiger_template_tombstones') || '[]')); }
+                catch (_) { return new Set(); }
+            }
+
+            /** Remembers that a built-in template was removed so the next load does not bring it back. */
+            addTemplateTombstone(key) {
+                const set = this.getTemplateTombstones();
+                set.add(key);
+                this.safeSetItem('threat_tiger_template_tombstones', JSON.stringify([...set]));
             }
 
             showTemplatesMissingAlertIfNeeded() {
@@ -8561,7 +8681,9 @@
                     this.threatSuggestions[type].push(templateObj);
                     this.logEvent("CONFIGURE", `Added new threat template "${title}" for type "${type}"`);
                 } else {
-                    const oldTitle = this.threatSuggestions[type][index].title;
+                    const previous = this.threatSuggestions[type][index];
+                    const oldTitle = previous.title;
+                    if (this.templateKey(type, previous) !== this.templateKey(type, templateObj)) this.addTemplateTombstone(this.templateKey(type, previous));
                     this.threatSuggestions[type][index] = templateObj;
                     this.logEvent("CONFIGURE", `Updated threat template "${oldTitle}" for type "${type}" to "${title}"`);
                 }
@@ -8587,6 +8709,7 @@
 
                 if (confirm(`Are you sure you want to delete the template "${templateObj.title}"?`)) {
                     this.threatSuggestions[foundType].splice(index, 1);
+                    this.addTemplateTombstone(this.templateKey(foundType, templateObj));
                     this.logEvent("CONFIGURE", `Deleted threat template "${templateObj.title}" for type "${foundType}"`);
 
                     // Mark as unsaved deleted
