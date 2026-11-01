@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-1brpN2rowwwItXsqQ8m1zd3OPg/wiFiXxp+SpKC7SIE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-lEHJKU0tdONz3ndM8N2wxSHbSdHweceqJgxasBFBcZU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
     <link href="vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css" rel="stylesheet">
@@ -3328,7 +3328,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.10.0';
+        const APP_VERSION = '1.10.1';
         const SCHEMA_VERSION = 1;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
@@ -3591,6 +3591,51 @@
                 'SAML assertion', 'DNS', 'Syslog / log shipping', 'Backup replication', 'VPN tunnel (IPsec)', 'Kubernetes API'],
             boundary: ['Internet', 'DMZ', 'Internal network', 'Corporate network', 'Production VPC', 'Kubernetes namespace', 'Partner network', 'Third-party SaaS',
                 'Admin network', 'Cloud account', 'Browser / client device', 'Office network', 'Data center', 'Payment zone (PCI)']
+        };
+
+        /** Icon applied when a suggested name is picked (chosen so the icon agrees with what the name is recognised as). */
+        const NAME_ICONS = {
+            process: {
+                'Web application': 'bi-window-stack', 'Web frontend': 'bi-window-stack', 'Single-page app (SPA)': 'bi-window-stack',
+                'Public API': 'bi-braces-asterisk', 'Internal API': 'bi-braces-asterisk', 'API gateway': 'bi-router-fill', 'GraphQL API': 'bi-braces-asterisk',
+                'gRPC service': 'bi-braces-asterisk', 'Authentication service': 'bi-person-badge', 'Identity provider (IdP)': 'bi-person-badge',
+                'OAuth / OIDC server': 'bi-person-badge', 'Payment service': 'bi-wallet2', 'Checkout service': 'bi-wallet2', 'Order service': 'bi-code-square',
+                'User profile service': 'bi-code-square', 'Notification service': 'bi-bell', 'Email service': 'bi-envelope-at-fill', 'Search service': 'bi-search',
+                'File upload service': 'bi-folder2-open', 'Admin portal': 'bi-window-stack', 'Backoffice application': 'bi-window-stack',
+                'Reporting service': 'bi-graph-up', 'Batch job / scheduler': 'bi-clock-history', 'Message consumer / worker': 'bi-arrow-left-right',
+                'Webhook receiver': 'bi-link-45deg', 'Serverless function (Lambda)': 'bi-lightning-fill', 'Container workload (Kubernetes)': 'bi-box-seam',
+                'CI/CD pipeline': 'bi-gear-wide-connected', 'Build server (Jenkins)': 'bi-tools', 'GitHub Actions workflow': 'bi-github',
+                'AI assistant (LLM)': 'bi-stars', 'Chatbot (LLM)': 'bi-stars', 'RAG service': 'bi-stars', 'Recommendation engine': 'bi-cpu-fill',
+                'ETL / data pipeline': 'bi-diagram-3', 'Mobile backend (BFF)': 'bi-code-square', 'CMS (WordPress)': 'bi-wordpress',
+                'Legacy monolith': 'bi-server', 'Microservice': 'bi-code-square', 'CDN edge function': 'bi-cloud-haze2-fill'
+            },
+            datastore: {
+                'PostgreSQL database': 'bi-database-fill', 'MySQL database': 'bi-database-fill', 'SQL Server database': 'bi-database-fill',
+                'Oracle database': 'bi-database-fill', 'MongoDB': 'bi-braces', 'DynamoDB table': 'bi-braces', 'Cosmos DB': 'bi-braces',
+                'Elasticsearch / OpenSearch': 'bi-braces', 'Redis cache': 'bi-memory', 'Memcached': 'bi-memory', 'S3 bucket': 'bi-bucket',
+                'Azure Blob container': 'bi-bucket', 'Google Cloud Storage bucket': 'bi-bucket', 'Data lake': 'bi-bucket', 'Data warehouse': 'bi-database-fill',
+                'Kafka topic': 'bi-inboxes', 'RabbitMQ queue': 'bi-inboxes', 'SQS queue': 'bi-inboxes', 'File share (SMB/NFS)': 'bi-folder2-open',
+                'SFTP server': 'bi-folder2-open', 'Secrets vault (HashiCorp Vault)': 'bi-safe', 'Key management (KMS)': 'bi-key-fill',
+                'Audit log store': 'bi-activity', 'Log store (SIEM)': 'bi-activity', 'Backup storage': 'bi-database-down', 'Session store (Redis)': 'bi-memory',
+                'Vector database (RAG)': 'bi-database-fill', 'Configuration store': 'bi-file-earmark-code', 'Payment token vault': 'bi-safe',
+                'Customer database': 'bi-database-fill'
+            },
+            interactor: {
+                'Customer': 'bi-person-fill', 'End user (browser)': 'bi-window', 'Mobile app user': 'bi-phone', 'Anonymous visitor': 'bi-incognito',
+                'Administrator': 'bi-person-gear', 'Support agent': 'bi-headset', 'Developer': 'bi-person-workspace', 'DevOps engineer': 'bi-person-gear',
+                'Employee': 'bi-person-workspace', 'Partner system': 'bi-building', 'Third-party API client': 'bi-cloud-arrow-up-fill',
+                'Payment provider (PSP)': 'bi-credit-card', 'Bank': 'bi-bank', 'External identity provider': 'bi-person-badge', 'Supplier / vendor': 'bi-building',
+                'Auditor': 'bi-person-fill', 'IoT device': 'bi-cpu', 'Mobile app': 'bi-phone', 'Scheduled job': 'bi-clock-history', 'Web crawler / bot': 'bi-robot'
+            },
+            infrastructure: {
+                'Firewall': 'bi-bricks', 'Web application firewall (WAF)': 'bi-bricks', 'Load balancer': 'bi-signpost-split', 'Reverse proxy (nginx)': 'bi-signpost-split',
+                'API gateway': 'bi-router-fill', 'CDN (CloudFront)': 'bi-cloud-haze2', 'DNS (Route 53)': 'bi-globe2', 'VPN gateway': 'bi-shield-lock',
+                'Bastion host': 'bi-terminal', 'Kubernetes cluster': 'bi-grid-3x3-gap', 'Container host': 'bi-box', 'Virtual machine (EC2)': 'bi-cloud',
+                'Hypervisor': 'bi-layers', 'Physical server': 'bi-hdd-rack', 'Router': 'bi-router', 'Switch': 'bi-ethernet', 'Wi-Fi access point': 'bi-wifi',
+                'Mail server (Exchange)': 'bi-envelope', 'Domain controller (Active Directory)': 'bi-person-badge', 'Jump server': 'bi-terminal', 'NAS': 'bi-folder2-open',
+                'Printer': 'bi-printer', 'IoT gateway': 'bi-router-fill', 'Laptop / workstation': 'bi-laptop', 'Mobile device': 'bi-phone', 'SIEM': 'bi-activity',
+                'Backup server': 'bi-database-down', 'Monitoring (Prometheus / Grafana)': 'bi-speedometer2'
+            }
         };
 
         // ── Icon library for components and infrastructure nodes ──────────────────
@@ -7312,19 +7357,36 @@
                 rs.appendChild(rsHead);
                 if (!findings.length) rs.appendChild(el('div', 'text-muted extra-small', 'No rule matches. Set security switches on components and flows (e.g. "encrypted", "stores PII") and draw trust boundaries to get suggestions.'));
                 else {
-                    const list = el('div', 'list-group list-group-flush border rounded'); list.style.maxHeight = '220px'; list.style.overflowY = 'auto';
-                    findings.forEach(f => {
-                        const it = el('div', 'list-group-item py-1 px-2 extra-small d-flex justify-content-between gap-2 align-items-start');
-                        const txt = el('div');
-                        const tt = el('div', `fw-bold ${f.added || f.dismissed ? 'text-muted text-decoration-line-through' : 'text-dark'}`, f.title);
-                        const wy = el('div', 'text-muted'); wy.append(`${f.rule.id} · ${f.rule.category} · ${f.reason} · `, focusLink('show', f.item.id));
-                        txt.append(tt, wy); it.appendChild(txt);
-                        if (f.dismissed) { const s = el('span', 'badge bg-secondary', f.dismissed.ignored ? 'Ignored' : 'Not applicable'); s.title = f.dismissed.reason; it.appendChild(s); }
-                        else if (!f.added) { const b = el('button', 'btn btn-outline-warning btn-sm py-0 px-2 extra-small text-nowrap', 'Add'); b.type = 'button'; b.addEventListener('click', () => this.addRuleThreats([f])); it.appendChild(b); }
-                        else it.appendChild(el('span', 'badge bg-success', 'Added'));
-                        list.appendChild(it);
-                    });
-                    rs.appendChild(list);
+                    // Same behaviour as the Threat Templates panel: only open suggestions are listed.
+                    if (pending.length) {
+                        const list = el('div', 'list-group list-group-flush border rounded'); list.id = 'insights-suggestion-list';
+                        list.style.maxHeight = '220px'; list.style.overflowY = 'auto';
+                        pending.forEach(f => {
+                            const it = el('div', 'list-group-item py-1 px-2 extra-small d-flex justify-content-between gap-2 align-items-start');
+                            it.setAttribute('data-template-id', f.rule.id);
+                            const txt = el('div');
+                            const tt = el('div', 'fw-bold text-dark', f.title);
+                            const wy = el('div', 'text-muted'); wy.append(`${f.rule.id} · ${f.rule.category} · ${f.reason} · `, focusLink('show', f.item.id));
+                            txt.append(tt, wy); it.appendChild(txt);
+                            const actions = el('div', 'd-flex gap-1 flex-shrink-0');
+                            const add = el('button', 'btn btn-outline-warning btn-sm py-0 px-2 extra-small text-nowrap btn-insights-add', 'Add'); add.type = 'button';
+                            add.addEventListener('click', () => this.addRuleThreats([f]));
+                            const ign = el('button', 'btn btn-outline-secondary btn-sm py-0 px-2 extra-small text-nowrap btn-ignore-suggestion', 'Ignore'); ign.type = 'button';
+                            ign.title = 'Hide this suggestion for this component (show it again from Threat Templates → Hidden)';
+                            ign.addEventListener('click', () => this.ignoreSuggestion({ item: f.item, id: f.rule.id, title: f.title }));
+                            actions.append(add, ign); it.appendChild(actions);
+                            list.appendChild(it);
+                        });
+                        rs.appendChild(list);
+                    } else {
+                        rs.appendChild(el('div', 'text-success extra-small', 'All suggestions have been handled.'));
+                    }
+                    const addedN = findings.filter(f => f.added).length;
+                    const parts = [];
+                    if (addedN) parts.push(`${addedN} added to the register`);
+                    if (ignoredFindings.length) parts.push(`${ignoredFindings.length} ignored`);
+                    if (notApplicable.length) parts.push(`${notApplicable.length} marked not applicable`);
+                    if (parts.length) { const n = el('div', 'text-muted extra-small mt-1', `Handled: ${parts.join(' · ')}.`); n.id = 'insights-handled-note'; rs.appendChild(n); }
                 }
 
                 // STRIDE coverage
@@ -7519,9 +7581,15 @@
 
             chooseNameSuggestion(name) {
                 const s = this.nameSuggest;
+                // A picked name also sets a matching icon; it is applied before the rename so both are one undo step.
+                const kind = this.nameSuggestionKind();
+                const icon = kind && NAME_ICONS[kind] && NAME_ICONS[kind][name];
+                const el = icon && this.state.selectedElementIds.length === 1 ? this.state.elements.find(e => e.id === this.state.selectedElementIds[0]) : null;
+                if (el && el.icon !== icon) el.icon = icon;
                 s.input.value = name;
                 this.closeNameSuggestions();
                 s.input.dispatchEvent(new Event('change', { bubbles: true }));
+                if (el) this.refreshAppViewVisualWorkspace();
             }
 
             closeNameSuggestions() {

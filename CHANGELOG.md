@@ -3,6 +3,12 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.10.1 — unreleased
+
+### Changed
+- **Insights → "Threats suggested by your model"** now behaves like the Threat Templates panel: added suggestions leave the list, each open suggestion has **Add** and **Ignore**, and a summary shows how many were added, ignored or marked not applicable.
+- **Picking a suggested name also sets a matching icon** (e.g. "S3 bucket" → bucket, "Support agent" → headset, "Chatbot (LLM)" → AI icon), in the same undo step. Every suggested name has an icon, and each icon agrees with what the name is recognised as (checked by a test). Typing your own name leaves the icon unchanged.
+
 ## 1.10.0 — unreleased
 
 ### Threat suggestions

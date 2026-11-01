@@ -138,3 +138,52 @@ test('picking a suggested name is one undo step', async ({ page }) => {
   await page.click('#btn-undo');
   expect(await page.evaluate(() => app.state.elements.find((e) => e.id === 'db').name)).toBe('Customer database');
 });
+
+test('Insights list: added suggestions leave it, Ignore hides one, and a summary counts what was handled', async ({ page }) => {
+  await openApp(page, { session: model((s) => { s.elements.find((e) => e.id === 'bot').secProps.loggingEnabled = 'false'; s.elements.find((e) => e.id === 'bot').secProps.runAsAdmin = 'true'; }) });
+  await page.click('#tab-insights-trigger');
+  const rows = page.locator('#insights-suggestion-list .list-group-item');
+  const n0 = await rows.count();
+  expect(n0).toBeGreaterThanOrEqual(2);
+  const firstId = await rows.first().getAttribute('data-template-id');
+  await rows.first().locator('.btn-insights-add').click();
+  await expect(page.locator(`#insights-suggestion-list [data-template-id="${firstId}"]`)).toHaveCount(0);
+  await expect(page.locator('#insights-handled-note')).toContainText('1 added to the register');
+  const secondId = await rows.first().getAttribute('data-template-id');
+  await rows.first().locator('.btn-ignore-suggestion').click();
+  await expect(page.locator(`#insights-suggestion-list [data-template-id="${secondId}"]`)).toHaveCount(0);
+  await expect(page.locator('#insights-handled-note')).toContainText('1 ignored');
+  await expect(rows).toHaveCount(n0 - 2);
+});
+
+test('picking a suggested name also sets a matching icon (one undo step); every mapped icon exists', async ({ page }) => {
+  const fs = require('node:fs'); const path = require('node:path');
+  const css = fs.readFileSync(path.join(__dirname, '..', 'vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css'), 'utf8');
+  await openApp(page, { session: model() });
+  const map = await page.evaluate(() => NAME_ICONS);
+  const missing = Object.values(map).flatMap((m) => Object.values(m)).filter((i) => !css.includes(`.${i}::before`));
+  expect(missing).toEqual([]);
+  const unmapped = await page.evaluate(() => ['process', 'datastore', 'interactor', 'infrastructure'].flatMap((k) => NAME_SUGGESTIONS[k].filter((n) => !NAME_ICONS[k][n]).map((n) => `${k}:${n}`)));
+  expect(unmapped).toEqual([]);
+  // Icons agree with what the name is recognised as (no conflicting subtype from the icon).
+  const conflicts = await page.evaluate(() => ['process', 'datastore', 'interactor', 'infrastructure'].flatMap((k) => Object.entries(NAME_ICONS[k]).filter(([n, i]) => {
+    const byName = app.subtypesOf({ id: 'p', type: k, name: n, icon: '' });
+    const byIcon = iconSubtypesFor(i, k);
+    return byName.size && byIcon.length && !byIcon.some((x) => byName.has(x)) && !(k === 'interactor' && byIcon.includes('human'));
+  }).map(([n, i]) => `${k}:${n}->${i}`)));
+  expect(conflicts).toEqual([]);
+
+  await select(page, 'db');
+  await page.click('#props-input-name');
+  await page.locator('#name-suggest-menu [role="option"]', { hasText: 'S3 bucket' }).click();
+  expect(await page.evaluate(() => { const e = app.state.elements.find((x) => x.id === 'db'); return [e.name, e.icon]; })).toEqual(['S3 bucket', 'bi-bucket']);
+  await expect(page.locator('#props-input-icon')).toHaveValue('bi-bucket');
+  await expect(page.locator('#layers-nodes-group [data-id="db"] .bi-bucket')).toHaveCount(1);
+  await page.click('#btn-undo');
+  expect(await page.evaluate(() => { const e = app.state.elements.find((x) => x.id === 'db'); return [e.name, e.icon]; })).toEqual(['Customer database', 'bi-database-fill']);
+
+  // Typing a free-text name leaves the icon alone.
+  await page.fill('#props-input-name', 'Billing archive');
+  await page.click('#tab-notes-trigger');
+  expect(await page.evaluate(() => app.state.elements.find((x) => x.id === 'db').icon)).toBe('bi-database-fill');
+});
