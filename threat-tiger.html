@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-5/QIxe5RwKGP/bUuQYCZid2VXzVFUYbfx2hqU3Tm3sQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-vqTI+HJ8iB94eJxO1GjrcUc3bYFgng/zl6ZhpXJfzws='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
     <link href="vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css" rel="stylesheet">
@@ -648,6 +648,20 @@
         .node-element:hover .node-connect-indicator {
             opacity: 1;
         }
+
+        /* Selection fixes: invisible geometry must not steal clicks from neighbouring items.
+           Connection dots only react while their component is hovered or selected (or while wiring). */
+        .node-connect-indicator { pointer-events: none; }
+        .node-element:hover .node-connect-indicator,
+        .node-element.selected .node-connect-indicator { pointer-events: auto; }
+        /* Wide transparent stroke along each data flow makes thin lines easy to click. */
+        .flow-hit-area { fill: none; stroke: transparent; stroke-width: 14px; pointer-events: stroke; cursor: pointer; }
+        /* Flow labels and badge holders are larger than what is drawn; only the visible part is clickable. */
+        .flow-label-fo, .flow-label-fo * { pointer-events: none; }
+        .flow-label-fo .rounded, .flow-label-fo .rounded * { pointer-events: auto; cursor: pointer; }
+        .badge-fo { pointer-events: none; }
+        .badge-fo > div { pointer-events: auto; }
+        @media print { .flow-hit-area { display: none; } }
 
         .node-element.valid-flow-target .node-shape-rect {
             stroke: #16a34a !important;
@@ -1545,17 +1559,22 @@
                 <span class="badge bg-secondary text-light pt-1" id="project-title-badge">New Threat Model
                     Assessment</span>
             </div>
-            <div class="d-flex gap-2">
-                <button class="btn btn-sm btn-outline-light" id="btn-import"><i
-                        class="bi bi-file-earmark-arrow-up me-1"></i>Import JSON</button>
-                <button class="btn btn-sm btn-outline-light" id="btn-export"><i
-                        class="bi bi-file-earmark-arrow-down me-1"></i>Export JSON</button>
-                <button class="btn btn-sm btn-outline-light" id="btn-snapshots" title="Restore an earlier automatic snapshot"><i
-                        class="bi bi-clock-history me-1"></i>History</button>
-                <button class="btn btn-sm btn-outline-danger" id="btn-reset-session"><i
-                        class="bi bi-trash me-1"></i>Reset Canvas</button>
-                <button class="btn btn-sm btn-primary" id="btn-help-trigger"><i
-                        class="bi bi-question-circle me-1"></i>Help &amp; License</button>
+            <div class="dropdown">
+                <button class="btn btn-sm btn-outline-light px-2" type="button" id="btn-main-menu" data-bs-toggle="dropdown"
+                    aria-expanded="false" aria-label="Main menu" title="Menu"><i class="bi bi-list fs-5 lh-1"></i></button>
+                <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="btn-main-menu" style="min-width: 260px;">
+                    <li><h6 class="dropdown-header">Model</h6></li>
+                    <li><button class="dropdown-item" type="button" id="btn-import"><i class="bi bi-file-earmark-arrow-up me-2"></i>Import JSON…</button></li>
+                    <li><button class="dropdown-item" type="button" id="btn-export"><i class="bi bi-file-earmark-arrow-down me-2"></i>Export JSON</button></li>
+                    <li><button class="dropdown-item" type="button" id="btn-snapshots"><i class="bi bi-clock-history me-2"></i>History…</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><h6 class="dropdown-header">Reports &amp; diagrams</h6></li>
+                    <li><button class="dropdown-item" type="button" id="btn-print-report"><i class="bi bi-printer me-2"></i>Print report…</button></li>
+                    <li><button class="dropdown-item" type="button" id="btn-export-mermaid"><i class="bi bi-diagram-3 me-2"></i>Export Mermaid diagram</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><button class="dropdown-item" type="button" id="btn-help-trigger"><i class="bi bi-question-circle me-2"></i>Help &amp; License</button></li>
+                    <li><button class="dropdown-item text-danger" type="button" id="btn-reset-session"><i class="bi bi-trash me-2"></i>Reset canvas…</button></li>
+                </ul>
             </div>
         </header>
 
@@ -2172,8 +2191,6 @@
                         class="bi bi-fullscreen"></i></button>
                 <button class="btn btn-sm btn-light border-0 text-primary" id="btn-canvas-save-png"
                     title="Save as PNG"><i class="bi bi-filetype-png"></i></button>
-                <button class="btn btn-sm btn-light border-0 text-success" id="btn-canvas-print"
-                    title="Print/Export Canvas"><i class="bi bi-printer"></i></button>
                 <div class="dropdown d-inline-block">
                     <button class="btn btn-sm btn-light border-0 text-primary dropdown-toggle" type="button"
                         id="btn-canvas-view-dropdown" data-bs-toggle="dropdown" aria-expanded="false"
@@ -3232,7 +3249,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.3.0';
+        const APP_VERSION = '1.4.0';
         const SCHEMA_VERSION = 1;
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
         const LEDGER_PAGE_SIZE = 200;       // PERF-003: rows rendered per page
@@ -3285,6 +3302,64 @@
             return /^https?:\/\//i.test(toText(value));
         }
 
+        // ── Icon library for components and infrastructure nodes ──────────────────
+        // Every class here exists in vendor/bootstrap-icons-1.13.2 (checked by tests/stage5.spec.js).
+        const ICON_LIBRARY = {
+            'Servers & compute': [
+                ['bi-server', 'Server'], ['bi-hdd-rack', 'Server rack'], ['bi-hdd-stack', 'Server cluster'], ['bi-cpu', 'CPU / compute'],
+                ['bi-motherboard', 'Hardware host'], ['bi-gpu-card', 'GPU / AI accelerator'], ['bi-memory', 'Memory / cache node'],
+                ['bi-pc-horizontal', 'Workstation'], ['bi-display', 'Console / kiosk'], ['bi-laptop', 'Laptop'], ['bi-lightning-charge', 'Serverless function']
+            ],
+            'Code & development': [
+                ['bi-code-slash', 'Application code'], ['bi-code-square', 'Service / module'], ['bi-terminal', 'CLI / shell'],
+                ['bi-braces-asterisk', 'API / SDK'], ['bi-file-earmark-code', 'Script / config file'], ['bi-git', 'Git repository'],
+                ['bi-github', 'GitHub'], ['bi-gitlab', 'GitLab'], ['bi-gear-wide-connected', 'CI/CD pipeline'], ['bi-tools', 'Build tooling'],
+                ['bi-puzzle', 'Plugin / third-party library'], ['bi-boxes', 'Package registry'], ['bi-bug', 'Debug / test environment']
+            ],
+            'Web & network': [
+                ['bi-globe', 'Website / internet'], ['bi-browser-chrome', 'Web browser'], ['bi-window-stack', 'Web application'],
+                ['bi-link-45deg', 'Webhook / link'], ['bi-ethernet', 'Wired network'], ['bi-wifi', 'Wi-Fi'], ['bi-router', 'Router'],
+                ['bi-hdd-network', 'Network appliance'], ['bi-diagram-3', 'Network segment'], ['bi-signpost-split', 'Load balancer / gateway'],
+                ['bi-broadcast', 'Broadcast / pub-sub'], ['bi-envelope', 'Email'], ['bi-share', 'Integration / federation']
+            ],
+            'Infrastructure & cloud': [
+                ['bi-cloud', 'Cloud service'], ['bi-clouds', 'Multi-cloud'], ['bi-cloud-check', 'Managed service'], ['bi-cloud-upload', 'Upload / ingest'],
+                ['bi-cloud-download', 'Download / egress'], ['bi-stack', 'Platform / stack'], ['bi-layers', 'Virtualisation layer'],
+                ['bi-box', 'Container'], ['bi-grid-3x3-gap', 'Cluster / orchestration'], ['bi-speedometer2', 'Monitoring dashboard'],
+                ['bi-activity', 'Telemetry / metrics'], ['bi-graph-up', 'Analytics'], ['bi-bell', 'Alerting'], ['bi-calendar-check', 'Scheduler / cron'],
+                ['bi-plug', 'Connector / adapter']
+            ],
+            'Databases & storage': [
+                ['bi-database', 'Database'], ['bi-database-lock', 'Encrypted database'], ['bi-database-check', 'Replica / verified store'],
+                ['bi-database-gear', 'Database admin'], ['bi-database-down', 'Backup'], ['bi-database-up', 'Data import'],
+                ['bi-device-hdd', 'Disk'], ['bi-device-ssd', 'SSD'], ['bi-sd-card', 'Removable media'], ['bi-archive', 'Archive'],
+                ['bi-folder2-open', 'File share'], ['bi-file-earmark-zip', 'Artifact / bundle'], ['bi-table', 'Spreadsheet / table'],
+                ['bi-inboxes', 'Queue / inbox'], ['bi-bucket', 'Object storage bucket'], ['bi-safe', 'Vault']
+            ],
+            'Security & identity': [
+                ['bi-shield-lock', 'Security control'], ['bi-shield-check', 'Policy enforcement'], ['bi-shield-exclamation', 'Security alert / IDS'],
+                ['bi-shield-shaded', 'Firewall'], ['bi-lock', 'Lock / encryption'], ['bi-unlock', 'Unencrypted / open'], ['bi-key', 'Key / secret'],
+                ['bi-fingerprint', 'Biometric / MFA'], ['bi-person-badge', 'Identity provider'], ['bi-person-lock', 'Privileged access'],
+                ['bi-incognito', 'Anonymous user'], ['bi-eye-slash', 'Privacy / masking'], ['bi-bug-fill', 'Malware / attacker'],
+                ['bi-file-earmark-lock', 'Protected file'], ['bi-patch-check', 'Certificate / signature'], ['bi-safe2', 'HSM / key vault'],
+                ['bi-passport', 'Credential / token'], ['bi-qr-code-scan', 'Scanner'], ['bi-radar', 'Threat detection']
+            ],
+            'People & clients': [
+                ['bi-person', 'User'], ['bi-person-circle', 'Customer'], ['bi-people', 'Group / team'], ['bi-person-gear', 'Administrator'],
+                ['bi-person-workspace', 'Employee'], ['bi-headset', 'Support agent'], ['bi-phone', 'Mobile app'], ['bi-tablet', 'Tablet'],
+                ['bi-robot', 'Bot / automation'], ['bi-building', 'Organisation / partner'], ['bi-shop', 'Merchant'], ['bi-bank', 'Bank'],
+                ['bi-credit-card', 'Payment'], ['bi-truck', 'Logistics / IoT device']
+            ]
+        };
+        const ICON_GROUPS_FOR_TYPE = {
+            interactor: ['People & clients', 'Security & identity', 'Web & network'],
+            datastore: ['Databases & storage', 'Security & identity', 'Infrastructure & cloud'],
+            infrastructure: Object.keys(ICON_LIBRARY),
+            default: ['Servers & compute', 'Code & development', 'Web & network', 'Infrastructure & cloud', 'Security & identity', 'Databases & storage']
+        };
+        /** Icons that were renamed or never existed in Bootstrap Icons. */
+        const ICON_ALIASES = { 'bi-cloud-arrow-right-fill': 'bi-cloud-arrow-up-fill' };
+
         // ── Model normalisation (ARCH-002 / BUG-001 / BUG-011) ────────────────────
         const STRIDE_CATEGORIES = ['Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'];
         const THREAT_STATUSES = ['Open / Unmitigated', 'Partially mitigated', 'Mitigated / Resolved'];
@@ -3323,7 +3398,7 @@
             });
             if ('notes' in raw) el.notes = toText(raw.notes);
             if ('secProps' in raw) el.secProps = normalizeSecProps(raw.secProps);
-            if ('icon' in raw) el.icon = safeIcon(raw.icon);
+            if ('icon' in raw) el.icon = safeIcon(ICON_ALIASES[raw.icon] || raw.icon);
             if ('iconColor' in raw) el.iconColor = safeColor(raw.iconColor);
             if ('circleColor' in raw) el.circleColor = toText(raw.circleColor).replace(/[^a-z]/gi, '') || 'blue';
             if ('imageUrl' in raw) {
@@ -4796,7 +4871,8 @@
                 document.getElementById('btn-canvas-zoom-out').addEventListener('click', () => { this.zoomScale = Math.max(this.zoomScale - 0.1, 0.4); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-reset').addEventListener('click', () => this.zoomToFit());
                 document.getElementById('btn-canvas-save-png').addEventListener('click', () => this.exportCanvasAsPng());
-                document.getElementById('btn-canvas-print').addEventListener('click', () => window.print());
+                document.getElementById('btn-print-report').addEventListener('click', () => window.print());
+                document.getElementById('btn-export-mermaid').addEventListener('click', () => this.exportMermaidFile());
                 const optNe = document.getElementById('opt-view-ne-iso');
                 const optNw = document.getElementById('opt-view-nw-iso');
                 const optFlat = document.getElementById('opt-view-flat');
@@ -6444,6 +6520,29 @@
                 return { markerId, reverseMarkerId };
             }
 
+            /** Fills an icon <select>: the type's original options first, then grouped extra icons. */
+            populateIconSelect(select, item, baseOptions) {
+                select.textContent = '';
+                const seen = new Set();
+                const add = (parent, val, labelText) => {
+                    if (seen.has(val)) return;
+                    seen.add(val);
+                    const opt = new Option(labelText, val, false, item.icon === val);
+                    parent.appendChild(opt);
+                };
+                const typical = document.createElement('optgroup'); typical.label = 'Typical';
+                baseOptions.forEach(o => add(typical, o.val, o.label));
+                select.appendChild(typical);
+                const groups = ICON_GROUPS_FOR_TYPE[item.type] || ICON_GROUPS_FOR_TYPE.default;
+                groups.forEach(name => {
+                    const og = document.createElement('optgroup'); og.label = name;
+                    ICON_LIBRARY[name].forEach(([val, labelText]) => add(og, val, labelText));
+                    if (og.children.length) select.appendChild(og);
+                });
+                if (item.icon && !seen.has(item.icon)) add(typical, item.icon, `Current (${item.icon.replace(/^bi-/, '')})`);
+                select.value = item.icon || (baseOptions[0] && baseOptions[0].val) || '';
+            }
+
             /** Coalesces renders to one per animation frame (PERF-004). */
             scheduleDiagramRender() {
                 if (this.pendingDiagramFrame) return;
@@ -6785,6 +6884,11 @@
                     const gLine = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                     const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
                     line.setAttribute('d', pathD);
+                    // Wide invisible stroke so thin lines are easy to click (selection fix).
+                    const hitArea = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    hitArea.setAttribute('d', pathD);
+                    hitArea.setAttribute('class', 'flow-hit-area');
+                    gLine.appendChild(hitArea);
                     line.setAttribute('class', `flow-line ${(f.secProps && f.secProps.encrypted === 'true') ? 'encrypted' : ''} ${f.isDisabled ? 'disabled' : ''}`);
                     line.setAttribute('stroke', isSelected ? (f.isDisabled ? '#adb5bd' : (isDark ? '#38bdf8' : '#0d6efd')) : lineColor);
                     line.setAttribute('stroke-width', isSelected ? thickness + 2 : thickness);
@@ -6928,6 +7032,7 @@
                     foLabel.setAttribute('width', labelWidth);
                     foLabel.setAttribute('height', labelHeight);
                     foLabel.style.overflow = 'visible';
+                    foLabel.setAttribute('class', 'flow-label-fo');   // only the visible badge takes clicks
 
                     let labelBgClass = 'bg-white';
                     let labelTextClass = 'text-dark';
@@ -7129,7 +7234,7 @@
                     if (node.secProps && node.secProps.isCrownJewel === 'true') {
                         const crownBadgeG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                         const crownFO = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-                        crownFO.setAttribute('width', '44'); crownFO.setAttribute('height', '44');
+                        crownFO.setAttribute('width', '44'); crownFO.setAttribute('height', '44'); crownFO.setAttribute('class', 'badge-fo');
                         crownFO.setAttribute('x', '-14'); crownFO.setAttribute('y', '-14');
                         crownFO.innerHTML = `
                             <div xmlns="http://www.w3.org/1999/xhtml" class="badge rounded-circle border border-white d-flex align-items-center justify-content-center shadow-lg" style="width:30px; height:30px; background-color:#ffc107; padding:0;">
@@ -7143,7 +7248,7 @@
                         const bugG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                         bugG.setAttribute('transform', `translate(${w}, 0)`);
                         const bugFO = document.createElementNS('http://www.w3.org/2000/svg', 'foreignObject');
-                        bugFO.setAttribute('width', '40'); bugFO.setAttribute('height', '40');
+                        bugFO.setAttribute('width', '40'); bugFO.setAttribute('height', '40'); bugFO.setAttribute('class', 'badge-fo');
                         bugFO.setAttribute('x', '-20'); bugFO.setAttribute('y', '-20');
                         bugFO.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" class="badge rounded-circle bg-danger threat-bug-badge border border-white text-white d-flex align-items-center justify-content-center shadow-lg" style="width:32px; height:32px; cursor:help;"><i class="bi bi-bug-fill" style="font-size:16px;"></i></div>`;
 
@@ -7199,6 +7304,7 @@
                             indicatorDot.setAttribute('r', '5'); indicatorDot.setAttribute('class', 'node-connect-indicator');
                             if (forceShowAnchors) {
                                 indicatorDot.style.opacity = '1';
+                                indicatorDot.style.pointerEvents = 'auto';   // valid drop targets while wiring
                             }
                             indicatorDot.setAttribute('data-anchor-id', a.id);
                             indicatorDot.setAttribute('title', `Connect from ${a.id}`);
@@ -7680,7 +7786,7 @@
                                 { val: 'bi-phone', label: 'Mobile Device Smart Application Terminal' },
                                 { val: 'bi-laptop', label: 'Desktop Station Administrative Shell Client' },
                                 { val: 'bi-cpu', label: 'Automated Hardware IoT Edge Device Controller' },
-                                { val: 'bi-cloud-arrow-right-fill', label: 'External B2B Partner Integrated Third-Party API Client' },
+                                { val: 'bi-cloud-arrow-up-fill', label: 'External B2B Partner Integrated Third-Party API Client' },
                                 { val: 'bi-person-workspace', label: 'Internal Operations Enterprise Staff Desk Operator' },
                                 { val: 'bi-shield-slash', label: 'Malicious Remote Unauthenticated Adversary Entity' },
                                 { val: 'bi-robot', label: 'Automated API Script Web Crawler / Scraping Bot' },
@@ -7851,7 +7957,7 @@
                                 { val: 'bi-cloud-haze2-fill', label: 'Enterprise Content Delivery Network (CDN) Edge Cache Hub' }
                             ];
                         }
-                        opts.forEach(o => { iconSelectDropdown.innerHTML += `<option value="${o.val}" ${targetItem.icon === o.val ? 'selected' : ''}>${o.label}</option>`; });
+                        this.populateIconSelect(iconSelectDropdown, targetItem, opts);
 
                         const colorPickerBox = document.getElementById('box-props-infra-color-picker');
                         if (targetItem.type === 'infrastructure') {
@@ -8386,6 +8492,76 @@
                     el.classList.remove('focus-pulse'); void el.getBoundingClientRect(); el.classList.add('focus-pulse');
                     setTimeout(() => el.classList.remove('focus-pulse'), 1600);
                 });
+            }
+
+            /**
+             * Builds a Mermaid flowchart of the diagram: components as nodes (shape by type), trust zones as
+             * subgraphs, data flows as labelled edges. Used by "Export Mermaid diagram" and the Markdown report.
+             */
+            buildMermaidDiagram() {
+                const label = (s) => '"' + toText(s).replace(/"/g, '#quot;').replace(/[\r\n]+/g, ' ').replace(/[<>]/g, (c) => c === '<' ? '#lt;' : '#gt;') + '"';
+                const center = (e) => ({ x: e.x + (e.width || 0) / 2, y: e.y + (e.height || 0) / 2 });
+                const zones = this.state.elements.filter(e => e.type === 'boundary');
+                const zoneOf = (e) => {
+                    const c = center(e);
+                    const inside = zones.filter(z => c.x >= z.x && c.x <= z.x + (z.width || 0) && c.y >= z.y && c.y <= z.y + (z.height || 0));
+                    inside.sort((a, b) => (a.width * a.height) - (b.width * b.height));   // innermost zone wins
+                    return inside[0] || null;
+                };
+                const skip = ['boundary', 'boundary_line', 'textbox', 'headline', 'swimlane'];
+                const nodes = this.state.elements.filter(e => !skip.includes(e.type));
+                const ids = new Map(nodes.map((e, i) => [e.id, `n${i + 1}`]));
+                const shape = (e) => {
+                    const text = e.type === 'step_activity' ? `${e.stepNumber || ''}. ${e.name}` : e.name;
+                    const l = label(text || e.type);
+                    switch (e.type) {
+                        case 'datastore': case 'fc_database': case 'fc_stored_data': return `[(${l})]`;
+                        case 'interactor': return `[${l}]`;
+                        case 'infrastructure': return `{{${l}}}`;
+                        case 'fc_decision': return `{${l}}`;
+                        case 'fc_terminator': return `([${l}])`;
+                        case 'fc_connector': return `((${l}))`;
+                        case 'fc_data': case 'fc_manual_input': return `[/${l}/]`;
+                        case 'step_activity': return `>${l}]`;
+                        default: return `(${l})`;   // processes and other shapes: rounded box
+                    }
+                };
+                const lines = ['flowchart LR', `    %% ${toText(this.state.projectTitle).replace(/[\r\n]+/g, ' ')} — exported from Threat Tiger ${APP_VERSION}`];
+                const byZone = new Map();
+                nodes.forEach(e => { const z = zoneOf(e); const k = z ? z.id : ''; if (!byZone.has(k)) byZone.set(k, []); byZone.get(k).push(e); });
+                (byZone.get('') || []).forEach(e => lines.push(`    ${ids.get(e.id)}${shape(e)}`));
+                zones.forEach((z, i) => {
+                    const members = byZone.get(z.id) || [];
+                    lines.push(`    subgraph z${i + 1}[${label(z.name || 'Trust boundary')}]`);
+                    members.forEach(e => lines.push(`        ${ids.get(e.id)}${shape(e)}`));
+                    lines.push('    end');
+                });
+                const threatCount = new Map();
+                this.state.threats.forEach(t => threatCount.set(t.elementId, (threatCount.get(t.elementId) || 0) + 1));
+                this.state.flows.forEach(f => {
+                    const a = ids.get(f.sourceId), b = ids.get(f.targetId);
+                    if (!a || !b) return;
+                    const parts = [f.name, f.ports ? `port ${f.ports}` : '', f.secProps && f.secProps.encrypted === 'true' ? 'encrypted' : '', threatCount.get(f.id) ? `${threatCount.get(f.id)} threat(s)` : ''].filter(Boolean);
+                    const arrow = f.isBidirectional ? (f.isDashed ? '<-.->' : '<-->') : (f.isDashed ? '-.->' : '-->');
+                    lines.push(parts.length ? `    ${a} ${arrow}|${label(parts.join(' · '))}| ${b}` : `    ${a} ${arrow} ${b}`);
+                });
+                const withThreats = nodes.filter(e => threatCount.get(e.id)).map(e => ids.get(e.id));
+                const crown = nodes.filter(e => e.secProps && e.secProps.isCrownJewel === 'true').map(e => ids.get(e.id));
+                lines.push('    classDef threat stroke:#dc3545,stroke-width:3px');
+                lines.push('    classDef crown fill:#fff3cd,stroke:#ffc107,stroke-width:3px');
+                zones.forEach((z, i) => lines.push(`    style z${i + 1} stroke:#dc3545,stroke-dasharray: 6 4,fill:none`));
+                if (withThreats.length) lines.push(`    class ${withThreats.join(',')} threat`);
+                if (crown.length) lines.push(`    class ${crown.join(',')} crown`);
+                const lineCount = this.state.elements.filter(e => e.type === 'boundary_line').length;
+                if (lineCount) lines.push(`    %% ${lineCount} trust boundary line(s) are not representable in Mermaid and were omitted.`);
+                return lines.join('\n') + '\n';
+            }
+
+            exportMermaidFile() {
+                if (!this.state.elements.length) { this.notify('The diagram is empty.', 'warning'); return; }
+                const name = (toText(this.state.projectTitle).trim() || 'threat-model').replace(/[^\w.-]+/g, '-').slice(0, 60);
+                this.downloadBlob(new Blob([this.buildMermaidDiagram()], { type: 'text/plain;charset=utf-8' }), `${name}.mmd`);
+                this.notify('Mermaid diagram exported. Paste it into a ```mermaid block in GitHub/GitLab Markdown or open it at mermaid.live.', 'success');
             }
 
             exportThreatRegisterToCsvFile() {

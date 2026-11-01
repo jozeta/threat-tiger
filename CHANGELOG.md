@@ -3,6 +3,20 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.4.0 — unreleased (branch `audit-fixes`)
+
+### Changed
+- The top-right buttons are now in a **hamburger menu** (Model: Import, Export, History · Reports & diagrams: Print report, Export Mermaid diagram · Help & License, Reset canvas).
+- **Print report** moved from the canvas toolbar into the menu (same behaviour: prints the diagram and threat report).
+
+### Added
+- **Export Mermaid diagram** (`.mmd`): components with shapes by type, trust zones as subgraphs, data flows with labels, ports, encryption and threat counts; components with threats and crown jewels are highlighted. Verified to parse and render with Mermaid 11.4 and 11.17.
+- **~100 more icons** for components and infrastructure nodes, grouped as Servers & compute, Code & development, Web & network, Infrastructure & cloud, Databases & storage, Security & identity, People & clients.
+
+### Fixed
+- **Selecting overlapping items**: invisible geometry no longer steals clicks — connection dots only respond on the hovered/selected component, data-flow label holders only respond on the visible label, badge holders only on the badge, and data-flow lines have a 14 px invisible click area. Measured on the demo: clicks along lines landing on something else went from 61 to 10 (the rest hit the line's own label).
+- An infrastructure icon (`bi-cloud-arrow-right-fill`) that does not exist in Bootstrap Icons and rendered blank; existing models are mapped to `bi-cloud-arrow-up-fill`.
+
 ## 1.3.0 — unreleased (branch `audit-fixes`, Stage 4)
 
 ### Security / offline

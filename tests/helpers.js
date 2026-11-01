@@ -39,11 +39,18 @@ function demoSession(mutate) {
   return s;
 }
 
+/** Clicks a control; opens the main (hamburger) menu first when the control lives inside it. */
+async function clickControl(page, selector) {
+  const inMenu = await page.locator(`.dropdown-menu ${selector}`).count();
+  if (inMenu && !(await page.locator(selector).isVisible())) await page.click('#btn-main-menu');
+  await page.click(selector);
+}
+
 /** Imports a JSON string through the real "Import JSON" button and file chooser. */
 async function importJson(page, text) {
   const [chooser] = await Promise.all([
     page.waitForEvent('filechooser'),
-    page.click('#btn-import'),
+    clickControl(page, '#btn-import'),
   ]);
   await chooser.setFiles({ name: 'model.json', mimeType: 'application/json', buffer: Buffer.from(text) });
   await page.waitForTimeout(300);
@@ -53,7 +60,7 @@ async function importJson(page, text) {
 async function downloadText(page, selector) {
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.click(selector),
+    clickControl(page, selector),
   ]);
   const file = await download.path();
   return fs.readFileSync(file, 'utf8');
@@ -64,4 +71,4 @@ async function registerRows(page) {
   return page.locator('#threat-register-tbody tr:has(td:nth-child(2))');
 }
 
-module.exports = { DEMO, SESSION_KEY, trackPageErrors, openApp, demoSession, importJson, downloadText, registerRows, expect };
+module.exports = { clickControl, DEMO, SESSION_KEY, trackPageErrors, openApp, demoSession, importJson, downloadText, registerRows, expect };

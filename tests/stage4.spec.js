@@ -1,6 +1,6 @@
 // Stage 4: first run, operator name, dialogs, undo/redo, threat -> canvas focus, register filters.
 const { test } = require('@playwright/test');
-const { expect, openApp, demoSession, importJson, registerRows, trackPageErrors } = require('./helpers');
+const { clickControl, expect, openApp, demoSession, importJson, registerRows, trackPageErrors } = require('./helpers');
 
 test('UI-001/002: first visit shows a dismissible welcome, no license gate and no name prompt', async ({ page }) => {
   const dialogs = [];
@@ -42,7 +42,7 @@ test('UI-006: no native alert/confirm/prompt dialogs in common flows', async ({ 
   await openApp(page);
   await page.click('#btn-register-export-csv');           // empty register
   await page.click('#btn-register-add-custom');            // no components yet
-  await page.click('#btn-reset-session');                  // reset asks via styled dialog
+  await clickControl(page, '#btn-reset-session');                  // reset asks via styled dialog
   await expect(page.locator('#modal-confirm-delete')).toBeVisible();
   expect(dialogs).toEqual([]);
 });
@@ -103,8 +103,8 @@ test('no console errors through the main Stage 4 flows', async ({ page }) => {
   const errors = trackPageErrors(page);
   await openApp(page, { session: demoSession() });
   const closeOpenModal = async () => { await page.locator('.modal.show .btn-close').first().click(); await page.waitForFunction(() => !document.querySelector('.modal.show, .modal-backdrop')); };
-  await page.click('#btn-snapshots'); await closeOpenModal();
-  await page.click('#btn-help-trigger'); await closeOpenModal();
+  await clickControl(page, '#btn-snapshots'); await closeOpenModal();
+  await clickControl(page, '#btn-help-trigger'); await closeOpenModal();
   await expect(page.locator('#btn-undo')).toBeDisabled();   // nothing to undo yet on a fresh load
   expect(errors).toEqual([]);
 });
