@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-wTolzxVEXJvoA6JsQ5Ux22Kg1BzrQIFiAt5beEGBghc='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-GW/6dbpk8v6EGlYliZrjecUhB4sVX/iAgvlSjW8B0qk='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4190,11 +4190,12 @@
                 document.getElementById('mitigation-threat-filter').addEventListener('input', () => this.renderMitigationThreatList());
                 document.getElementById('filter-mitigation-search').addEventListener('input', () => this.renderMitigationTable());
                 document.getElementById('filter-mitigation-status').addEventListener('change', () => this.renderMitigationTable());
-                document.getElementById('tab-mitigations-trigger').addEventListener('shown.bs.tab', () => this.renderMitigationTable());
+                // Render before the tab fades in, so rows are not replaced under a click that lands during the fade.
+                document.getElementById('tab-mitigations-trigger').addEventListener('show.bs.tab', () => this.renderMitigationTable());
                 document.getElementById('btn-dismiss-save').addEventListener('click', () => this.commitDismissSuggestion());
                 document.getElementById('input-templates-search').addEventListener('input', () => this.updateThreatSuggestionsWizardView());
 
-                document.getElementById('tab-insights-trigger').addEventListener('shown.bs.tab', () => this.renderInsights());
+                document.getElementById('tab-insights-trigger').addEventListener('show.bs.tab', () => this.renderInsights());
                 document.getElementById('btn-export-markdown').addEventListener('click', () => this.exportMarkdownReport());
                 document.getElementById('btn-export-no-log').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile({ includeLog: false }));
 
@@ -10235,8 +10236,10 @@
             deleteMitigation(id) {
                 const m = this.mitigationById(id); if (!m) return;
                 const n = this.threatsCoveredBy(id).length;
-                this.mitigationModal.hide();
-                this.confirmAction({
+                // Open the confirmation only after the editor has fully closed: two Bootstrap modals
+                // animating at the same time can leave the second one half-open.
+                const modalEl = document.getElementById('modal-mitigation');
+                const ask = () => this.confirmAction({
                     title: 'Delete this mitigation?',
                     body: `"${m.title}" will be removed${n ? ` and unlinked from ${n} threat(s)` : ''}. You can undo this.`,
                     confirmLabel: 'Delete mitigation',
@@ -10247,6 +10250,8 @@
                         this.refreshAppViewVisualWorkspace();
                     }
                 });
+                if (modalEl.classList.contains('show')) { modalEl.addEventListener('hidden.bs.modal', ask, { once: true }); this.mitigationModal.hide(); }
+                else ask();
             }
 
             exportThreatRegisterToCsvFile() {

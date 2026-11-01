@@ -72,7 +72,10 @@ test('deleting a mitigation unlinks it everywhere; Insights, model checks, repor
 
   await page.click('#tab-mitigations-trigger');
   await page.locator('#mitigation-tbody tr[data-mitigation-id="mi-001"]').click();
+  await expect(page.locator('#modal-mitigation')).toBeVisible();
   await page.click('#btn-mitigation-delete');
+  await expect(page.locator('#modal-confirm-delete')).toBeVisible();
+  await expect(page.locator('#modal-mitigation')).toBeHidden();
   await page.click('#btn-confirm-delete');
   expect(await page.evaluate(() => [app.state.mitigations.map((m) => m.id), app.state.threats[0].mitigationIds])).toEqual([['mi-002'], []]);
   const orphan = await page.evaluate(() => app.computeModelWarnings().some((w) => w.code === 'MC-MIT-ORPHAN'));
