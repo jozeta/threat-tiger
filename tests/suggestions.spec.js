@@ -247,10 +247,12 @@ test('icon recognition: variants match, look-alike names do not, and per-type me
     cpuIot: iconSubtypesFor('bi-cpu', 'interactor'),
     objectStore: iconSubtypesFor('bi-archive-fill', 'datastore'),
     partner: iconSubtypesFor('bi-cloud-arrow-up-fill', 'interactor'),
+    cpuProcess: iconSubtypesFor('bi-cpu-fill', 'process'),
   }));
   expect(r).toEqual({
     windowsOs: ['host'], windowStack: ['web'], sdk: ['api'], dbLock: ['database'], dns: ['dns', 'network-device'],
     cpuHost: ['host'], cpuIot: ['iot'], objectStore: ['object-storage'], partner: ['partner-system'],
+    cpuProcess: ['host'],   // a CPU icon alone does not make a process an AI service
   });
 });
 

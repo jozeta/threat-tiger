@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-kcwEKasXmEV5I52pYZIvLNQ9jA8jVbpdjq7QtoRVhBk='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-XZCXZxc2PFvrohXClB/jsDKJdLWwPqn9q1iQ+EmqjFQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
     <link href="vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css" rel="stylesheet">
@@ -3328,7 +3328,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.11.0';
+        const APP_VERSION = '1.11.1';
         const SCHEMA_VERSION = 1;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
@@ -3443,7 +3443,7 @@
                 'bi-hdd-fill': ['cache'], 'bi-envelope-paper-fill': ['queue'], 'bi-graph-up-arrow': ['database'],
                 'bi-diagram-3-fill': ['nosql'], 'bi-archive-fill': ['object-storage'], 'bi-activity': ['logs']
             },
-            process: { 'bi-cloud-haze2-fill': ['web', 'cdn'], 'bi-pc-display': ['admin'], 'bi-cpu-fill': ['llm'] },
+            process: { 'bi-cloud-haze2-fill': ['web', 'cdn'], 'bi-pc-display': ['admin'] },
             interactor: {
                 'bi-laptop': ['admin', 'human'], 'bi-terminal-fill': ['admin', 'human'], 'bi-cpu': ['iot'], 'bi-device-ssd-fill': ['iot'],
                 'bi-cloud-arrow-up-fill': ['partner-system'], 'bi-browser-safari': ['mobile', 'human'], 'bi-window': ['human'],
@@ -3605,7 +3605,7 @@
                 'Reporting service': 'bi-graph-up', 'Batch job / scheduler': 'bi-clock-history', 'Message consumer / worker': 'bi-arrow-left-right',
                 'Webhook receiver': 'bi-link-45deg', 'Serverless function (Lambda)': 'bi-lightning-fill', 'Container workload (Kubernetes)': 'bi-box-seam',
                 'CI/CD pipeline': 'bi-gear-wide-connected', 'Build server (Jenkins)': 'bi-tools', 'GitHub Actions workflow': 'bi-github',
-                'AI assistant (LLM)': 'bi-stars', 'Chatbot (LLM)': 'bi-stars', 'RAG service': 'bi-stars', 'Recommendation engine': 'bi-cpu-fill',
+                'AI assistant (LLM)': 'bi-stars', 'Chatbot (LLM)': 'bi-stars', 'RAG service': 'bi-stars', 'Recommendation engine': 'bi-code-square',
                 'ETL / data pipeline': 'bi-diagram-3', 'Mobile backend (BFF)': 'bi-code-square', 'CMS (WordPress)': 'bi-wordpress',
                 'Legacy monolith': 'bi-server', 'Microservice': 'bi-code-square', 'CDN edge function': 'bi-cloud-haze2-fill'
             },
