@@ -98,3 +98,19 @@ The library grew from 86 to 148 threats, mostly tied to specific kinds of compon
 - **Data:** queues, secrets stores, log stores, search indexes and file shares.
 
 New verified examples: tj-actions/changed-files 2025, CircleCI 2023, MGM Resorts 2023, Ivanti Connect Secure 2024, Citrix Bleed 2023, GitHub memcached DDoS 2018, Bing Chat system prompt 2023, Exchange ProxyLogon 2021, Golden SAML (SolarWinds campaign), and dependency confusion 2021.
+
+## 1.11.0 coverage
+
+New threats were added wherever the library was thin. The aim was **at least 5 per element type × applicable STRIDE category** (enforced by a test) and **at least 3 per recognised kind of component**. Highlights:
+- **Repudiation**, previously the weakest category everywhere: admin audit trails, correlation IDs, clock sync, deleted records, shared database and admin accounts, log retention, cloud control-plane logs, flow logs, and chargeback evidence.
+- **Containers, admin portals, mobile backends, legacy hosts and CDNs.**
+- **Directory services** (DCSync, too many domain admins), **VPN** (no MFA, flat access) and **mail servers** (open relay, legacy protocols).
+- **Data flows:** timeouts, retry storms, backlogs, oversized payloads, webhook replay, token audience, LDAP binds, phishing and forwarding rules, RDP session hijacking, and database connection strings.
+
+| Type | Total | S | T | R | I | D | E |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| process | 80 | 13 | 19 | 7 | 17 | 11 | 13 |
+| infrastructure | 47 | 8 | 8 | 5 | 9 | 5 | 12 |
+| datastore | 46 | — | 11 | 8 | 18 | 9 | — |
+| interactor | 36 | 17 | — | 8 | 11 | — | — |
+| flow | 35 | — | 13 | — | 14 | 8 | — |

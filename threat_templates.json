@@ -1073,6 +1073,485 @@
       "subtypes": [
         "email"
       ]
+    },
+    {
+      "id": "P-REP-01",
+      "category": "Repudiation",
+      "title": "Administrative actions in [name] are not separately audited",
+      "desc": "Changes made through admin functions (role changes, refunds, data exports, configuration) are not recorded with before/after values and who approved them.",
+      "controls": [
+        "Dedicated audit trail for admin actions with old and new values",
+        "Four-eyes approval for the most critical actions"
+      ],
+      "refs": [
+        "CWE-778",
+        "OWASP A09:2021"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "admin"
+      ]
+    },
+    {
+      "id": "P-REP-02",
+      "category": "Repudiation",
+      "title": "Users can deny transactions made through [name]",
+      "desc": "Orders, payments or approvals are accepted without a reliable record of who confirmed them and when.",
+      "controls": [
+        "Store who, what, when and from where for each transaction",
+        "Explicit confirmation step and receipts for important transactions"
+      ],
+      "refs": [
+        "CWE-778"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "payment",
+        "api"
+      ]
+    },
+    {
+      "id": "P-REP-03",
+      "category": "Repudiation",
+      "title": "Requests through [name] cannot be traced across services",
+      "desc": "Without correlation IDs passed between services, an investigation cannot follow one user action through the system.",
+      "controls": [
+        "Generate and propagate a request/trace ID; log it everywhere",
+        "Central log search across services"
+      ],
+      "refs": [
+        "OWASP A09:2021"
+      ],
+      "likelihood": 3,
+      "impact": 2,
+      "subtypes": [
+        "api"
+      ]
+    },
+    {
+      "id": "P-REP-04",
+      "category": "Repudiation",
+      "title": "Unsynchronised clocks make the timeline of [name] unreliable",
+      "desc": "Servers without time synchronisation write timestamps that do not line up, so the order of events in an incident cannot be proven.",
+      "controls": [
+        "NTP on all hosts; log in UTC with time zone",
+        "Monitor clock drift"
+      ],
+      "refs": [
+        "OWASP A09:2021"
+      ],
+      "likelihood": 2,
+      "impact": 2
+    },
+    {
+      "id": "P-CONT-01",
+      "category": "Elevation of Privilege",
+      "title": "Container of [name] runs as root or privileged",
+      "desc": "Root or privileged containers, host mounts or added capabilities turn an application flaw into control of the node.",
+      "controls": [
+        "Run as non-root with a read-only root file system",
+        "Drop all capabilities; no privileged mode or host mounts",
+        "Pod security standards (restricted)"
+      ],
+      "refs": [
+        "OWASP K01:2022",
+        "CWE-250"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "container"
+      ]
+    },
+    {
+      "id": "P-CONT-02",
+      "category": "Tampering",
+      "title": "Unverified or outdated base image for [name]",
+      "desc": "Images built from unpinned public base images inherit known vulnerabilities or a tampered upstream image.",
+      "controls": [
+        "Pin base images by digest; rebuild regularly",
+        "Scan images and verify signatures before deploy"
+      ],
+      "refs": [
+        "OWASP K02:2022",
+        "CWE-1395"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "container"
+      ]
+    },
+    {
+      "id": "P-CONT-03",
+      "category": "Information Disclosure",
+      "title": "Secrets for [name] in plain environment variables or baked into the image",
+      "desc": "Environment variables and image layers are visible to anyone who can inspect the container, read crash dumps or pull the image.",
+      "controls": [
+        "Mount secrets from a secret store at runtime",
+        "Never copy secrets into image layers; scan images for secrets"
+      ],
+      "refs": [
+        "CWE-526",
+        "OWASP K08:2022"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "container",
+        "serverless"
+      ]
+    },
+    {
+      "id": "P-ADMIN-01",
+      "category": "Elevation of Privilege",
+      "title": "Admin portal [name] reachable from the internet",
+      "desc": "Administrative interfaces exposed publicly are constantly attacked with stolen credentials and exploits.",
+      "controls": [
+        "Restrict admin access to VPN / zero-trust access or allow-listed networks",
+        "Separate admin application from the public site"
+      ],
+      "refs": [
+        "ATT&CK T1133"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "subtypes": [
+        "admin"
+      ]
+    },
+    {
+      "id": "P-ADMIN-02",
+      "category": "Spoofing",
+      "title": "Sensitive admin actions in [name] without re-authentication",
+      "desc": "A stolen or unattended admin session can change roles, export data or disable controls without being asked to prove identity again.",
+      "controls": [
+        "Step-up authentication (MFA) for sensitive actions",
+        "Short admin session lifetimes"
+      ],
+      "refs": [
+        "CWE-308"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "admin"
+      ]
+    },
+    {
+      "id": "P-MOB-01",
+      "category": "Spoofing",
+      "title": "[name] trusts the mobile app to enforce rules",
+      "desc": "Limits, prices and permissions are only checked in the app, so a modified app or direct API calls bypass them.",
+      "controls": [
+        "Enforce every rule on the server",
+        "Treat the app like any other untrusted client"
+      ],
+      "refs": [
+        "OWASP M3:2024",
+        "CWE-602"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "mobile"
+      ]
+    },
+    {
+      "id": "P-MOB-02",
+      "category": "Tampering",
+      "title": "Old app versions keep using deprecated endpoints of [name]",
+      "desc": "Legacy API versions stay online for old app installs and miss security fixes applied to the current version.",
+      "controls": [
+        "Inventory and retire old API versions",
+        "Minimum supported app version enforced by the backend"
+      ],
+      "refs": [
+        "OWASP API9:2023"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "mobile",
+        "api"
+      ]
+    },
+    {
+      "id": "P-HOST-01",
+      "category": "Elevation of Privilege",
+      "title": "Unsupported runtime or operating system under [name]",
+      "desc": "End-of-life frameworks, runtimes or OS versions no longer receive security patches.",
+      "controls": [
+        "Track end-of-life dates; upgrade plan per component",
+        "Isolate legacy systems that cannot be upgraded"
+      ],
+      "refs": [
+        "CWE-1104",
+        "OWASP A06:2021"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "host"
+      ]
+    },
+    {
+      "id": "P-CDN-01",
+      "category": "Tampering",
+      "title": "Edge rules or functions for [name] changed through a compromised account",
+      "desc": "Whoever controls the CDN configuration can redirect traffic, inject scripts or disable protection for the whole site.",
+      "controls": [
+        "MFA and least privilege on CDN accounts; change approval",
+        "Alert on configuration changes"
+      ],
+      "refs": [
+        "ATT&CK T1078.004"
+      ],
+      "likelihood": 2,
+      "impact": 5,
+      "subtypes": [
+        "cdn"
+      ]
+    },
+    {
+      "id": "P-SRV-02",
+      "category": "Denial of Service",
+      "title": "Function [name] hits concurrency limits",
+      "desc": "Bursts of events use up account-wide concurrency, so this and unrelated functions are throttled.",
+      "controls": [
+        "Reserved concurrency per critical function",
+        "Queue and back-pressure in front of functions"
+      ],
+      "refs": [
+        "CWE-770"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "serverless"
+      ]
+    },
+    {
+      "id": "P-GQL-03",
+      "category": "Spoofing",
+      "title": "Batched GraphQL queries bypass login rate limits in [name]",
+      "desc": "Aliases or batching let one HTTP request try hundreds of passwords or one-time codes, slipping past per-request rate limits.",
+      "controls": [
+        "Rate-limit by operation, not by request",
+        "Disallow batching for authentication mutations"
+      ],
+      "refs": [
+        "CWE-307"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "graphql"
+      ]
+    },
+    {
+      "id": "P-QUEUE-02",
+      "category": "Tampering",
+      "title": "Messages processed twice or out of order by [name]",
+      "desc": "At-least-once delivery without idempotency creates duplicate orders or payments; out-of-order processing applies old state.",
+      "controls": [
+        "Idempotency keys and de-duplication",
+        "Version numbers or sequence checks on state changes"
+      ],
+      "refs": [
+        "CWE-841"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "queue"
+      ]
+    },
+    {
+      "id": "P-EMAIL-03",
+      "category": "Denial of Service",
+      "title": "[name] abused to send spam",
+      "desc": "Contact, invite or password-reset forms send email to any address, so attackers use your domain to spam until it is blocklisted.",
+      "controls": [
+        "Rate limits and CAPTCHA on forms that send email",
+        "Do not include user-supplied text in automatic emails"
+      ],
+      "refs": [
+        "CWE-799"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "email"
+      ]
+    },
+    {
+      "id": "P-FILE-02",
+      "category": "Denial of Service",
+      "title": "Huge or numerous uploads exhaust storage of [name]",
+      "desc": "Uploads without size and count limits fill disks or storage quotas.",
+      "controls": [
+        "Per-user quotas and maximum file size",
+        "Stream to object storage instead of local disk"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "file-share"
+      ]
+    },
+    {
+      "id": "P-FILE-03",
+      "category": "Information Disclosure",
+      "title": "Uploaded files served by [name] run scripts in your domain",
+      "desc": "HTML or SVG uploads served from the application's own domain execute JavaScript in users' sessions (stored XSS).",
+      "controls": [
+        "Serve user files from a separate domain",
+        "Content-Disposition: attachment and correct content types",
+        "Sanitise or convert SVG/HTML"
+      ],
+      "refs": [
+        "CWE-79",
+        "CWE-434"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "file-share",
+        "web"
+      ]
+    },
+    {
+      "id": "P-PAY-04",
+      "category": "Tampering",
+      "title": "Payment status in [name] taken from the browser instead of the provider",
+      "desc": "The order is marked as paid because of a success redirect or URL parameter, which a user can fake.",
+      "controls": [
+        "Confirm payment server-to-server or via signed provider webhooks",
+        "Check amount and currency against the order"
+      ],
+      "refs": [
+        "CWE-345"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "payment"
+      ]
+    },
+    {
+      "id": "P-ID-03",
+      "category": "Spoofing",
+      "title": "Account enumeration through login, reset or sign-up of [name]",
+      "desc": "Different messages or timings reveal which emails or usernames have accounts, feeding phishing and credential stuffing.",
+      "controls": [
+        "Identical responses and timing for existing and unknown accounts",
+        "Rate limits on these endpoints"
+      ],
+      "refs": [
+        "CWE-204"
+      ],
+      "likelihood": 4,
+      "impact": 2,
+      "subtypes": [
+        "identity",
+        "web"
+      ]
+    },
+    {
+      "id": "P-MOB-03",
+      "category": "Information Disclosure",
+      "title": "Notifications from [name] reveal sensitive content on lock screens",
+      "desc": "Push notifications include codes, balances or medical/personal details visible without unlocking the phone.",
+      "controls": [
+        "Keep notification text generic; show details inside the app",
+        "Never send one-time codes with full context in notifications"
+      ],
+      "refs": [
+        "CWE-359"
+      ],
+      "likelihood": 3,
+      "impact": 2,
+      "subtypes": [
+        "mobile"
+      ]
+    },
+    {
+      "id": "P-HOST-02",
+      "category": "Tampering",
+      "title": "Configuration or code of [name] writable by its own service account",
+      "desc": "If the running service can modify its own binaries or config, any code-execution flaw becomes persistent.",
+      "controls": [
+        "Separate deploy and runtime accounts; read-only application files",
+        "Integrity monitoring on config files"
+      ],
+      "refs": [
+        "CWE-732"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "host"
+      ]
+    },
+    {
+      "id": "P-HOST-03",
+      "category": "Denial of Service",
+      "title": "Disk full on the host stops [name]",
+      "desc": "Logs, temporary files or uploads fill the disk and the service crashes or stops writing data.",
+      "controls": [
+        "Log rotation and quotas; separate data volumes",
+        "Disk-usage alerts"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "host"
+      ]
+    },
+    {
+      "id": "P-CDN-02",
+      "category": "Information Disclosure",
+      "title": "Private API responses for [name] cached at the edge",
+      "desc": "Responses that depend on the user are cached by the CDN and served to other users.",
+      "controls": [
+        "Cache-Control: private/no-store on authenticated responses",
+        "Cache only explicitly public paths"
+      ],
+      "refs": [
+        "CWE-524"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "cdn"
+      ]
+    },
+    {
+      "id": "P-CDN-03",
+      "category": "Denial of Service",
+      "title": "Cache-busting requests bypass the CDN for [name]",
+      "desc": "Random query strings or headers force every request through to the origin, defeating the CDN during an attack.",
+      "controls": [
+        "Normalise or ignore unknown query parameters in the cache key",
+        "Rate limiting at the edge"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "cdn"
+      ]
     }
   ],
   "datastore": [
@@ -1614,6 +2093,332 @@
       "subtypes": [
         "payment"
       ]
+    },
+    {
+      "id": "D-REP-03",
+      "category": "Repudiation",
+      "title": "Deleted records in [name] leave no trace",
+      "desc": "Hard deletes remove data without any history, so it cannot be shown who removed what.",
+      "controls": [
+        "Soft delete or history tables for important data",
+        "Audit delete operations"
+      ],
+      "refs": [
+        "CWE-778"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "database"
+      ]
+    },
+    {
+      "id": "D-REP-04",
+      "category": "Repudiation",
+      "title": "Shared database accounts hide who changed [name]",
+      "desc": "Several applications or people use the same database user, so changes cannot be attributed.",
+      "controls": [
+        "One account per application and per person",
+        "Pass end-user identity into audit columns"
+      ],
+      "refs": [
+        "CWE-778"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "database",
+        "nosql"
+      ]
+    },
+    {
+      "id": "D-LOGS-03",
+      "category": "Repudiation",
+      "title": "Logs in [name] deleted before incidents are discovered",
+      "desc": "Short retention means evidence is gone by the time a breach is noticed (often weeks or months later).",
+      "controls": [
+        "Retention long enough for investigations (e.g. 12 months for security logs)",
+        "Archive to cheaper immutable storage"
+      ],
+      "refs": [
+        "OWASP A09:2021"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "logs"
+      ]
+    },
+    {
+      "id": "D-LLM-02",
+      "category": "Information Disclosure",
+      "title": "[name] returns other tenants' documents to the AI assistant",
+      "desc": "A shared vector index without tenant or permission filters retrieves documents the current user may not see.",
+      "controls": [
+        "Filter retrieval by tenant and user permissions",
+        "Separate indexes for separate tenants"
+      ],
+      "refs": [
+        "OWASP LLM08:2025"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "llm"
+      ]
+    },
+    {
+      "id": "D-LLM-03",
+      "category": "Information Disclosure",
+      "title": "Embeddings in [name] can reveal the original text",
+      "desc": "Embedding vectors are treated as anonymous, but they can be inverted to recover much of the source content.",
+      "controls": [
+        "Protect embeddings like the source data (access control, encryption)",
+        "Avoid embedding sensitive fields"
+      ],
+      "refs": [
+        "OWASP LLM08:2025"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "llm"
+      ]
+    },
+    {
+      "id": "D-PAY-02",
+      "category": "Tampering",
+      "title": "Payee or bank details in [name] changed to redirect payments",
+      "desc": "An attacker (or a fraudulent request) changes a supplier's or customer's bank account so payouts go to the attacker.",
+      "controls": [
+        "Out-of-band verification for bank detail changes",
+        "Audit and alert on changes; delay first payment to new details"
+      ],
+      "refs": [
+        "CWE-639"
+      ],
+      "likelihood": 2,
+      "impact": 5,
+      "subtypes": [
+        "payment"
+      ]
+    },
+    {
+      "id": "D-CACHE-02",
+      "category": "Information Disclosure",
+      "title": "Sessions or tokens in [name] readable without authentication",
+      "desc": "Caches inside the network often run without passwords or TLS, so anyone who reaches them can read sessions and cached data.",
+      "controls": [
+        "Enable authentication and TLS on the cache",
+        "Network policies limiting access to the application"
+      ],
+      "refs": [
+        "CWE-306"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "cache"
+      ]
+    },
+    {
+      "id": "D-CACHE-03",
+      "category": "Denial of Service",
+      "title": "Cache stampede on [name] overloads the backend",
+      "desc": "When popular entries expire together, many requests hit the database at once.",
+      "controls": [
+        "Request coalescing / locking on refresh",
+        "Staggered expiry; serve stale while revalidating"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "cache"
+      ]
+    },
+    {
+      "id": "D-SECRETS-03",
+      "category": "Denial of Service",
+      "title": "Secrets store [name] unavailable stops all services",
+      "desc": "If the store is down or sealed after a restart, every service that needs a secret fails to start.",
+      "controls": [
+        "High-availability setup and tested unseal procedure",
+        "Short-lived caching of secrets in services"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 2,
+      "impact": 5,
+      "subtypes": [
+        "secrets"
+      ]
+    },
+    {
+      "id": "D-SECRETS-04",
+      "category": "Tampering",
+      "title": "Secrets in [name] are never rotated",
+      "desc": "Long-lived credentials stay valid for years, so any past leak is still usable.",
+      "controls": [
+        "Automatic rotation; dynamic short-lived credentials where possible",
+        "Alert on secret age"
+      ],
+      "refs": [
+        "CWE-262"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "secrets"
+      ]
+    },
+    {
+      "id": "D-DB-01",
+      "category": "Information Disclosure",
+      "title": "Database [name] uses default or shared admin credentials",
+      "desc": "Default, shared or well-known admin passwords give anyone who reaches the database full access.",
+      "controls": [
+        "Unique, vaulted admin credentials; disable default accounts",
+        "Individual admin accounts with MFA via a bastion"
+      ],
+      "refs": [
+        "CWE-1392"
+      ],
+      "likelihood": 2,
+      "impact": 5,
+      "subtypes": [
+        "database",
+        "nosql"
+      ]
+    },
+    {
+      "id": "D-DB-02",
+      "category": "Denial of Service",
+      "title": "Migrations or bulk jobs lock [name] in production",
+      "desc": "Schema changes or large batch updates take table locks and stop the application.",
+      "controls": [
+        "Online schema-change tools; run heavy jobs in batches",
+        "Test migrations on production-sized data"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "database"
+      ]
+    },
+    {
+      "id": "D-OBJ-04",
+      "category": "Information Disclosure",
+      "title": "Listing enabled on bucket [name]",
+      "desc": "Anyone allowed to list the bucket can enumerate every object name, then guess or fetch interesting files.",
+      "controls": [
+        "Disable public list permissions",
+        "Unguessable object keys for user content"
+      ],
+      "refs": [
+        "CWE-548"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "object-storage"
+      ]
+    },
+    {
+      "id": "D-OBJ-05",
+      "category": "Denial of Service",
+      "title": "Objects in [name] deleted or all versions purged",
+      "desc": "Without versioning or object lock, a compromised key or mistake permanently deletes data.",
+      "controls": [
+        "Versioning and object lock (WORM) for important data",
+        "Separate account for backups; MFA delete"
+      ],
+      "refs": [
+        "ATT&CK T1485"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "object-storage"
+      ]
+    },
+    {
+      "id": "D-QUEUE-03",
+      "category": "Repudiation",
+      "title": "Messages in [name] cannot be traced to their producer",
+      "desc": "Messages carry no producer identity or correlation ID, so a malicious or faulty message cannot be traced back.",
+      "controls": [
+        "Include producer identity and correlation IDs in message metadata",
+        "Log publishes for sensitive topics"
+      ],
+      "refs": [
+        "CWE-778"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "queue"
+      ]
+    },
+    {
+      "id": "D-FILE-04",
+      "category": "Tampering",
+      "title": "Malicious files planted on [name]",
+      "desc": "Attackers place infected documents or shortcuts on shared folders that other users open.",
+      "controls": [
+        "Malware scanning on shares",
+        "Read-only shares where users only consume content"
+      ],
+      "refs": [
+        "ATT&CK T1080"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "file-share"
+      ]
+    },
+    {
+      "id": "D-NOSQL-02",
+      "category": "Tampering",
+      "title": "Unvalidated document structure corrupts [name]",
+      "desc": "Schemaless writes accept unexpected fields and types, breaking readers or smuggling data into places it should not be.",
+      "controls": [
+        "Schema validation in the database or the data access layer",
+        "Reject unknown fields"
+      ],
+      "refs": [
+        "CWE-20"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "nosql"
+      ]
+    },
+    {
+      "id": "D-PAY-03",
+      "category": "Repudiation",
+      "title": "Payment records in [name] can be edited without trace",
+      "desc": "Amounts, statuses or refunds can be changed directly in the database, and nothing records who did it.",
+      "controls": [
+        "Append-only ledger for payment events",
+        "Audit and alert on direct changes to payment tables"
+      ],
+      "refs": [
+        "CWE-778"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "payment"
+      ]
     }
   ],
   "interactor": [
@@ -2034,6 +2839,281 @@
       "impact": 3,
       "subtypes": [
         "partner-system"
+      ]
+    },
+    {
+      "id": "E-REP-02",
+      "category": "Repudiation",
+      "title": "Approvals by [name] are given outside the system",
+      "desc": "Changes are approved in chat or email instead of in the tool, so there is no reliable record linking approval to change.",
+      "controls": [
+        "Approvals recorded in the system of record",
+        "Link change records to approvers"
+      ],
+      "refs": [
+        "CWE-778"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "admin"
+      ]
+    },
+    {
+      "id": "E-REP-03",
+      "category": "Repudiation",
+      "title": "Automated client [name] acts with a person's identity",
+      "desc": "Scripts or integrations use a person's credentials, so automated actions look like human ones and cannot be separated.",
+      "controls": [
+        "Dedicated service identities for automation",
+        "Mark automated actions in audit logs"
+      ],
+      "refs": [
+        "OWASP A09:2021"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "partner-system",
+        "iot"
+      ]
+    },
+    {
+      "id": "E-REP-04",
+      "category": "Repudiation",
+      "title": "Partner [name] disputes data it sent or received",
+      "desc": "Without signed messages or delivery receipts, a partner can deny having sent or received an order or file.",
+      "controls": [
+        "Message signing and acknowledgements for B2B exchanges",
+        "Keep exchanged messages with timestamps"
+      ],
+      "refs": [
+        "CWE-345"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "partner-system"
+      ]
+    },
+    {
+      "id": "E-INFO-01",
+      "category": "Information Disclosure",
+      "title": "Data shown to [name] exposed via screen sharing or onlookers",
+      "desc": "Support and operations staff show customer data on shared screens, calls or in public places.",
+      "controls": [
+        "Mask sensitive fields by default; reveal on demand with logging",
+        "Privacy screens and screen-sharing guidance"
+      ],
+      "refs": [
+        "CWE-359"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "admin",
+        "human"
+      ]
+    },
+    {
+      "id": "E-INFO-02",
+      "category": "Information Disclosure",
+      "title": "[name] copies data to personal email, cloud drives or AI tools",
+      "desc": "Users move company or customer data into unsanctioned services where it is no longer protected or deletable.",
+      "controls": [
+        "Data loss prevention for uploads and email",
+        "Provide approved tools, including approved AI assistants"
+      ],
+      "refs": [
+        "ATT&CK T1567"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "human",
+        "admin"
+      ]
+    },
+    {
+      "id": "E-INFO-03",
+      "category": "Information Disclosure",
+      "title": "Exports made by [name] stay on laptops and in inboxes",
+      "desc": "CSV and report exports leave the system's access controls and retention.",
+      "controls": [
+        "Limit and log exports; watermark reports",
+        "Expiry for shared export links"
+      ],
+      "refs": [
+        "CWE-359"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "admin",
+        "human"
+      ]
+    },
+    {
+      "id": "E-IOT-02",
+      "category": "Spoofing",
+      "title": "Device [name] connects to a server it does not authenticate",
+      "desc": "Devices accept any server certificate or none, so a spoofed backend can send commands or firmware.",
+      "controls": [
+        "Pin or validate the server certificate on the device",
+        "Mutual TLS between device and backend"
+      ],
+      "refs": [
+        "CWE-295"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "iot"
+      ]
+    },
+    {
+      "id": "E-IOT-03",
+      "category": "Information Disclosure",
+      "title": "Device [name] leaks data when sold, recycled or lost",
+      "desc": "Credentials and data remain on devices that leave the organisation.",
+      "controls": [
+        "Secure factory reset and remote wipe",
+        "Revoke device credentials at decommissioning"
+      ],
+      "refs": [
+        "CWE-212"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "iot"
+      ]
+    },
+    {
+      "id": "E-IDP-01",
+      "category": "Spoofing",
+      "title": "Compromised external identity provider [name] signs in as anyone",
+      "desc": "Federation means you trust every login the provider asserts; if it is compromised, attackers can log in as any of your users.",
+      "controls": [
+        "Limit which domains/tenants are trusted",
+        "Monitor federated logins; MFA enforced on your side for admins"
+      ],
+      "refs": [
+        "ATT&CK T1199",
+        "ATT&CK T1606.002"
+      ],
+      "likelihood": 2,
+      "impact": 5,
+      "subtypes": [
+        "identity"
+      ]
+    },
+    {
+      "id": "E-IDP-02",
+      "category": "Spoofing",
+      "title": "Accounts from [name] are linked by email address alone",
+      "desc": "Linking an external login to a local account just because the email matches lets someone who controls an unverified email address take over the account.",
+      "controls": [
+        "Link accounts on the provider's stable subject ID",
+        "Require verified email and explicit linking by the user"
+      ],
+      "refs": [
+        "CWE-287"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "identity"
+      ]
+    },
+    {
+      "id": "E-PSP-01",
+      "category": "Spoofing",
+      "title": "Fake payment notifications pretending to come from [name]",
+      "desc": "Forged callbacks or emails claim that a payment succeeded or a refund is due.",
+      "controls": [
+        "Verify provider signatures; confirm status via the provider API",
+        "Never act on emailed payment confirmations alone"
+      ],
+      "refs": [
+        "CWE-345"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "payment"
+      ]
+    },
+    {
+      "id": "E-PSP-02",
+      "category": "Information Disclosure",
+      "title": "Payment provider [name] receives more customer data than needed",
+      "desc": "Full customer profiles are sent where only an amount and reference are required.",
+      "controls": [
+        "Send only fields the provider needs",
+        "Data processing agreement and review of shared fields"
+      ],
+      "refs": [
+        "GDPR Art. 5(1)(c)"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "payment"
+      ]
+    },
+    {
+      "id": "E-MOBILE-03",
+      "category": "Information Disclosure",
+      "title": "App [name] stores tokens or data insecurely on the device",
+      "desc": "Tokens and personal data in plain files, shared preferences or logs are readable on rooted devices and in backups.",
+      "controls": [
+        "Use the platform keystore/keychain for secrets",
+        "Exclude sensitive data from backups and logs"
+      ],
+      "refs": [
+        "OWASP M9:2024"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "mobile"
+      ]
+    },
+    {
+      "id": "E-IDP-03",
+      "category": "Repudiation",
+      "title": "Logins via [name] cannot be matched to your own logs",
+      "desc": "Your logs do not keep the provider's user and session identifiers, so a suspicious login there cannot be followed into your system.",
+      "controls": [
+        "Log the IdP subject, session ID and authentication method",
+        "Keep IdP sign-in logs for the same period"
+      ],
+      "refs": [
+        "OWASP A09:2021"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "identity"
+      ]
+    },
+    {
+      "id": "E-PSP-03",
+      "category": "Repudiation",
+      "title": "Chargebacks via [name] cannot be contested",
+      "desc": "Without evidence of authentication (3-D Secure), delivery and customer consent, disputed payments are lost.",
+      "controls": [
+        "Keep authentication results, delivery proof and order history per payment",
+        "Use strong customer authentication where available"
+      ],
+      "refs": [
+        "CWE-778"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "payment"
       ]
     }
   ],
@@ -2519,6 +3599,389 @@
         "network-device",
         "cache"
       ]
+    },
+    {
+      "id": "I-TAMP-01",
+      "category": "Tampering",
+      "title": "Manual changes to [name] bypass infrastructure-as-code",
+      "desc": "Hand-made changes drift from the reviewed configuration and silently undo security settings.",
+      "controls": [
+        "Infrastructure as code with review; restrict console write access",
+        "Drift detection and alerts"
+      ],
+      "refs": [
+        "OWASP A05:2021"
+      ],
+      "likelihood": 3,
+      "impact": 3
+    },
+    {
+      "id": "I-TAMP-02",
+      "category": "Tampering",
+      "title": "Firewall or security group rules on [name] opened too widely",
+      "desc": "\"Temporary\" allow-any rules or 0.0.0.0/0 exposures remain in place long after they were needed.",
+      "controls": [
+        "Rule review and expiry dates; least-open rules",
+        "Automated checks for wide-open rules"
+      ],
+      "refs": [
+        "ATT&CK T1562.007"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "network-device",
+        "cloud-host"
+      ]
+    },
+    {
+      "id": "I-TAMP-03",
+      "category": "Tampering",
+      "title": "No admission control on [name]",
+      "desc": "Anyone who can deploy can run privileged or unverified workloads, because no central policy checks them.",
+      "controls": [
+        "Admission policies (e.g. Kyverno/OPA Gatekeeper) for images, privileges and labels",
+        "Signed images only"
+      ],
+      "refs": [
+        "OWASP K04:2022"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "container"
+      ]
+    },
+    {
+      "id": "I-TAMP-04",
+      "category": "Tampering",
+      "title": "Tampered VM or container images deployed to [name]",
+      "desc": "Images pulled from public registries or shared accounts without signature checks may contain backdoors.",
+      "controls": [
+        "Private registry; verify image signatures",
+        "Approved base images only"
+      ],
+      "refs": [
+        "CWE-494"
+      ],
+      "likelihood": 2,
+      "impact": 5,
+      "subtypes": [
+        "container",
+        "cloud-host"
+      ]
+    },
+    {
+      "id": "I-REP-02",
+      "category": "Repudiation",
+      "title": "Cloud control-plane activity for [name] not logged",
+      "desc": "API activity logs (e.g. CloudTrail / Activity Log) are disabled, short-lived or writable by the admins they record.",
+      "controls": [
+        "Organisation-wide control-plane logging to a separate account",
+        "Alert when logging is changed"
+      ],
+      "refs": [
+        "ATT&CK T1562.008"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "cloud-host"
+      ]
+    },
+    {
+      "id": "I-REP-03",
+      "category": "Repudiation",
+      "title": "Shared admin accounts on [name]",
+      "desc": "The team shares one admin or root login, so actions cannot be tied to a person.",
+      "controls": [
+        "Individual admin accounts; vault shared break-glass credentials",
+        "Session recording for privileged access"
+      ],
+      "refs": [
+        "OWASP A09:2021"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "network-device",
+        "host"
+      ]
+    },
+    {
+      "id": "I-REP-04",
+      "category": "Repudiation",
+      "title": "No network flow logs for [name]",
+      "desc": "Without flow logs, connections to and from the system cannot be reconstructed after an incident.",
+      "controls": [
+        "Enable VPC/firewall flow logs for critical segments",
+        "Retain and centralise them"
+      ],
+      "refs": [
+        "OWASP A09:2021"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "network-device",
+        "cloud-host"
+      ]
+    },
+    {
+      "id": "I-DOS-02",
+      "category": "Denial of Service",
+      "title": "Expired certificate or domain takes [name] offline",
+      "desc": "TLS certificates or domain registrations that are not renewed in time cause sudden outages.",
+      "controls": [
+        "Automated certificate renewal (ACME)",
+        "Expiry monitoring for certificates and domains"
+      ],
+      "refs": [
+        "OWASP A05:2021"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "example": "Microsoft Teams (February 2020): an expired authentication certificate caused a multi-hour outage.",
+      "subtypes": [
+        "cdn",
+        "dns",
+        "network-device"
+      ]
+    },
+    {
+      "id": "I-DOS-03",
+      "category": "Denial of Service",
+      "title": "Cloud quotas or account suspension take [name] offline",
+      "desc": "Hitting service quotas, unpaid bills or an abuse-triggered suspension stops everything in the account.",
+      "controls": [
+        "Quota monitoring and increases ahead of growth",
+        "Billing alerts; separate accounts for critical workloads"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "cloud-host"
+      ]
+    },
+    {
+      "id": "I-SPOOF-02",
+      "category": "Spoofing",
+      "title": "ARP or DHCP spoofing on the network of [name]",
+      "desc": "An attacker on the local network answers ARP or DHCP requests and routes traffic through their machine.",
+      "controls": [
+        "Dynamic ARP inspection and DHCP snooping on switches",
+        "Encrypt traffic even on internal networks"
+      ],
+      "refs": [
+        "ATT&CK T1557.002"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "network-device",
+        "host"
+      ]
+    },
+    {
+      "id": "I-SPOOF-03",
+      "category": "Spoofing",
+      "title": "Rogue Wi-Fi access point imitates [name]",
+      "desc": "An \"evil twin\" network with the same name captures logins and traffic from devices that connect automatically.",
+      "controls": [
+        "WPA3-Enterprise with certificate validation",
+        "Wireless intrusion detection"
+      ],
+      "refs": [
+        "ATT&CK T1557"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "network-device"
+      ]
+    },
+    {
+      "id": "I-VPN-02",
+      "category": "Spoofing",
+      "title": "VPN [name] accepts passwords without MFA",
+      "desc": "One phished or reused password gives full network access.",
+      "controls": [
+        "MFA for every VPN login; remove legacy accounts",
+        "Device certificates or posture checks"
+      ],
+      "refs": [
+        "ATT&CK T1133"
+      ],
+      "likelihood": 4,
+      "impact": 5,
+      "subtypes": [
+        "vpn"
+      ]
+    },
+    {
+      "id": "I-VPN-03",
+      "category": "Elevation of Privilege",
+      "title": "VPN users of [name] can reach the whole network",
+      "desc": "After connecting, users and compromised laptops reach every internal system, not just what they need.",
+      "controls": [
+        "Per-group access policies / zero-trust network access",
+        "Segment sensitive systems behind additional controls"
+      ],
+      "refs": [
+        "ATT&CK TA0008"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "subtypes": [
+        "vpn"
+      ]
+    },
+    {
+      "id": "I-AD-02",
+      "category": "Elevation of Privilege",
+      "title": "Too many domain admin accounts on [name]",
+      "desc": "Privileged directory accounts are numerous and used for everyday work, so any compromised workstation can expose them.",
+      "controls": [
+        "Minimise domain admins; separate admin accounts",
+        "Privileged access workstations and tiering"
+      ],
+      "refs": [
+        "ATT&CK T1078.002"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "subtypes": [
+        "identity"
+      ]
+    },
+    {
+      "id": "I-AD-03",
+      "category": "Information Disclosure",
+      "title": "Password hashes extracted from [name] (DCSync / NTDS.dit)",
+      "desc": "Attackers with replication rights or disk access copy all password hashes and reuse them.",
+      "controls": [
+        "Restrict replication rights; monitor DCSync requests",
+        "Protect domain controller backups"
+      ],
+      "refs": [
+        "ATT&CK T1003.006"
+      ],
+      "likelihood": 2,
+      "impact": 5,
+      "subtypes": [
+        "identity"
+      ]
+    },
+    {
+      "id": "I-EMAIL-02",
+      "category": "Spoofing",
+      "title": "Mail server [name] is an open relay",
+      "desc": "The server accepts mail for any recipient from anyone, so it is used for spam and phishing in your name.",
+      "controls": [
+        "Relay only for authenticated users and own domains",
+        "Regular open-relay checks"
+      ],
+      "refs": [
+        "CWE-284"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "email"
+      ]
+    },
+    {
+      "id": "I-EMAIL-03",
+      "category": "Information Disclosure",
+      "title": "Mailboxes on [name] accessible through legacy protocols without MFA",
+      "desc": "IMAP, POP or basic-auth protocols bypass MFA and are used for password spraying and mailbox theft.",
+      "controls": [
+        "Disable legacy/basic authentication",
+        "Conditional access for mail clients"
+      ],
+      "refs": [
+        "ATT&CK T1114"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "email"
+      ]
+    },
+    {
+      "id": "I-HOST-01",
+      "category": "Elevation of Privilege",
+      "title": "Same local admin password on [name] and other machines",
+      "desc": "A shared local administrator password lets an attacker who compromises one machine log into all others (pass-the-hash).",
+      "controls": [
+        "Unique, rotated local admin passwords (LAPS)",
+        "Restrict local admin logons over the network"
+      ],
+      "refs": [
+        "ATT&CK T1550.002"
+      ],
+      "likelihood": 3,
+      "impact": 5,
+      "subtypes": [
+        "host"
+      ]
+    },
+    {
+      "id": "I-HOST-02",
+      "category": "Tampering",
+      "title": "No endpoint detection or integrity monitoring on [name]",
+      "desc": "Malware and persistence mechanisms (new services, scheduled tasks) go unnoticed.",
+      "controls": [
+        "Endpoint detection and response",
+        "File integrity monitoring on critical servers"
+      ],
+      "refs": [
+        "ATT&CK T1543"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "host"
+      ]
+    },
+    {
+      "id": "I-CDN-02",
+      "category": "Tampering",
+      "title": "Origin behind [name] reachable directly, bypassing CDN and WAF",
+      "desc": "If the origin server accepts traffic from anywhere, attackers skip the WAF, rate limits and DDoS protection.",
+      "controls": [
+        "Allow only CDN IP ranges or authenticated origin pulls",
+        "Keep the origin address private"
+      ],
+      "refs": [
+        "CWE-284"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "cdn"
+      ]
+    },
+    {
+      "id": "I-REP-05",
+      "category": "Repudiation",
+      "title": "Configuration changes on [name] are not tracked",
+      "desc": "Network device or appliance configs are changed without versioning, so nobody can tell who opened a rule or when.",
+      "controls": [
+        "Configuration backups with diffs and change tickets",
+        "Syslog of configuration commands to a central store"
+      ],
+      "refs": [
+        "OWASP A09:2021"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "network-device"
+      ]
     }
   ],
   "flow": [
@@ -2884,6 +4347,300 @@
       ],
       "likelihood": 2,
       "impact": 4,
+      "subtypes": [
+        "http"
+      ]
+    },
+    {
+      "id": "F-DOS-02",
+      "category": "Denial of Service",
+      "title": "Missing timeouts on [name] let a slow dependency block callers",
+      "desc": "Calls without timeouts wait indefinitely, tying up threads and connections until the caller fails too.",
+      "controls": [
+        "Timeouts on every outbound call",
+        "Circuit breakers and bulkheads"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "http",
+        "database"
+      ]
+    },
+    {
+      "id": "F-DOS-03",
+      "category": "Denial of Service",
+      "title": "Retry storms on [name] turn a hiccup into an outage",
+      "desc": "Clients retry immediately and repeatedly, multiplying load on a struggling service.",
+      "controls": [
+        "Exponential backoff with jitter; retry budgets",
+        "Honour Retry-After and rate-limit responses"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "http",
+        "messaging"
+      ]
+    },
+    {
+      "id": "F-DOS-04",
+      "category": "Denial of Service",
+      "title": "Backlog on [name] delays critical events",
+      "desc": "A slow consumer or a flood of low-priority messages delays important ones (payments, security alerts).",
+      "controls": [
+        "Separate queues/topics by priority",
+        "Alert on consumer lag"
+      ],
+      "refs": [
+        "CWE-400"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "messaging"
+      ]
+    },
+    {
+      "id": "F-DOS-05",
+      "category": "Denial of Service",
+      "title": "Oversized payloads on [name] exhaust the receiver",
+      "desc": "Requests or messages without size limits consume memory and CPU when parsed.",
+      "controls": [
+        "Maximum body/message size at gateway and broker",
+        "Streaming parsers for large data"
+      ],
+      "refs": [
+        "CWE-770"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "http",
+        "messaging",
+        "webhook"
+      ]
+    },
+    {
+      "id": "F-WEBHOOK-02",
+      "category": "Tampering",
+      "title": "Replayed webhook events on [name] processed again",
+      "desc": "A captured, correctly signed event is sent again and triggers the same action twice.",
+      "controls": [
+        "Check signed timestamps and reject old events",
+        "Store processed event IDs"
+      ],
+      "refs": [
+        "CWE-294"
+      ],
+      "likelihood": 3,
+      "impact": 3,
+      "subtypes": [
+        "webhook"
+      ]
+    },
+    {
+      "id": "F-WEBHOOK-03",
+      "category": "Information Disclosure",
+      "title": "Secret in the webhook URL for [name] leaks",
+      "desc": "Webhook URLs with secrets in the path or query end up in logs, tickets and screenshots.",
+      "controls": [
+        "Signature headers instead of secrets in URLs",
+        "Rotate webhook secrets"
+      ],
+      "refs": [
+        "CWE-598"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "webhook"
+      ]
+    },
+    {
+      "id": "F-ID-02",
+      "category": "Tampering",
+      "title": "Tokens on [name] accepted by the wrong service",
+      "desc": "A token issued for one API is replayed to another that does not check the audience.",
+      "controls": [
+        "Validate audience (aud) and issuer on every service",
+        "Narrow scopes per API"
+      ],
+      "refs": [
+        "RFC 9700",
+        "CWE-287"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "identity"
+      ]
+    },
+    {
+      "id": "F-ID-03",
+      "category": "Information Disclosure",
+      "title": "LDAP bind on [name] sends passwords in cleartext",
+      "desc": "Simple binds over plain LDAP expose user and service passwords on the network.",
+      "controls": [
+        "LDAPS or StartTLS required; disable plain simple binds",
+        "Use service accounts with minimal rights"
+      ],
+      "refs": [
+        "CWE-319"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "identity"
+      ]
+    },
+    {
+      "id": "F-EMAIL-02",
+      "category": "Tampering",
+      "title": "Phishing links or malicious attachments arrive via [name]",
+      "desc": "Inbound email is the most common way malware and credential phishing reach users.",
+      "controls": [
+        "Mail filtering, sandboxing and link rewriting",
+        "Mark external email; user reporting button"
+      ],
+      "refs": [
+        "ATT&CK T1566"
+      ],
+      "likelihood": 4,
+      "impact": 4,
+      "subtypes": [
+        "email"
+      ]
+    },
+    {
+      "id": "F-EMAIL-03",
+      "category": "Information Disclosure",
+      "title": "Email on [name] auto-forwarded outside the organisation",
+      "desc": "Attackers with mailbox access create forwarding rules that silently copy mail to them.",
+      "controls": [
+        "Block automatic external forwarding",
+        "Alert on new forwarding rules"
+      ],
+      "refs": [
+        "ATT&CK T1114.003"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "email"
+      ]
+    },
+    {
+      "id": "F-ADMIN-02",
+      "category": "Tampering",
+      "title": "Remote admin session on [name] hijacked",
+      "desc": "Disconnected or unattended privileged sessions are taken over by another user on the host.",
+      "controls": [
+        "Session time-outs and logoff of disconnected sessions",
+        "Restrict who can connect to admin hosts"
+      ],
+      "refs": [
+        "ATT&CK T1563.002"
+      ],
+      "likelihood": 2,
+      "impact": 5,
+      "subtypes": [
+        "remote-admin"
+      ]
+    },
+    {
+      "id": "F-ADMIN-03",
+      "category": "Denial of Service",
+      "title": "Brute force on [name] locks out administrators",
+      "desc": "Account lockout policies let attackers lock admins out on purpose during an incident.",
+      "controls": [
+        "Rate limiting and MFA instead of hard lockouts",
+        "Admin access only from trusted networks"
+      ],
+      "refs": [
+        "CWE-645"
+      ],
+      "likelihood": 2,
+      "impact": 3,
+      "subtypes": [
+        "remote-admin"
+      ]
+    },
+    {
+      "id": "F-DB-02",
+      "category": "Information Disclosure",
+      "title": "Database credentials for [name] sit in plain connection strings",
+      "desc": "Connection strings with passwords are stored in config files, environment dumps and logs.",
+      "controls": [
+        "Pull credentials from a secret store; use IAM/managed identities",
+        "Never log connection strings"
+      ],
+      "refs": [
+        "CWE-260"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "database"
+      ]
+    },
+    {
+      "id": "F-DB-03",
+      "category": "Tampering",
+      "title": "Any service can open a connection like [name] to the database",
+      "desc": "The database port is reachable from many networks, so any compromised host can try to connect.",
+      "controls": [
+        "Network rules allowing only the owning service",
+        "Private endpoints"
+      ],
+      "refs": [
+        "CWE-284"
+      ],
+      "likelihood": 3,
+      "impact": 4,
+      "subtypes": [
+        "database"
+      ]
+    },
+    {
+      "id": "F-MSG-02",
+      "category": "Tampering",
+      "title": "Messages on [name] altered at the broker or in transit",
+      "desc": "Without message-level integrity, anyone with broker access can change events (amounts, statuses) before consumers read them.",
+      "controls": [
+        "Sign critical messages; verify in consumers",
+        "Restrict broker admin access"
+      ],
+      "refs": [
+        "CWE-345"
+      ],
+      "likelihood": 2,
+      "impact": 4,
+      "subtypes": [
+        "messaging"
+      ]
+    },
+    {
+      "id": "F-HTTP-03",
+      "category": "Information Disclosure",
+      "title": "Missing security headers on [name] (HSTS, CSP)",
+      "desc": "Without HSTS the first connection can be downgraded to HTTP; without CSP, injected scripts run freely.",
+      "controls": [
+        "HSTS with preload; Content-Security-Policy",
+        "X-Content-Type-Options and frame-ancestors"
+      ],
+      "refs": [
+        "CWE-693",
+        "CWE-319"
+      ],
+      "likelihood": 3,
+      "impact": 3,
       "subtypes": [
         "http"
       ]

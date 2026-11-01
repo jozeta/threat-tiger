@@ -3,6 +3,14 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.11.0 — unreleased
+
+### Threat library: 148 → 244 threats
+- Filled every gap in **element type × STRIDE category**: each applicable combination now has at least 5 threats (a new test keeps it that way). Repudiation, previously 1–3 per type, now has 5–8.
+- **More threats per recognised kind** of component and data flow, at least 3 each for almost all: container workloads, admin portals, mobile backends, legacy hosts, CDN, GraphQL, queues, email, file uploads, payments (including payee-detail fraud and chargeback evidence), external identity and payment providers, IoT devices, VPN, directory services, mail servers, caches, secrets stores, databases, buckets, and webhook, identity, email, remote-admin, database and messaging flows.
+- One new verified example: Microsoft Teams (February 2020) outage from an expired certificate.
+- Coverage table in `docs/threat-templates.md`.
+
 ## 1.10.1 — unreleased
 
 ### Changed
