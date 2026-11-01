@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-dyY+oXbYGRmXFGLl4Mt8Et/NLoadha78k/ZfBQLfrsE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-mtGvzD8NlLoZWp3UFmmGqQjaT2aKYu03CFCfzqZp+Y0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
     <link href="vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css" rel="stylesheet">
@@ -2821,6 +2821,8 @@
                                 <div class="d-flex flex-wrap gap-1" id="box-stride-applicable-badges"></div>
                             </div>
                         </div>
+                        <input type="search" class="form-control form-control-sm shadow-none mb-2" id="input-templates-search"
+                            placeholder="Search threats, controls, CWE…" aria-label="Search threat templates">
                         <div class="d-flex justify-content-between align-items-center mb-2">
                             <h6 class="fw-bold text-dark small mb-0"><i
                                     class="bi bi-lightning-charge text-warning me-1"></i>Threat Templates
@@ -3092,6 +3094,17 @@
                                     required></textarea>
                             </div>
                         </div>
+                        <div class="row g-3 mt-0">
+                            <div class="col-md-7">
+                                <label class="form-label small fw-semibold text-muted mb-1" for="modal-template-controls">Typical controls (one per line)</label>
+                                <textarea class="form-control shadow-none" id="modal-template-controls" rows="3"></textarea>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label small fw-semibold text-muted mb-1" for="modal-template-refs">References (comma-separated)</label>
+                                <input type="text" class="form-control shadow-none" id="modal-template-refs" placeholder="CWE-639, OWASP API1:2023, ATT&amp;CK T1190">
+                                <div class="form-text extra-small text-muted">CWE, CAPEC, ATT&amp;CK and OWASP ids become links.</div>
+                            </div>
+                        </div>
                     </form>
                 </div>
                 <div class="modal-footer bg-light">
@@ -3246,6 +3259,28 @@
         </div>
     </div>
 
+    <!-- Mark a suggestion as not applicable -->
+    <div class="modal fade" id="modal-dismiss-suggestion" tabindex="-1" aria-labelledby="modal-dismiss-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-dismiss-title">Not applicable to this component?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small mb-2"><strong id="dismiss-suggestion-title"></strong></p>
+                    <label for="input-dismiss-reason" class="form-label small text-muted">Why does it not apply? (recorded in the model and the report)</label>
+                    <textarea class="form-control form-control-sm" id="input-dismiss-reason" rows="3" maxlength="2000"
+                        placeholder="e.g. No file uploads in this service; handled by the API gateway; accepted risk (ticket SEC-123)"></textarea>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-secondary" id="btn-dismiss-save">Mark not applicable</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Your name (replaces prompt(), UI-002) -->
     <div class="modal fade" id="modal-operator" tabindex="-1" aria-labelledby="modal-operator-title" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-sm">
@@ -3286,14 +3321,14 @@
     <script src="vendor/bootstrap-5.3.2/bootstrap.bundle.min.js"></script>
 
     <!-- Copy of threat_templates.json, used when the file cannot be fetched (e.g. opened via file://). Kept in sync by `npm run sync`. -->
-    <!-- Built-in templates from before 1.8.0 (key -> original description). Unmodified copies stored in a browser are
+    <!-- Built-in templates from before 1.9.0 (key -> original description). Unmodified copies stored in a browser are
          replaced by the reworded templates; templates the user edited are kept. -->
-    <script type="application/json" id="retired-builtin-templates">{"process|spoofing|service identity mimicry targeting [name]": "Malicious system processes spoof verification profiles or intercept routing instructions streams to inherit valid handshake states.", "process|spoofing|unauthenticated inter-process communication endpoint exposure": "Deserialized callback pipelines accept unverified local connection loops, allowing adjacent container processes to simulate master commands.", "process|spoofing|server-side request forgery (ssrf) loop proxy exploitation": "Inadequate validation of resource paths parameters allows attackers to coerce the service process into scanning hidden corporate loop infrastructure interfaces.", "process|spoofing|dns cache poisoning & routing redirection": "Lack of secure DNS resolution constraints allows local infrastructure daemons to process forged names mappings, routing traffic to adversary pods.", "process|tampering|runtime memory manipulation and assembly injection": "Absence of strict input validation allows arbitrary command arguments or malicious assembly packages to alter binary runtime execution.", "process|tampering|insecure local binaries subversion and dll hijacking": "Inadequate write permissions on runtime execution paths enable local actors to replace core dependencies with malicious modules.", "process|tampering|log forgery and malicious command parameter injection": "Unsanitized user data breaks boundary parsing strings inside shell utilities, executing secondary terminal commands with service rights.", "process|tampering|container image mirror contamination": "Outdated build pipelines pulls unverified container layers, embedding malicious backdoors into deployed application environments.", "process|repudiation|insufficient administrative security modification logs": "State mutations and user privileges shifts complete inside process memory loops without appending cryptographically signed audit tracks.", "process|repudiation|log injection via unsanitized downstream payload formatting": "Process streams forward user inputs directly into internal syslog nodes without tracing sanitization, permitting log erasure or forging.", "process|repudiation|application core crash state suppression": "Runtime exception loops fail to dump hardware core logs or emit telemetry markers when unhandled errors terminate process pools.", "process|information disclosure|verbose error stack trace serialization leakage": "System exceptions serialize absolute database paths, environmental parameters, and configuration fields straight into response buffers.", "process|information disclosure|side-channel cryptographic execution disclosures": "Timing deltas in password hashing loops or token validation gates expose secret byte alignments to highly granular network observation tools.", "process|information disclosure|shared garbage collection memory leaks pool": "Improper zeroing of processing buffers leaks raw data blocks across distinct multi-tenant sessions running on the same host kernel thread.", "process|information disclosure|memory dump core inspection vulnerability": "Process handles leave plaintext access tokens or decryption key parameters unencrypted in swap files or runtime heap sectors.", "process|denial of service|thread pool allocation exhaustion and starvation loop": "Unconstrained execution parameters or un-throttled payload loops let hostile bursts exhaust compute threads completely, freezing operations.", "process|denial of service|algorithmic complexity exploitation (redos / hash collision)": "Unbounded regular expressions processing untrusted input choke execution loops, spiking CPU utilization to 100%.", "process|denial of service|asynchronous task queue flood lock": "Incoming event workers stream unbounded payload quantities without ingestion quotas, saturating runtime memory buffers and forcing termination.", "process|elevation of privilege|insecure context deserialization and privilege scale": "Processing serialized network requests without strict type validation allows low-privilege sessions to scale permissions frames and spawn root sub-processes.", "process|elevation of privilege|environment variable handshake subversion via suid binaries": "Process execution honors manipulated system configuration strings, enabling subprocess elevation to administrative container layer context.", "process|elevation of privilege|remote code execution (rce) via upstream dependency cves": "Outdated or unvetted packaging modules contained in the compilation toolchain expose downstream microservices to arbitrary runtime hijacking.", "datastore|tampering|unsanitized injection bypassing schema mapping checks": "Malicious inputs overwrite existing fields or mutate underlying structures to execute unauthorized state changes.", "datastore|tampering|nosql query argument injection via boolean abuses": "Passing object literals instead of scalars bypasses structure definitions, mutating state or truncating indices.", "datastore|tampering|storage snapshot metadata corruption attack": "Adversaries overwrite unvalidated transaction header fields, corrupting index block pointers to freeze data extraction processes.", "datastore|tampering|sql injection via unvalidated filter parameters": "Raw text concatenations on complex multi-table queries let external entities subvert programmatic evaluation trees.", "datastore|repudiation|anonymous mutation records injection": "Modifications drop directly into data tables without recording verified identity tokens profiles.", "datastore|repudiation|absence of write-once immutable transaction records ledger": "Audit trails or high-value transactional records lack append-only locks constraints, allowing compromised keys to forge past historical log trails.", "datastore|repudiation|transactional system table clear down": "Administrative access tokens can purge table event logs without invoking out-of-band streaming alerts to security SIEM aggregates.", "datastore|information disclosure|mass database extraction via blind logical traversal": "Deficient column-level validation allows malicious entities to perform full table scans and dump core intellectual property fields.", "datastore|information disclosure|plaintext backup snapshot leaks to multi-tenant storage buckets": "Automated database exports write to external unencrypted file sectors, exposing historical indices to parallel multi-tenant read sweeps.", "datastore|information disclosure|unencrypted backup and core table log leaks": "Disposing database snapshots to staging areas without secondary symmetric partition locks exposes entire schemas to unauthorized administrative groups.", "datastore|denial of service|storage locking starvation via deadlock query insertion": "Unbounded long-running queries or malicious read locks saturate connection allocation slots, rendering persistence layers unavailable.", "datastore|denial of service|wildcard query index exhaustion and ram thrashing": "Massive unindexed regular expression operations saturate persistence layer memory allocations, forcing server terminations.", "datastore|denial of service|storage allocation exhaustion via unbounded log append": "Malicious client entities stream massive nested diagnostic inputs, flooding table storage space and halting database engine processes.", "interactor|spoofing|client session hijacking and cryptographic claim forgery": "Weak cookie protection parameters or session token generation algorithms allow thread actors to steal active administrative claims.", "interactor|spoofing|credential stuffing via automated brute-force replay gates": "Lack of client-side rate controls or device fingerprinting lets rogue bots masquerade as legitimate client instances using compiled credential lists.", "interactor|spoofing|man-in-the-browser client state interception": "Malware extensions active inside the untrusted client engine intercept raw keystrokes and authentication values prior to transit encryption.", "interactor|spoofing|session fixation & automated token replay abuse": "Authentication endpoints failing to recycle identifier states on state upgrade allow malicious observers to pre-seed valid sessions.", "interactor|repudiation|edge transaction repudiation via missing signature verifications": "Operational entry vectors post execution data without passing mutual TLS constraints or non-repudiation tokens.", "interactor|repudiation|client-side action disavowal via shared session identifiers": "Multi-user client systems or shared credentials let individual operators deny actions due to a lack of deterministic client audit anchors.", "interactor|information disclosure|client-side storage scraping and local caching leakage": "Sensitive operational values serialize inside vulnerable plaintext browser caches or unsecured local folder spaces.", "interactor|information disclosure|sensitive operational tokens leaked into web browser devtools logs": "Diagnostic console tracing prints internal authentication tokens or infrastructure paths directly into client-side inspectable runtime logs.", "interactor|information disclosure|cross-site scripting (xss) token extraction loop": "Absence of strict cookie security flags allows injected scripts to parse inner DOM context and exfiltrate identity tokens.", "infrastructure|spoofing|infrastructure host impersonation targeting [name]": "Malicious system hosts spoof media access control (MAC) or hostnames signatures to join corporate domains and bypass local policy.", "infrastructure|tampering|firmware and operating system configuration subversion": "Unauthorized administrative port access or lack of secure boot controls allows adversaries to manipulate firmware or overwrite local OS configurations.", "infrastructure|repudiation|omission of out-of-band audit log forwarding": "Infrastructure logs and event reports fail to forward securely to a centralized immutable SIEM server, allowing undetected modifications.", "infrastructure|information disclosure|plaintext storage of administrative system configuration secrets": "Infrastructure configs, network maps, and backup secrets reside in cleartext on storage blocks, exposing high-privilege credentials.", "infrastructure|denial of service|hypervisor resource saturation and core allocation thrashing": "Hypervisor host fails to isolate core CPU or RAM limits, allowing neighbor compute units to exhaust system performance.", "infrastructure|elevation of privilege|remote kernel exploitation via outdated daemons (rce)": "Vulnerabilities in unpatched kernel processes or administrative daemons enable remote execution, granting full root control.", "flow|tampering|in-transit parameter alteration (man-in-the-middle vector)": "Adversaries manipulate intermediate routing parameters to rewrite business logic values inline during transit.", "flow|tampering|tcp sequence guessing and in-flight packet injection": "Unauthenticated transit tracks let local routers calculate sequence alignments, injecting forge control blocks into streaming connections.", "flow|tampering|routing protocol bgp route poisoning hijack": "Adversaries advertise malicious routing path paths, redirecting secure transit streams across malicious intermediate analysis infrastructure hosts.", "flow|information disclosure|promiscuous packet sniffing over unencrypted networks": "Cleartext protocol communication streams pass credential arrays directly across infrastructure borders to network listeners.", "flow|information disclosure|tls session resumption key leakage": "Reused session parameters expose ephemeral master secrets, allowing retrospective decryption of archived packet streams.", "flow|information disclosure|data exfiltration via out-of-bound dns tunneling streams": "Compromised processes mask classified outbound payloads as standard infrastructure namespace resolutions, bypassing deep boundary firewalls.", "flow|denial of service|transit bandwidth flood and tcp window exhaustion": "Hostile endpoints saturate line limits with request bursts, choking downstream gateway proxy capacity.", "flow|denial of service|slowloris incomplete handshake traffic exhaustion": "Hostile senders initiate thousands of HTTP connection tracks but hold lines open by sending headers infinitely slowly, saturating ingress proxy sockets.", "flow|denial of service|tls renegotiation exhaustion attack": "Rogue clients trigger continuous asymmetric cryptographic handshake recalculations over single sockets, starving gateway CPU resources."}</script>
-    <script type="application/json" id="embedded-threat-templates">{"process":[{"category":"Spoofing","title":"Attacker impersonates [name]","desc":"Another program or host pretends to be this service (for example with a stolen certificate, API key or a look-alike hostname), so clients and other services send it data or trust its responses. Typical controls: mutual TLS or signed service identities, short-lived credentials, certificate pinning for internal calls."},{"category":"Spoofing","title":"Internal endpoint accepts calls without authentication","desc":"An internal API, message consumer or IPC channel trusts anything that can reach it, so any compromised process or container on the same network can send commands as if it were a legitimate caller. Typical controls: authenticate every caller (mTLS, signed tokens), network policies that limit who can connect."},{"category":"Spoofing","title":"Server-side request forgery (SSRF)","desc":"The service fetches URLs or resources chosen by the user, so an attacker can make it call internal systems or cloud metadata endpoints on their behalf and act with the service's network position and identity. Typical controls: allow-list destinations, block internal and metadata addresses, separate egress proxy."},{"category":"Spoofing","title":"DNS spoofing redirects outgoing calls","desc":"If name resolution can be poisoned or hijacked, the service connects to an attacker-controlled host instead of the intended one. Typical controls: verify server certificates on every outgoing connection, DNSSEC or trusted resolvers, avoid trusting hostnames alone."},{"category":"Tampering","title":"Code or command injection through unvalidated input","desc":"User-supplied data reaches an interpreter, template engine or system command, letting an attacker change what the service executes. Typical controls: strict input validation, parameterised APIs instead of string building, no shell calls with user data."},{"category":"Tampering","title":"Binaries or libraries replaced on the host (DLL / path hijacking)","desc":"Writable install or search paths let a local attacker swap in a malicious library or executable that the service then loads. Typical controls: read-only install directories, signed binaries, explicit library paths, least-privilege file permissions."},{"category":"Tampering","title":"OS command injection via shell utilities","desc":"User data is passed to shell tools without escaping, so characters like ; | or $( ) run extra commands with the service's permissions. Typical controls: avoid the shell, pass arguments as arrays, strict allow-lists for any value that reaches a command."},{"category":"Tampering","title":"Malicious code in build or container supply chain","desc":"Unpinned or unverified dependencies and base images let a compromised package or registry insert backdoors into what is deployed. Typical controls: pin versions and digests, verify signatures (e.g. Sigstore), private registry mirrors, SBOM and dependency scanning."},{"category":"Repudiation","title":"Security-relevant actions are not logged","desc":"Changes to permissions, configuration or sensitive data happen without an audit record, so misuse cannot be detected or traced to a person. Typical controls: structured audit log (who, what, when, from where), forwarded to a store that the service cannot modify."},{"category":"Repudiation","title":"Log injection lets attackers forge or hide entries","desc":"User input is written to logs unchanged, so newline or control characters can create fake entries or break log parsing. Typical controls: encode or escape user data in logs, structured (JSON) logging, protected central log storage."},{"category":"Repudiation","title":"Crashes leave no trace","desc":"Unhandled errors terminate the process without logs, metrics or alerts, hiding attacks that crash the service on purpose. Typical controls: global error handlers, crash reporting, health checks and alerts on restarts."},{"category":"Information Disclosure","title":"Error messages reveal internal details","desc":"Stack traces, SQL errors or configuration values are returned to the user, giving attackers file paths, versions and other details for further attacks. Typical controls: generic error responses, detailed errors only in server logs, disable debug mode in production."},{"category":"Information Disclosure","title":"Timing differences reveal secrets","desc":"Comparing passwords, tokens or signatures with ordinary string comparison takes measurably different time, letting an attacker guess secrets byte by byte. Typical controls: constant-time comparison functions, rate limiting, vetted crypto libraries."},{"category":"Information Disclosure","title":"Data leaks between users or tenants through shared memory or caches","desc":"Buffers, caches or pooled objects are reused without clearing, so one user's data can appear in another user's response. Typical controls: tenant-aware cache keys, clear buffers before reuse, isolation tests between tenants."},{"category":"Information Disclosure","title":"Secrets readable in memory dumps or swap","desc":"Keys and tokens stay in memory in plaintext and end up in core dumps, swap or crash reports that others can read. Typical controls: disable or protect core dumps, keep secrets in a vault or HSM, minimise how long secrets stay in memory."},{"category":"Denial of Service","title":"Resource exhaustion from unbounded requests","desc":"Requests are processed without limits on size, rate or concurrency, so a burst of traffic ties up all threads, memory or connections. Typical controls: rate limits and quotas, request size limits, timeouts, bounded worker pools, autoscaling with caps."},{"category":"Denial of Service","title":"Algorithmic complexity attacks (ReDoS, hash collisions)","desc":"Specially crafted input makes a regular expression, parser or hash table do far more work than normal, pinning the CPU. Typical controls: safe regex engines or timeouts, input length limits, hardened parsers."},{"category":"Denial of Service","title":"Message or task queue flooding","desc":"Producers can enqueue unlimited work, so consumers fall behind, memory fills up and the service stops processing legitimate tasks. Typical controls: per-producer quotas, bounded queues with back-pressure, dead-letter queues and alerts."},{"category":"Elevation of Privilege","title":"Insecure deserialization runs attacker-controlled code","desc":"Serialized objects from untrusted sources are turned back into objects without type checks, which can trigger code execution or bypass authorization. Typical controls: never deserialize untrusted native objects, use data-only formats (JSON) with schema validation."},{"category":"Elevation of Privilege","title":"Privilege escalation through environment or configuration of privileged helpers","desc":"A privileged helper or setuid program trusts environment variables, paths or config files that a less-privileged user can change. Typical controls: sanitise the environment, absolute paths, drop privileges early, avoid setuid helpers."},{"category":"Elevation of Privilege","title":"Remote code execution through a vulnerable dependency","desc":"A known vulnerability (CVE) in a library or framework lets attackers run code inside the service. Typical controls: dependency scanning, fast patching, minimal dependencies, runtime isolation (containers, seccomp)."}],"datastore":[{"category":"Tampering","title":"Injection modifies stored data","desc":"Unvalidated input reaches the database query or update logic, letting an attacker change records they should not be able to touch. Typical controls: parameterised queries, ORM field allow-lists, server-side validation of every write."},{"category":"Tampering","title":"NoSQL query operator injection","desc":"Objects or operators (such as $ne or $gt) supplied by the user are passed into NoSQL queries, bypassing filters or changing what is updated. Typical controls: accept only expected scalar types, strip operator keys, schema validation."},{"category":"Tampering","title":"Backups or snapshots can be altered","desc":"Backups, snapshots or replication streams can be modified without detection, so a restore brings back tampered data. Typical controls: write-once (immutable) backups, integrity checksums, restricted backup credentials."},{"category":"Tampering","title":"SQL injection through filter or search parameters","desc":"Search, sort or filter values are concatenated into SQL, letting an attacker read or change other data. Typical controls: parameterised queries, allow-lists for column and sort names, least-privilege database accounts."},{"category":"Repudiation","title":"Changes are not attributed to a user","desc":"Records are created or modified without storing who made the change, so disputed or malicious changes cannot be traced. Typical controls: store the authenticated user and time on every change, database audit logging."},{"category":"Repudiation","title":"Historical records can be rewritten","desc":"Audit or transaction records can be updated or deleted, so someone with write access can erase evidence. Typical controls: append-only tables or ledgers, write-once storage, separate audit database."},{"category":"Repudiation","title":"Administrators can delete logs without alerting anyone","desc":"Privileged accounts can purge audit or event tables without the action being reported elsewhere. Typical controls: stream audit events to a SIEM in real time, alert on log deletion, separation of duties."},{"category":"Information Disclosure","title":"Bulk data extraction","desc":"Missing per-record authorization or result limits lets a user or attacker page through and download far more data than they should. Typical controls: object-level authorization checks, result limits, anomaly detection on large reads."},{"category":"Information Disclosure","title":"Unencrypted backups exposed in shared storage","desc":"Database exports are written unencrypted to buckets or file shares that other teams or tenants can read. Typical controls: encrypt backups, private buckets with strict policies, regular access reviews."},{"category":"Information Disclosure","title":"Data copied to test or staging without protection","desc":"Production data or snapshots are copied to less-protected environments, exposing it to people and systems without production access controls. Typical controls: masked or synthetic test data, same controls for any copy of production data."},{"category":"Denial of Service","title":"Lock contention or long-running queries block the database","desc":"Expensive or deliberately slow queries hold locks and connections, so normal requests time out. Typical controls: query timeouts, connection pool limits, read replicas, rate limits on expensive operations."},{"category":"Denial of Service","title":"Unindexed or wildcard searches exhaust resources","desc":"Leading-wildcard or regular-expression searches scan whole tables and consume memory and CPU. Typical controls: require indexed search fields, limit pattern search, dedicated search engine, query cost limits."},{"category":"Denial of Service","title":"Storage filled by unbounded writes","desc":"Clients can write unlimited data (large payloads, endless log entries), filling disks until the database stops. Typical controls: size limits and quotas, retention policies, disk usage alerts."}],"interactor":[{"category":"Spoofing","title":"Session hijacking","desc":"Session cookies or tokens are stolen (via XSS, insecure transport or a shared device) and reused to act as the user. Typical controls: HttpOnly, Secure and SameSite cookies, short session lifetimes, bind sessions to device signals, re-authentication for sensitive actions."},{"category":"Spoofing","title":"Credential stuffing and password guessing","desc":"Attackers try leaked username/password lists or guess passwords at scale to log in as real users. Typical controls: MFA, rate limiting and lockout, breached-password checks, bot detection."},{"category":"Spoofing","title":"Malware on the user's device intercepts input","desc":"A malicious browser extension or malware reads keystrokes or changes requests before they are encrypted, acting with the user's identity. Typical controls: transaction confirmation on a second channel, MFA for high-risk actions, device posture checks for managed devices."},{"category":"Spoofing","title":"Session fixation","desc":"The login process keeps a session identifier that an attacker set beforehand, so after the victim logs in the attacker shares the authenticated session. Typical controls: issue a new session ID at login and privilege change, reject unknown session IDs."},{"category":"Repudiation","title":"Requests are not signed or bound to a verified identity","desc":"Actions can be submitted without strong authentication, so a user can credibly deny having made them. Typical controls: strong authentication, signed requests or transaction confirmations for important actions, audit logs with user and device."},{"category":"Repudiation","title":"Shared accounts make actions unattributable","desc":"Several people use the same account or device session, so it is impossible to tell who did what. Typical controls: personal accounts, no shared credentials, re-authentication for sensitive actions."},{"category":"Information Disclosure","title":"Sensitive data stored on the client","desc":"Tokens or personal data are kept in browser storage, caches or files on the device, where other software or people can read them. Typical controls: keep sensitive data server-side, short-lived tokens, Cache-Control: no-store for sensitive responses."},{"category":"Information Disclosure","title":"Secrets exposed in client logs or developer tools","desc":"Tokens, internal URLs or personal data are written to the browser console or client logs, where they can be copied or collected. Typical controls: strip debug logging from production builds, never log secrets."},{"category":"Information Disclosure","title":"Cross-site scripting (XSS) steals data or tokens","desc":"Injected script runs in the user's browser and reads page data or tokens, or acts as the user. Typical controls: output encoding, Content-Security-Policy, HttpOnly cookies, framework auto-escaping."}],"infrastructure":[{"category":"Spoofing","title":"Rogue device impersonates [name]","desc":"A device spoofs this host's network identity (IP, MAC or hostname) to receive traffic or join the network as a trusted machine. Typical controls: 802.1X network access control, device certificates, monitoring for duplicate addresses."},{"category":"Tampering","title":"Firmware or OS configuration changed by an attacker","desc":"Exposed management ports or missing secure boot let an attacker modify firmware or system configuration and persist on the host. Typical controls: secure boot, restrict management interfaces, configuration baselines with drift detection."},{"category":"Repudiation","title":"Host logs are not forwarded to a central store","desc":"Logs stay only on the host, so an attacker who gains control can delete them and changes go unnoticed. Typical controls: forward logs in real time to a central SIEM, alert when log forwarding stops."},{"category":"Information Disclosure","title":"Secrets stored in plaintext on the host","desc":"Configuration files, scripts or backups contain passwords and keys in cleartext, readable by anyone with access to the disk. Typical controls: secrets manager, disk encryption, file permissions, secret scanning."},{"category":"Denial of Service","title":"Noisy neighbours exhaust shared resources","desc":"Other workloads on the same host or hypervisor consume CPU, memory or I/O, degrading or stopping this system. Typical controls: resource limits and reservations, workload isolation, capacity monitoring."},{"category":"Elevation of Privilege","title":"Unpatched services allow remote takeover","desc":"Known vulnerabilities in the OS kernel or exposed daemons let attackers execute code remotely and gain administrator control. Typical controls: patch management, minimise exposed services, host hardening and vulnerability scanning."}],"flow":[{"category":"Tampering","title":"Data modified in transit (man-in-the-middle)","desc":"An attacker on the network path intercepts the connection and changes requests or responses. Typical controls: TLS with certificate validation everywhere, HSTS, mutual TLS between services."},{"category":"Tampering","title":"Unprotected connection allows injected traffic","desc":"Without transport encryption and integrity checks, an attacker on the path can inject or replay messages into the connection. Typical controls: TLS or IPsec for all traffic, message signing and replay protection for critical messages."},{"category":"Tampering","title":"Network routing hijacked (BGP or DNS)","desc":"Manipulated routing or name resolution sends traffic through attacker-controlled systems. Typical controls: TLS with strict certificate validation, RPKI and route monitoring for public prefixes, trusted DNS resolvers."},{"category":"Information Disclosure","title":"Unencrypted traffic can be read on the network","desc":"Plaintext protocols expose credentials and data to anyone who can capture the traffic. Typical controls: encrypt every flow (TLS, SSH, IPsec), disable plaintext protocols and fallbacks."},{"category":"Information Disclosure","title":"Recorded traffic can be decrypted later (no forward secrecy)","desc":"Weak TLS configuration (for example static RSA key exchange or long-lived session ticket keys) lets someone who later obtains a key decrypt previously recorded traffic. Typical controls: TLS 1.3 or ECDHE cipher suites, rotate session ticket keys, disable outdated protocol versions."},{"category":"Information Disclosure","title":"Data exfiltration through DNS or other covert channels","desc":"A compromised system smuggles data out inside DNS queries or other allowed traffic, bypassing firewalls. Typical controls: restrict outbound DNS to internal resolvers, monitor for unusual query volumes and lengths, egress filtering."},{"category":"Denial of Service","title":"Bandwidth or connection flooding","desc":"High volumes of traffic saturate the link or the receiving gateway, blocking legitimate requests. Typical controls: DDoS protection, rate limiting at the edge, autoscaling with limits."},{"category":"Denial of Service","title":"Slow-request attacks (Slowloris)","desc":"Clients open many connections and send data very slowly, keeping server connection slots occupied. Typical controls: request header and body timeouts, connection limits per client, reverse proxy in front."},{"category":"Denial of Service","title":"Expensive TLS handshakes exhaust the server","desc":"Clients repeatedly start or renegotiate TLS handshakes, which cost far more CPU on the server than on the client. Typical controls: disable client-initiated renegotiation, TLS termination with handshake rate limits, session resumption."}]}</script>
+    <script type="application/json" id="retired-builtin-templates">{"process|spoofing|service identity mimicry targeting [name]": "Malicious system processes spoof verification profiles or intercept routing instructions streams to inherit valid handshake states.", "process|spoofing|unauthenticated inter-process communication endpoint exposure": "Deserialized callback pipelines accept unverified local connection loops, allowing adjacent container processes to simulate master commands.", "process|spoofing|server-side request forgery (ssrf) loop proxy exploitation": "Inadequate validation of resource paths parameters allows attackers to coerce the service process into scanning hidden corporate loop infrastructure interfaces.", "process|spoofing|dns cache poisoning & routing redirection": "Lack of secure DNS resolution constraints allows local infrastructure daemons to process forged names mappings, routing traffic to adversary pods.", "process|tampering|runtime memory manipulation and assembly injection": "Absence of strict input validation allows arbitrary command arguments or malicious assembly packages to alter binary runtime execution.", "process|tampering|insecure local binaries subversion and dll hijacking": "Inadequate write permissions on runtime execution paths enable local actors to replace core dependencies with malicious modules.", "process|tampering|log forgery and malicious command parameter injection": "Unsanitized user data breaks boundary parsing strings inside shell utilities, executing secondary terminal commands with service rights.", "process|tampering|container image mirror contamination": "Outdated build pipelines pulls unverified container layers, embedding malicious backdoors into deployed application environments.", "process|repudiation|insufficient administrative security modification logs": "State mutations and user privileges shifts complete inside process memory loops without appending cryptographically signed audit tracks.", "process|repudiation|log injection via unsanitized downstream payload formatting": "Process streams forward user inputs directly into internal syslog nodes without tracing sanitization, permitting log erasure or forging.", "process|repudiation|application core crash state suppression": "Runtime exception loops fail to dump hardware core logs or emit telemetry markers when unhandled errors terminate process pools.", "process|information disclosure|verbose error stack trace serialization leakage": "System exceptions serialize absolute database paths, environmental parameters, and configuration fields straight into response buffers.", "process|information disclosure|side-channel cryptographic execution disclosures": "Timing deltas in password hashing loops or token validation gates expose secret byte alignments to highly granular network observation tools.", "process|information disclosure|shared garbage collection memory leaks pool": "Improper zeroing of processing buffers leaks raw data blocks across distinct multi-tenant sessions running on the same host kernel thread.", "process|information disclosure|memory dump core inspection vulnerability": "Process handles leave plaintext access tokens or decryption key parameters unencrypted in swap files or runtime heap sectors.", "process|denial of service|thread pool allocation exhaustion and starvation loop": "Unconstrained execution parameters or un-throttled payload loops let hostile bursts exhaust compute threads completely, freezing operations.", "process|denial of service|algorithmic complexity exploitation (redos / hash collision)": "Unbounded regular expressions processing untrusted input choke execution loops, spiking CPU utilization to 100%.", "process|denial of service|asynchronous task queue flood lock": "Incoming event workers stream unbounded payload quantities without ingestion quotas, saturating runtime memory buffers and forcing termination.", "process|elevation of privilege|insecure context deserialization and privilege scale": "Processing serialized network requests without strict type validation allows low-privilege sessions to scale permissions frames and spawn root sub-processes.", "process|elevation of privilege|environment variable handshake subversion via suid binaries": "Process execution honors manipulated system configuration strings, enabling subprocess elevation to administrative container layer context.", "process|elevation of privilege|remote code execution (rce) via upstream dependency cves": "Outdated or unvetted packaging modules contained in the compilation toolchain expose downstream microservices to arbitrary runtime hijacking.", "datastore|tampering|unsanitized injection bypassing schema mapping checks": "Malicious inputs overwrite existing fields or mutate underlying structures to execute unauthorized state changes.", "datastore|tampering|nosql query argument injection via boolean abuses": "Passing object literals instead of scalars bypasses structure definitions, mutating state or truncating indices.", "datastore|tampering|storage snapshot metadata corruption attack": "Adversaries overwrite unvalidated transaction header fields, corrupting index block pointers to freeze data extraction processes.", "datastore|tampering|sql injection via unvalidated filter parameters": "Raw text concatenations on complex multi-table queries let external entities subvert programmatic evaluation trees.", "datastore|repudiation|anonymous mutation records injection": "Modifications drop directly into data tables without recording verified identity tokens profiles.", "datastore|repudiation|absence of write-once immutable transaction records ledger": "Audit trails or high-value transactional records lack append-only locks constraints, allowing compromised keys to forge past historical log trails.", "datastore|repudiation|transactional system table clear down": "Administrative access tokens can purge table event logs without invoking out-of-band streaming alerts to security SIEM aggregates.", "datastore|information disclosure|mass database extraction via blind logical traversal": "Deficient column-level validation allows malicious entities to perform full table scans and dump core intellectual property fields.", "datastore|information disclosure|plaintext backup snapshot leaks to multi-tenant storage buckets": "Automated database exports write to external unencrypted file sectors, exposing historical indices to parallel multi-tenant read sweeps.", "datastore|information disclosure|unencrypted backup and core table log leaks": "Disposing database snapshots to staging areas without secondary symmetric partition locks exposes entire schemas to unauthorized administrative groups.", "datastore|denial of service|storage locking starvation via deadlock query insertion": "Unbounded long-running queries or malicious read locks saturate connection allocation slots, rendering persistence layers unavailable.", "datastore|denial of service|wildcard query index exhaustion and ram thrashing": "Massive unindexed regular expression operations saturate persistence layer memory allocations, forcing server terminations.", "datastore|denial of service|storage allocation exhaustion via unbounded log append": "Malicious client entities stream massive nested diagnostic inputs, flooding table storage space and halting database engine processes.", "interactor|spoofing|client session hijacking and cryptographic claim forgery": "Weak cookie protection parameters or session token generation algorithms allow thread actors to steal active administrative claims.", "interactor|spoofing|credential stuffing via automated brute-force replay gates": "Lack of client-side rate controls or device fingerprinting lets rogue bots masquerade as legitimate client instances using compiled credential lists.", "interactor|spoofing|man-in-the-browser client state interception": "Malware extensions active inside the untrusted client engine intercept raw keystrokes and authentication values prior to transit encryption.", "interactor|spoofing|session fixation & automated token replay abuse": "Authentication endpoints failing to recycle identifier states on state upgrade allow malicious observers to pre-seed valid sessions.", "interactor|repudiation|edge transaction repudiation via missing signature verifications": "Operational entry vectors post execution data without passing mutual TLS constraints or non-repudiation tokens.", "interactor|repudiation|client-side action disavowal via shared session identifiers": "Multi-user client systems or shared credentials let individual operators deny actions due to a lack of deterministic client audit anchors.", "interactor|information disclosure|client-side storage scraping and local caching leakage": "Sensitive operational values serialize inside vulnerable plaintext browser caches or unsecured local folder spaces.", "interactor|information disclosure|sensitive operational tokens leaked into web browser devtools logs": "Diagnostic console tracing prints internal authentication tokens or infrastructure paths directly into client-side inspectable runtime logs.", "interactor|information disclosure|cross-site scripting (xss) token extraction loop": "Absence of strict cookie security flags allows injected scripts to parse inner DOM context and exfiltrate identity tokens.", "infrastructure|spoofing|infrastructure host impersonation targeting [name]": "Malicious system hosts spoof media access control (MAC) or hostnames signatures to join corporate domains and bypass local policy.", "infrastructure|tampering|firmware and operating system configuration subversion": "Unauthorized administrative port access or lack of secure boot controls allows adversaries to manipulate firmware or overwrite local OS configurations.", "infrastructure|repudiation|omission of out-of-band audit log forwarding": "Infrastructure logs and event reports fail to forward securely to a centralized immutable SIEM server, allowing undetected modifications.", "infrastructure|information disclosure|plaintext storage of administrative system configuration secrets": "Infrastructure configs, network maps, and backup secrets reside in cleartext on storage blocks, exposing high-privilege credentials.", "infrastructure|denial of service|hypervisor resource saturation and core allocation thrashing": "Hypervisor host fails to isolate core CPU or RAM limits, allowing neighbor compute units to exhaust system performance.", "infrastructure|elevation of privilege|remote kernel exploitation via outdated daemons (rce)": "Vulnerabilities in unpatched kernel processes or administrative daemons enable remote execution, granting full root control.", "flow|tampering|in-transit parameter alteration (man-in-the-middle vector)": "Adversaries manipulate intermediate routing parameters to rewrite business logic values inline during transit.", "flow|tampering|tcp sequence guessing and in-flight packet injection": "Unauthenticated transit tracks let local routers calculate sequence alignments, injecting forge control blocks into streaming connections.", "flow|tampering|routing protocol bgp route poisoning hijack": "Adversaries advertise malicious routing path paths, redirecting secure transit streams across malicious intermediate analysis infrastructure hosts.", "flow|information disclosure|promiscuous packet sniffing over unencrypted networks": "Cleartext protocol communication streams pass credential arrays directly across infrastructure borders to network listeners.", "flow|information disclosure|tls session resumption key leakage": "Reused session parameters expose ephemeral master secrets, allowing retrospective decryption of archived packet streams.", "flow|information disclosure|data exfiltration via out-of-bound dns tunneling streams": "Compromised processes mask classified outbound payloads as standard infrastructure namespace resolutions, bypassing deep boundary firewalls.", "flow|denial of service|transit bandwidth flood and tcp window exhaustion": "Hostile endpoints saturate line limits with request bursts, choking downstream gateway proxy capacity.", "flow|denial of service|slowloris incomplete handshake traffic exhaustion": "Hostile senders initiate thousands of HTTP connection tracks but hold lines open by sending headers infinitely slowly, saturating ingress proxy sockets.", "flow|denial of service|tls renegotiation exhaustion attack": "Rogue clients trigger continuous asymmetric cryptographic handshake recalculations over single sockets, starving gateway CPU resources.", "process|spoofing|attacker impersonates [name]": "Another program or host pretends to be this service (for example with a stolen certificate, API key or a look-alike hostname), so clients and other services send it data or trust its responses. Typical controls: mutual TLS or signed service identities, short-lived credentials, certificate pinning for internal calls.", "process|spoofing|internal endpoint accepts calls without authentication": "An internal API, message consumer or IPC channel trusts anything that can reach it, so any compromised process or container on the same network can send commands as if it were a legitimate caller. Typical controls: authenticate every caller (mTLS, signed tokens), network policies that limit who can connect.", "process|spoofing|server-side request forgery (ssrf)": "The service fetches URLs or resources chosen by the user, so an attacker can make it call internal systems or cloud metadata endpoints on their behalf and act with the service's network position and identity. Typical controls: allow-list destinations, block internal and metadata addresses, separate egress proxy.", "process|spoofing|dns spoofing redirects outgoing calls": "If name resolution can be poisoned or hijacked, the service connects to an attacker-controlled host instead of the intended one. Typical controls: verify server certificates on every outgoing connection, DNSSEC or trusted resolvers, avoid trusting hostnames alone.", "process|tampering|code or command injection through unvalidated input": "User-supplied data reaches an interpreter, template engine or system command, letting an attacker change what the service executes. Typical controls: strict input validation, parameterised APIs instead of string building, no shell calls with user data.", "process|tampering|binaries or libraries replaced on the host (dll / path hijacking)": "Writable install or search paths let a local attacker swap in a malicious library or executable that the service then loads. Typical controls: read-only install directories, signed binaries, explicit library paths, least-privilege file permissions.", "process|tampering|os command injection via shell utilities": "User data is passed to shell tools without escaping, so characters like ; | or $( ) run extra commands with the service's permissions. Typical controls: avoid the shell, pass arguments as arrays, strict allow-lists for any value that reaches a command.", "process|tampering|malicious code in build or container supply chain": "Unpinned or unverified dependencies and base images let a compromised package or registry insert backdoors into what is deployed. Typical controls: pin versions and digests, verify signatures (e.g. Sigstore), private registry mirrors, SBOM and dependency scanning.", "process|repudiation|security-relevant actions are not logged": "Changes to permissions, configuration or sensitive data happen without an audit record, so misuse cannot be detected or traced to a person. Typical controls: structured audit log (who, what, when, from where), forwarded to a store that the service cannot modify.", "process|repudiation|log injection lets attackers forge or hide entries": "User input is written to logs unchanged, so newline or control characters can create fake entries or break log parsing. Typical controls: encode or escape user data in logs, structured (JSON) logging, protected central log storage.", "process|repudiation|crashes leave no trace": "Unhandled errors terminate the process without logs, metrics or alerts, hiding attacks that crash the service on purpose. Typical controls: global error handlers, crash reporting, health checks and alerts on restarts.", "process|information disclosure|error messages reveal internal details": "Stack traces, SQL errors or configuration values are returned to the user, giving attackers file paths, versions and other details for further attacks. Typical controls: generic error responses, detailed errors only in server logs, disable debug mode in production.", "process|information disclosure|timing differences reveal secrets": "Comparing passwords, tokens or signatures with ordinary string comparison takes measurably different time, letting an attacker guess secrets byte by byte. Typical controls: constant-time comparison functions, rate limiting, vetted crypto libraries.", "process|information disclosure|data leaks between users or tenants through shared memory or caches": "Buffers, caches or pooled objects are reused without clearing, so one user's data can appear in another user's response. Typical controls: tenant-aware cache keys, clear buffers before reuse, isolation tests between tenants.", "process|information disclosure|secrets readable in memory dumps or swap": "Keys and tokens stay in memory in plaintext and end up in core dumps, swap or crash reports that others can read. Typical controls: disable or protect core dumps, keep secrets in a vault or HSM, minimise how long secrets stay in memory.", "process|denial of service|resource exhaustion from unbounded requests": "Requests are processed without limits on size, rate or concurrency, so a burst of traffic ties up all threads, memory or connections. Typical controls: rate limits and quotas, request size limits, timeouts, bounded worker pools, autoscaling with caps.", "process|denial of service|algorithmic complexity attacks (redos, hash collisions)": "Specially crafted input makes a regular expression, parser or hash table do far more work than normal, pinning the CPU. Typical controls: safe regex engines or timeouts, input length limits, hardened parsers.", "process|denial of service|message or task queue flooding": "Producers can enqueue unlimited work, so consumers fall behind, memory fills up and the service stops processing legitimate tasks. Typical controls: per-producer quotas, bounded queues with back-pressure, dead-letter queues and alerts.", "process|elevation of privilege|insecure deserialization runs attacker-controlled code": "Serialized objects from untrusted sources are turned back into objects without type checks, which can trigger code execution or bypass authorization. Typical controls: never deserialize untrusted native objects, use data-only formats (JSON) with schema validation.", "process|elevation of privilege|privilege escalation through environment or configuration of privileged helpers": "A privileged helper or setuid program trusts environment variables, paths or config files that a less-privileged user can change. Typical controls: sanitise the environment, absolute paths, drop privileges early, avoid setuid helpers.", "process|elevation of privilege|remote code execution through a vulnerable dependency": "A known vulnerability (CVE) in a library or framework lets attackers run code inside the service. Typical controls: dependency scanning, fast patching, minimal dependencies, runtime isolation (containers, seccomp).", "datastore|tampering|injection modifies stored data": "Unvalidated input reaches the database query or update logic, letting an attacker change records they should not be able to touch. Typical controls: parameterised queries, ORM field allow-lists, server-side validation of every write.", "datastore|tampering|nosql query operator injection": "Objects or operators (such as $ne or $gt) supplied by the user are passed into NoSQL queries, bypassing filters or changing what is updated. Typical controls: accept only expected scalar types, strip operator keys, schema validation.", "datastore|tampering|backups or snapshots can be altered": "Backups, snapshots or replication streams can be modified without detection, so a restore brings back tampered data. Typical controls: write-once (immutable) backups, integrity checksums, restricted backup credentials.", "datastore|tampering|sql injection through filter or search parameters": "Search, sort or filter values are concatenated into SQL, letting an attacker read or change other data. Typical controls: parameterised queries, allow-lists for column and sort names, least-privilege database accounts.", "datastore|repudiation|changes are not attributed to a user": "Records are created or modified without storing who made the change, so disputed or malicious changes cannot be traced. Typical controls: store the authenticated user and time on every change, database audit logging.", "datastore|repudiation|historical records can be rewritten": "Audit or transaction records can be updated or deleted, so someone with write access can erase evidence. Typical controls: append-only tables or ledgers, write-once storage, separate audit database.", "datastore|repudiation|administrators can delete logs without alerting anyone": "Privileged accounts can purge audit or event tables without the action being reported elsewhere. Typical controls: stream audit events to a SIEM in real time, alert on log deletion, separation of duties.", "datastore|information disclosure|bulk data extraction": "Missing per-record authorization or result limits lets a user or attacker page through and download far more data than they should. Typical controls: object-level authorization checks, result limits, anomaly detection on large reads.", "datastore|information disclosure|unencrypted backups exposed in shared storage": "Database exports are written unencrypted to buckets or file shares that other teams or tenants can read. Typical controls: encrypt backups, private buckets with strict policies, regular access reviews.", "datastore|information disclosure|data copied to test or staging without protection": "Production data or snapshots are copied to less-protected environments, exposing it to people and systems without production access controls. Typical controls: masked or synthetic test data, same controls for any copy of production data.", "datastore|denial of service|lock contention or long-running queries block the database": "Expensive or deliberately slow queries hold locks and connections, so normal requests time out. Typical controls: query timeouts, connection pool limits, read replicas, rate limits on expensive operations.", "datastore|denial of service|unindexed or wildcard searches exhaust resources": "Leading-wildcard or regular-expression searches scan whole tables and consume memory and CPU. Typical controls: require indexed search fields, limit pattern search, dedicated search engine, query cost limits.", "datastore|denial of service|storage filled by unbounded writes": "Clients can write unlimited data (large payloads, endless log entries), filling disks until the database stops. Typical controls: size limits and quotas, retention policies, disk usage alerts.", "interactor|spoofing|session hijacking": "Session cookies or tokens are stolen (via XSS, insecure transport or a shared device) and reused to act as the user. Typical controls: HttpOnly, Secure and SameSite cookies, short session lifetimes, bind sessions to device signals, re-authentication for sensitive actions.", "interactor|spoofing|credential stuffing and password guessing": "Attackers try leaked username/password lists or guess passwords at scale to log in as real users. Typical controls: MFA, rate limiting and lockout, breached-password checks, bot detection.", "interactor|spoofing|malware on the user's device intercepts input": "A malicious browser extension or malware reads keystrokes or changes requests before they are encrypted, acting with the user's identity. Typical controls: transaction confirmation on a second channel, MFA for high-risk actions, device posture checks for managed devices.", "interactor|spoofing|session fixation": "The login process keeps a session identifier that an attacker set beforehand, so after the victim logs in the attacker shares the authenticated session. Typical controls: issue a new session ID at login and privilege change, reject unknown session IDs.", "interactor|repudiation|requests are not signed or bound to a verified identity": "Actions can be submitted without strong authentication, so a user can credibly deny having made them. Typical controls: strong authentication, signed requests or transaction confirmations for important actions, audit logs with user and device.", "interactor|repudiation|shared accounts make actions unattributable": "Several people use the same account or device session, so it is impossible to tell who did what. Typical controls: personal accounts, no shared credentials, re-authentication for sensitive actions.", "interactor|information disclosure|sensitive data stored on the client": "Tokens or personal data are kept in browser storage, caches or files on the device, where other software or people can read them. Typical controls: keep sensitive data server-side, short-lived tokens, Cache-Control: no-store for sensitive responses.", "interactor|information disclosure|secrets exposed in client logs or developer tools": "Tokens, internal URLs or personal data are written to the browser console or client logs, where they can be copied or collected. Typical controls: strip debug logging from production builds, never log secrets.", "interactor|information disclosure|cross-site scripting (xss) steals data or tokens": "Injected script runs in the user's browser and reads page data or tokens, or acts as the user. Typical controls: output encoding, Content-Security-Policy, HttpOnly cookies, framework auto-escaping.", "infrastructure|spoofing|rogue device impersonates [name]": "A device spoofs this host's network identity (IP, MAC or hostname) to receive traffic or join the network as a trusted machine. Typical controls: 802.1X network access control, device certificates, monitoring for duplicate addresses.", "infrastructure|tampering|firmware or os configuration changed by an attacker": "Exposed management ports or missing secure boot let an attacker modify firmware or system configuration and persist on the host. Typical controls: secure boot, restrict management interfaces, configuration baselines with drift detection.", "infrastructure|repudiation|host logs are not forwarded to a central store": "Logs stay only on the host, so an attacker who gains control can delete them and changes go unnoticed. Typical controls: forward logs in real time to a central SIEM, alert when log forwarding stops.", "infrastructure|information disclosure|secrets stored in plaintext on the host": "Configuration files, scripts or backups contain passwords and keys in cleartext, readable by anyone with access to the disk. Typical controls: secrets manager, disk encryption, file permissions, secret scanning.", "infrastructure|denial of service|noisy neighbours exhaust shared resources": "Other workloads on the same host or hypervisor consume CPU, memory or I/O, degrading or stopping this system. Typical controls: resource limits and reservations, workload isolation, capacity monitoring.", "infrastructure|elevation of privilege|unpatched services allow remote takeover": "Known vulnerabilities in the OS kernel or exposed daemons let attackers execute code remotely and gain administrator control. Typical controls: patch management, minimise exposed services, host hardening and vulnerability scanning.", "flow|tampering|data modified in transit (man-in-the-middle)": "An attacker on the network path intercepts the connection and changes requests or responses. Typical controls: TLS with certificate validation everywhere, HSTS, mutual TLS between services.", "flow|tampering|unprotected connection allows injected traffic": "Without transport encryption and integrity checks, an attacker on the path can inject or replay messages into the connection. Typical controls: TLS or IPsec for all traffic, message signing and replay protection for critical messages.", "flow|tampering|network routing hijacked (bgp or dns)": "Manipulated routing or name resolution sends traffic through attacker-controlled systems. Typical controls: TLS with strict certificate validation, RPKI and route monitoring for public prefixes, trusted DNS resolvers.", "flow|information disclosure|unencrypted traffic can be read on the network": "Plaintext protocols expose credentials and data to anyone who can capture the traffic. Typical controls: encrypt every flow (TLS, SSH, IPsec), disable plaintext protocols and fallbacks.", "flow|information disclosure|recorded traffic can be decrypted later (no forward secrecy)": "Weak TLS configuration (for example static RSA key exchange or long-lived session ticket keys) lets someone who later obtains a key decrypt previously recorded traffic. Typical controls: TLS 1.3 or ECDHE cipher suites, rotate session ticket keys, disable outdated protocol versions.", "flow|information disclosure|data exfiltration through dns or other covert channels": "A compromised system smuggles data out inside DNS queries or other allowed traffic, bypassing firewalls. Typical controls: restrict outbound DNS to internal resolvers, monitor for unusual query volumes and lengths, egress filtering.", "flow|denial of service|bandwidth or connection flooding": "High volumes of traffic saturate the link or the receiving gateway, blocking legitimate requests. Typical controls: DDoS protection, rate limiting at the edge, autoscaling with limits.", "flow|denial of service|slow-request attacks (slowloris)": "Clients open many connections and send data very slowly, keeping server connection slots occupied. Typical controls: request header and body timeouts, connection limits per client, reverse proxy in front.", "flow|denial of service|expensive tls handshakes exhaust the server": "Clients repeatedly start or renegotiate TLS handshakes, which cost far more CPU on the server than on the client. Typical controls: disable client-initiated renegotiation, TLS termination with handshake rate limits, session resumption."}</script>
+    <script type="application/json" id="embedded-threat-templates">{"schemaVersion":2,"process":[{"id":"P-AUTH-01","category":"Spoofing","title":"Login or session handling of [name] can be bypassed or brute-forced","desc":"Weak authentication — no limit on login attempts, sessions that never expire, guessable tokens or a flawed password-reset flow — lets attackers log in as real users.","controls":["Use a proven identity provider or framework instead of custom login code","Rate-limit and monitor failed logins","Short-lived sessions, rotated on login and privilege change","Secure, single-use password-reset tokens"],"refs":["CWE-287","OWASP API2:2023","OWASP A07:2021"],"likelihood":3,"impact":5,"subtypes":["web","api","identity"]},{"id":"P-AUTH-02","category":"Spoofing","title":"Forged or tampered tokens accepted by [name]","desc":"Tokens (JWT, SAML, API keys) are accepted without fully checking the signature, signing key, issuer, audience and expiry, so attackers can mint their own tokens.","controls":["Validate signature with an allow-list of algorithms and keys","Check issuer, audience, expiry and not-before on every request","Rotate signing keys and keep them in a vault/HSM"],"refs":["CWE-347","ATT&CK T1606"],"likelihood":2,"impact":5,"example":"Storm-0558 (2023): a stolen Microsoft consumer signing key was accepted for enterprise tokens because of a validation flaw, giving access to email at about 25 organizations.","subtypes":["api","identity","web"]},{"id":"P-AUTH-03","category":"Spoofing","title":"Cross-site request forgery (CSRF) against [name]","desc":"The browser automatically sends the user's cookies, so a malicious site can make a signed-in user's browser perform actions (change email, transfer money) without their intent.","controls":["SameSite=Lax/Strict cookies","Anti-CSRF tokens for state-changing requests","Check the Origin header; never change state on GET"],"refs":["CWE-352"],"likelihood":3,"impact":3,"subtypes":["web"]},{"id":"TT-P03","category":"Spoofing","title":"Unauthenticated callers reach [name]","desc":"A component that handles sensitive data or is business-critical accepts requests that are not authenticated, so anyone who can reach it can use it.","controls":["Authenticate every inbound request (OAuth2/OIDC, mTLS between services)","Deny by default at the gateway","Inventory endpoints so test or legacy APIs are not left open"],"refs":["CWE-306","OWASP API2:2023","OWASP API9:2023"],"likelihood":4,"impact":5,"example":"Optus (2022): a customer API reachable from the internet without authentication — attributed by the regulator to an access-control coding error — exposed data of about 9.8 million people.","when":{"anyOn":["handlesSensitiveData","isCrownJewel"],"inbound":{"off":"authenticated"}}},{"id":"P-INJ-01","category":"Tampering","title":"Injection (SQL, NoSQL, OS command, template) in [name]","desc":"User-controlled input is built into a query, command or template, letting an attacker read or change data or run commands with the service's rights.","controls":["Parameterised queries / ORM; never concatenate input","Avoid shell calls; pass arguments as arrays","Allow-list validation on input","Least-privilege database and OS accounts"],"refs":["CWE-89","CWE-78","CWE-943","OWASP A03:2021"],"likelihood":3,"impact":5,"example":"MOVEit Transfer (2023, CVE-2023-34362): an unauthenticated SQL injection was used for mass data theft from thousands of organizations."},{"id":"P-INJ-02","category":"Tampering","title":"Mass assignment lets users change protected fields","desc":"The API binds the whole request body to an object, so a user can set fields they should not control — role, price, owner, verification status.","controls":["Explicit allow-lists (DTOs) for writable fields","Separate read and write models","Server-side authorization per field"],"refs":["CWE-915","OWASP API3:2023"],"likelihood":3,"impact":4,"subtypes":["api","web"]},{"id":"P-LOGIC-01","category":"Tampering","title":"Race conditions in business transactions","desc":"Concurrent requests exploit check-then-act gaps: a coupon used twice, a balance withdrawn twice, stock oversold.","controls":["Database transactions with row locks or atomic updates","Idempotency keys on payment and order APIs","Unique constraints for one-time actions"],"refs":["CWE-362","CWE-367"],"likelihood":2,"impact":4,"subtypes":["api","web"]},{"id":"P-FILE-01","category":"Tampering","title":"Path traversal or malicious file upload","desc":"File names like ../../etc/passwd or uploaded scripts let attackers read or overwrite files, or run code on the server.","controls":["Generate server-side file names; never use user paths","Store uploads outside the web root, on separate storage","Check type by content, limit size, scan for malware"],"refs":["CWE-22","CWE-434"],"likelihood":3,"impact":5,"subtypes":["web","api","file-share"]},{"id":"P-API-01","category":"Tampering","title":"Data from third-party APIs is trusted without validation","desc":"Responses from partners or external APIs are used as if they were safe — following their redirects, storing their HTML, passing their values into queries.","controls":["Validate and sanitise third-party data like user input","Use TLS and verify certificates for outgoing calls","Timeouts and limits on responses; do not follow redirects blindly"],"refs":["OWASP API10:2023","CWE-20"],"likelihood":2,"impact":4,"subtypes":["api"]},{"id":"P-SUPPLY-01","category":"Tampering","title":"Compromised dependency or build pipeline ships malicious code in [name]","desc":"A malicious package, a hijacked maintainer account or a tampered build system inserts a backdoor into what you deploy, signed as your own software.","controls":["Pin dependency versions and verify checksums/signatures","Protect CI/CD: least-privilege tokens, protected branches, reviewed pipeline changes","SBOM, dependency scanning, private package mirror"],"refs":["CWE-494","ATT&CK T1195","OWASP A08:2021"],"likelihood":2,"impact":5,"example":"SolarWinds (2020): attackers modified the build system so that signed Orion updates contained the SUNBURST backdoor. xz Utils (2024, CVE-2024-3094): a backdoor inserted by a co-maintainer who had built trust over about two years.","subtypes":["ci-cd"]},{"id":"TT-P02","category":"Repudiation","title":"Security events in [name] are not logged","desc":"Logins, failed access checks, permission changes and access to sensitive records are not recorded with who, what, when and from where, so misuse cannot be detected or proven.","controls":["Log security events with user, action, target, time and source IP","Ship logs to a central store the service cannot modify","Alert on suspicious patterns (many failures, privilege changes)"],"refs":["CWE-778","OWASP A09:2021"],"likelihood":3,"impact":3,"when":{"off":"loggingEnabled"}},{"id":"P-LOG-02","category":"Repudiation","title":"Log injection forges or hides log entries","desc":"User input is written to logs unchanged, so newlines and control characters create fake entries or break log parsing and alerting.","controls":["Structured (JSON) logging","Encode or strip control characters from logged values"],"refs":["CWE-117"],"likelihood":2,"impact":2},{"id":"P-LOG-03","category":"Repudiation","title":"An attacker on [name] can delete or alter its logs","desc":"Logs are only stored where the compromised service or host can modify them, so the first thing an attacker does is erase their tracks.","controls":["Forward logs in real time to a separate, append-only store","Alert when log forwarding stops"],"refs":["ATT&CK T1070"],"likelihood":2,"impact":3},{"id":"TT-P05","category":"Information Disclosure","title":"Broken object-level authorization (IDOR) in [name]","desc":"The service returns or changes a record when the caller supplies its ID, without checking that the caller is allowed to access that particular record.","controls":["Check ownership/permission for every object access, server-side","Use unguessable IDs as defence in depth (not as the control)","Automated tests that request other users' objects"],"refs":["CWE-639","OWASP API1:2023","OWASP A01:2021"],"likelihood":4,"impact":5,"example":"First American Financial (2019): changing a number in a document URL exposed about 885 million mortgage records without any login.","subtypes":["api","web"],"when":{"on":"handlesSensitiveData","inbound":{"crossesBoundary":true}}},{"id":"P-DATA-01","category":"Information Disclosure","title":"API responses expose more data than the client needs","desc":"Endpoints return full objects (internal IDs, emails, flags, other users' fields) and rely on the front-end to hide them.","controls":["Explicit response schemas per endpoint","Never return internal or other users' fields","Review API responses in code review and tests"],"refs":["CWE-213","OWASP API3:2023"],"likelihood":3,"impact":4,"subtypes":["api"]},{"id":"P-SECRET-01","category":"Information Disclosure","title":"Secrets hard-coded in code, scripts, images or config of [name]","desc":"Passwords, API keys and private keys committed to repositories or baked into images and scripts can be read by anyone with access to those artefacts.","controls":["Keep secrets in a vault/secret manager and inject at runtime","Secret scanning in CI and on repositories","Rotate any secret that was ever committed"],"refs":["CWE-798","ATT&CK T1552"],"likelihood":3,"impact":5,"example":"Uber (2022): an attacker found admin credentials for the company's privileged-access system in a PowerShell script on a network share. Toyota (2022): an access key sat in a public GitHub repository for about five years."},{"id":"TT-P06","category":"Information Disclosure","title":"Sensitive data written to logs, traces or diagnostic files","desc":"Tokens, passwords, personal data or full request bodies end up in logs, traces, crash reports or support uploads, which many more people and systems can read.","controls":["Redact secrets and personal data before logging","Never log Authorization headers, cookies or full bodies","Restrict and expire access to logs and diagnostic files"],"refs":["CWE-532"],"likelihood":3,"impact":4,"example":"Okta (2023): HAR files uploaded to the support system contained session tokens that attackers used to hijack customer sessions.","when":{"on":["handlesSensitiveData","loggingEnabled"]}},{"id":"P-ERR-01","category":"Information Disclosure","title":"Error messages reveal internal details","desc":"Stack traces, SQL errors and version strings in responses give attackers a map of the system for further attacks.","controls":["Generic error responses to clients; details only in server logs","Disable debug mode in production"],"refs":["CWE-209"],"likelihood":3,"impact":2},{"id":"P-CACHE-01","category":"Information Disclosure","title":"Personalised responses cached and served to other users","desc":"A CDN or reverse proxy caches pages or API responses that contain one user's data and serves them to others.","controls":["Cache-Control: private/no-store on personalised responses","Cache keys that include the user or vary correctly","Test caching rules after CDN changes"],"refs":["CWE-524"],"likelihood":2,"impact":4,"example":"Steam (December 2015): a caching misconfiguration during a traffic spike showed users other people's account pages.","subtypes":["web"]},{"id":"P-MEM-01","category":"Information Disclosure","title":"Secrets exposed in crash dumps or memory snapshots","desc":"Keys and tokens held in memory end up in core dumps, heap snapshots or debug captures that are copied to less-protected environments.","controls":["Keep signing keys in an HSM or managed key service","Disable or scrub crash dumps in production","Treat debug environments as sensitive"],"refs":["CWE-528"],"likelihood":1,"impact":5,"example":"Storm-0558 (2023): the stolen signing key had ended up in a crash dump that was moved to a debugging environment."},{"id":"TT-P07","category":"Denial of Service","title":"Unrestricted resource consumption in [name]","desc":"Missing limits on request rate, payload size, page size or expensive operations let one client exhaust CPU, memory, connections or paid third-party quotas.","controls":["Rate limits and quotas per client","Limits on payload, page and batch sizes","Timeouts and bounded worker pools"],"refs":["CWE-770","OWASP API4:2023"],"likelihood":4,"impact":3,"when":{"inbound":{"source":{"on":"unauthAccess"}}}},{"id":"P-DOS-02","category":"Denial of Service","title":"Small requests trigger very expensive work (ReDoS, decompression bombs)","desc":"Crafted input makes a regular expression, parser or decompressor do enormous amounts of work, pinning the CPU or filling memory.","controls":["Linear-time regex engines or timeouts","Limits on decompressed size and nesting depth","Input length limits"],"refs":["CWE-1333","CWE-409"],"likelihood":2,"impact":3},{"id":"P-DOS-03","category":"Denial of Service","title":"Attackers run up the cloud or third-party bill of [name]","desc":"Autoscaling, serverless functions and paid APIs (SMS, email, AI models) keep serving abusive traffic, turning an attack into a large invoice.","controls":["Budgets and billing alerts","Per-user quotas on paid actions (SMS, AI calls)","Caps on autoscaling"],"refs":["OWASP API4:2023","OWASP API6:2023"],"likelihood":3,"impact":3,"subtypes":["serverless","api"]},{"id":"P-AUTHZ-01","category":"Elevation of Privilege","title":"Missing function-level authorization in [name]","desc":"Administrative or privileged functions are reachable by normal users because the check is only done in the UI or not at all.","controls":["Deny by default; central authorization for every endpoint","Separate admin APIs and tests that call them as a normal user"],"refs":["CWE-862","OWASP API5:2023","OWASP A01:2021"],"likelihood":3,"impact":5,"subtypes":["api","web"]},{"id":"P-SSRF-01","category":"Elevation of Privilege","title":"Server-side request forgery (SSRF) in [name]","desc":"The service fetches URLs chosen by the user, so attackers make it call internal systems or the cloud metadata endpoint with its network position and credentials.","controls":["Allow-list destinations; block private and metadata IP ranges","Use a separate egress proxy","Require IMDSv2 / metadata protection on cloud hosts"],"refs":["CWE-918","OWASP API7:2023"],"likelihood":3,"impact":5,"example":"Capital One (2019): SSRF via a misconfigured WAF reached the EC2 metadata service, whose over-privileged role could read S3 buckets with data on about 100 million people.","subtypes":["web","api"]},{"id":"P-VULN-01","category":"Elevation of Privilege","title":"Known-vulnerable component allows remote code execution in [name]","desc":"An unpatched framework, library or server with a public exploit lets attackers run code inside the service.","controls":["Dependency and image scanning with a patch SLA","Inventory of components (SBOM)","WAF/virtual patching while updating"],"refs":["CWE-1395","ATT&CK T1190","OWASP A06:2021"],"likelihood":3,"impact":5,"example":"Equifax (2017): an unpatched Apache Struts flaw (CVE-2017-5638). Log4Shell (2021, CVE-2021-44228): remote code execution through a logging library."},{"id":"P-DESER-01","category":"Elevation of Privilege","title":"Insecure deserialization of untrusted data","desc":"Turning untrusted bytes into native objects can execute code or bypass checks.","controls":["Never deserialize untrusted native objects; use JSON with schema validation","Allow-list types if native formats are unavoidable"],"refs":["CWE-502","OWASP A08:2021"],"likelihood":2,"impact":5},{"id":"P-XSS-01","category":"Elevation of Privilege","title":"Cross-site scripting (XSS) in [name]","desc":"Untrusted content is rendered as HTML or script, so attackers run code in other users' browsers with their session.","controls":["Context-aware output encoding; framework auto-escaping","Content-Security-Policy","HttpOnly cookies"],"refs":["CWE-79","OWASP A03:2021"],"likelihood":3,"impact":4,"subtypes":["web"]},{"id":"TT-P01","category":"Elevation of Privilege","title":"Compromise of [name] gives administrator control","desc":"The component runs with administrative or root rights, so any code-execution flaw becomes full control of the host.","controls":["Run as a dedicated least-privileged account","Drop capabilities; read-only file system; containers/sandboxing"],"refs":["CWE-250"],"likelihood":3,"impact":5,"when":{"on":"runAsAdmin"}},{"id":"P-IAM-01","category":"Elevation of Privilege","title":"Over-privileged service identity of [name]","desc":"The cloud role, service account or database user used by the service can do far more than it needs, so one flaw exposes everything that identity can reach.","controls":["Least-privilege roles per service, reviewed regularly","Separate identities per environment and function","Alert on unusual use of service identities"],"refs":["CWE-250","CWE-269"],"likelihood":3,"impact":5,"example":"Capital One (2019): the role available to the compromised server could list and read many S3 buckets."},{"id":"TT-P04","category":"Elevation of Privilege","title":"Crown jewel [name] is reachable from a less-trusted zone","desc":"A business-critical component accepts traffic that crosses a trust boundary, so it is directly exposed to attacks from that zone.","controls":["Put a gateway or proxy in front and expose only needed operations","Strict input validation and authorization at the boundary","Network segmentation"],"refs":["ATT&CK T1190"],"likelihood":4,"impact":5,"when":{"on":"isCrownJewel","inbound":{"crossesBoundary":true}}}],"datastore":[{"id":"D-PRIV-01","category":"Tampering","title":"Application connects to [name] with more rights than it needs","desc":"The application's database account can change schemas, read every table or act as administrator, so an injection flaw becomes full data compromise.","controls":["Separate accounts for migration, application and reporting","Grant only needed tables and operations","No shared admin accounts"],"refs":["CWE-250","CWE-269"],"likelihood":3,"impact":4,"subtypes":["database","nosql"]},{"id":"TT-D04","category":"Tampering","title":"[name] is directly reachable from another trust zone","desc":"The data store accepts connections across a trust boundary, so it is exposed to attackers in that zone instead of only to the application.","controls":["Only the owning service may connect (network rules, private endpoints)","Put a service with validation and authorization in front"],"refs":["ATT&CK T1190","CWE-284"],"likelihood":3,"impact":5,"when":{"inbound":{"crossesBoundary":true}}},{"id":"D-WRITE-01","category":"Tampering","title":"Data in [name] changed outside the application","desc":"Administrators, scripts or other services write directly to the store, bypassing validation, business rules and audit logging.","controls":["Restrict direct write access; change data through reviewed scripts","Audit all direct changes"],"refs":["CWE-732"],"likelihood":2,"impact":4},{"id":"D-CACHE-01","category":"Tampering","title":"Cache poisoning in [name]","desc":"Attackers get malicious or wrong values stored in a cache that other users or services then trust.","controls":["Include all relevant inputs in cache keys","Validate data before caching; short TTLs for user-influenced data"],"refs":["CAPEC-141"],"likelihood":2,"impact":3,"subtypes":["cache"]},{"id":"TT-D03","category":"Repudiation","title":"Changes to [name] are not audited","desc":"Changes to important data are not recorded with who made them and when, so unauthorised changes cannot be detected or attributed.","controls":["Database audit logging or change-data-capture to a protected store","Record user and time on every change"],"refs":["CWE-778","OWASP A09:2021"],"likelihood":3,"impact":4,"when":{"off":"auditLogged","anyOn":["isCrownJewel","storesPii","storesCredentials"]}},{"id":"D-AUDIT-02","category":"Repudiation","title":"Audit records in [name] can be rewritten by the people they record","desc":"Administrators or the application can update or delete audit and transaction records, so evidence can be removed.","controls":["Append-only / write-once storage for audit data","Separate ownership of audit logs from system administration"],"refs":["ATT&CK T1070"],"likelihood":2,"impact":4,"subtypes":["logs"]},{"id":"TT-D01","category":"Information Disclosure","title":"Sensitive data in [name] is not encrypted at rest","desc":"Stolen disks, snapshots, backups or replicas expose the data directly.","controls":["Storage or column-level encryption with managed keys","Encrypt backups and snapshots too"],"refs":["CWE-311","OWASP A02:2021"],"likelihood":3,"impact":5,"when":{"anyOn":["storesPii","storesCredentials","handlesSensitiveData"],"off":"encryptedAtRest"}},{"id":"TT-D02","category":"Information Disclosure","title":"Passwords or secrets in [name] stored in a recoverable form","desc":"Passwords are stored in plaintext or with fast hashes, or secrets are stored reversibly, so a database leak gives attackers working credentials.","controls":["Passwords: Argon2id/bcrypt/scrypt with per-user salt","Secrets: keep in a vault; store references, not values","Rotate credentials after any exposure"],"refs":["CWE-256","CWE-916"],"likelihood":3,"impact":5,"when":{"on":"storesCredentials"}},{"id":"TT-D05","category":"Information Disclosure","title":"Storage bucket [name] is publicly accessible","desc":"An object storage bucket or blob container allows anonymous listing or reading, exposing everything in it to anyone who finds the URL.","controls":["Block public access at account level","Private endpoints and signed, expiring URLs","Automated checks for public buckets"],"refs":["CWE-552","ATT&CK T1530"],"likelihood":3,"impact":5,"when":{"subtype":"object-storage"}},{"id":"D-EXPOSED-01","category":"Information Disclosure","title":"[name] exposed to the internet without authentication","desc":"Database, search or cache servers that listen on public addresses without authentication are found by scanners within hours and copied or wiped.","controls":["Bind to private networks only; firewall rules","Always enable authentication, even internally","Continuous external exposure scanning"],"refs":["CWE-306","ATT&CK T1190"],"likelihood":3,"impact":5,"example":"\"Meow\" attacks (2020): automated scripts wiped thousands of unsecured Elasticsearch and MongoDB databases.","subtypes":["nosql","cache","database"]},{"id":"D-COPY-01","category":"Information Disclosure","title":"Backups, exports or test copies of [name] are less protected than production","desc":"Copies of production data in backup buckets, analytics exports or test environments lack the access controls of the original.","controls":["Encrypt and restrict backups and exports","Masked or synthetic data in test environments","Track where copies of the data go"],"refs":["CWE-530"],"likelihood":3,"impact":4},{"id":"D-RETENTION-01","category":"Information Disclosure","title":"Personal data in [name] kept longer than needed","desc":"Data that is no longer needed increases the damage of any breach and can violate data-protection law.","controls":["Retention periods per data type with automatic deletion","Minimise stored fields"],"refs":["GDPR Art. 5(1)(e)"],"likelihood":3,"impact":3,"when":{"on":"storesPii"}},{"id":"TT-D06","category":"Denial of Service","title":"Ransomware or a compromised admin deletes [name] and its backups","desc":"Attackers with administrative access encrypt or delete the data and the backups stored in the same account, making recovery impossible.","controls":["Immutable or offline backups in a separate account","MFA and separate credentials for backup administration","Regularly test restores"],"refs":["ATT&CK T1486","ATT&CK T1490"],"likelihood":3,"impact":5,"example":"Code Spaces (2014): an attacker with access to the AWS console deleted data, machines and backups; the company shut down.","when":{"on":"isCrownJewel"}},{"id":"D-DOS-01","category":"Denial of Service","title":"Expensive queries or lock contention take [name] down","desc":"Slow or deliberately heavy queries hold locks and connections so normal requests time out.","controls":["Query timeouts and connection pool limits","Indexes for user-driven searches; read replicas","Rate-limit expensive operations"],"refs":["CWE-400"],"likelihood":3,"impact":3,"subtypes":["database","nosql"]},{"id":"D-DOS-02","category":"Denial of Service","title":"[name] runs out of storage","desc":"Unbounded writes — uploads, logs, queues that are never drained — fill the disk and stop the data store.","controls":["Quotas and size limits","Retention policies","Disk and queue-depth alerts"],"refs":["CWE-770"],"likelihood":2,"impact":3,"subtypes":["queue","logs","file-share"]}],"interactor":[{"id":"E-PHISH-01","category":"Spoofing","title":"Phishing steals [name]'s credentials or session","desc":"Fake login pages — including adversary-in-the-middle kits that relay one-time codes — capture passwords and session cookies.","controls":["Phishing-resistant MFA (FIDO2/passkeys)","Short sessions; bind sessions to device","User reporting of phishing"],"refs":["ATT&CK T1566","ATT&CK T1557"],"likelihood":4,"impact":4,"subtypes":["human","admin"]},{"id":"TT-I01","category":"Spoofing","title":"Privileged account of [name] taken over (no MFA)","desc":"A privileged user signs in with a password only, so one leaked or guessed password gives an attacker administrative access.","controls":["Phishing-resistant MFA for all privileged and remote access","Privileged access workstations / just-in-time admin rights"],"refs":["CWE-308"],"likelihood":4,"impact":5,"example":"Change Healthcare (2024): attackers used stolen credentials on a remote-access portal that did not require MFA. Colonial Pipeline (2021): access was reportedly through a VPN account without MFA.","when":{"on":"isPrivilegedUser","off":"mfaRequired"}},{"id":"E-MFA-01","category":"Spoofing","title":"MFA fatigue: [name] approves a push prompt they did not start","desc":"Attackers with a stolen password send repeated push notifications (often while posing as IT support) until the user accepts one.","controls":["Number matching or FIDO2 instead of simple push approval","Limit and alert on repeated MFA prompts"],"refs":["ATT&CK T1621"],"likelihood":3,"impact":5,"example":"Uber (2022): a contractor accepted a push after being flooded with prompts and contacted by the attacker posing as IT.","subtypes":["human","admin"]},{"id":"E-STUFF-01","category":"Spoofing","title":"Credential stuffing with passwords leaked elsewhere","desc":"Attackers try username/password pairs from other breaches or infostealer logs at scale; reused passwords let them in.","controls":["MFA","Breached-password checks","Rate limiting and bot detection on login"],"refs":["CWE-307","ATT&CK T1110.004"],"likelihood":4,"impact":4,"example":"Snowflake customer accounts (2024): attackers used credentials from infostealer malware against accounts without MFA and stole data from many companies.","subtypes":["human","admin"]},{"id":"E-RECOVER-01","category":"Spoofing","title":"Account recovery or SMS codes used to take over [name]'s account","desc":"Weak password-reset flows, guessable security questions or SIM-swap attacks on SMS codes give attackers control of the account.","controls":["Strong reset tokens and notification on reset","Avoid SMS as the only second factor","Extra verification for recovery of privileged accounts"],"refs":["CWE-640"],"likelihood":3,"impact":4,"subtypes":["human","admin"]},{"id":"E-KEY-01","category":"Spoofing","title":"API keys or tokens of [name] stolen and reused","desc":"A partner's or client app's credentials leak (code, logs, device) and attackers call your API as that client.","controls":["Short-lived tokens (OAuth2 client credentials) instead of static keys","Bind keys to IP or mTLS certificate; per-client scopes","Monitor and rotate keys"],"refs":["CWE-522","ATT&CK T1528"],"likelihood":3,"impact":4,"subtypes":["partner-system","mobile"]},{"id":"E-VENDOR-01","category":"Spoofing","title":"Supplier or partner [name] used as a way in","desc":"Attackers compromise a vendor with access to your systems and use that trusted connection.","controls":["Least-privilege, monitored vendor access","Separate network segment for third-party access","MFA and time-limited accounts for vendors"],"refs":["ATT&CK T1199"],"likelihood":3,"impact":5,"example":"Target (2013): attackers entered with credentials stolen from a refrigeration/HVAC contractor and reached payment systems.","subtypes":["partner-system"]},{"id":"TT-I02","category":"Spoofing","title":"Bots pose as real users of [name] (fake sign-ups, scraping, enumeration)","desc":"Anonymous access lets automated clients create fake accounts, scrape data or test which emails and phone numbers are registered.","controls":["Rate limits and bot detection","Same response for existing and non-existing accounts","Protect sensitive business flows (sign-up, checkout)"],"refs":["CWE-799","OWASP API6:2023"],"likelihood":4,"impact":3,"when":{"on":"unauthAccess"}},{"id":"TT-I03","category":"Spoofing","title":"Administrative access by [name] is exposed to the internet","desc":"A privileged user reaches admin functions across a trust boundary without a VPN or zero-trust gateway, so the admin login is open to the whole internet.","controls":["VPN or zero-trust access for admin interfaces","Admin endpoints on a separate host/network","MFA and IP restrictions"],"refs":["ATT&CK T1133"],"likelihood":3,"impact":5,"when":{"on":"isPrivilegedUser","off":"vpnRequired","anyFlow":{"crossesBoundary":true}}},{"id":"TT-I04","category":"Repudiation","title":"Actions by [name] cannot be attributed","desc":"Connections from this entity are not authenticated, so the system cannot prove who performed an action.","controls":["Authenticate connections","Record user, client and request IDs in audit logs"],"refs":["CWE-778","OWASP A09:2021"],"likelihood":3,"impact":3,"when":{"outbound":{"off":"authenticated"}}},{"id":"E-SHARED-01","category":"Repudiation","title":"Shared accounts make actions by [name] untraceable","desc":"Several people use the same account, so it is impossible to tell who did what.","controls":["Personal accounts only; no shared credentials","Privileged access management with individual check-out"],"refs":["OWASP A09:2021"],"likelihood":3,"impact":3,"subtypes":["admin"]},{"id":"E-DISPUTE-01","category":"Repudiation","title":"[name] disputes a transaction and there is no proof","desc":"A customer or partner denies placing an order, approving a payment or receiving data, and the system has no reliable evidence.","controls":["Signed receipts or confirmations for important transactions","Tamper-evident transaction logs with timestamps"],"refs":["CWE-778"],"likelihood":2,"impact":3,"subtypes":["human","partner-system"]},{"id":"E-DEVICE-01","category":"Information Disclosure","title":"Malware on [name]'s device steals sessions or data","desc":"Infostealers and keyloggers on user or administrator devices capture passwords, session cookies and files.","controls":["Managed, hardened devices for privileged users","Short sessions bound to device; re-authentication for sensitive actions","Endpoint detection and response"],"refs":["ATT&CK T1539"],"likelihood":3,"impact":4,"example":"LastPass (2022): attackers installed a keylogger on a DevOps engineer's home computer via vulnerable third-party software and used the captured password to reach vault backups.","subtypes":["human","admin"]},{"id":"E-INSIDER-01","category":"Information Disclosure","title":"Insider misuse of [name]'s legitimate access","desc":"Employees, support staff or administrators look up or export data they have access to but no business reason to see.","controls":["Least privilege and need-to-know access","Audit and review access to sensitive records","Just-in-time access for support"],"refs":["OWASP A01:2021"],"likelihood":2,"impact":4,"subtypes":["admin"]},{"id":"E-CLIENT-01","category":"Information Disclosure","title":"Sensitive data left on shared or lost devices of [name]","desc":"Cached pages, downloads and tokens in browser or app storage stay on shared, lost or stolen devices.","controls":["Cache-Control: no-store for sensitive pages","Keep tokens out of local storage; short sessions","Device encryption / mobile app data protection"],"refs":["CWE-525"],"likelihood":2,"impact":3,"subtypes":["mobile","human"]}],"infrastructure":[{"id":"I-DEFAULT-01","category":"Spoofing","title":"Default or shared credentials on [name]","desc":"Devices, appliances and platforms shipped with default admin passwords — or one password shared across many devices — are taken over by automated scanning.","controls":["Change defaults at install; unique credentials per device","Disable unused services (telnet, default admin UI)"],"refs":["CWE-1392","ATT&CK T1078.001"],"likelihood":3,"impact":5,"example":"Mirai (2016): malware logged into hundreds of thousands of IoT devices with default passwords and used them for record DDoS attacks.","subtypes":["iot","network-device"]},{"id":"I-ROGUE-01","category":"Spoofing","title":"Rogue device impersonates [name]","desc":"A device spoofs this host's IP, MAC or hostname to receive traffic or join the network as a trusted machine.","controls":["Network access control (802.1X), device certificates","Alert on duplicate addresses"],"refs":["ATT&CK T1557"],"likelihood":2,"impact":3},{"id":"I-FW-01","category":"Tampering","title":"Firmware or system configuration of [name] changed without detection","desc":"Exposed management ports or missing secure boot let attackers modify firmware or configuration and persist.","controls":["Secure boot; signed firmware updates","Configuration baselines with drift detection","Restrict management access"],"refs":["CWE-1326"],"likelihood":2,"impact":4,"subtypes":["iot","network-device","host"]},{"id":"I-LOG-01","category":"Repudiation","title":"Logs from [name] are not collected centrally","desc":"Host, network and cloud control-plane logs stay where an attacker can disable or delete them.","controls":["Forward logs to a central SIEM in real time","Alert when logging is disabled or stops"],"refs":["ATT&CK T1562.008","OWASP A09:2021"],"likelihood":3,"impact":3},{"id":"TT-X01","category":"Information Disclosure","title":"Cloud instance credentials of [name] stolen via the metadata service","desc":"Code running on the host — or an SSRF flaw — reads temporary cloud credentials from the instance metadata endpoint.","controls":["Require IMDSv2 / metadata protection","Least-privilege instance roles","Block metadata access from containers that do not need it"],"refs":["ATT&CK T1552.005"],"likelihood":3,"impact":5,"example":"Capital One (2019): credentials from the EC2 metadata service were used to read S3 data.","when":{"subtype":"cloud-host"}},{"id":"I-SECRET-01","category":"Information Disclosure","title":"Secrets in plaintext on disks, images or snapshots of [name]","desc":"Configuration files, scripts, VM images and snapshots contain passwords and keys readable by anyone with access to them.","controls":["Secret manager; inject at runtime","Scan images and repositories for secrets","Encrypt disks and snapshots"],"refs":["CWE-312"],"likelihood":3,"impact":4},{"id":"I-THEFT-01","category":"Information Disclosure","title":"Lost or stolen [name] exposes its data","desc":"Laptops, devices and disks that leave the building — lost, stolen or decommissioned — still contain readable data.","controls":["Full-disk encryption","Remote wipe; secure decommissioning"],"refs":["CWE-311"],"likelihood":2,"impact":4,"subtypes":["iot","host"]},{"id":"I-AVAIL-01","category":"Denial of Service","title":"Single instance of [name] with no redundancy","desc":"One host, zone or network path failing — or being attacked — takes the whole service down.","controls":["Redundancy across zones","Health checks and automatic failover","Tested recovery procedures"],"refs":["CWE-400"],"likelihood":3,"impact":4},{"id":"I-NOISY-01","category":"Denial of Service","title":"Other workloads exhaust shared resources of [name]","desc":"Neighbouring workloads on the same host, cluster or account consume CPU, memory or quotas.","controls":["Resource limits and reservations","Separate accounts or clusters for critical workloads"],"refs":["CWE-400"],"likelihood":2,"impact":3,"subtypes":["container","cloud-host"]},{"id":"TT-X02","category":"Elevation of Privilege","title":"Management interface of [name] reachable from an untrusted network","desc":"SSH, RDP, Kubernetes API, hypervisor or admin consoles are reachable across a trust boundary and are attacked with stolen credentials and exploits.","controls":["Management only via VPN/bastion/zero-trust access","MFA on all administrative access","Allow-list source addresses"],"refs":["ATT&CK T1133","ATT&CK T1021"],"likelihood":4,"impact":5,"when":{"anyFlow":{"crossesBoundary":true}}},{"id":"I-PATCH-01","category":"Elevation of Privilege","title":"Unpatched OS or services on [name] allow remote takeover","desc":"Known vulnerabilities in the operating system or exposed services are exploited to run code with high privileges.","controls":["Patch management with SLAs","Minimise exposed services","Vulnerability scanning"],"refs":["ATT&CK T1190"],"likelihood":3,"impact":5},{"id":"I-ESCAPE-01","category":"Elevation of Privilege","title":"Container escape from [name] to the host","desc":"Privileged containers, mounted host paths or kernel flaws let code inside a container take over the host and its other containers.","controls":["No privileged containers or host mounts","Run as non-root; seccomp/AppArmor","Patch the host kernel and runtime"],"refs":["ATT&CK T1611"],"likelihood":2,"impact":5,"subtypes":["container"]},{"id":"I-LATERAL-01","category":"Elevation of Privilege","title":"Flat network lets attackers move from [name] to other systems","desc":"Once one machine is compromised, nothing stops connections to databases, admin systems and other hosts.","controls":["Network segmentation and default-deny between zones","Monitor east-west traffic"],"refs":["ATT&CK TA0008"],"likelihood":3,"impact":5,"example":"Target (2013): attackers moved from a vendor portal to point-of-sale systems inside the network."}],"flow":[{"id":"TT-F01","category":"Information Disclosure","title":"Traffic on [name] can be read on the network","desc":"The flow is not encrypted and leaves its trust zone, so anyone on the network path can capture credentials and data.","controls":["TLS 1.2+ (or mTLS) on every connection","HSTS; disable plaintext fallbacks"],"refs":["CWE-319","ATT&CK T1040"],"likelihood":4,"impact":4,"when":{"off":"encrypted","crossesBoundary":true}},{"id":"TT-F02","category":"Tampering","title":"Traffic on [name] modified in transit (man-in-the-middle)","desc":"Without transport encryption and integrity, an attacker on the path can alter requests and responses.","controls":["TLS with certificate validation; mTLS between services","Message signing for critical payloads"],"refs":["CWE-319","ATT&CK T1557"],"likelihood":3,"impact":4,"when":{"off":"encrypted","crossesBoundary":true}},{"id":"TT-F03","category":"Tampering","title":"Unauthenticated messages accepted on [name] across a trust boundary","desc":"The receiver cannot verify who sent the data, so attackers in the other zone can inject their own requests or messages.","controls":["Mutual TLS or signed tokens on the flow","Validate sender identity before processing"],"refs":["CWE-306","CWE-345"],"likelihood":3,"impact":4,"when":{"off":"authenticated","crossesBoundary":true}},{"id":"TT-F04","category":"Information Disclosure","title":"Sensitive data on [name] sent in cleartext","desc":"The flow connects to a component that holds personal data, credentials or other sensitive data, but it is not encrypted.","controls":["Encrypt in transit","Send only the fields that are needed"],"refs":["CWE-319","OWASP A02:2021"],"likelihood":3,"impact":5,"when":{"off":"encrypted","endpoint":{"anyOn":["storesPii","storesCredentials","handlesSensitiveData"]}}},{"id":"TT-F06","category":"Tampering","title":"Webhook or queue messages on [name] accepted without signature check","desc":"Anyone who can reach the endpoint or queue can post fake events (payments, status changes) because messages are not verified.","controls":["Verify HMAC signatures or use mTLS","Check timestamps/nonces to reject replays","Restrict who can publish to the queue"],"refs":["CWE-345"],"likelihood":3,"impact":4,"subtypes":["webhook","messaging"],"when":{"subtype":["webhook","messaging"],"off":"authenticated"}},{"id":"F-TLSVAL-01","category":"Tampering","title":"TLS certificate validation disabled for [name]","desc":"Client code skips certificate checks (often to work around test certificates), which silently allows man-in-the-middle attacks.","controls":["Never disable verification in production code","Use a private CA for internal certificates","Tests that fail on invalid certificates"],"refs":["CWE-295"],"likelihood":3,"impact":4},{"id":"F-REPLAY-01","category":"Tampering","title":"Captured requests on [name] can be replayed","desc":"Requests carry no timestamp, nonce or one-time token, so a captured request (payment, approval) can be sent again.","controls":["Nonces/timestamps with short validity","Idempotency keys for one-time actions"],"refs":["CWE-294"],"likelihood":2,"impact":4},{"id":"F-URL-01","category":"Information Disclosure","title":"Tokens or personal data in URLs of [name]","desc":"Values in query strings end up in proxy and server logs, browser history and Referer headers.","controls":["Send secrets in headers or POST bodies","Referrer-Policy; avoid personal data in URLs"],"refs":["CWE-598"],"likelihood":3,"impact":3,"subtypes":["http"]},{"id":"F-TLSWEAK-01","category":"Information Disclosure","title":"Outdated TLS settings on [name] allow downgrade or weak encryption","desc":"Old protocol versions and cipher suites allow downgrade attacks and remove forward secrecy, so recorded traffic may be decrypted later.","controls":["TLS 1.2+ only (prefer 1.3), ECDHE suites","Regular TLS configuration scans"],"refs":["CWE-757","CWE-326"],"likelihood":2,"impact":4},{"id":"TT-F05","category":"Denial of Service","title":"Flooding of [name] from an anonymous source","desc":"Anyone can send traffic on this flow into another trust zone, which makes request floods easy.","controls":["Rate limiting and DDoS protection at the edge","Patch servers for protocol-level DoS flaws","Autoscaling with limits"],"refs":["CWE-770","ATT&CK T1498","ATT&CK T1499"],"likelihood":3,"impact":3,"example":"HTTP/2 Rapid Reset (2023, CVE-2023-44487): rapidly opening and cancelling streams produced record DDoS attacks against major providers.","when":{"source":{"on":"unauthAccess"},"crossesBoundary":true}},{"id":"F-SLOW-01","category":"Denial of Service","title":"Slow-request attacks hold connections on [name] open (Slowloris)","desc":"Clients send requests very slowly to occupy all connection slots on the receiving server.","controls":["Header/body timeouts and per-client connection limits","Reverse proxy or load balancer in front"],"refs":["CWE-400"],"likelihood":2,"impact":3,"subtypes":["http"]},{"id":"F-PATH-01","category":"Denial of Service","title":"[name] depends on a single network path or provider","desc":"If the link, DNS, certificate or upstream provider fails, the flow stops and nothing takes over.","controls":["Redundant paths/providers for critical flows","Monitor certificate expiry and DNS","Timeouts, retries with backoff, circuit breakers"],"refs":["CWE-400"],"likelihood":2,"impact":3}]}</script>
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.8.0';
+        const APP_VERSION = '1.9.0';
         const SCHEMA_VERSION = 1;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
@@ -3347,95 +3382,139 @@
             return /^https?:\/\//i.test(toText(value));
         }
 
-        // ── Threat rules (FEAT-002) ───────────────────────────────────────────────
-        // Each rule looks at one component or data flow (its security switches, its connections and whether
-        // its data flows cross a trust boundary) and, when `when` returns a reason, suggests a threat.
-        // Edit, add or remove rules here. `when(item, m)` gets helpers in `m`:
-        //   m.on(item, key)        security switch is on      m.off(item, key)   switch exists and is off
-        //   m.crossing(flow)       { crosses, names[] }       m.flowsOf(item) / m.inbound(item) / m.outbound(item)
-        //   m.node(id)             component by id            m.zones(item)      names of trust zones containing it
-        const SENSITIVE_KEYS = ['storesPii', 'storesCredentials', 'handlesSensitiveData'];
-        const THREAT_RULES = [
-            // ── Data flows ──
-            { id: 'TT-F01', appliesTo: 'flow', category: 'Information Disclosure', likelihood: 4, impact: 4,
-              title: 'Eavesdropping on unencrypted traffic across a trust boundary ([name])',
-              desc: 'Traffic on this flow is not encrypted and leaves its trust zone, so anyone on the network path can read it. Suggested controls: TLS 1.2+ (or mTLS), HSTS, no plaintext fallbacks.',
-              when: (f, m) => m.off(f, 'encrypted') && m.crossing(f).crosses ? `Not encrypted and crosses ${m.crossing(f).names.join(', ')}` : null },
-            { id: 'TT-F02', appliesTo: 'flow', category: 'Tampering', likelihood: 3, impact: 4,
-              title: 'Traffic modified in transit across a trust boundary ([name])',
-              desc: 'Without transport encryption and integrity protection, an attacker on the path can alter requests or responses. Suggested controls: TLS/mTLS, message signing for critical payloads.',
-              when: (f, m) => m.off(f, 'encrypted') && m.crossing(f).crosses ? `Not encrypted and crosses ${m.crossing(f).names.join(', ')}` : null },
-            { id: 'TT-F03', appliesTo: 'flow', category: 'Spoofing', likelihood: 3, impact: 4,
-              title: 'Unauthenticated requests across a trust boundary ([name])',
-              desc: 'The receiving side cannot verify who is calling across the boundary, so an attacker can impersonate a legitimate sender. Suggested controls: mutual TLS, signed tokens (OAuth2/OIDC), API keys bound to clients.',
-              when: (f, m) => m.off(f, 'authenticated') && m.crossing(f).crosses ? `Not authenticated and crosses ${m.crossing(f).names.join(', ')}` : null },
-            { id: 'TT-F04', appliesTo: 'flow', category: 'Information Disclosure', likelihood: 3, impact: 5,
-              title: 'Sensitive data sent in cleartext ([name])',
-              desc: 'This flow connects to a component that holds sensitive data (PII, credentials or other sensitive data) but is not encrypted. Suggested controls: encrypt in transit, minimise fields sent.',
-              when: (f, m) => {
-                  if (!m.off(f, 'encrypted')) return null;
-                  const ends = [m.node(f.sourceId), m.node(f.targetId)].filter(n => n && SENSITIVE_KEYS.some(k => m.on(n, k)));
-                  return ends.length ? `Not encrypted; connects to ${ends.map(n => `"${n.name}"`).join(' and ')} which holds sensitive data` : null;
-              } },
-            { id: 'TT-F05', appliesTo: 'flow', category: 'Denial of Service', likelihood: 3, impact: 3,
-              title: 'Flooding from an anonymous source across a trust boundary ([name])',
-              desc: 'Anyone can send traffic on this flow into another trust zone, which makes resource exhaustion easy. Suggested controls: rate limiting, quotas, WAF/edge protection, autoscaling limits.',
-              when: (f, m) => { const s = m.node(f.sourceId); return s && m.on(s, 'unauthAccess') && m.crossing(f).crosses ? `Source "${s.name}" allows anonymous access and the flow crosses ${m.crossing(f).names.join(', ')}` : null; } },
-
-            // ── External entities ──
-            { id: 'TT-I01', appliesTo: 'interactor', category: 'Spoofing', likelihood: 4, impact: 5,
-              title: 'Privileged account takeover without MFA ([name])',
-              desc: 'A privileged user signs in without multi-factor authentication, so a phished or reused password is enough to take over the account. Suggested controls: phishing-resistant MFA, conditional access.',
-              when: (e, m) => m.on(e, 'isPrivilegedUser') && m.off(e, 'mfaRequired') ? 'Privileged user and MFA is not required' : null },
-            { id: 'TT-I02', appliesTo: 'interactor', category: 'Spoofing', likelihood: 4, impact: 3,
-              title: 'Anonymous users act without an identity ([name])',
-              desc: 'Unauthenticated access means requests cannot be tied to a person, and abuse cannot be blocked per user. Suggested controls: require sign-in for state-changing actions, bot protection, per-client limits.',
-              when: (e, m) => m.on(e, 'unauthAccess') ? 'Unauthenticated access is allowed' : null },
-            { id: 'TT-I03', appliesTo: 'interactor', category: 'Elevation of Privilege', likelihood: 3, impact: 5,
-              title: 'Administrative access exposed outside the trusted network ([name])',
-              desc: 'A privileged user reaches the system across a trust boundary without a VPN or equivalent, exposing admin interfaces to the wider network. Suggested controls: VPN/ZTNA, admin endpoints on a separate network, IP allow-lists.',
-              when: (e, m) => m.on(e, 'isPrivilegedUser') && m.off(e, 'vpnRequired') && m.flowsOf(e).some(f => m.crossing(f).crosses) ? 'Privileged user, VPN not required, and a connection crosses a trust boundary' : null },
-            { id: 'TT-I04', appliesTo: 'interactor', category: 'Repudiation', likelihood: 3, impact: 3,
-              title: 'Actions by [name] cannot be attributed',
-              desc: 'Connections from this entity are not authenticated, so the system cannot prove who did what. Suggested controls: authenticate connections, record user and request identifiers in audit logs.',
-              when: (e, m) => m.outbound(e).some(f => m.off(f, 'authenticated')) ? 'At least one outgoing data flow is not authenticated' : null },
-
-            // ── Processes ──
-            { id: 'TT-P01', appliesTo: 'process', category: 'Elevation of Privilege', likelihood: 3, impact: 5,
-              title: 'Compromise of [name] yields administrative control',
-              desc: 'The process runs with administrative rights, so any code-execution flaw gives the attacker full control of the host. Suggested controls: run as a least-privileged account, drop capabilities, sandbox/containers.',
-              when: (p, m) => m.on(p, 'runAsAdmin') ? 'Runs with administrative privileges' : null },
-            { id: 'TT-P02', appliesTo: 'process', category: 'Repudiation', likelihood: 3, impact: 3,
-              title: 'Activity in [name] cannot be traced',
-              desc: 'Security-relevant actions are not logged, so attacks and misuse cannot be investigated. Suggested controls: structured audit logging with user, action and time; ship logs to a tamper-resistant store.',
-              when: (p, m) => m.off(p, 'loggingEnabled') ? 'Logging is not enabled' : null },
-            { id: 'TT-P03', appliesTo: 'process', category: 'Spoofing', likelihood: 4, impact: 4,
-              title: 'Unauthenticated callers reach [name]',
-              desc: 'A process that handles sensitive data or is a crown jewel accepts unauthenticated connections. Suggested controls: authenticate every inbound call, mTLS between services.',
-              when: (p, m) => (m.on(p, 'handlesSensitiveData') || m.on(p, 'isCrownJewel')) && m.inbound(p).some(f => m.off(f, 'authenticated')) ? 'Handles sensitive data or is a crown jewel, and an incoming flow is not authenticated' : null },
-            { id: 'TT-P04', appliesTo: 'process', category: 'Elevation of Privilege', likelihood: 4, impact: 5,
-              title: 'Crown jewel [name] is reachable from another trust zone',
-              desc: 'A business-critical process accepts traffic that crosses a trust boundary, so it is directly exposed to a less-trusted zone. Suggested controls: put a gateway/proxy in front, strict input validation, network segmentation.',
-              when: (p, m) => m.on(p, 'isCrownJewel') && m.inbound(p).some(f => m.crossing(f).crosses) ? 'Crown jewel with an incoming flow that crosses a trust boundary' : null },
-
-            // ── Data stores ──
-            { id: 'TT-D01', appliesTo: 'datastore', category: 'Information Disclosure', likelihood: 3, impact: 5,
-              title: 'Sensitive data in [name] is not encrypted at rest',
-              desc: 'Stolen disks, backups or snapshots expose the data directly. Suggested controls: storage or column-level encryption with managed keys, encrypted backups.',
-              when: (d, m) => SENSITIVE_KEYS.some(k => m.on(d, k)) && m.off(d, 'encryptedAtRest') ? 'Holds sensitive data and encryption at rest is off' : null },
-            { id: 'TT-D02', appliesTo: 'datastore', category: 'Information Disclosure', likelihood: 3, impact: 5,
-              title: 'Credentials stored in [name] can be stolen and reused',
-              desc: 'A breach of this store exposes credentials that can be reused elsewhere. Suggested controls: store only salted slow hashes (Argon2/bcrypt) for passwords, keep secrets in a vault, rotate keys.',
-              when: (d, m) => m.on(d, 'storesCredentials') ? 'Stores credentials' : null },
-            { id: 'TT-D03', appliesTo: 'datastore', category: 'Repudiation', likelihood: 3, impact: 4,
-              title: 'Changes to [name] are not audited',
-              desc: 'Modifications to important data are not audit-logged, so unauthorised changes cannot be detected or attributed. Suggested controls: database audit logging, append-only change history.',
-              when: (d, m) => m.off(d, 'auditLogged') && (m.on(d, 'isCrownJewel') || m.on(d, 'storesPii') || m.on(d, 'storesCredentials')) ? 'Important data and audit logging is off' : null },
-            { id: 'TT-D04', appliesTo: 'datastore', category: 'Tampering', likelihood: 3, impact: 5,
-              title: 'Crown jewel [name] can be modified from another trust zone',
-              desc: 'A business-critical data store receives writes that cross a trust boundary. Suggested controls: route writes through a validating service, least-privilege database accounts, network segmentation.',
-              when: (d, m) => m.on(d, 'isCrownJewel') && m.inbound(d).some(f => m.crossing(f).crosses) ? 'Crown jewel with an incoming flow that crosses a trust boundary' : null },
+        // ── Suggestion engine vocabulary ─────────────────────────────────────────
+        // Threat templates (threat_templates.json) may carry a `when` condition. When it holds for a component or
+        // data flow, the template is shown as "Triggered by your model" together with the reason. Conditions are
+        // plain JSON (see docs/threat-templates.md); all keys inside one object must hold:
+        //   on / off / anyOn: switch name(s)      crossesBoundary: true|false (data flows)
+        //   subtype: name(s) (inferred from icon and name)
+        //   inbound / outbound / anyFlow: {condition on a connected data flow}
+        //   endpoint / source / target: {condition on the component at either/one end of a data flow}
+        //   any: [conditions], all: [conditions], not: {condition}
+        const SWITCH_LABELS = {
+            encrypted: ['encrypted', 'not encrypted'], authenticated: ['authenticated', 'not authenticated'],
+            runAsAdmin: ['runs with admin rights', 'does not run as admin'], loggingEnabled: ['logging enabled', 'logging off'],
+            handlesSensitiveData: ['handles sensitive data', 'no sensitive data'], isCrownJewel: ['crown jewel', 'not a crown jewel'],
+            auditLogged: ['audit logged', 'audit logging off'], storesCredentials: ['stores credentials', 'no credentials stored'],
+            storesPii: ['stores personal data', 'no personal data'], encryptedAtRest: ['encrypted at rest', 'not encrypted at rest'],
+            unauthAccess: ['allows anonymous access', 'requires sign-in'], isPrivilegedUser: ['privileged user', 'regular user'],
+            mfaRequired: ['MFA required', 'MFA not required'], vpnRequired: ['VPN required', 'VPN not required']
+        };
+        const SUBTYPE_LABELS = {
+            web: 'web application', api: 'API', identity: 'identity / login service', 'ci-cd': 'CI/CD system', serverless: 'serverless function',
+            container: 'container platform', database: 'database', nosql: 'NoSQL / search store', 'object-storage': 'object storage bucket',
+            cache: 'cache', queue: 'message queue', 'file-share': 'file share', secrets: 'secrets store', logs: 'log / audit store',
+            human: 'person', admin: 'administrator', 'partner-system': 'partner / third-party system', mobile: 'mobile app or device',
+            iot: 'IoT / embedded device', 'cloud-host': 'cloud host', host: 'server / host', 'network-device': 'network device',
+            email: 'email system', webhook: 'webhook', messaging: 'messaging', http: 'HTTP', 'remote-admin': 'remote administration'
+        };
+        /** Icon -> subtypes (prefix match, first match wins). */
+        const ICON_SUBTYPES = [
+            ['bi-bucket', ['object-storage']], ['bi-database', ['database']], ['bi-braces', ['nosql']], ['bi-inboxes', ['queue']],
+            ['bi-arrow-left-right', ['queue']], ['bi-memory', ['cache']], ['bi-safe', ['secrets']], ['bi-key', ['secrets']],
+            ['bi-folder', ['file-share']], ['bi-archive', ['file-share']], ['bi-person-badge', ['identity']], ['bi-patch-check', ['identity']],
+            ['bi-shield-shaded', ['identity']], ['bi-git', ['ci-cd']], ['bi-github', ['ci-cd']], ['bi-gitlab', ['ci-cd']],
+            ['bi-gear-wide-connected', ['ci-cd']], ['bi-lightning', ['serverless']], ['bi-box', ['container']], ['bi-grid-3x3-gap', ['container']],
+            ['bi-layers', ['container']], ['bi-globe', ['web']], ['bi-window', ['web']], ['bi-browser', ['web']], ['bi-router-fill', ['api', 'network-device']],
+            ['bi-router', ['network-device']], ['bi-signpost', ['network-device']], ['bi-bezier', ['network-device']], ['bi-bricks', ['network-device']],
+            ['bi-hdd-network', ['network-device']], ['bi-ethernet', ['network-device']], ['bi-wifi', ['network-device']],
+            ['bi-envelope', ['email']], ['bi-cloud', ['cloud-host']], ['bi-phone', ['mobile']], ['bi-tablet', ['mobile']],
+            ['bi-person-gear', ['admin', 'human']], ['bi-person-lock', ['admin', 'human']], ['bi-person', ['human']], ['bi-people', ['human']],
+            ['bi-headset', ['admin', 'human']], ['bi-building', ['partner-system']], ['bi-bank', ['partner-system']], ['bi-shop', ['partner-system']],
+            ['bi-credit-card', ['partner-system']], ['bi-truck', ['iot']], ['bi-cpu', ['host']], ['bi-server', ['host']], ['bi-hdd-rack', ['host']],
+            ['bi-hdd-stack', ['host']], ['bi-motherboard', ['host']], ['bi-activity', ['logs']]
         ];
+        /** Name keywords -> subtype (all matches apply). */
+        const NAME_SUBTYPES = [
+            [/\b(s3|buckets?|blob|gcs|object ?storage|data ?lake|datalake|minio)\b/i, 'object-storage'],
+            [/\b(redis|memcached?|cache)\b/i, 'cache'],
+            [/\b(kafka|rabbit ?mq|sqs|sns|queues?|service ?bus|event ?hub|pub ?\/? ?sub|mq|nats|amqp)\b/i, 'queue'],
+            [/\b(mongo(db)?|cosmos(db)?|dynamo(db)?|nosql|elastic(search)?|opensearch|cassandra|couch(db)?|firestore)\b/i, 'nosql'],
+            [/\b(sql|postgres(ql)?|mysql|mariadb|oracle|mssql|db2|database|db|rds|aurora)\b/i, 'database'],
+            [/\b(vault|kms|key ?vault|hsm|secrets?)\b/i, 'secrets'],
+            [/\b(smb|nfs|sftp|ftp|file ?shares?|sharepoint|nas)\b/i, 'file-share'],
+            [/\b(logs?|siem|splunk|audit|elk|loki)\b/i, 'logs'],
+            [/\b(idp|sso|oauth|oidc|saml|okta|keycloak|entra|azure ad|active directory|ldap|auth0|cognito|identity|login|auth)\b/i, 'identity'],
+            [/\b(ci|cd|ci\/cd|pipelines?|jenkins|github actions|gitlab|build|runners?|argo ?cd)\b/i, 'ci-cd'],
+            [/\b(lambda|functions?|faas)\b/i, 'serverless'],
+            [/\b(k8s|kubernetes|containers?|docker|pods?|ecs|aks|eks|gke|openshift)\b/i, 'container'],
+            [/\b(api|apis|gateway|rest|graphql|grpc|backend|microservices?)\b/i, 'api'],
+            [/\b(web|website|portal|frontend|front-end|spa|webapp|browser|cms|wordpress|webfront)\b/i, 'web'],
+            [/\b(admins?|administrators?|operators?|support|helpdesk|devops|sre|dba)\b/i, 'admin'],
+            [/\b(partners?|vendors?|suppliers?|third[- ]party|external system|payment|psp|stripe|bank|providers?|saas)\b/i, 'partner-system'],
+            [/\b(mobile|ios|android|phone)\b/i, 'mobile'],
+            [/\b(iot|devices?|sensors?|plc|scada|cameras?|printers?|kiosk|pos)\b/i, 'iot'],
+            [/\b(ec2|vm|vms|virtual machines?|instances?|compute engine|droplet)\b/i, 'cloud-host'],
+            [/\b(router|firewall|switch|load ?balancer|waf|vpn|proxy|nginx|haproxy|f5)\b/i, 'network-device'],
+            [/\b(mail|smtp|exchange|imap)\b/i, 'email'],
+            [/\b(users?|customers?|employees?|clients?|visitors?|people)\b/i, 'human']
+        ];
+        const FLOW_SUBTYPES = [
+            [/\b(webhooks?|callbacks?)\b/i, 'webhook'],
+            [/\b(kafka|amqp|mqtt|queues?|sqs|sns|pub ?\/? ?sub|events?|messages?|messaging)\b/i, 'messaging'],
+            [/\b(https?|rest|graphql|api|web)\b/i, 'http'],
+            [/\b(ssh|rdp|winrm|vnc|telnet)\b/i, 'remote-admin']
+        ];
+
+        /** Turns a reference id into a link to its authoritative source (or null). */
+        function refLink(ref) {
+            const r = toText(ref).trim();
+            let m;
+            if ((m = /^CWE-(\d+)$/i.exec(r))) return `https://cwe.mitre.org/data/definitions/${m[1]}.html`;
+            if ((m = /^CAPEC-(\d+)$/i.exec(r))) return `https://capec.mitre.org/data/definitions/${m[1]}.html`;
+            if ((m = /^ATT&CK (TA\d{4})$/i.exec(r))) return `https://attack.mitre.org/tactics/${m[1].toUpperCase()}/`;
+            if ((m = /^ATT&CK (T\d{4})(?:\.(\d{3}))?$/i.exec(r))) return `https://attack.mitre.org/techniques/${m[1].toUpperCase()}/${m[2] ? m[2] + '/' : ''}`;
+            if (/^OWASP API\d+:2023$/i.test(r)) return 'https://owasp.org/API-Security/';
+            if (/^OWASP A\d{2}:20\d\d$/i.test(r)) return 'https://owasp.org/www-project-top-ten/';
+            if (/^GDPR Art\. 5/i.test(r)) return 'https://gdpr-info.eu/art-5-gdpr/';
+            return null;
+        }
+
+        const CONDITION_KEYS = ['on', 'off', 'anyOn', 'crossesBoundary', 'subtype', 'inbound', 'outbound', 'anyFlow', 'endpoint', 'source', 'target', 'any', 'all', 'not'];
+        /** Keeps only well-formed condition objects from untrusted template files. */
+        function sanitizeCondition(c, depth = 0) {
+            if (!isPlainObject(c) || depth > 6) return null;
+            const out = {};
+            const names = (v) => (Array.isArray(v) ? v : [v]).map(toText).filter(x => /^[A-Za-z][\w-]{0,40}$/.test(x)).slice(0, 10);
+            Object.keys(c).forEach(k => {
+                if (!CONDITION_KEYS.includes(k)) return;
+                const v = c[k];
+                if (['on', 'off', 'anyOn', 'subtype'].includes(k)) { const n = names(v); if (n.length) out[k] = n.length === 1 && !Array.isArray(v) ? n[0] : n; }
+                else if (k === 'crossesBoundary') out[k] = v === true;
+                else if (['any', 'all'].includes(k)) { if (Array.isArray(v)) { const list = v.map(x => sanitizeCondition(x, depth + 1)).filter(Boolean).slice(0, 10); if (list.length) out[k] = list; } }
+                else { const s = sanitizeCondition(v, depth + 1); if (s) out[k] = s; }
+            });
+            return Object.keys(out).length ? out : null;
+        }
+
+        /** Normalises one template from a file, a backup or browser storage. */
+        function sanitizeTemplate(t, isUnsaved) {
+            const out = { category: toText(t.category), title: toText(t.title), desc: toText(t.desc), isUnsaved: !!isUnsaved };
+            const id = toText(t.id).trim();
+            if (/^[\w:.-]{1,80}$/.test(id)) out.id = id;
+            const list = (v, max) => Array.isArray(v) ? v.map(toText).map(s => s.trim()).filter(Boolean).slice(0, max) : undefined;
+            if (list(t.refs, 12)) out.refs = list(t.refs, 12);
+            if (list(t.controls, 12)) out.controls = list(t.controls, 12);
+            if (list(t.subtypes, 12)) out.subtypes = list(t.subtypes, 12);
+            if (toText(t.example).trim()) out.example = toText(t.example).trim();
+            if (t.likelihood !== undefined) out.likelihood = clampInt(t.likelihood, 1, 5, 3);
+            if (t.impact !== undefined) out.impact = clampInt(t.impact, 1, 5, 3);
+            const when = sanitizeCondition(t.when);
+            if (when) out.when = when;
+            if (t.userEdited) out.userEdited = true;
+            return out;
+        }
+
+        /** "Not applicable" decisions stored on a component or data flow. */
+        function normalizeDismissed(v) {
+            const out = {};
+            if (!isPlainObject(v)) return out;
+            Object.keys(v).slice(0, 500).forEach(k => {
+                if (k === '__proto__' || k === 'constructor' || k === 'prototype' || !isPlainObject(v[k])) return;
+                out[toText(k).slice(0, 200)] = { reason: toText(v[k].reason).slice(0, 2000), by: toText(v[k].by).slice(0, 200), at: toText(v[k].at).slice(0, 40), title: toText(v[k].title).slice(0, 300) };
+            });
+            return out;
+        }
 
         // ── Icon library for components and infrastructure nodes ──────────────────
         // Every class here exists in vendor/bootstrap-icons-1.13.2 (checked by tests/stage5.spec.js).
@@ -3542,6 +3621,7 @@
             }
             ['columns', 'rows'].forEach(k => { if (k in raw) el[k] = Array.isArray(raw[k]) ? raw[k].map(toText) : []; });
             ['colWidths', 'rowHeights'].forEach(k => { if (k in raw) el[k] = Array.isArray(raw[k]) ? raw[k].map(v => toNumber(v, 200)) : undefined; });
+            if ('dismissedSuggestions' in raw) el.dismissedSuggestions = normalizeDismissed(raw.dismissedSuggestions);
             return el;
         }
 
@@ -3567,6 +3647,7 @@
                 ? raw.points.filter(isPlainObject).map(p => ({ x: toNumber(p.x, 0), y: toNumber(p.y, 0) }))
                 : [];
             if ('color' in raw) f.color = toText(raw.color).replace(/[^a-z]/gi, '');
+            if ('dismissedSuggestions' in raw) f.dismissedSuggestions = normalizeDismissed(raw.dismissedSuggestions);
             return f;
         }
 
@@ -3580,6 +3661,7 @@
             t.elementId = toText(raw.elementId);
             t.desc = toText(raw.desc);
             t.mitigationExplanation = toText(raw.mitigationExplanation);
+            if ('refs' in raw) t.refs = Array.isArray(raw.refs) ? raw.refs.map(toText).filter(Boolean).slice(0, 12) : [];
             t.likelihood = String(clampInt(raw.likelihood, 1, 5, 3));
             t.impact = String(clampInt(raw.impact, 1, 5, 3));
             const risk = ThreatModelSession.calculateRisk(t.likelihood, t.impact);
@@ -3844,7 +3926,11 @@
                 const threatTitleInput = document.getElementById('modal-threat-title');
                 threatTitleInput.addEventListener('input', () => threatTitleInput.classList.remove('is-invalid'));
                 document.getElementById('modal-edit-threat').addEventListener('show.bs.modal', () => threatTitleInput.classList.remove('is-invalid'));
-                document.getElementById('modal-edit-threat').addEventListener('hidden.bs.modal', () => { this.pendingRuleId = null; });
+                document.getElementById('modal-edit-threat').addEventListener('hidden.bs.modal', () => { this.pendingTemplate = null; });
+                this.dismissModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-dismiss-suggestion'));
+                document.getElementById('btn-dismiss-save').addEventListener('click', () => this.commitDismissSuggestion());
+                document.getElementById('input-templates-search').addEventListener('input', () => this.updateThreatSuggestionsWizardView());
+
                 document.getElementById('tab-insights-trigger').addEventListener('shown.bs.tab', () => this.renderInsights());
                 document.getElementById('btn-export-markdown').addEventListener('click', () => this.exportMarkdownReport());
                 document.getElementById('btn-export-no-log').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile({ includeLog: false }));
@@ -4348,7 +4434,10 @@
             applyModelSnapshot(json) {
                 const m = JSON.parse(json);
                 Object.assign(this.state, m);
-                this.state.selectedElementIds = []; this.state.selectedFlowId = null;
+                // Keep the selection when the selected items still exist, so the side panels stay put.
+                const ids = new Set(this.state.elements.map(e => e.id));
+                this.state.selectedElementIds = this.state.selectedElementIds.filter(id => ids.has(id));
+                if (this.state.selectedFlowId && !this.state.flows.some(f => f.id === this.state.selectedFlowId)) this.state.selectedFlowId = null;
                 this.undoBaseline = json;
                 this.refreshAppViewVisualWorkspace();
                 this.updateUndoButtons();
@@ -6797,91 +6886,205 @@
                 };
             }
 
-            /** Rules that fire for one component/flow: [{ rule, reason, title, added }]. */
-            evaluateRules(item, analysis = this.computeTrustAnalysis()) {
-                const kind = item.sourceId !== undefined && item.targetId !== undefined ? 'flow' : item.type;
-                const m = this.ruleHelpers(analysis);
-                const out = [];
-                THREAT_RULES.filter(r => r.appliesTo === kind).forEach(rule => {
-                    let reason = null;
-                    try { reason = rule.when(item, m); } catch (err) { console.warn('[ThreatTiger] Rule failed', rule.id, err); }
-                    if (!reason) return;
-                    const title = rule.title.replace('[name]', toText(item.name) || 'unnamed');
-                    const added = this.state.threats.some(t => t.elementId === item.id && (t.ruleId === rule.id || toText(t.title).trim().toLowerCase() === title.toLowerCase()));
-                    out.push({ rule, reason, title, added, item });
-                });
+            isFlowItem(item) { return item && item.sourceId !== undefined && item.targetId !== undefined; }
+
+            /** Which template library applies to a component or data flow. */
+            libraryKeyFor(item) {
+                if (this.isFlowItem(item)) return 'flow';
+                if (item.type === 'custom_image' || toText(item.type).startsWith('fc_')) return 'process';
+                return item.type;
+            }
+
+            /** Stable id of a template (built-ins have one; custom templates get one from type, category and title). */
+            templateIdOf(libraryKey, t) { return t.id || `custom:${this.templateKey(libraryKey, t)}`; }
+
+            /** Subtypes inferred from the icon, the name and the switches (UI hint for relevance and conditions). */
+            subtypesOf(item) {
+                const out = new Set();
+                if (this.isFlowItem(item)) {
+                    const text = `${toText(item.name)} ${toText(item.notes)}`;
+                    FLOW_SUBTYPES.forEach(([re, tag]) => { if (re.test(text)) out.add(tag); });
+                    const ports = toText(item.ports).split(/[^0-9]+/).filter(Boolean).map(Number);
+                    if (ports.some(p => [80, 443, 8080, 8443].includes(p))) out.add('http');
+                    if (ports.some(p => [22, 23, 3389, 5900, 5985, 5986].includes(p))) out.add('remote-admin');
+                    if (ports.some(p => [5672, 9092, 1883, 8883].includes(p))) out.add('messaging');
+                    return out;
+                }
+                const icon = toText(item.icon);
+                const hit = ICON_SUBTYPES.find(([prefix]) => icon.startsWith(prefix));
+                if (hit) hit[1].forEach(t => out.add(t));
+                const text = `${toText(item.name)} ${toText(item.notes)}`;
+                NAME_SUBTYPES.forEach(([re, tag]) => { if (re.test(text)) out.add(tag); });
+                if (item.secProps && item.secProps.isPrivilegedUser === 'true') out.add('admin');
+                if (item.type === 'interactor' && !out.has('partner-system') && !out.has('iot') && !out.has('mobile')) out.add('human');
                 return out;
             }
 
-            /** All rule findings across the model. */
+            ruleHelpers(analysis) {
+                const els = new Map(this.state.elements.map(e => [e.id, e]));
+                const subtypeCache = new Map();
+                return {
+                    analysis,
+                    on: (item, key) => !!(item && item.secProps && item.secProps[key] === 'true'),
+                    off: (item, key) => !!(item && item.secProps && item.secProps[key] === 'false'),
+                    crossing: (f) => analysis.crossings.get(f.id) || { crosses: false, names: [] },
+                    node: (id) => els.get(id),
+                    subtypes: (item) => { if (!subtypeCache.has(item.id)) subtypeCache.set(item.id, this.subtypesOf(item)); return subtypeCache.get(item.id); },
+                    flowsOf: (item) => this.state.flows.filter(f => f.sourceId === item.id || f.targetId === item.id),
+                    inbound: (item) => this.state.flows.filter(f => f.targetId === item.id || (f.isBidirectional && f.sourceId === item.id)),
+                    outbound: (item) => this.state.flows.filter(f => f.sourceId === item.id || (f.isBidirectional && f.targetId === item.id)),
+                    zones: (item) => (analysis.nodeZones.get(item.id) || []).map(z => z.name)
+                };
+            }
+
+            /**
+             * Evaluates a template condition for one component/flow. Returns { ok, reasons[] } where reasons are
+             * short phrases explaining why it holds ("not encrypted", "crosses “DMZ”").
+             */
+            evaluateCondition(cond, item, m) {
+                if (!cond || !item) return { ok: false, reasons: [] };
+                const reasons = [];
+                const keys = (v) => Array.isArray(v) ? v : [v];
+                const label = (k, on) => (SWITCH_LABELS[k] || [k, `${k} off`])[on ? 0 : 1];
+                const flowName = (f) => `"${toText(f.name) || 'unnamed flow'}"`;
+                for (const k of Object.keys(cond)) {
+                    const v = cond[k];
+                    if (k === 'on') { if (!keys(v).every(x => m.on(item, x))) return { ok: false, reasons: [] }; reasons.push(keys(v).map(x => label(x, true)).join(' and ')); }
+                    else if (k === 'off') { if (!keys(v).every(x => m.off(item, x))) return { ok: false, reasons: [] }; reasons.push(keys(v).map(x => label(x, false)).join(' and ')); }
+                    else if (k === 'anyOn') { const hits = keys(v).filter(x => m.on(item, x)); if (!hits.length) return { ok: false, reasons: [] }; reasons.push(hits.map(x => label(x, true)).join(' and ')); }
+                    else if (k === 'crossesBoundary') {
+                        if (!this.isFlowItem(item)) return { ok: false, reasons: [] };
+                        const c = m.crossing(item);
+                        if (c.crosses !== (v === true)) return { ok: false, reasons: [] };
+                        if (c.crosses) reasons.push(`crosses ${c.names.join(', ')}`);
+                    }
+                    else if (k === 'subtype') {
+                        const mine = m.subtypes(item); const hit = keys(v).find(x => mine.has(x));
+                        if (!hit) return { ok: false, reasons: [] };
+                        reasons.push(`recognised as: ${SUBTYPE_LABELS[hit] || hit}`);
+                    }
+                    else if (['inbound', 'outbound', 'anyFlow'].includes(k)) {
+                        if (this.isFlowItem(item)) return { ok: false, reasons: [] };
+                        const flows = k === 'inbound' ? m.inbound(item) : k === 'outbound' ? m.outbound(item) : m.flowsOf(item);
+                        let found = null;
+                        for (const f of flows) { const r = this.evaluateCondition(v, f, m); if (r.ok) { found = { f, r }; break; } }
+                        if (!found) return { ok: false, reasons: [] };
+                        const word = k === 'inbound' ? 'incoming' : k === 'outbound' ? 'outgoing' : 'connected';
+                        reasons.push(`${word} flow ${flowName(found.f)}${found.r.reasons.length ? ' ' + found.r.reasons.join(', ') : ''}`);
+                    }
+                    else if (['endpoint', 'source', 'target'].includes(k)) {
+                        if (!this.isFlowItem(item)) return { ok: false, reasons: [] };
+                        const ends = k === 'source' ? [m.node(item.sourceId)] : k === 'target' ? [m.node(item.targetId)] : [m.node(item.sourceId), m.node(item.targetId)];
+                        let found = null;
+                        for (const n of ends.filter(Boolean)) { const r = this.evaluateCondition(v, n, m); if (r.ok) { found = { n, r }; break; } }
+                        if (!found) return { ok: false, reasons: [] };
+                        reasons.push(`${k === 'source' ? 'comes from' : k === 'target' ? 'goes to' : 'connects to'} "${toText(found.n.name) || 'unnamed'}" (${found.r.reasons.join(', ')})`);
+                    }
+                    else if (k === 'all') { for (const c of v) { const r = this.evaluateCondition(c, item, m); if (!r.ok) return { ok: false, reasons: [] }; reasons.push(...r.reasons); } }
+                    else if (k === 'any') { const r = v.map(c => this.evaluateCondition(c, item, m)).find(x => x.ok); if (!r) return { ok: false, reasons: [] }; reasons.push(...r.reasons); }
+                    else if (k === 'not') { if (this.evaluateCondition(v, item, m).ok) return { ok: false, reasons: [] }; }
+                }
+                return { ok: true, reasons };
+            }
+
+            /** Has a threat from this template already been recorded for this item? */
+            isTemplateAdded(item, id, title) {
+                const t = toText(title).trim().toLowerCase();
+                return this.state.threats.some(x => x.elementId === item.id && (x.templateId === id || x.ruleId === id || toText(x.title).trim().toLowerCase() === t));
+            }
+
+            /**
+             * Everything the suggestions panel needs for one template and one item:
+             * { tpl, id, title, category, reason (if triggered), relevant[] (matching subtypes), added, dismissed }.
+             */
+            describeTemplate(tpl, libraryKey, item, m) {
+                const id = this.templateIdOf(libraryKey, tpl);
+                const title = toText(tpl.title).replace('[name]', toText(item.name) || 'unnamed');
+                let reason = null;
+                if (tpl.when) { try { const r = this.evaluateCondition(tpl.when, item, m); if (r.ok) reason = r.reasons.join('; ') || 'matches your model'; } catch (err) { console.warn('[ThreatTiger] Condition failed', id, err); } }
+                const mine = m.subtypes(item);
+                const relevant = (tpl.subtypes || []).filter(s => mine.has(s));
+                const dismissed = (item.dismissedSuggestions || {})[id] || null;
+                return { tpl, id, title, category: tpl.category, reason, relevant, added: this.isTemplateAdded(item, id, title), dismissed, item };
+            }
+
+            /** Triggered suggestions for one item, shaped for Insights and "Add all": [{ rule, reason, title, added, dismissed, item }]. */
+            evaluateRules(item, analysis = this.computeTrustAnalysis()) {
+                const libraryKey = this.libraryKeyFor(item);
+                const m = this.ruleHelpers(analysis);
+                return (this.threatSuggestions[libraryKey] || []).filter(t => t.when)
+                    .map(t => this.describeTemplate(t, libraryKey, item, m))
+                    .filter(e => e.reason)
+                    .map(e => ({ rule: Object.assign({}, e.tpl, { id: e.id }), reason: e.reason, title: e.title, added: e.added, dismissed: e.dismissed, item }));
+            }
+
+            /** All triggered suggestions across the model. */
             evaluateAllRules() {
                 const analysis = this.computeTrustAnalysis();
-                const items = [...this.state.elements.filter(e => ['process', 'datastore', 'interactor'].includes(e.type)), ...this.state.flows];
+                const items = [...this.state.elements.filter(e => ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(e.type)), ...this.state.flows];
                 return items.flatMap(item => this.evaluateRules(item, analysis));
             }
 
-            /** Adds the given rule findings to the register in one undoable step. */
+            /** The description stored on a threat created from a template: what, controls, references, example, why. */
+            composeThreatDescription(tpl, reason) {
+                const parts = [toText(tpl.desc).trim()];
+                if (tpl.controls && tpl.controls.length) parts.push('Typical controls:\n' + tpl.controls.map(c => `- ${c}`).join('\n'));
+                if (tpl.example) parts.push(`Real-world example: ${tpl.example}`);
+                if (tpl.refs && tpl.refs.length) parts.push(`References: ${tpl.refs.join(', ')}`);
+                if (reason) parts.push(`Why suggested: ${reason}.`);
+                return parts.filter(Boolean).join('\n\n');
+            }
+
+            /** Adds the given suggestions to the register in one undoable step. */
             addRuleThreats(findings) {
-                const fresh = findings.filter(f => !f.added);
-                if (!fresh.length) { this.notify('Those suggestions are already in the register.', 'info'); return; }
+                const fresh = findings.filter(f => !f.added && !f.dismissed);
+                if (!fresh.length) { this.notify('Those suggestions are already in the register or marked not applicable.', 'info'); return; }
                 fresh.forEach(f => {
-                    const risk = ThreatModelSession.calculateRisk(f.rule.likelihood, f.rule.impact);
+                    const L = f.rule.likelihood || 3, I = f.rule.impact || 3;
+                    const risk = ThreatModelSession.calculateRisk(L, I);
                     this.state.threats.push({
                         id: this.generateNextThreatId(), title: f.title, category: f.rule.category, elementId: f.item.id,
-                        status: 'Open / Unmitigated', likelihood: String(f.rule.likelihood), impact: String(f.rule.impact),
-                        riskScore: risk.score, riskLabel: risk.label, desc: `${f.rule.desc}\n\nWhy suggested: ${f.reason}.`,
-                        mitigationExplanation: '', ruleId: f.rule.id
+                        status: 'Open / Unmitigated', likelihood: String(L), impact: String(I),
+                        riskScore: risk.score, riskLabel: risk.label, desc: this.composeThreatDescription(f.rule, f.reason),
+                        mitigationExplanation: '', templateId: f.rule.id, ruleId: f.reason ? f.rule.id : undefined, refs: f.rule.refs || []
                     });
                 });
-                this.logEvent('CREATE', `Added ${fresh.length} threat(s) from model rules`);
+                this.logEvent('CREATE', `Added ${fresh.length} suggested threat(s)`);
                 this.refreshAppViewVisualWorkspace();
                 this.notify(`Added ${fresh.length} threat(s) to the register.`, 'success', { label: 'Undo', onClick: () => this.undo() });
             }
 
-            /** "Triggered by this model" section at the top of the Threat Templates panel. */
-            renderTriggeredRules(item) {
-                const findings = this.evaluateRules(item).filter(f => !this.disabledStrideFilters.has(f.rule.category));
-                if (!findings.length) return;
-                const box = document.createElement('div');
-                box.className = 'border rounded p-2 mb-3';
-                box.style.cssText = 'background: rgba(255, 193, 7, 0.12); border-color: rgba(255, 193, 7, 0.6) !important;';
-                const head = document.createElement('div'); head.className = 'd-flex justify-content-between align-items-center mb-2 gap-2';
-                const h = document.createElement('div'); h.className = 'fw-bold small text-dark';
-                h.innerHTML = '<i class="bi bi-lightning-charge-fill text-warning me-1"></i>';
-                h.append(`Triggered by this model (${findings.length})`);
-                head.appendChild(h);
-                const pending = findings.filter(f => !f.added);
-                if (pending.length) {
-                    const all = document.createElement('button'); all.type = 'button'; all.className = 'btn btn-warning btn-sm py-0 px-2 extra-small text-nowrap';
-                    all.textContent = `Add all (${pending.length})`; all.id = 'btn-add-triggered';
-                    all.addEventListener('click', () => this.addRuleThreats(pending));
-                    head.appendChild(all);
-                }
-                box.appendChild(head);
-                findings.forEach(f => {
-                    const card = document.createElement('div');
-                    card.className = 'card card-body p-2 mb-1 small triggered-rule-card';
-                    card.style.cursor = f.added ? 'default' : 'pointer';
-                    const top = document.createElement('div'); top.className = 'd-flex justify-content-between gap-2';
-                    const t = document.createElement('div'); t.className = 'fw-bold text-dark'; t.style.lineHeight = '1.25'; t.textContent = f.title;
-                    const risk = ThreatModelSession.calculateRisk(f.rule.likelihood, f.rule.impact);
-                    const badges = document.createElement('div'); badges.className = 'd-flex gap-1 flex-shrink-0 align-items-start';
-                    const cat = document.createElement('span'); cat.className = `badge stride-${f.rule.category.charAt(0)} extra-small`; cat.textContent = f.rule.category.charAt(0); cat.title = f.rule.category;
-                    const sev = document.createElement('span'); sev.className = `badge ${risk.badgeClass} extra-small`; sev.textContent = risk.label;
-                    badges.append(cat, sev);
-                    if (f.added) { const ok = document.createElement('span'); ok.className = 'badge bg-success extra-small'; ok.textContent = 'Added'; badges.appendChild(ok); }
-                    top.append(t, badges);
-                    const why = document.createElement('div'); why.className = 'text-muted extra-small mt-1'; why.textContent = `Why: ${f.reason}`;
-                    card.append(top, why);
-                    if (!f.added) card.addEventListener('click', () => {
-                        this.openThreatModalForTemplate(f.rule.category, f.title, item.id, `${f.rule.desc}\n\nWhy suggested: ${f.reason}.`);
-                        document.getElementById('modal-threat-likelihood').value = String(f.rule.likelihood);
-                        document.getElementById('modal-threat-impact').value = String(f.rule.impact);
-                        this.pendingRuleId = f.rule.id;
-                    });
-                    box.appendChild(card);
+            /** Records "not applicable" for a suggestion on a component or data flow, with the reason (Shostack: every suggestion ends in a decision). */
+            openDismissSuggestion(entry) {
+                this.pendingDismiss = entry;
+                document.getElementById('dismiss-suggestion-title').textContent = entry.title;
+                const input = document.getElementById('input-dismiss-reason');
+                input.value = '';
+                this.dismissModal.show();
+                setTimeout(() => input.focus(), 200);
+            }
+
+            commitDismissSuggestion() {
+                const entry = this.pendingDismiss;
+                if (!entry) return;
+                const reason = document.getElementById('input-dismiss-reason').value.trim() || 'No reason given';
+                const item = entry.item;
+                item.dismissedSuggestions = Object.assign({}, item.dismissedSuggestions, {
+                    [entry.id]: { reason, by: this.state.activeUser || '', at: new Date().toISOString(), title: entry.title }
                 });
-                this.dom.threatSuggestionsList.appendChild(box);
+                this.pendingDismiss = null;
+                this.dismissModal.hide();
+                this.logEvent('CHANGE', `Marked "${entry.title}" as not applicable to "${toText(item.name) || 'unnamed'}": ${reason}`);
+                this.refreshAppViewVisualWorkspace();
+            }
+
+            restoreSuggestion(item, id) {
+                if (!item.dismissedSuggestions || !item.dismissedSuggestions[id]) return;
+                const title = item.dismissedSuggestions[id].title;
+                const copy = Object.assign({}, item.dismissedSuggestions); delete copy[id];
+                item.dismissedSuggestions = copy;
+                this.logEvent('CHANGE', `Restored suggestion "${title}" for "${toText(item.name) || 'unnamed'}"`);
+                this.refreshAppViewVisualWorkspace();
             }
 
             // ── Model warnings (FEAT-005) ─────────────────────────────────────────────
@@ -6924,7 +7127,8 @@
                 const withThreats = new Set(threats.map(t => t.elementId));
                 const uncovered = [...modelEls, ...this.state.flows].filter(x => !withThreats.has(x.id));
                 const findings = this.evaluateAllRules();
-                const pending = findings.filter(f => !f.added);
+                const pending = findings.filter(f => !f.added && !f.dismissed);
+                const notApplicable = findings.filter(f => f.dismissed);
                 const warnings = this.computeModelWarnings();
                 const analysis = this.computeTrustAnalysis();
                 const crossing = this.state.flows.filter(f => (analysis.crossings.get(f.id) || {}).crosses);
@@ -6938,7 +7142,7 @@
                 [['Threats', threats.length, 'text-dark'], ['Open critical / high', critHigh.length, critHigh.length ? 'text-danger' : 'text-success'],
                  ['Not fully mitigated', open.length, open.length ? 'text-warning' : 'text-success'], ['Need review', threats.filter(t => t.needsReview).length, 'text-dark'],
                  ['Without threats', uncovered.length, uncovered.length ? 'text-warning' : 'text-success'], ['Rule suggestions', pending.length, pending.length ? 'text-warning' : 'text-success'],
-                 ['Flows crossing a boundary', crossing.length, 'text-dark']].forEach(([label, value, cls]) => {
+                 ['Flows crossing a boundary', crossing.length, 'text-dark'], ['Marked not applicable', notApplicable.length, 'text-secondary']].forEach(([label, value, cls]) => {
                     const t = el('div', 'border rounded px-3 py-2 bg-white insight-tile'); t.style.minWidth = '130px';
                     t.append(el('div', `fs-4 fw-bold ${cls}`, String(value)), el('div', 'extra-small text-muted', label));
                     tiles.appendChild(t);
@@ -6981,10 +7185,11 @@
                     findings.forEach(f => {
                         const it = el('div', 'list-group-item py-1 px-2 extra-small d-flex justify-content-between gap-2 align-items-start');
                         const txt = el('div');
-                        const tt = el('div', `fw-bold ${f.added ? 'text-muted text-decoration-line-through' : 'text-dark'}`, f.title);
+                        const tt = el('div', `fw-bold ${f.added || f.dismissed ? 'text-muted text-decoration-line-through' : 'text-dark'}`, f.title);
                         const wy = el('div', 'text-muted'); wy.append(`${f.rule.id} · ${f.rule.category} · ${f.reason} · `, focusLink('show', f.item.id));
                         txt.append(tt, wy); it.appendChild(txt);
-                        if (!f.added) { const b = el('button', 'btn btn-outline-warning btn-sm py-0 px-2 extra-small text-nowrap', 'Add'); b.type = 'button'; b.addEventListener('click', () => this.addRuleThreats([f])); it.appendChild(b); }
+                        if (f.dismissed) { const s = el('span', 'badge bg-secondary', 'Not applicable'); s.title = f.dismissed.reason; it.appendChild(s); }
+                        else if (!f.added) { const b = el('button', 'btn btn-outline-warning btn-sm py-0 px-2 extra-small text-nowrap', 'Add'); b.type = 'button'; b.addEventListener('click', () => this.addRuleThreats([f])); it.appendChild(b); }
                         else it.appendChild(el('span', 'badge bg-success', 'Added'));
                         list.appendChild(it);
                     });
@@ -7069,6 +7274,7 @@
                         out.push(`**${cell(t.id)} — ${para(t.title)}**  `, `${t.category} · likelihood ${t.likelihood} × impact ${t.impact} = ${risk(t).score} (${risk(t).label}) · ${t.status}${t.needsReview ? ' · needs review' : ''}`, '');
                         if (t.desc) out.push(para(t.desc).split(/\r?\n/).map(l => `> ${l}`).join('\n'), '');
                         if (t.mitigationExplanation) out.push(`_Mitigation:_ ${para(t.mitigationExplanation)}`, '');
+                        if (Array.isArray(t.refs) && t.refs.length) out.push(`_References:_ ${t.refs.map(r => refLink(r) ? `[${r}](${refLink(r)})` : para(r)).join(', ')}`, '');
                     });
                 });
                 out.push('## Data flows', '', '| Flow | From | To | Ports | Encrypted | Authenticated | Crosses trust boundary |', '|---|---|---|---|---|---|---|');
@@ -7082,8 +7288,14 @@
                     const props = Object.entries(e.secProps || {}).filter(([, v]) => v === 'true').map(([k]) => k.replace(/([A-Z])/g, ' $1').toLowerCase()).join(', ');
                     out.push(`| ${cell(e.name)} | ${e.type.replace(/_/g, ' ')} | ${cell((analysis.nodeZones.get(e.id) || []).map(z => z.name).join(', '))} | ${cell(props)} | ${cell(e.notes)} |`);
                 });
-                const pending = this.evaluateAllRules().filter(f => !f.added);
+                const allFindings = this.evaluateAllRules();
+                const pending = allFindings.filter(f => !f.added && !f.dismissed);
                 const warnings = this.computeModelWarnings();
+                const decisions = [...s.elements, ...s.flows].flatMap(x => Object.entries(x.dismissedSuggestions || {}).map(([id, d]) => ({ x, id, d })));
+                if (decisions.length) {
+                    out.push('', '## Suggestions marked not applicable', '', '| Component | Suggestion | Reason | By | Date |', '|---|---|---|---|---|');
+                    decisions.forEach(({ x, d }) => out.push(`| ${cell(x.name)} | ${cell(d.title)} | ${cell(d.reason)} | ${cell(d.by)} | ${cell(toText(d.at).slice(0, 10))} |`));
+                }
                 if (pending.length || warnings.length) {
                     out.push('', '## Open findings', '');
                     if (pending.length) { out.push('### Suggested by model rules (not yet in the register)', ''); pending.forEach(f => out.push(`- **${para(f.title)}** (${f.rule.category}, ${f.rule.id}) — ${para(f.reason)}`)); out.push(''); }
@@ -8783,109 +8995,159 @@
                 });
 
                 this.dom.threatSuggestionsList.innerHTML = '';
-                this.renderTriggeredRules(item);
-                const activeScenarios = allScenarios.filter(sc => !this.disabledStrideFilters.has(sc.category));
-                if (activeScenarios.length === 0) { const msg = document.createElement('div'); msg.className = 'text-center text-muted extra-small py-3'; msg.textContent = 'All templates filtered out.'; this.dom.threatSuggestionsList.appendChild(msg); return; }
+                const m = this.ruleHelpers(this.computeTrustAnalysis());
+                const query = toText((document.getElementById('input-templates-search') || {}).value).trim().toLowerCase();
+                const matchesQuery = (e) => !query || [e.title, e.tpl.desc, e.category, ...(e.tpl.refs || []), ...(e.tpl.controls || [])]
+                    .some(v => toText(v).toLowerCase().includes(query));
+                const entries = matchingScenarios.map(sc => this.describeTemplate(sc, libraryKey, item, m))
+                    .filter(e => !this.disabledStrideFilters.has(e.category) && matchesQuery(e));
 
-                // Grouping & Sorting logic
-                const sortBy = document.getElementById('select-templates-sort') ? document.getElementById('select-templates-sort').value : 'group-category-title';
-                const strideOrder = ['Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'];
+                const triggered = entries.filter(e => e.reason && !e.dismissed);
+                const relevant = entries.filter(e => !e.reason && !e.dismissed && e.relevant.length);
+                const others = entries.filter(e => !e.reason && !e.dismissed && !e.relevant.length);
+                const dismissed = entries.filter(e => e.dismissed);
+                const list = this.dom.threatSuggestionsList;
 
-                if (sortBy === 'group-category-title') {
-                    // Group by STRIDE Category, and then by title
-                    const grouped = {};
-                    strideOrder.forEach(cat => {
-                        grouped[cat] = [];
-                    });
+                const subtypeNames = [...m.subtypes(item)].map(s => SUBTYPE_LABELS[s] || s);
+                if (subtypeNames.length) {
+                    const hint = document.createElement('div');
+                    hint.className = 'text-muted extra-small mb-1'; hint.id = 'suggest-subtype-hint';
+                    hint.textContent = `Recognised as: ${subtypeNames.join(', ')} (from its icon and name).`;
+                    list.appendChild(hint);
+                }
 
-                    activeScenarios.forEach(sc => {
-                        if (!grouped[sc.category]) {
-                            grouped[sc.category] = [];
-                        }
-                        grouped[sc.category].push(sc);
-                    });
+                const section = (title, icon, count, opts = {}) => {
+                    const box = document.createElement(opts.collapsible ? 'details' : 'div');
+                    box.className = `suggest-section mb-2 ${opts.className || ''}`;
+                    if (opts.id) box.id = opts.id;
+                    if (opts.collapsible && opts.open) box.open = true;
+                    const head = document.createElement(opts.collapsible ? 'summary' : 'div');
+                    head.className = 'd-flex justify-content-between align-items-center gap-2 mb-1 fw-bold small text-dark';
+                    const h = document.createElement('span');
+                    h.innerHTML = `<i class="bi ${icon} me-1"></i>`;
+                    h.append(`${title} (${count})`);
+                    head.appendChild(h);
+                    if (opts.action) head.appendChild(opts.action);
+                    box.appendChild(head);
+                    list.appendChild(box);
+                    return box;
+                };
 
-                    // Sort each group by title
-                    Object.keys(grouped).forEach(cat => {
-                        grouped[cat].sort((a, b) => a.title.localeCompare(b.title));
-                    });
-
-                    // Render grouped
-                    strideOrder.forEach(cat => {
-                        const items = grouped[cat] || [];
-                        if (items.length === 0) return;
-
-                        // Add category header
-                        const header = document.createElement('div');
-                        header.className = 'fw-bold text-uppercase mt-3 mb-2 pb-1 border-bottom d-flex align-items-center gap-2';
-                        header.style.fontSize = '10px';
-                        header.style.color = '#495057';
-                        header.innerHTML = `
-                            <span class="badge stride-${esc(cat.charAt(0))}" style="width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; padding: 0;">${esc(cat.charAt(0))}</span>
-                            <span>${esc(cat)}</span>
-                            <span class="text-muted extra-small ms-auto">(${items.length})</span>
-                        `;
-                        this.dom.threatSuggestionsList.appendChild(header);
-
-                        items.forEach(sc => {
-                            const card = this.createTemplateCardDOM(sc, item, typeKey);
-                            this.dom.threatSuggestionsList.appendChild(card);
-                        });
-                    });
-                } else {
-                    // Sort list flat
-                    let sortedScenarios = [...activeScenarios];
-                    if (sortBy === 'title-asc') {
-                        sortedScenarios.sort((a, b) => a.title.localeCompare(b.title));
-                    } else if (sortBy === 'title-desc') {
-                        sortedScenarios.sort((a, b) => b.title.localeCompare(a.title));
-                    } else if (sortBy === 'category-asc') {
-                        sortedScenarios.sort((a, b) => {
-                            const catComp = a.category.localeCompare(b.category);
-                            if (catComp !== 0) return catComp;
-                            return a.title.localeCompare(b.title);
-                        });
+                if (triggered.length) {
+                    const pending = triggered.filter(e => !e.added);
+                    let action = null;
+                    if (pending.length) {
+                        action = document.createElement('button'); action.type = 'button'; action.id = 'btn-add-triggered';
+                        action.className = 'btn btn-warning btn-sm py-0 px-2 extra-small text-nowrap'; action.textContent = `Add all (${pending.length})`;
+                        action.addEventListener('click', (ev) => { ev.preventDefault(); this.addRuleThreats(pending.map(e => ({ rule: Object.assign({}, e.tpl, { id: e.id }), reason: e.reason, title: e.title, added: e.added, dismissed: e.dismissed, item }))); });
                     }
+                    const box = section('Triggered by this model', 'bi-lightning-charge-fill text-warning', triggered.length, { className: 'suggest-triggered border rounded p-2', action, id: 'suggest-section-triggered' });
+                    box.style.cssText = 'background: rgba(255, 193, 7, 0.12); border-color: rgba(255, 193, 7, 0.6) !important;';
+                    triggered.forEach(e => box.appendChild(this.createTemplateCardDOM(e, item, libraryKey)));
+                }
+                if (relevant.length) {
+                    const box = section(`Relevant for this ${subtypeNames[0] || 'component'}`, 'bi-bullseye text-primary', relevant.length, { id: 'suggest-section-relevant' });
+                    relevant.forEach(e => box.appendChild(this.createTemplateCardDOM(e, item, libraryKey)));
+                }
+                if (!triggered.length && !relevant.length && !others.length && !dismissed.length) {
+                    const msg = document.createElement('div'); msg.className = 'text-center text-muted extra-small py-3';
+                    msg.textContent = query ? 'No templates match your search.' : 'All templates filtered out.';
+                    list.appendChild(msg); return;
+                }
 
-                    sortedScenarios.forEach(sc => {
-                        const card = this.createTemplateCardDOM(sc, item, typeKey);
-                        this.dom.threatSuggestionsList.appendChild(card);
+                if (others.length) {
+                    const box = section(triggered.length || relevant.length ? `More ${typeKey === 'interactor' ? 'external entity' : libraryKey} threats` : 'Threat templates', 'bi-collection', others.length, { id: 'suggest-section-other', collapsible: !!(triggered.length || relevant.length), open: !triggered.length && !relevant.length || !!query });
+                    const sortBy = document.getElementById('select-templates-sort') ? document.getElementById('select-templates-sort').value : 'group-category-title';
+                    const strideOrder = ['Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'];
+                    const sorted = [...others];
+                    if (sortBy === 'title-desc') sorted.sort((a, b) => b.title.localeCompare(a.title));
+                    else if (sortBy === 'title-asc') sorted.sort((a, b) => a.title.localeCompare(b.title));
+                    else sorted.sort((a, b) => (strideOrder.indexOf(a.category) - strideOrder.indexOf(b.category)) || a.title.localeCompare(b.title));
+                    let lastCat = null;
+                    sorted.forEach(e => {
+                        if (sortBy === 'group-category-title' && e.category !== lastCat) {
+                            lastCat = e.category;
+                            const header = document.createElement('div');
+                            header.className = 'fw-bold text-uppercase mt-2 mb-1 pb-1 border-bottom d-flex align-items-center gap-2';
+                            header.style.fontSize = '10px'; header.style.color = '#495057';
+                            const b = document.createElement('span'); b.className = `badge stride-${e.category.charAt(0)}`; b.textContent = e.category.charAt(0);
+                            const t = document.createElement('span'); t.textContent = e.category;
+                            header.append(b, t);
+                            box.appendChild(header);
+                        }
+                        box.appendChild(this.createTemplateCardDOM(e, item, libraryKey));
+                    });
+                }
+
+                if (dismissed.length) {
+                    const box = section('Marked not applicable', 'bi-slash-circle text-secondary', dismissed.length, { collapsible: true, id: 'suggest-section-dismissed' });
+                    dismissed.forEach(e => {
+                        const row = document.createElement('div'); row.className = 'border rounded p-2 mb-1 extra-small bg-light';
+                        const t = document.createElement('div'); t.className = 'fw-bold text-muted'; t.textContent = e.title;
+                        const r = document.createElement('div'); r.className = 'text-muted';
+                        r.textContent = `Reason: ${e.dismissed.reason}${e.dismissed.by ? ` — ${e.dismissed.by}` : ''}${e.dismissed.at ? `, ${ThreatModelingApp.formatTimestamp(e.dismissed.at)}` : ''}`;
+                        const btn = document.createElement('button'); btn.type = 'button'; btn.className = 'btn btn-link btn-sm p-0 extra-small btn-restore-suggestion'; btn.textContent = 'Restore';
+                        btn.addEventListener('click', () => this.restoreSuggestion(item, e.id));
+                        row.append(t, r, btn); box.appendChild(row);
                     });
                 }
             }
 
-            createTemplateCardDOM(sc, item, typeKey) {
+            /** One suggestion card: title, badges, why/relevance, description, references, details, actions. */
+            createTemplateCardDOM(entry, item, libraryKey) {
+                const tpl = entry.tpl;
                 const card = document.createElement('div');
-                card.className = "card card-body p-2 mb-2 border-start border-3 border-danger small palette-item position-relative shadow-sm";
-                card.style.cursor = 'pointer';
+                card.className = `card card-body p-2 mb-1 small palette-item position-relative shadow-sm template-card ${entry.reason ? 'triggered-rule-card' : ''} ${entry.added ? 'opacity-75' : ''}`;
+                card.style.borderLeft = '3px solid ' + (entry.reason ? '#ffc107' : '#dc3545');
+                card.style.cursor = entry.added ? 'default' : 'pointer';
                 card.setAttribute('tabindex', '0'); card.setAttribute('role', 'button');
+                card.setAttribute('data-template-id', entry.id);
+                const risk = ThreatModelSession.calculateRisk(tpl.likelihood || 3, tpl.impact || 3);
                 card.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-start mb-1">
-                        <div class="fw-bold text-dark text-wrap me-2" style="max-width:160px; word-break: break-word; line-height: 1.25;">${esc(sc.title)}</div>
+                    <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
+                        <div class="fw-bold text-dark text-wrap" style="word-break: break-word; line-height: 1.25;">${esc(entry.title)}</div>
                         <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                            ${sc.originalObj.isUnsaved ? '<span class="badge bg-warning text-dark extra-small" style="font-size:8px;" title="Unsaved changes"><i class="bi bi-exclamation-circle-fill"></i> Unsaved</span>' : ''}
-                            <span class="badge stride-${esc(toText(sc.category).charAt(0))} extra-small" style="font-size:9px;">${esc(sc.category)}</span>
-                            <button type="button" class="btn btn-xs p-0 text-muted btn-template-edit" title="Edit Template" style="font-size: 10px; width: 16px; height: 16px; border: none; background: transparent;"><i class="bi bi-pencil"></i></button>
-                            <button type="button" class="btn btn-xs p-0 text-muted btn-template-delete" title="Delete Template" style="font-size: 10px; width: 16px; height: 16px; border: none; background: transparent;"><i class="bi bi-trash"></i></button>
+                            <span class="badge stride-${esc(toText(entry.category).charAt(0))} extra-small" title="${esc(entry.category)}">${esc(toText(entry.category).charAt(0))}</span>
+                            ${tpl.likelihood ? `<span class="badge ${risk.badgeClass} extra-small" title="Suggested likelihood ${tpl.likelihood} × impact ${tpl.impact}">${risk.label}</span>` : ''}
+                            ${entry.added ? '<span class="badge bg-success extra-small">Added</span>' : ''}
+                            ${tpl.isUnsaved ? '<span class="badge bg-warning text-dark extra-small" title="Unsaved template change">Unsaved</span>' : ''}
+                            <button type="button" class="btn btn-xs p-0 text-muted btn-template-edit" title="Edit template" aria-label="Edit template" style="font-size: 10px; width: 16px; height: 16px; border: none; background: transparent;"><i class="bi bi-pencil"></i></button>
+                            <button type="button" class="btn btn-xs p-0 text-muted btn-template-delete" title="Delete template" aria-label="Delete template" style="font-size: 10px; width: 16px; height: 16px; border: none; background: transparent;"><i class="bi bi-trash"></i></button>
                         </div>
                     </div>
-                    <div class="extra-small text-muted mb-0" style="font-size:10.5px; line-height: 1.35;">${esc(sc.desc)}</div>
+                    ${entry.reason ? `<div class="extra-small text-dark mb-1"><i class="bi bi-lightning-charge-fill text-warning me-1"></i><strong>Why:</strong> ${esc(entry.reason)}</div>` : ''}
+                    ${!entry.reason && entry.relevant.length ? `<div class="extra-small text-primary mb-1"><i class="bi bi-bullseye me-1"></i>Relevant for: ${esc(entry.relevant.map(s => SUBTYPE_LABELS[s] || s).join(', '))}</div>` : ''}
+                    <div class="extra-small text-muted mb-1" style="font-size:10.5px; line-height: 1.35;">${esc(tpl.desc)}</div>
+                    <div class="d-flex flex-wrap gap-1 align-items-center template-refs"></div>
+                    <details class="template-details mt-1 extra-small">
+                        <summary class="text-primary" style="cursor: pointer;">Controls${tpl.example ? ' &amp; real-world example' : ''}</summary>
+                        ${tpl.controls && tpl.controls.length ? `<ul class="mb-1 ps-3 mt-1">${tpl.controls.map(c => `<li>${esc(c)}</li>`).join('')}</ul>` : '<div class="text-muted">No controls listed.</div>'}
+                        ${tpl.example ? `<div class="text-muted"><strong>Example:</strong> ${esc(tpl.example)}</div>` : ''}
+                    </details>
+                    ${entry.added ? '' : '<div class="mt-1"><button type="button" class="btn btn-link btn-sm p-0 extra-small text-secondary btn-dismiss-suggestion">Not applicable…</button></div>'}
                 `;
-
-                card.querySelector('.btn-template-edit').addEventListener('click', (ev) => {
-                    ev.stopPropagation();
-                    this.openEditTemplateModal(sc.originalObj, typeKey);
+                const refsBox = card.querySelector('.template-refs');
+                (tpl.refs || []).forEach(ref => {
+                    const href = refLink(ref);
+                    const chip = document.createElement(href ? 'a' : 'span');
+                    chip.className = 'badge text-bg-light border text-decoration-none fw-normal template-ref';
+                    chip.textContent = ref;
+                    if (href) { chip.href = href; chip.target = '_blank'; chip.rel = 'noopener noreferrer'; chip.title = `Open ${ref}`; }
+                    refsBox.appendChild(chip);
                 });
-
-                card.querySelector('.btn-template-delete').addEventListener('click', (ev) => {
-                    ev.stopPropagation();
-                    this.deleteTemplate(sc.originalObj, typeKey);
-                });
-
+                const stop = (ev) => ev.stopPropagation();
+                card.querySelectorAll('a, details, summary').forEach(el => el.addEventListener('click', stop));
+                card.querySelector('.btn-template-edit').addEventListener('click', (ev) => { ev.stopPropagation(); this.openEditTemplateModal(tpl, libraryKey); });
+                card.querySelector('.btn-template-delete').addEventListener('click', (ev) => { ev.stopPropagation(); this.deleteTemplate(tpl, libraryKey); });
+                const dismissBtn = card.querySelector('.btn-dismiss-suggestion');
+                if (dismissBtn) dismissBtn.addEventListener('click', (ev) => { ev.stopPropagation(); this.openDismissSuggestion(entry); });
                 card.addEventListener('click', () => {
-                    this.openThreatModalForTemplate(sc.category, sc.title, item.id, sc.desc);
+                    if (entry.added) return;
+                    this.openThreatModalForTemplate(entry.category, entry.title, item.id, this.composeThreatDescription(tpl, entry.reason));
+                    if (tpl.likelihood) document.getElementById('modal-threat-likelihood').value = String(tpl.likelihood);
+                    if (tpl.impact) document.getElementById('modal-threat-impact').value = String(tpl.impact);
+                    this.pendingTemplate = { id: entry.id, refs: tpl.refs || [], triggered: !!entry.reason };
                 });
-
                 return card;
             }
 
@@ -9076,7 +9338,8 @@
                 }
                 else {
                     const freshId = this.generateNextThreatId();
-                    this.state.threats.push(Object.assign({ id: freshId }, dataPayload, this.pendingRuleId ? { ruleId: this.pendingRuleId } : {}));
+                    const fromTemplate = this.pendingTemplate ? { templateId: this.pendingTemplate.id, refs: this.pendingTemplate.refs, ruleId: this.pendingTemplate.triggered ? this.pendingTemplate.id : undefined } : {};
+                    this.state.threats.push(Object.assign({ id: freshId }, dataPayload, fromTemplate));
                     this.logEvent("CREATE", `Added threat ${freshId} "${title}"`);
                 }
                 this.saveSessionToLocalStorage(); this.editThreatModal.hide(); this.refreshAppViewVisualWorkspace();
@@ -9236,11 +9499,11 @@
             exportThreatRegisterToCsvFile() {
                 if (this.state.threats.length === 0) { this.notify("The threat register is empty.", 'warning'); return; }
                 const byId = new Map([...this.state.elements, ...this.state.flows].map(x => [x.id, x]));
-                const header = ["Threat ID", "STRIDE Category", "Title", "Component", "Component ID", "Likelihood", "Impact", "Risk Score", "Severity", "Status", "Description", "Mitigation"];
+                const header = ["Threat ID", "STRIDE Category", "Title", "Component", "Component ID", "Likelihood", "Impact", "Risk Score", "Severity", "Status", "Description", "Mitigation", "References"];
                 const rows = this.state.threats.map(t => {
                     const risk = ThreatModelSession.calculateRisk(t.likelihood, t.impact);
                     const conn = byId.get(t.elementId);
-                    return [t.id, t.category, t.title, conn ? conn.name : 'Unknown', t.elementId, t.likelihood, t.impact, risk.score, risk.label, t.status, t.desc || '', t.mitigationExplanation || ''];
+                    return [t.id, t.category, t.title, conn ? conn.name : 'Unknown', t.elementId, t.likelihood, t.impact, risk.score, risk.label, t.status, t.desc || '', t.mitigationExplanation || '', (t.refs || []).join(', ')];
                 });
                 const csv = [header, ...rows].map(r => r.map(ThreatModelingApp.csvCell).join(',')).join('\r\n');
                 // Blob instead of an encodeURI'd data: URL, which cut the file at the first '#' (BUG-002).
@@ -9564,42 +9827,26 @@
 
             mergeThreatSuggestions(newData, markAsUnsaved = false) {
                 if (!newData || typeof newData !== 'object') return;
-
                 const types = ['process', 'datastore', 'interactor', 'infrastructure', 'flow'];
-
                 types.forEach(type => {
-                    if (!this.threatSuggestions[type]) {
-                        this.threatSuggestions[type] = [];
-                    }
-
+                    if (!Array.isArray(this.threatSuggestions[type])) this.threatSuggestions[type] = [];
+                    const lib = this.threatSuggestions[type];
                     const newItems = newData[type];
-                    if (Array.isArray(newItems)) {
-                        newItems.forEach(newItem => {
-                            if (!newItem || typeof newItem !== 'object') return;
-
-                            const category = newItem.category || '';
-                            const title = newItem.title || '';
-                            const desc = newItem.desc || '';
-                            const isUnsaved = newItem.isUnsaved !== undefined ? newItem.isUnsaved : markAsUnsaved;
-
-                            // Check if duplicate (case-insensitive and trimmed category & title)
-                            const isDuplicate = this.threatSuggestions[type].some(existingItem => {
-                                const existCategory = existingItem.category || '';
-                                const existTitle = existingItem.title || '';
-                                return existCategory.trim().toLowerCase() === category.trim().toLowerCase() &&
-                                    existTitle.trim().toLowerCase() === title.trim().toLowerCase();
-                            });
-
-                            if (!isDuplicate) {
-                                this.threatSuggestions[type].push({
-                                    category: category,
-                                    title: title,
-                                    desc: desc,
-                                    isUnsaved: isUnsaved
-                                });
-                            }
-                        });
-                    }
+                    if (!Array.isArray(newItems)) return;
+                    newItems.forEach(raw => {
+                        if (!isPlainObject(raw)) return;
+                        const incoming = sanitizeTemplate(raw, raw.isUnsaved !== undefined ? raw.isUnsaved : markAsUnsaved);
+                        if (!incoming.title) return;
+                        // Same built-in (by id): refresh it unless the user edited their copy.
+                        const byId = incoming.id ? lib.findIndex(x => x.id === incoming.id) : -1;
+                        if (byId !== -1) {
+                            if (!lib[byId].userEdited && !lib[byId].isUnsaved && !markAsUnsaved) lib[byId] = incoming;
+                            return;
+                        }
+                        const dupe = lib.some(x => toText(x.category).trim().toLowerCase() === incoming.category.trim().toLowerCase()
+                            && toText(x.title).trim().toLowerCase() === incoming.title.trim().toLowerCase());
+                        if (!dupe) lib.push(incoming);
+                    });
                 });
             }
 
@@ -9608,7 +9855,11 @@
                 const stored = localStorage.getItem('stride_workbench_threat_templates');
                 if (stored) {
                     try {
-                        this.threatSuggestions = JSON.parse(stored);
+                        const parsed = JSON.parse(stored);
+                        this.threatSuggestions = this.getDefaultThreatSuggestions();
+                        Object.keys(this.threatSuggestions).forEach(type => {
+                            this.threatSuggestions[type] = (Array.isArray(parsed[type]) ? parsed[type] : []).filter(isPlainObject).map(t => sanitizeTemplate(t, t.isUnsaved));
+                        });
                         this.retireOldBuiltinTemplates();
                         console.log('Successfully loaded threat templates from local storage');
                     } catch (e) {
@@ -9650,7 +9901,7 @@
                 this.showTemplatesMissingAlertIfNeeded();
             }
 
-            /** Drops unmodified copies of built-in templates whose wording was replaced in 1.8.0. */
+            /** Drops unmodified copies of built-in templates from before 1.9.0 (they had no ids); the new ones are merged in. */
             retireOldBuiltinTemplates() {
                 let retired;
                 try { retired = JSON.parse(document.getElementById('retired-builtin-templates').textContent); } catch (_) { return; }
@@ -9659,6 +9910,7 @@
                     const list = this.threatSuggestions[type];
                     if (!Array.isArray(list)) return;
                     this.threatSuggestions[type] = list.filter(t => {
+                        if (t.id) return true;
                         const old = retired[this.templateKey(type, t)];
                         const unmodified = old !== undefined && toText(t.desc).trim() === old.trim();
                         if (unmodified) removed++;
@@ -9733,12 +9985,16 @@
                     titleInput.value = '';
                     categoryInput.value = 'Spoofing';
                     descInput.value = '';
+                    document.getElementById('modal-template-controls').value = '';
+                    document.getElementById('modal-template-refs').value = '';
                     hiddenIndex.value = '-1';
                 } else {
                     titleLbl.innerHTML = '<i class="bi bi-pencil-square text-warning me-2"></i>Edit Threat Template';
                     titleInput.value = templateObj.title || '';
                     categoryInput.value = templateObj.category || 'Spoofing';
                     descInput.value = templateObj.desc || '';
+                    document.getElementById('modal-template-controls').value = (templateObj.controls || []).join('\n');
+                    document.getElementById('modal-template-refs').value = (templateObj.refs || []).join(', ');
 
                     let foundType = type;
                     let index = -1;
@@ -9775,7 +10031,11 @@
                     this.threatSuggestions[type] = [];
                 }
 
-                const templateObj = { category, title, desc, isUnsaved: true };
+                const controls = document.getElementById('modal-template-controls').value.split('\n').map(s => s.trim()).filter(Boolean);
+                const refs = document.getElementById('modal-template-refs').value.split(',').map(s => s.trim()).filter(Boolean);
+                const previousTpl = index >= 0 ? this.threatSuggestions[type][index] : null;
+                // Keep id, conditions, subtypes, example and suggested risk; mark as edited so built-in updates do not overwrite it.
+                const templateObj = sanitizeTemplate(Object.assign({}, previousTpl || {}, { category, title, desc, controls, refs, userEdited: true }), true);
 
                 if (index === -1) {
                     this.threatSuggestions[type].push(templateObj);

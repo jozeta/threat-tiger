@@ -3,6 +3,25 @@
 The version shown in Help & License comes from `APP_VERSION` in `threat-tiger.html`. Exported JSON files record it as `appVersion`.
 Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
+## 1.9.0 — unreleased (branch `audit-fixes`)
+
+### Threat library (rewritten from research)
+- **86 concrete threats** (was 58) across processes, data stores, external entities, infrastructure and data flows. Each says what the attacker does and what it leads to, lists **typical controls**, cites **CWE / CAPEC / MITRE ATT&CK / OWASP** references (clickable), suggests likelihood × impact, and — where well documented — a **real incident** (e.g. Capital One 2019, Uber 2022, Optus 2022, MOVEit 2023, Storm-0558 2023, Okta 2023, Code Spaces 2014).
+- Added threats that cause most real breaches and were missing: broken object-/function-level authorization (IDOR/BOLA/BFLA), mass assignment, token validation flaws, hard-coded secrets, sensitive data in logs, over-privileged service identities, public storage buckets, internet-exposed databases, ransomware deleting backups, MFA fatigue, credential stuffing, vendor access, cloud metadata credential theft, exposed management interfaces, lateral movement, webhook signature checks, TLS validation disabled, denial-of-wallet, and more.
+- Removed or merged: duplicates (SQL / command injection twice), threats on the wrong element (XSS on external entities), obsolete ones (TLS renegotiation DoS), out-of-scope ones (BGP hijacking), and text without a concrete attack or control. Curation notes and sources: `docs/threat-templates.md`.
+
+### Threat suggestions
+- The 17 hard-coded rules are now **conditions inside the templates** (`when`), editable in JSON: security switches, boundary crossings, connected flows and their ends, subtypes, and `any`/`all`/`not`. 26 templates are triggered by the model; reasons are generated ("handles sensitive data; incoming flow "HTTPS" crosses "DMZ"").
+- **Subtype recognition** from icon and name (API, web app, identity provider, CI/CD, S3/bucket, database, NoSQL, cache, queue, secrets, logs, administrator, partner system, mobile, IoT, cloud host, network device, …); the panel shows what a component was recognised as and ranks matching threats in a **"Relevant for this …"** section.
+- **Not applicable with a reason**: decisions are stored on the component/flow (who, when, why), shown in a collapsible list with Restore, counted in Insights and listed in the Markdown report. Undoable.
+- **Search** across titles, descriptions, controls and references; expandable controls and real-world example per card; references link to CWE, CAPEC, ATT&CK and OWASP.
+- Threats created from a template carry the description, controls, example, references and reason; CSV export gains a References column; the Markdown report lists references per threat.
+- Template editor keeps references, controls and conditions, and has fields for references and controls.
+- **Built-in templates now update automatically** in browsers (matched by id) unless the user edited their copy; unmodified templates from 1.7/1.8 are replaced.
+
+### Fixed
+- Undo/redo no longer clears the selection when the selected component still exists.
+
 ## 1.8.0 — unreleased (branch `audit-fixes`)
 
 ### Changed

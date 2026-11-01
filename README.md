@@ -14,7 +14,7 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 *   **Interactive architecture canvas**: drag and drop processes, data stores, external entities, trust zones and trust boundary lines, infrastructure nodes, steps, text, flowchart shapes, swimlanes and your own images. More than 200 icons (servers, code, web, infrastructure, databases, security, people).
 *   **Trust-boundary analysis**: data flows that cross a trust zone or boundary line are detected live and marked on the canvas.
-*   **Threat suggestions**: per-component STRIDE templates, plus **rule-based suggestions** that react to your security settings (encryption, authentication, MFA, VPN, PII, credentials, encryption at rest, crown jewels…) and to boundary crossings — each with the reason it was suggested and suggested controls.
+*   **Threat suggestions**: a curated library of 86 concrete threats (OWASP, CWE, MITRE ATT&CK references; real-world incidents as examples; typical controls). Suggestions are ranked: **triggered by your model** (security switches, boundary crossings, connected flows — with the reason), **relevant for this component** (recognised from its icon and name, e.g. API, S3 bucket, administrator), then the rest. Every suggestion can be added or marked **not applicable** with a reason, which is kept in the model and the report. See [docs/threat-templates.md](docs/threat-templates.md).
 *   **Threat register**: likelihood × impact scoring, status and mitigation tracking, search and filters (severity, STRIDE category, status, "needs review"). Click a threat to jump to its component.
 *   **Insights**: summary tiles, open-risk heat map, STRIDE coverage per component, boundary crossings and model checks (unconnected components, duplicate names, …).
 *   **Undo / redo**, automatic **History** snapshots, and an activity log.
@@ -73,7 +73,7 @@ Then open <http://localhost:8080/>.
 
 ## 💻 Development
 
-The app is `threat-tiger.html` (HTML, CSS and vanilla JavaScript in one file). Front-end libraries — Bootstrap 5.3.2, Bootstrap Icons 1.13.2 and Font Awesome 6.5.1 — are bundled in `vendor/` (see `vendor/README.md`). `threat_templates.json` holds the threat templates; the rule-based suggestions are the `THREAT_RULES` list in `threat-tiger.html`.
+The app is `threat-tiger.html` (HTML, CSS and vanilla JavaScript in one file). Front-end libraries — Bootstrap 5.3.2, Bootstrap Icons 1.13.2 and Font Awesome 6.5.1 — are bundled in `vendor/` (see `vendor/README.md`). `threat_templates.json` holds the threat library, including the conditions that trigger suggestions — its format and curation are described in [docs/threat-templates.md](docs/threat-templates.md).
 
 Development tooling is optional and only needs Node.js:
 

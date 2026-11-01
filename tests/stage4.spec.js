@@ -127,3 +127,15 @@ test('reworded built-in templates replace old unmodified copies but keep user-ed
   expect(titles).toContain('Unauthenticated Inter-Process Communication Endpoint Exposure');   // user-edited: kept
   for (const t of current) expect(titles).toContain(t);
 });
+
+test('undo keeps the selection when the selected component still exists', async ({ page }) => {
+  const demo = demoSession();
+  await openApp(page, { session: demo });
+  const id = demo.elements.find((e) => e.type === 'process').id;
+  await page.evaluate((i) => { app.state.selectedElementIds = [i]; app.state.selectedFlowId = null; app.refreshAppViewVisualWorkspace(); }, id);
+  await page.fill('#props-input-name', 'Renamed for undo');
+  await page.locator('#props-input-name').press('Tab');
+  await page.click('#btn-undo');
+  expect(await page.evaluate(() => app.state.selectedElementIds)).toEqual([id]);
+  await expect(page.locator('#props-input-name')).toHaveValue(demo.elements.find((e) => e.id === id).name);
+});

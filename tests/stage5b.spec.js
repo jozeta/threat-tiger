@@ -57,10 +57,12 @@ test('FEAT-002: suggestions appear in Threat Templates and "Add all" is idempote
   await openApp(page, { session: smallModel() });
   await page.evaluate(() => { app.state.selectedElementIds = ['api']; app.state.selectedFlowId = null; app.refreshAppViewVisualWorkspace(); });
   await page.click('button[data-bs-target="#tab-panel-suggest"]');
-  await expect(page.locator('#box-threat-suggestions-list')).toContainText('Triggered by this model (4)');
+  // API: runs as admin (P01), logging off (P02), sensitive + unauthenticated inbound (P03),
+  // crown jewel reachable across the DMZ edge (P04), sensitive + inbound crossing -> object-level authorization (P05).
+  await expect(page.locator('#suggest-section-triggered')).toContainText('Triggered by this model (5)');
   await page.click('#btn-add-triggered');
   const t = await page.evaluate(() => app.state.threats.map((x) => ({ ruleId: x.ruleId, elementId: x.elementId, status: x.status })));
-  expect(t).toHaveLength(4);
+  expect(t.map((x) => x.ruleId).sort()).toEqual(['TT-P01', 'TT-P02', 'TT-P03', 'TT-P04', 'TT-P05']);
   expect(t.every((x) => x.ruleId && x.elementId === 'api' && x.status === 'Open / Unmitigated')).toBe(true);
   await expect(page.locator('#btn-add-triggered')).toHaveCount(0);   // all added
   await page.click('#btn-undo');
