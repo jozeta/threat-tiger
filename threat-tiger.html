@@ -1526,7 +1526,7 @@
             <div class="d-flex align-items-center">
                 <span class="navbar-brand mb-0 h1 fs-5 me-1"><img src="Threat_tigerS.png"></i>Threat Tiger </span>
                 <span class="text-white-50 align-self-center mt-1 me-2" style="font-size: 11px; letter-spacing: 0.3px;">
-                    Threat Modeling With A Bite</span>
+                    Threat Modeling With A Bite · v<span data-app-version></span></span>
 
                 <div id="operator-container-div"
                     class="d-flex align-items-center gap-1 border-start border-secondary ps-3 ms-1 me-3">
@@ -1544,6 +1544,8 @@
                         class="bi bi-file-earmark-arrow-up me-1"></i>Import JSON</button>
                 <button class="btn btn-sm btn-outline-light" id="btn-export"><i
                         class="bi bi-file-earmark-arrow-down me-1"></i>Export JSON</button>
+                <button class="btn btn-sm btn-outline-light" id="btn-snapshots" title="Restore an earlier automatic snapshot"><i
+                        class="bi bi-clock-history me-1"></i>History</button>
                 <button class="btn btn-sm btn-outline-danger" id="btn-reset-session"><i
                         class="bi bi-trash me-1"></i>Reset Canvas</button>
                 <button class="btn btn-sm btn-primary" id="btn-help-trigger"><i
@@ -3072,7 +3074,7 @@
                 <div class="modal-header bg-dark text-white py-3">
                     <h5 class="modal-title fw-bold fs-6 d-flex align-items-center"><i
                             class="bi bi-question-circle-fill text-primary me-2"></i>Documentation &amp; License
-                        Manifest</h5>
+                        Manifest <span class="badge bg-secondary ms-2 fw-normal">v<span data-app-version></span></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div><img src="Threat_tiger.png">
@@ -3117,6 +3119,7 @@
                         NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
                         DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
                         OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.<br><br>
+                        <b>VERSION:</b> Threat Tiger <span data-app-version></span><br><br>
                         <b>FEEDBACK &amp; SUPPORT:</b><br>
                         For bug reports, feature requests, or any other feedback, please visit the project's GitHub page
                         at <a href="https://github.com/jozeta/threat-tiger"
@@ -3132,9 +3135,315 @@
         </div>
     </div>
 
+    <!-- Notifications (replaces alert()) -->
+    <div id="app-toast-container" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 2000;"></div>
+
+    <!-- Shown when the browser refuses to save (BUG-006) -->
+    <div id="alert-storage-failure" class="alert alert-danger d-none position-fixed top-0 start-50 translate-middle-x mt-5 shadow"
+        role="alert" style="z-index: 2100; max-width: 640px;">
+        <div class="d-flex align-items-start gap-2">
+            <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+            <div class="small">
+                <strong>Your changes are not being saved.</strong>
+                <span id="alert-storage-failure-reason"></span>
+                Export the model now so nothing is lost, then remove large images.
+            </div>
+            <button type="button" class="btn btn-sm btn-light text-nowrap" id="btn-storage-failure-export">Export JSON</button>
+        </div>
+    </div>
+
+    <!-- Delete confirmation (BUG-010) -->
+    <div class="modal fade" id="modal-confirm-delete" tabindex="-1" aria-labelledby="modal-confirm-delete-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-confirm-delete-title">Delete selection and its threats?</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body small" id="modal-confirm-delete-body"></div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-danger" id="btn-confirm-delete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Snapshot history (FEAT-018) -->
+    <div class="modal fade" id="modal-snapshots" tabindex="-1" aria-labelledby="modal-snapshots-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-snapshots-title"><i class="bi bi-clock-history me-2"></i>History</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="small text-muted mb-2">Snapshots are saved in this browser automatically (every few minutes, and before imports, restores and deletions of threats). The latest 25 are kept.</p>
+                    <div class="list-group" id="snapshot-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        // ── App identity ──────────────────────────────────────────────────────────
+        const APP_VERSION = '1.1.0';
+        const SCHEMA_VERSION = 1;
+
+        // ── Output encoding (SEC-001 / SEC-002) ───────────────────────────────────
+        /** Escape any value for safe use inside HTML text or a quoted attribute. */
+        function esc(value) {
+            if (value === null || value === undefined) return '';
+            return String(value)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+        }
+        /** Only Bootstrap Icons class names (e.g. "bi-server") are allowed as icons. */
+        function safeIcon(value, fallback = 'bi-server') {
+            return /^bi-[a-z0-9-]+$/.test(String(value || '')) ? String(value) : fallback;
+        }
+        /** Only hex colours or plain colour keywords may reach style/fill attributes. */
+        function safeColor(value, fallback = '#0dcaf0') {
+            const v = String(value || '').trim();
+            return (/^#[0-9a-f]{3,8}$/i.test(v) || /^[a-z]{3,20}$/i.test(v)) ? v : fallback;
+        }
+        function toNumber(value, fallback) {
+            const n = Number(value);
+            return Number.isFinite(n) ? n : fallback;
+        }
+        function toText(value) {
+            if (typeof value === 'string') return value;
+            if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+            return '';
+        }
+        function isPlainObject(value) {
+            return value !== null && typeof value === 'object' && !Array.isArray(value);
+        }
+        /** Shallow copy that never carries prototype-altering keys from untrusted JSON. */
+        function copyPlain(obj) {
+            const out = {};
+            Object.keys(obj).forEach(k => { if (k !== '__proto__' && k !== 'constructor' && k !== 'prototype') out[k] = obj[k]; });
+            return out;
+        }
+        /** Images may come from data:image URLs, http(s) URLs, or plain relative file names. */
+        function sanitizeImageUrl(value) {
+            const v = toText(value).trim();
+            if (!v) return '';
+            if (/^data:image\/(png|jpe?g|gif|webp|svg\+xml|bmp);/i.test(v)) return v;
+            if (/^https?:\/\//i.test(v)) return v;
+            if (/^[\w.\/-]+\.(png|jpe?g|gif|webp|svg)$/i.test(v) && !v.includes('..')) return v;
+            return '';
+        }
+        function isExternalUrl(value) {
+            return /^https?:\/\//i.test(toText(value));
+        }
+
+        // ── Model normalisation (ARCH-002 / BUG-001 / BUG-011) ────────────────────
+        const STRIDE_CATEGORIES = ['Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'];
+        const THREAT_STATUSES = ['Open / Unmitigated', 'Partially mitigated', 'Mitigated / Resolved'];
+
+        function normalizeAnchor(id) {
+            const v = toText(id);
+            if (!v) return v;
+            const dir = v.split('-')[0];
+            return ['top', 'bottom', 'left', 'right'].includes(dir) ? dir : v;
+        }
+        function normalizeSecProps(raw) {
+            const out = {};
+            if (!isPlainObject(raw)) return out;
+            Object.keys(raw).forEach(k => {
+                if (k === '__proto__' || k === 'constructor' || k === 'prototype') return;
+                out[k] = (raw[k] === true || raw[k] === 'true') ? 'true' : 'false';
+            });
+            return out;
+        }
+        function clampInt(value, min, max, fallback) {
+            const n = parseInt(value, 10);
+            return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
+        }
+
+        function normalizeElement(raw, ctx) {
+            if (!isPlainObject(raw)) { ctx.warn('Skipped a component entry that was not an object.'); return null; }
+            const id = toText(raw.id).trim();
+            if (!id) { ctx.warn(`Skipped a component without an id ("${toText(raw.name) || 'unnamed'}").`); return null; }
+            const el = copyPlain(raw);
+            el.id = id;
+            el.type = toText(raw.type) || 'process';
+            el.name = toText(raw.name);
+            el.x = toNumber(raw.x, 0); el.y = toNumber(raw.y, 0);
+            ['width', 'height', 'x2', 'y2', 'bendX', 'bendY', 'textOffset', 'fontSize', 'stepNumber', 'zIndex'].forEach(k => {
+                if (k in raw) el[k] = toNumber(raw[k], undefined);
+            });
+            if ('notes' in raw) el.notes = toText(raw.notes);
+            if ('secProps' in raw) el.secProps = normalizeSecProps(raw.secProps);
+            if ('icon' in raw) el.icon = safeIcon(raw.icon);
+            if ('iconColor' in raw) el.iconColor = safeColor(raw.iconColor);
+            if ('circleColor' in raw) el.circleColor = toText(raw.circleColor).replace(/[^a-z]/gi, '') || 'blue';
+            if ('imageUrl' in raw) {
+                el.imageUrl = sanitizeImageUrl(raw.imageUrl);
+                if (toText(raw.imageUrl) && !el.imageUrl) ctx.warn(`Removed an unsupported image address from "${el.name || id}".`);
+            }
+            ['columns', 'rows'].forEach(k => { if (k in raw) el[k] = Array.isArray(raw[k]) ? raw[k].map(toText) : []; });
+            ['colWidths', 'rowHeights'].forEach(k => { if (k in raw) el[k] = Array.isArray(raw[k]) ? raw[k].map(v => toNumber(v, 200)) : undefined; });
+            return el;
+        }
+
+        function normalizeFlow(raw, ctx) {
+            if (!isPlainObject(raw)) { ctx.warn('Skipped a data flow entry that was not an object.'); return null; }
+            const id = toText(raw.id).trim();
+            if (!id) { ctx.warn('Skipped a data flow without an id.'); return null; }
+            const f = copyPlain(raw);
+            f.id = id;
+            f.name = toText(raw.name);
+            f.sourceId = toText(raw.sourceId); f.targetId = toText(raw.targetId);
+            if (!ctx.nodeIds.has(f.sourceId) || !ctx.nodeIds.has(f.targetId)) {
+                ctx.warn(`Skipped data flow "${f.name || id}" because one of its ends is missing.`);
+                return null;
+            }
+            f.sourceAnchor = normalizeAnchor(raw.sourceAnchor);
+            f.targetAnchor = normalizeAnchor(raw.targetAnchor);
+            f.ports = toText(raw.ports);
+            f.notes = toText(raw.notes);
+            f.secProps = normalizeSecProps(raw.secProps);
+            ['bendX', 'bendY', 'textOffset', 'thickness'].forEach(k => { if (k in raw) f[k] = toNumber(raw[k], undefined); });
+            f.points = Array.isArray(raw.points)
+                ? raw.points.filter(isPlainObject).map(p => ({ x: toNumber(p.x, 0), y: toNumber(p.y, 0) }))
+                : [];
+            if ('color' in raw) f.color = toText(raw.color).replace(/[^a-z]/gi, '');
+            return f;
+        }
+
+        function normalizeThreat(raw, ctx) {
+            if (!isPlainObject(raw)) { ctx.warn('Skipped a threat entry that was not an object.'); return null; }
+            const t = copyPlain(raw);
+            t.id = toText(raw.id).trim();
+            t.title = toText(raw.title).trim();
+            t.category = toText(raw.category).trim();
+            t.status = toText(raw.status).trim();
+            t.elementId = toText(raw.elementId);
+            t.desc = toText(raw.desc);
+            t.mitigationExplanation = toText(raw.mitigationExplanation);
+            t.likelihood = String(clampInt(raw.likelihood, 1, 5, 3));
+            t.impact = String(clampInt(raw.impact, 1, 5, 3));
+            const risk = ThreatModelSession.calculateRisk(t.likelihood, t.impact);
+            t.riskScore = risk.score; t.riskLabel = risk.label;
+
+            const problems = [];
+            if (!t.title) problems.push('missing-title');
+            if (!STRIDE_CATEGORIES.includes(t.category)) problems.push('unknown-category');
+            if (!THREAT_STATUSES.includes(t.status)) problems.push('unknown-status');
+            if (!ctx.targetIds.has(t.elementId)) problems.push('missing-target');
+            return problems.length ? applyThreatRecordPolicy(t, problems, ctx) : t;
+        }
+
+        /**
+         * Decide what happens to a threat record that has problems after loading or importing.
+         *
+         * @param {object}   t        The threat, already type-safe: title/category/status/elementId are strings
+         *                            (possibly empty), likelihood/impact/riskScore/riskLabel are valid.
+         * @param {string[]} problems Any of: 'missing-title', 'unknown-category', 'unknown-status', 'missing-target'.
+         * @param {object}   ctx      ctx.warn(message) adds a line to the import summary shown to the user.
+         * @returns {object|null}     The threat to keep (possibly modified), or null to drop it.
+         *
+         * Trade-off: repairing keeps someone's analysis (but may show odd values until reviewed);
+         * dropping keeps the register clean (but silently loses work unless the warning is read).
+         */
+        function applyThreatRecordPolicy(t, problems, ctx) {
+            // TODO(user): implement the repair-or-drop policy (5–10 lines). Placeholder keeps the record unchanged.
+            return t;
+        }
+
+        /** Turns any parsed JSON into a safe, complete session object. Throws only for non-objects. */
+        function normalizeSession(raw) {
+            if (!isPlainObject(raw)) throw new Error('The file does not contain a Threat Tiger model.');
+            const warnings = [];
+            const ctx = { warn: (m) => warnings.push(m) };
+            const listOf = (key) => {
+                if (raw[key] === undefined || raw[key] === null) return [];
+                if (Array.isArray(raw[key])) return raw[key];
+                warnings.push(`Ignored "${key}" because it is not a list.`);
+                return [];
+            };
+            if (toNumber(raw.schemaVersion, 0) > SCHEMA_VERSION) {
+                warnings.push(`This file was created by a newer version of Threat Tiger (format ${raw.schemaVersion}); some details may not load.`);
+            }
+
+            const seen = new Set();
+            const elements = listOf('elements').map(e => normalizeElement(e, ctx)).filter(e => {
+                if (!e) return false;
+                if (seen.has(e.id)) { ctx.warn(`Skipped a duplicate component id "${e.id}".`); return false; }
+                seen.add(e.id); return true;
+            });
+            ctx.nodeIds = new Set(elements.map(e => e.id));
+            const flows = listOf('flows').map(f => normalizeFlow(f, ctx)).filter(f => {
+                if (!f) return false;
+                if (seen.has(f.id)) { ctx.warn(`Skipped a duplicate data flow id "${f.id}".`); return false; }
+                seen.add(f.id); return true;
+            });
+            ctx.targetIds = new Set([...ctx.nodeIds, ...flows.map(f => f.id)]);
+            const threats = listOf('threats').map(t => normalizeThreat(t, ctx)).filter(Boolean);
+
+            // Threat ids must be present and unique: renumber any that are not.
+            const threatIds = new Set();
+            let maxNum = 0;
+            threats.forEach(t => { const m = /^th-(\d+)$/.exec(t.id); if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10)); });
+            threats.forEach(t => {
+                if (!t.id || threatIds.has(t.id)) {
+                    const fresh = `th-${String(++maxNum).padStart(3, '0')}`;
+                    if (t.id) ctx.warn(`Renumbered duplicate threat id "${t.id}" to "${fresh}".`);
+                    t.id = fresh;
+                }
+                threatIds.add(t.id);
+            });
+
+            const activityLog = listOf('activityLog').filter(isPlainObject).map(l => ({
+                timestamp: toText(l.timestamp), operator: toText(l.operator), type: toText(l.type), message: toText(l.message)
+            }));
+
+            const session = {
+                projectTitle: toText(raw.projectTitle) || 'New Threat Model Assessment Project',
+                scopeDefinition: toText(raw.scopeDefinition) || 'Not Defined',
+                participants: toText(raw.participants),
+                activeUser: toText(raw.activeUser),
+                activityLog, elements, flows, threats,
+                selectedElementIds: [], selectedFlowId: null
+            };
+            return { session, warnings };
+        }
+
+        // ── Local snapshots in IndexedDB (FEAT-018) ───────────────────────────────
+        const SnapshotStore = {
+            db: null,
+            request(req) { return new Promise((resolve, reject) => { req.onsuccess = () => resolve(req.result); req.onerror = () => reject(req.error); }); },
+            open() {
+                if (this.db) return Promise.resolve(this.db);
+                if (!window.indexedDB) return Promise.reject(new Error('IndexedDB is not available'));
+                const req = indexedDB.open('threat-tiger', 1);
+                req.onupgradeneeded = () => req.result.createObjectStore('snapshots', { keyPath: 'id', autoIncrement: true });
+                return this.request(req).then(db => (this.db = db));
+            },
+            async add(snapshot, keep = 25) {
+                const db = await this.open();
+                await this.request(db.transaction('snapshots', 'readwrite').objectStore('snapshots').add(snapshot));
+                const keys = await this.request(db.transaction('snapshots').objectStore('snapshots').getAllKeys());
+                if (keys.length > keep) {
+                    const store = db.transaction('snapshots', 'readwrite').objectStore('snapshots');
+                    keys.slice(0, keys.length - keep).forEach(k => store.delete(k));
+                }
+            },
+            async list() {
+                const db = await this.open();
+                const all = await this.request(db.transaction('snapshots').objectStore('snapshots').getAll());
+                return all.sort((a, b) => b.id - a.id);
+            },
+            async get(id) {
+                const db = await this.open();
+                return this.request(db.transaction('snapshots').objectStore('snapshots').get(id));
+            }
+        };
+
         class ThreatModelSession {
             constructor() {
                 this.projectTitle = "New Threat Model Assessment Project";
@@ -3250,6 +3559,11 @@
                 this.sessionMetaModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-session-context'));
                 this.helpModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-help'));
                 this.templateModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-edit-template'));
+                this.confirmDeleteModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-confirm-delete'));
+                this.snapshotsModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-snapshots'));
+                document.querySelectorAll('[data-app-version]').forEach(el => { el.textContent = APP_VERSION; });
+                document.getElementById('btn-snapshots').addEventListener('click', () => this.openSnapshotsModal());
+                document.getElementById('btn-storage-failure-export').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile());
 
                 this.bindUiEvents(); this.bindCanvasEvents(); this.bindKeyboardShortcuts();
                 this.bindWindowResizerEvents(); this.bindPrintScalingEngine();
@@ -3260,7 +3574,10 @@
                 this.applyCanvasTheme();
                 this.updateGridSettingsUiAndPattern();
 
-                if (!this.loadSessionFromLocalStorage() || this.state.elements.length === 0) {
+                let hasStoredSession = false;
+                try { hasStoredSession = this.loadSessionFromLocalStorage(); }
+                catch (err) { this.quarantineStoredSession(err); }
+                if (!hasStoredSession || this.state.elements.length === 0) {
                     this.state = new ThreatModelSession();
                     this.saveSessionToLocalStorage();
                 }
@@ -3273,7 +3590,8 @@
                 } else {
                     this.assertValidOperatorProfileAuthentication();
                 }
-                this.refreshAppViewVisualWorkspace();
+                try { this.refreshAppViewVisualWorkspace(); }
+                catch (err) { this.quarantineStoredSession(err); this.refreshAppViewVisualWorkspace(); }
                 this.isCanvasUnsaved = false;
                 this.bindBeforeUnloadEvent();
             }
@@ -3702,10 +4020,10 @@
                     else if (log.type === "CONFIGURE") actionBadgeClass = "bg-primary text-light";
 
                     tr.innerHTML = `
-                        <td class="text-muted" style="font-size:11px;">${log.timestamp}</td>
-                        <td><span class="fw-bold text-dark"><i class="bi bi-person-fill me-1"></i>${log.operator}</span></td>
-                        <td><span class="badge ${actionBadgeClass} w-100 d-block text-center extra-small">${log.type}</span></td>
-                        <td class="text-secondary fw-medium" style="word-break: break-word;">${log.message}</td>
+                        <td class="text-muted" style="font-size:11px;">${esc(log.timestamp)}</td>
+                        <td><span class="fw-bold text-dark"><i class="bi bi-person-fill me-1"></i>${esc(log.operator)}</span></td>
+                        <td><span class="badge ${actionBadgeClass} w-100 d-block text-center extra-small">${esc(log.type)}</span></td>
+                        <td class="text-secondary fw-medium" style="word-break: break-word;">${esc(log.message)}</td>
                     `;
                     this.dom.activityLedgerTbody.appendChild(tr);
                 });
@@ -3990,9 +4308,9 @@
                     cardsHtml += `
                         <div class="ptr-card">
                             <div class="ptr-card-head">
-                                <div class="ptr-id">${t.id}</div>
+                                <div class="ptr-id">${esc(t.id)}</div>
                                 <div class="ptr-title">${crownHtml}${this.escapeHtml(t.title)}</div>
-                                <div class="ptr-stride-badge" style="background:${strideColor}">${t.category}</div>
+                                <div class="ptr-stride-badge" style="background:${strideColor}">${esc(t.category)}</div>
                             </div>
                             <div class="ptr-meta-grid">
                                 <div class="ptr-meta-cell">
@@ -4009,11 +4327,11 @@
                                 </div>
                                 <div class="ptr-meta-cell">
                                     <span class="ptr-meta-label">Likelihood / Impact</span>
-                                    <span class="ptr-meta-value">${t.likelihood} / ${t.impact}</span>
+                                    <span class="ptr-meta-value">${esc(t.likelihood)} / ${esc(t.impact)}</span>
                                 </div>
                                 <div class="ptr-meta-cell" style="grid-column: 1 / -1;">
                                     <span class="ptr-meta-label">Remediation Status</span>
-                                    <span class="ptr-meta-value ${statusClass}">${statusIcon} ${t.status}</span>
+                                    <span class="ptr-meta-value ${statusClass}">${statusIcon} ${esc(t.status)}</span>
                                 </div>
                             </div>
                             ${descHtml}
@@ -4032,12 +4350,7 @@
             }
 
             escapeHtml(str) {
-                if (!str) return '';
-                return String(str)
-                    .replace(/&/g, '&amp;')
-                    .replace(/</g, '&lt;')
-                    .replace(/>/g, '&gt;')
-                    .replace(/"/g, '&quot;');
+                return esc(str);
             }
 
             bindWindowResizerEvents() {
@@ -4526,7 +4839,8 @@
                     if (this.state.selectedElementIds.length === 1) {
                         const item = this.state.elements.find(el => el.id === this.state.selectedElementIds[0]);
                         if (item && item.type === 'custom_image') {
-                            item.imageUrl = ev.target.value;
+                            item.imageUrl = sanitizeImageUrl(ev.target.value);
+                            if (ev.target.value.trim() && !item.imageUrl) this.notify('That image address is not supported. Use an https:// link or upload a file.', 'warning');
                             this.logEvent("CHANGE", `Updated custom image URL path source for component "${item.name}"`);
                             this.renderSvgDiagramElements(); this.saveSessionToLocalStorage();
                         }
@@ -4540,8 +4854,8 @@
                             const file = ev.target.files[0];
                             if (file) {
                                 const reader = new FileReader();
-                                reader.onload = (e) => {
-                                    item.imageUrl = e.target.result;
+                                reader.onload = async (e) => {
+                                    item.imageUrl = await this.downscaleImageDataUrl(e.target.result, 1024);
                                     document.getElementById('props-input-image-url').value = item.imageUrl;
                                     this.logEvent("CHANGE", `Uploaded local file image data source for component "${item.name}"`);
                                     this.renderSvgDiagramElements(); this.saveSessionToLocalStorage();
@@ -5577,30 +5891,57 @@
 
             clearActiveSelectionPointers() { this.state.selectedElementIds = []; this.state.selectedFlowId = null; this.refreshAppViewVisualWorkspace(); }
 
-            executeTargetedActiveSelectionRemovalTask() {
-                if (this.state.selectedElementIds.length > 0) {
-                    this.state.selectedElementIds.forEach(id => {
-                        const targetNode = this.state.elements.find(e => e.id === id);
-                        const targetNodeName = targetNode ? targetNode.name : id;
-
-                        this.state.threats = this.state.threats.filter(t => t.elementId !== id);
-                        this.state.flows = this.state.flows.filter(f => f.sourceId !== id && f.targetId !== id);
-                        this.state.elements = this.state.elements.filter(e => e.id !== id);
-
-                        this.logEvent("REMOVE", `Purged structural node asset element: "${targetNodeName}" (and disconnected relevant routing lines and mapped risks records)`);
-                    });
-                    this.state.selectedElementIds = [];
+            /** Works out everything a deletion of the current selection would remove. */
+            planSelectionRemoval() {
+                const nodeIds = new Set(this.state.selectedElementIds);
+                const flowIds = new Set();
+                if (nodeIds.size > 0) {
+                    this.state.flows.forEach(f => { if (nodeIds.has(f.sourceId) || nodeIds.has(f.targetId)) flowIds.add(f.id); });
                 } else if (this.state.selectedFlowId) {
-                    const targetFlow = this.state.flows.find(f => f.id === this.state.selectedFlowId);
-                    const targetFlowName = targetFlow ? targetFlow.name : this.state.selectedFlowId;
-
-                    this.state.threats = this.state.threats.filter(t => t.elementId !== this.state.selectedFlowId);
-                    this.state.flows = this.state.flows.filter(f => f.id !== this.state.selectedFlowId);
-                    this.state.selectedFlowId = null;
-
-                    this.logEvent("REMOVE", `Dropped active connection pipeline data track from session state: "${targetFlowName}"`);
+                    flowIds.add(this.state.selectedFlowId);
+                } else {
+                    return null;
                 }
-                this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace();
+                const targetIds = new Set([...nodeIds, ...flowIds]);
+                const threats = this.state.threats.filter(t => targetIds.has(t.elementId));
+                return { nodeIds, flowIds, targetIds, threats };
+            }
+
+            executeTargetedActiveSelectionRemovalTask() {
+                const plan = this.planSelectionRemoval();
+                if (!plan) return;
+                if (plan.threats.length > 0) { this.confirmSelectionRemoval(plan); return; }
+                this.applySelectionRemoval(plan);
+            }
+
+            confirmSelectionRemoval(plan) {
+                const parts = [];
+                if (plan.nodeIds.size) parts.push(`${plan.nodeIds.size} component${plan.nodeIds.size === 1 ? '' : 's'}`);
+                if (plan.flowIds.size) parts.push(`${plan.flowIds.size} data flow${plan.flowIds.size === 1 ? '' : 's'}`);
+                parts.push(`${plan.threats.length} linked threat${plan.threats.length === 1 ? '' : 's'}`);
+                const body = document.getElementById('modal-confirm-delete-body');
+                body.textContent = `This deletes ${parts.join(', ')}. Threat descriptions and mitigation notes are deleted too. A snapshot is saved first, so you can restore it from History.`;
+                const btn = document.getElementById('btn-confirm-delete');
+                const fresh = btn.cloneNode(true); btn.replaceWith(fresh);
+                fresh.addEventListener('click', () => { this.confirmDeleteModal.hide(); this.applySelectionRemoval(plan); });
+                this.confirmDeleteModal.show();
+            }
+
+            applySelectionRemoval(plan) {
+                if (plan.threats.length > 0) this.takeSnapshot('Before deleting components', true);
+                const nodeNames = this.state.elements.filter(e => plan.nodeIds.has(e.id)).map(e => e.name || e.id);
+                const flowNames = this.state.flows.filter(f => plan.flowIds.has(f.id)).map(f => f.name || f.id);
+                this.state.threats = this.state.threats.filter(t => !plan.targetIds.has(t.elementId));
+                this.state.flows = this.state.flows.filter(f => !plan.flowIds.has(f.id));
+                this.state.elements = this.state.elements.filter(e => !plan.nodeIds.has(e.id));
+                this.state.selectedElementIds = []; this.state.selectedFlowId = null;
+
+                const list = (names) => names.slice(0, 5).map(n => `"${n}"`).join(', ') + (names.length > 5 ? ` and ${names.length - 5} more` : '');
+                const message = plan.nodeIds.size
+                    ? `Deleted ${nodeNames.length} component(s) ${list(nodeNames)}, ${flowNames.length} connected flow(s) and ${plan.threats.length} linked threat(s)`
+                    : `Deleted data flow ${list(flowNames)} and ${plan.threats.length} linked threat(s)`;
+                this.logEvent("REMOVE", message);
+                this.refreshAppViewVisualWorkspace();
             }
 
             changeSelectionZDepth(action) {
@@ -5845,7 +6186,7 @@
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'd-flex gap-1 align-items-center mb-1';
                     itemDiv.innerHTML = `
-                        <input type="text" class="form-control form-control-sm py-0 px-1 shadow-none col-rename-input" style="font-size: 11px;" value="${colName}" data-index="${index}">
+                        <input type="text" class="form-control form-control-sm py-0 px-1 shadow-none col-rename-input" style="font-size: 11px;" value="${esc(colName)}" data-index="${index}">
                         <button type="button" class="btn btn-xs btn-outline-danger p-0 d-flex align-items-center justify-content-center col-delete-btn" style="width: 20px; height: 20px; font-size: 10px;" data-index="${index}" ${cols.length <= 1 ? 'disabled' : ''}>
                             <i class="bi bi-trash"></i>
                         </button>
@@ -5859,7 +6200,7 @@
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'd-flex gap-1 align-items-center mb-1';
                     itemDiv.innerHTML = `
-                        <input type="text" class="form-control form-control-sm py-0 px-1 shadow-none row-rename-input" style="font-size: 11px;" value="${rowName}" data-index="${index}">
+                        <input type="text" class="form-control form-control-sm py-0 px-1 shadow-none row-rename-input" style="font-size: 11px;" value="${esc(rowName)}" data-index="${index}">
                         <button type="button" class="btn btn-xs btn-outline-danger p-0 d-flex align-items-center justify-content-center row-delete-btn" style="width: 20px; height: 20px; font-size: 10px;" data-index="${index}" ${rows.length <= 1 ? 'disabled' : ''}>
                             <i class="bi bi-trash"></i>
                         </button>
@@ -5869,6 +6210,8 @@
             }
 
             ensureColorMarkerExists(colorHex, thickness = 2) {
+                colorHex = safeColor(colorHex, '#212529');
+                thickness = toNumber(thickness, 2);
                 const defs = this.dom.svg.querySelector('defs');
                 const cleanHex = colorHex.replace('#', '');
                 const cleanThickness = thickness.toString().replace('.', '_');
@@ -6126,7 +6469,7 @@
                     let textX = (1 - t) * (1 - t) * bl.x + 2 * (1 - t) * t * ctrlX + t * t * bl.x2;
                     let textY = (1 - t) * (1 - t) * bl.y + 2 * (1 - t) * t * ctrlY + t * t * bl.y2;
                     const gText = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-                    gText.innerHTML = `<rect x="${textX - 65}" y="${textY - 9}" width="130" height="16" fill="white" /><text x="${textX}" y="${textY + 3}" fill="${bl.isDisabled ? '#6c757d' : '#b70918'}" font-size="10px" font-weight="bold" text-anchor="middle" style="pointer-events:none;">${bl.name.toUpperCase()}</text>`;
+                    gText.innerHTML = `<rect x="${textX - 65}" y="${textY - 9}" width="130" height="16" fill="white" /><text x="${textX}" y="${textY + 3}" fill="${bl.isDisabled ? '#6c757d' : '#b70918'}" font-size="10px" font-weight="bold" text-anchor="middle" style="pointer-events:none;">${esc(toText(bl.name).toUpperCase())}</text>`;
                     gText.addEventListener('click', (ev) => { ev.stopPropagation(); this.handleElementSelectionEvent(bl.id); });
                     this.dom.layerBoundaryLinesTexts.appendChild(gText);
                 });
@@ -6410,8 +6753,8 @@
                     if (showBadge) {
                         badgeHtml = `
                             <div class="${badgeClass}" style="font-size: 10px; line-height: 1.1; border-color: ${labelBorderColor} !important; border-width: ${isSelected ? '2px' : '1px'} !important; user-select: none; padding: 1px 3px; max-width: 100%;">
-                                <div class="fw-bold text-truncate ${labelTextClass}" style="max-width: 150px; padding: 0 !important; margin: 0 !important;">${f.name || ''}</div>
-                                ${hasPorts ? `<div class="${portTextClass} extra-small" style="font-size: 9px; font-weight: 500; margin-top: 1px;">Port: ${f.ports.trim()}</div>` : ''}
+                                <div class="fw-bold text-truncate ${labelTextClass}" style="max-width: 150px; padding: 0 !important; margin: 0 !important;">${esc(f.name)}</div>
+                                ${hasPorts ? `<div class="${portTextClass} extra-small" style="font-size: 9px; font-weight: 500; margin-top: 1px;">Port: ${esc(toText(f.ports).trim())}</div>` : ''}
                             </div>
                         `;
                     }
@@ -6532,10 +6875,10 @@
                         const disabledClass = node.isDisabled ? 'disabled' : '';
 
                         if (node.type === 'textbox') {
-                            foreignObj.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card ${cardClass} p-2 d-flex"><div class="small text-secondary card-text-render-target text-wrap overflow-hidden w-100 h-100" style="font-family: monospace; font-size:11px; line-height:1.2;">${node.name}</div></div>`;
+                            foreignObj.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card ${cardClass} p-2 d-flex"><div class="small text-secondary card-text-render-target text-wrap overflow-hidden w-100 h-100" style="font-family: monospace; font-size:11px; line-height:1.2; white-space: pre-wrap;">${esc(node.name)}</div></div>`;
                         } else if (node.type === 'headline') {
                             const styleMode = node.orientation === 'vertical' ? 'writing-mode: vertical-lr; text-orientation: mixed;' : 'writing-mode: horizontal-tb;';
-                            foreignObj.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card ${cardClass} p-1 d-flex" style="${styleMode}"><div class="fw-bold text-dark card-text-render-target text-wrap overflow-hidden w-100 h-100" style="font-size: ${node.fontSize || 24}px; line-height:1.1;">${node.name}</div></div>`;
+                            foreignObj.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card ${cardClass} p-1 d-flex" style="${styleMode}"><div class="fw-bold text-dark card-text-render-target text-wrap overflow-hidden w-100 h-100" style="font-size: ${toNumber(node.fontSize, 24)}px; line-height:1.1;">${esc(node.name)}</div></div>`;
                         } else if (node.type === 'step_activity') {
                             const colorMap = {
                                 blue: '#0d6efd', silver: '#cbd5e1', purple: '#6f42c1', pink: '#d63384',
@@ -6547,13 +6890,13 @@
                                 const selectedStyle = isSelected ? 'box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.4), 0 0 12px rgba(13, 110, 253, 0.6), inset 0 2px 4px rgba(0,0,0,0.15); border: 2px solid #ffffff;' : '';
                                 foreignObj.innerHTML = `
                                     <div xmlns="http://www.w3.org/1999/xhtml" class="d-flex align-items-center justify-content-center bg-transparent w-100 h-100 overflow-hidden canvas-card canvas-card-hidden-box ${isSelected ? 'selected' : ''}">
-                                        <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 fw-bold text-white" style="background-color: ${colorMap[node.circleColor || 'blue'] || '#0d6efd'}; width: 32px; height: 32px; font-size: 13px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15); ${selectedStyle}">${node.stepNumber || 1}</div>
+                                        <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 fw-bold text-white" style="background-color: ${colorMap[node.circleColor || 'blue'] || '#0d6efd'}; width: 32px; height: 32px; font-size: 13px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15); ${selectedStyle}">${esc(toNumber(node.stepNumber, 1))}</div>
                                     </div>`;
                             } else {
                                 foreignObj.innerHTML = `
                                     <div xmlns="http://www.w3.org/1999/xhtml" class="d-flex align-items-center bg-white p-2 w-100 h-100 overflow-hidden canvas-card ${isSelected ? 'selected' : ''}" style="border: 2px solid #6c757d; border-radius: 6px;">
-                                        <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 fw-bold text-white me-2" style="background-color: ${colorMap[node.circleColor || 'blue'] || '#0d6efd'}; width: 32px; height: 32px; font-size: 13px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">${node.stepNumber || 1}</div>
-                                        <div class="small text-dark text-wrap overflow-hidden card-text-render-target flex-grow-1 fw-medium" style="font-size: 11px; line-height: 1.25;">${node.name}</div>
+                                        <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 fw-bold text-white me-2" style="background-color: ${colorMap[node.circleColor || 'blue'] || '#0d6efd'}; width: 32px; height: 32px; font-size: 13px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">${esc(toNumber(node.stepNumber, 1))}</div>
+                                        <div class="small text-dark text-wrap overflow-hidden card-text-render-target flex-grow-1 fw-medium" style="font-size: 11px; line-height: 1.25;">${esc(node.name)}</div>
                                     </div>`;
                             }
                         } else if (node.type === 'infrastructure') {
@@ -6563,22 +6906,22 @@
                                 teal: '#20c997', cyan: '#0dcaf0', lime: '#84cc16', emerald: '#10b981',
                                 slate: '#64748b', brown: '#78350f', navy: '#1e3a8a', black: '#212529'
                             };
-                            const iconColor = colorMap[node.iconColor] || node.iconColor || '#0dcaf0';
+                            const iconColor = colorMap[node.iconColor] || safeColor(node.iconColor);
                             const disabledColor = node.isDisabled ? '#ced4da' : iconColor;
                             const labelColor = node.isDisabled ? '#6c757d' : '#212529';
                             const iconFontSize = Math.max(16, Math.min(w - 16, h - 28));
                             foreignObj.innerHTML = `
                                 <div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card card-infrastructure-borderless ${disabledClass}">
-                                    <i class="bi ${node.icon || 'bi-server'}" style="font-size: ${iconFontSize}px; color: ${disabledColor} !important; line-height: 1;"></i>
-                                    <div class="fw-bold card-text-render-target text-truncate text-center w-100 px-2 mt-1" style="font-size: 11px; color: ${labelColor}; line-height: 1.2;">${node.name}</div>
+                                    <i class="bi ${safeIcon(node.icon)}" style="font-size: ${iconFontSize}px; color: ${disabledColor} !important; line-height: 1;"></i>
+                                    <div class="fw-bold card-text-render-target text-truncate text-center w-100 px-2 mt-1" style="font-size: 11px; color: ${labelColor}; line-height: 1.2;">${esc(node.name)}</div>
                                 </div>`;
                         } else {
                             foreignObj.innerHTML = `
                                 <div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card ${cardClass} ${disabledClass}">
-                                    <div class="card-icon-stripe ${stripeClass}"><i class="bi ${node.icon || 'bi-server'}"></i></div>
+                                    <div class="card-icon-stripe ${stripeClass}"><i class="bi ${safeIcon(node.icon)}"></i></div>
                                     <div class="card-main-body">
-                                        <div class="fw-bold text-dark text-truncate small card-text-render-target" style="font-size:12px; line-height:1.1;">${node.name}</div>
-                                        <div class="text-muted text-truncate w-100" style="font-size:10px; font-weight:normal; line-height:1.1; white-space:nowrap;" title="${node.notes || ''}">${node.notes || ''}</div>
+                                        <div class="fw-bold text-dark text-truncate small card-text-render-target" style="font-size:12px; line-height:1.1;">${esc(node.name)}</div>
+                                        <div class="text-muted text-truncate w-100" style="font-size:10px; font-weight:normal; line-height:1.1; white-space:nowrap;" title="${esc(node.notes)}">${esc(node.notes)}</div>
                                         <div class="d-flex gap-1 flex-wrap overflow-hidden mt-1" style="max-height:22px;">${this.generateSecurityStatusBadgesHtml(node)}</div>
                                     </div>
                                 </div>`;
@@ -6617,7 +6960,7 @@
                             let summaryHtml = `<div class="popover-header-title text-danger mb-2"><i class="bi bi-bug-fill me-1"></i>Linked Asset Risks Logs (${assetThreats.length})</div>`;
                             assetThreats.forEach(t => {
                                 summaryHtml += `<div class="extra-small border-bottom border-secondary pb-1 mb-1 text-light" style="font-size: 11px;">
-                                    <span class="badge bg-danger me-1">${t.id}</span> <b>${t.category}:</b> ${t.title}
+                                    <span class="badge bg-danger me-1">${esc(t.id)}</span> <b>${esc(t.category)}:</b> ${esc(t.title)}
                                 </div>`;
                             });
                             popover.innerHTML = summaryHtml;
@@ -7088,8 +7431,8 @@
                     srcSel.innerHTML = ''; dstSel.innerHTML = '';
                     this.state.elements.forEach(el => {
                         if (['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(el.type)) return;
-                        srcSel.innerHTML += `<option value="${el.id}">${el.name}</option>`;
-                        dstSel.innerHTML += `<option value="${el.id}">${el.name}</option>`;
+                        srcSel.add(new Option(el.name, el.id));
+                        dstSel.add(new Option(el.name, el.id));
                     });
                     srcSel.value = targetItem.sourceId; dstSel.value = targetItem.targetId;
                     document.getElementById('props-flow-bidirectional-switch').checked = !!targetItem.isBidirectional;
@@ -7355,8 +7698,8 @@
                     visibleCount++;
                     const div = document.createElement('div'); div.className = "form-check form-switch mb-1";
                     div.innerHTML = `
-                        <input class="form-check-input" type="checkbox" id="switch-${key}" ${targetItem.secProps[key] === 'true' ? 'checked' : ''}>
-                        <label class="form-check-label extra-small text-dark fw-bold" for="switch-${key}">${labelsGlossary[key]}</label>`;
+                        <input class="form-check-input" type="checkbox" id="switch-${esc(key)}" ${targetItem.secProps[key] === 'true' ? 'checked' : ''}>
+                        <label class="form-check-label extra-small text-dark fw-bold" for="switch-${esc(key)}">${labelsGlossary[key]}</label>`;
                     div.querySelector('input').addEventListener('change', (ev) => {
                         const previousState = targetItem.secProps[key];
                         targetItem.secProps[key] = ev.target.checked ? 'true' : 'false';
@@ -7403,15 +7746,15 @@
 
                     itemDiv.innerHTML = `
                         <div class="d-flex justify-content-between align-items-start mb-1">
-                            <span class="fw-bold extra-small text-dark text-truncate" style="max-width: 170px;" title="${t.title}">${t.title}</span>
+                            <span class="fw-bold extra-small text-dark text-truncate" style="max-width: 170px;" title="${esc(t.title)}">${esc(t.title)}</span>
                             <span class="badge ${calc.badgeClass} extra-small" style="font-size: 9px; padding: 2px 4px;">${calc.label}</span>
                         </div>
-                        <div class="extra-small text-muted text-truncate mb-2" style="font-size: 10px;">Category: ${t.category}</div>
+                        <div class="extra-small text-muted text-truncate mb-2" style="font-size: 10px;">Category: ${esc(t.category)}</div>
                         <div class="d-flex gap-1 justify-content-end border-top pt-1 mt-1">
-                            <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1 extra-small btn-edit-threat" style="font-size: 10px;" data-id="${t.id}">
+                            <button type="button" class="btn btn-xs btn-outline-secondary py-0 px-1 extra-small btn-edit-threat" style="font-size: 10px;" data-id="${esc(t.id)}">
                                 <i class="bi bi-pencil-square"></i> Edit
                             </button>
-                            <button type="button" class="btn btn-xs btn-outline-danger py-0 px-1 extra-small btn-delete-threat" style="font-size: 10px;" data-id="${t.id}">
+                            <button type="button" class="btn btn-xs btn-outline-danger py-0 px-1 extra-small btn-delete-threat" style="font-size: 10px;" data-id="${esc(t.id)}">
                                 <i class="bi bi-trash"></i> Remove
                             </button>
                         </div>
@@ -7463,18 +7806,10 @@
                     categories = ['Tampering', 'Information Disclosure', 'Denial of Service'];
                 }
 
-                // Pool all templates in the library across all keys
-                const allTemplatesInLibrary = [];
-                Object.keys(this.threatSuggestions).forEach(key => {
-                    const list = this.threatSuggestions[key];
-                    if (Array.isArray(list)) {
-                        list.forEach(sc => {
-                            if (!allTemplatesInLibrary.some(existing => existing === sc)) {
-                                allTemplatesInLibrary.push(sc);
-                            }
-                        });
-                    }
-                });
+                // Use only the templates written for this component type (BUG-004).
+                const TEMPLATE_KEY_FOR_TYPE = { custom_image: 'process' };
+                const libraryKey = TEMPLATE_KEY_FOR_TYPE[typeKey] || (typeKey.startsWith('fc_') ? 'process' : typeKey);
+                const allTemplatesInLibrary = Array.isArray(this.threatSuggestions[libraryKey]) ? this.threatSuggestions[libraryKey] : [];
 
                 // Filter pooled templates to only display those that match a category supported by the selected element
                 const matchingScenarios = allTemplatesInLibrary.filter(sc => categories.includes(sc.category));
@@ -7541,8 +7876,8 @@
                         header.style.fontSize = '10px';
                         header.style.color = '#495057';
                         header.innerHTML = `
-                            <span class="badge stride-${cat.charAt(0)}" style="width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; padding: 0;">${cat.charAt(0)}</span>
-                            <span>${cat}</span>
+                            <span class="badge stride-${esc(cat.charAt(0))}" style="width: 18px; height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 9px; padding: 0;">${esc(cat.charAt(0))}</span>
+                            <span>${esc(cat)}</span>
                             <span class="text-muted extra-small ms-auto">(${items.length})</span>
                         `;
                         this.dom.threatSuggestionsList.appendChild(header);
@@ -7580,15 +7915,15 @@
                 card.style.cursor = 'pointer';
                 card.innerHTML = `
                     <div class="d-flex justify-content-between align-items-start mb-1">
-                        <div class="fw-bold text-dark text-wrap me-2" style="max-width:160px; word-break: break-word; line-height: 1.25;">${sc.title}</div>
+                        <div class="fw-bold text-dark text-wrap me-2" style="max-width:160px; word-break: break-word; line-height: 1.25;">${esc(sc.title)}</div>
                         <div class="d-flex align-items-center gap-1 flex-shrink-0">
                             ${sc.originalObj.isUnsaved ? '<span class="badge bg-warning text-dark extra-small" style="font-size:8px;" title="Unsaved changes"><i class="bi bi-exclamation-circle-fill"></i> Unsaved</span>' : ''}
-                            <span class="badge stride-${sc.category.charAt(0)} extra-small" style="font-size:9px;">${sc.category}</span>
+                            <span class="badge stride-${esc(toText(sc.category).charAt(0))} extra-small" style="font-size:9px;">${esc(sc.category)}</span>
                             <button type="button" class="btn btn-xs p-0 text-muted btn-template-edit" title="Edit Template" style="font-size: 10px; width: 16px; height: 16px; border: none; background: transparent;"><i class="bi bi-pencil"></i></button>
                             <button type="button" class="btn btn-xs p-0 text-muted btn-template-delete" title="Delete Template" style="font-size: 10px; width: 16px; height: 16px; border: none; background: transparent;"><i class="bi bi-trash"></i></button>
                         </div>
                     </div>
-                    <div class="extra-small text-muted mb-0" style="font-size:10.5px; line-height: 1.35;">${sc.desc}</div>
+                    <div class="extra-small text-muted mb-0" style="font-size:10.5px; line-height: 1.35;">${esc(sc.desc)}</div>
                 `;
 
                 card.querySelector('.btn-template-edit').addEventListener('click', (ev) => {
@@ -7651,13 +7986,13 @@
                     ` : '';
 
                     tr.innerHTML = `
-                        <td><small class="fw-bold text-muted">${t.id}</small></td>
-                        <td><span class="badge stride-${t.category.charAt(0)} px-2 py-1">${t.category}</span></td>
-                        <td class="fw-bold text-dark text-wrap" style="word-break: break-word;">${goldCrownPrefixHtml}${t.title}</td>
-                        <td class="text-dark fw-medium text-wrap" style="word-break: break-word;">${componentName}</td>
+                        <td><small class="fw-bold text-muted">${esc(t.id)}</small></td>
+                        <td><span class="badge stride-${esc(toText(t.category).charAt(0))} px-2 py-1">${esc(t.category)}</span></td>
+                        <td class="fw-bold text-dark text-wrap" style="word-break: break-word;">${goldCrownPrefixHtml}${esc(t.title)}</td>
+                        <td class="text-dark fw-medium text-wrap" style="word-break: break-word;">${esc(componentName)}</td>
                         <td><span class="badge ${evalObj.badgeClass}">${evalObj.label}</span></td>
                         <td><small class="fw-bold text-dark">${evalObj.score}</small></td>
-                        <td><span class="badge rounded-pill border ${t.status === 'Mitigated / Resolved' ? 'bg-success text-white border-success' : t.status === 'Partially mitigated' ? 'bg-warning text-dark border-warning' : 'bg-light text-danger'}">${t.status}</span></td>
+                        <td><span class="badge rounded-pill border ${t.status === 'Mitigated / Resolved' ? 'bg-success text-white border-success' : t.status === 'Partially mitigated' ? 'bg-warning text-dark border-warning' : 'bg-light text-danger'}">${esc(t.status)}</span></td>
                         <td class="text-center text-nowrap d-print-none">
                             <div class="btn-group">
                                 <button class="btn btn-xs btn-outline-primary py-0 px-2 small btn-edit"><i class="bi bi-pencil-fill"></i></button>
@@ -7689,7 +8024,7 @@
                     tokens.forEach(tok => {
                         const cleanToken = tok.trim();
                         if (cleanToken) {
-                            this.dom.sessionSummaryParts.innerHTML += `<span class="badge bg-secondary text-light" style="font-size: 10px; font-weight: 500;">${cleanToken}</span>`;
+                            this.dom.sessionSummaryParts.innerHTML += `<span class="badge bg-secondary text-light" style="font-size: 10px; font-weight: 500;">${esc(cleanToken)}</span>`;
                         }
                     });
                 } else {
@@ -7701,8 +8036,8 @@
 
             repopulateThreatModalDropdownTargets() {
                 const select = document.getElementById('modal-threat-link-element'); select.innerHTML = '';
-                this.state.elements.forEach(e => { if (!['textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(e.type)) select.innerHTML += `<option value="${e.id}">[Node] ${e.name}</option>`; });
-                this.state.flows.forEach(f => { select.innerHTML += `<option value="${f.id}">[Flow] ${f.name}</option>`; });
+                this.state.elements.forEach(e => { if (!['textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(e.type)) select.add(new Option(`[Node] ${e.name}`, e.id)); });
+                this.state.flows.forEach(f => { select.add(new Option(`[Flow] ${f.name}`, f.id)); });
             }
 
             openThreatModalForCreation() {
@@ -7795,42 +8130,91 @@
                 this.saveSessionToLocalStorage(); this.sessionMetaModal.hide(); this.refreshAppViewVisualWorkspace();
             }
 
+            /** One CSV cell: quoted, quotes doubled, spreadsheet formulas neutralised (SEC-003). */
+            static csvCell(value) {
+                let s = value === null || value === undefined ? '' : String(value);
+                if (/^[=+\-@\t\r]/.test(s)) s = "'" + s;
+                return '"' + s.replace(/"/g, '""') + '"';
+            }
+
+            downloadBlob(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = filename;
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+            }
+
             exportThreatRegisterToCsvFile() {
-                if (this.state.threats.length === 0) { alert("Threat Register is empty."); return; }
-                let csvRows = [["Threat ID", "STRIDE Metric Category", "Scenario Title", "Associated Component", "Linked Asset ID", "Severity", "Risk Matrix Score", "Remediation Status", "Technical Description"]];
-                this.state.threats.forEach(t => {
-                    const conn = this.state.elements.find(e => e.id === t.elementId) || this.state.flows.find(f => f.id === t.elementId);
-                    const compName = conn ? conn.name : 'Unknown';
-                    csvRows.push([t.id, t.category, t.title.replace(/"/g, '""'), compName.replace(/"/g, '""'), t.elementId, t.riskLabel, t.riskScore, t.status, (t.desc || '').replace(/"/g, '""')]);
+                if (this.state.threats.length === 0) { this.notify("The threat register is empty.", 'warning'); return; }
+                const byId = new Map([...this.state.elements, ...this.state.flows].map(x => [x.id, x]));
+                const header = ["Threat ID", "STRIDE Category", "Title", "Component", "Component ID", "Likelihood", "Impact", "Risk Score", "Severity", "Status", "Description", "Mitigation"];
+                const rows = this.state.threats.map(t => {
+                    const risk = ThreatModelSession.calculateRisk(t.likelihood, t.impact);
+                    const conn = byId.get(t.elementId);
+                    return [t.id, t.category, t.title, conn ? conn.name : 'Unknown', t.elementId, t.likelihood, t.impact, risk.score, risk.label, t.status, t.desc || '', t.mitigationExplanation || ''];
                 });
-                const encodedUri = encodeURI("data:text/csv;charset=utf-8," + csvRows.map(e => e.map(val => `"${val}"`).join(",")).join("\n"));
-                const a = document.createElement('a'); a.href = encodedUri; a.download = "STRIDE-Threat-Register.csv"; a.click();
+                const csv = [header, ...rows].map(r => r.map(ThreatModelingApp.csvCell).join(',')).join('\r\n');
+                // Blob instead of an encodeURI'd data: URL, which cut the file at the first '#' (BUG-002).
+                this.downloadBlob(new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' }), "STRIDE-Threat-Register.csv");
             }
 
             exportWorkspaceJsonPayloadFile() {
-                const blob = new Blob([JSON.stringify(this.state, null, 2)], { type: 'application/json' });
-                const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `STRIDE-Threat-Model-Export.json`; a.click();
+                const payload = Object.assign({ appVersion: APP_VERSION, schemaVersion: SCHEMA_VERSION }, JSON.parse(JSON.stringify(this.state)));
+                delete payload.selectedElementIds; delete payload.selectedFlowId;
+                this.downloadBlob(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }), `STRIDE-Threat-Model-Export.json`);
                 this.isCanvasUnsaved = false;
             }
 
             triggerWorkspaceJsonImportSelector() {
-                const input = document.createElement('input'); input.type = 'file'; input.accept = '.json';
+                const input = document.createElement('input'); input.type = 'file'; input.accept = '.json,application/json';
                 input.addEventListener('change', (e) => {
                     const file = e.target.files[0]; if (!file) return;
                     const reader = new FileReader();
-                    reader.onload = (evt) => {
-                        this.state = Object.assign(new ThreatModelSession(), JSON.parse(evt.target.result));
-
-                        this.state.activeUser = "";
-                        this.assertValidOperatorProfileAuthentication();
-
-                        this.logEvent("CONFIGURE", `Successfully loaded external data file. Imported ${this.state.elements.length} design nodes and ${this.state.threats.length} register entries.`);
-                        this.saveSessionToLocalStorage();
-                        this.isCanvasUnsaved = false;
-                        this.refreshAppViewVisualWorkspace();
-                    };
+                    reader.onload = (evt) => this.importWorkspaceJsonText(evt.target.result, file.name);
+                    reader.onerror = () => this.notify(`Could not read "${file.name}".`);
                     reader.readAsText(file);
                 }); input.click();
+            }
+
+            /** Validates, normalises and applies an imported model; never leaves the app half-loaded. */
+            importWorkspaceJsonText(text, fileName = 'file') {
+                let parsed, result;
+                try { parsed = JSON.parse(text); }
+                catch (err) { this.notify(`Could not import "${fileName}": it is not valid JSON.`); return false; }
+                try { result = normalizeSession(parsed); }
+                catch (err) { this.notify(`Could not import "${fileName}": ${err.message}`); return false; }
+
+                // SEC-005: external images reveal to their host that the model was opened.
+                const external = result.session.elements.filter(el => isExternalUrl(el.imageUrl));
+                if (external.length > 0) {
+                    const hosts = [...new Set(external.map(el => { try { return new URL(el.imageUrl).host; } catch (_) { return '?'; } }))];
+                    const ok = confirm(`This model loads ${external.length} image(s) from external websites (${hosts.join(', ')}).\n\nLoading them lets those websites see that you opened the model. Load them?`);
+                    if (!ok) { external.forEach(el => { el.imageUrl = ''; }); result.warnings.push(`Did not load ${external.length} external image(s).`); }
+                }
+
+                const previous = this.state;
+                this.takeSnapshot('Before import', true);
+                try {
+                    this.state = Object.assign(new ThreatModelSession(), result.session);
+                    this.state.activeUser = previous.activeUser || this.state.activeUser;
+                    this.refreshAppViewVisualWorkspace();
+                } catch (err) {
+                    console.error('[ThreatTiger] Import render failed', err);
+                    this.state = previous;
+                    this.refreshAppViewVisualWorkspace();
+                    this.notify(`Could not import "${fileName}": ${err.message}`);
+                    return false;
+                }
+                this.logEvent("CONFIGURE", `Imported "${fileName}": ${this.state.elements.length} components, ${this.state.flows.length} data flows, ${this.state.threats.length} threats.`);
+                this.isCanvasUnsaved = false;
+                if (result.warnings.length) {
+                    const shown = result.warnings.slice(0, 4).join(' ');
+                    this.notify(`Imported with ${result.warnings.length} adjustment(s): ${shown}${result.warnings.length > 4 ? ' …' : ''}`, 'warning');
+                    console.warn('[ThreatTiger] Import adjustments:', result.warnings);
+                } else {
+                    this.notify(`Imported "${fileName}".`, 'success');
+                }
+                return true;
             }
 
             resetSession() {
@@ -7850,30 +8234,163 @@
                 }
             }
 
-            saveSessionToLocalStorage() {
-                localStorage.setItem('stride_workbench_session_manifest_v26', JSON.stringify(this.state));
-                this.isCanvasUnsaved = true;
+            /** localStorage write that reports failure instead of throwing (BUG-006). */
+            safeSetItem(key, value) {
+                try {
+                    localStorage.setItem(key, value);
+                    this.setStorageFailure(false);
+                    return true;
+                } catch (err) {
+                    console.error('[ThreatTiger] Could not save to browser storage', err);
+                    this.setStorageFailure(true, err);
+                    return false;
+                }
             }
+
+            setStorageFailure(failed, err) {
+                const banner = document.getElementById('alert-storage-failure');
+                if (!banner) return;
+                banner.classList.toggle('d-none', !failed);
+                if (failed) {
+                    const quota = err && (err.name === 'QuotaExceededError' || err.code === 22);
+                    document.getElementById('alert-storage-failure-reason').textContent = quota
+                        ? 'Browser storage is full (large uploaded images are the usual cause).'
+                        : 'The browser refused to save.';
+                }
+            }
+
+            saveSessionToLocalStorage() {
+                this.safeSetItem('stride_workbench_session_manifest_v26', JSON.stringify(this.state));
+                this.isCanvasUnsaved = true;
+                this.takeSnapshot('Autosave');
+            }
+
             loadSessionFromLocalStorage() {
                 const data = localStorage.getItem('stride_workbench_session_manifest_v26');
-                if (data) {
-                    this.state = Object.assign(new ThreatModelSession(), JSON.parse(data));
-                    // ── Migrate legacy 3-per-side anchor IDs → single-center anchor IDs ──────
-                    // Old IDs: 'top-1','top-2','top-3','left-1'… → New: 'top','left'…
-                    const normAnchor = id => {
-                        if (!id) return id;
-                        const dir = id.split('-')[0];
-                        return ['top','bottom','left','right'].includes(dir) ? dir : id;
-                    };
-                    if (this.state.flows) {
-                        this.state.flows.forEach(f => {
-                            f.sourceAnchor = normAnchor(f.sourceAnchor);
-                            f.targetAnchor = normAnchor(f.targetAnchor);
-                        });
-                    }
-                    return true;
+                if (!data) return false;
+                const { session, warnings } = normalizeSession(JSON.parse(data));
+                this.state = Object.assign(new ThreatModelSession(), session);
+                if (warnings.length) console.warn('[ThreatTiger] Stored model adjusted on load:', warnings);
+                return true;
+            }
+
+            /** Moves an unloadable stored model aside so the app can start, and tells the user (BUG-001). */
+            quarantineStoredSession(err) {
+                console.error('[ThreatTiger] Stored model could not be loaded', err);
+                const raw = localStorage.getItem('stride_workbench_session_manifest_v26');
+                if (raw) {
+                    try { localStorage.setItem('threat_tiger_quarantined_session', raw); } catch (_) { /* best effort */ }
+                    localStorage.removeItem('stride_workbench_session_manifest_v26');
                 }
-                return false;
+                this.state = new ThreatModelSession();
+                this.notify('Your saved model could not be opened, so a blank model was started. The old data was kept aside.', 'danger', {
+                    label: 'Download old data',
+                    onClick: () => {
+                        const kept = localStorage.getItem('threat_tiger_quarantined_session') || raw || '';
+                        this.downloadBlob(new Blob([kept], { type: 'application/json' }), 'threat-tiger-recovered.json');
+                    }
+                });
+            }
+
+            /** Non-blocking message (replaces alert()). variant: danger | warning | success | info. */
+            notify(message, variant = 'danger', action = null) {
+                const container = document.getElementById('app-toast-container');
+                if (!container || !window.bootstrap) { console.warn('[ThreatTiger]', message); return; }
+                const toast = document.createElement('div');
+                toast.className = `toast align-items-center text-bg-${variant} border-0`;
+                toast.setAttribute('role', variant === 'danger' ? 'alert' : 'status');
+                toast.setAttribute('aria-live', variant === 'danger' ? 'assertive' : 'polite');
+                const row = document.createElement('div'); row.className = 'd-flex align-items-center';
+                const body = document.createElement('div'); body.className = 'toast-body small'; body.textContent = message;
+                row.appendChild(body);
+                if (action) {
+                    const btn = document.createElement('button');
+                    btn.type = 'button'; btn.className = 'btn btn-sm btn-light ms-1 me-1 text-nowrap'; btn.textContent = action.label;
+                    btn.addEventListener('click', action.onClick);
+                    row.appendChild(btn);
+                }
+                const close = document.createElement('button');
+                close.type = 'button'; close.className = `btn-close ${variant === 'warning' ? '' : 'btn-close-white'} me-2 m-auto`;
+                close.setAttribute('data-bs-dismiss', 'toast'); close.setAttribute('aria-label', 'Close');
+                row.appendChild(close);
+                toast.appendChild(row);
+                container.appendChild(toast);
+                toast.addEventListener('hidden.bs.toast', () => toast.remove());
+                bootstrap.Toast.getOrCreateInstance(toast, { delay: variant === 'danger' ? 12000 : 7000 }).show();
+            }
+
+            /** Saves a restorable copy in IndexedDB; autosaves at most every 2 minutes (FEAT-018). */
+            takeSnapshot(label, force = false) {
+                const now = Date.now();
+                if (!force && this.lastSnapshotAt && now - this.lastSnapshotAt < 120000) return;
+                if (!this.state || (this.state.elements.length === 0 && this.state.threats.length === 0)) return;
+                this.lastSnapshotAt = now;
+                const snapshot = {
+                    savedAt: new Date(now).toISOString(), label, appVersion: APP_VERSION,
+                    projectTitle: this.state.projectTitle,
+                    counts: { elements: this.state.elements.length, flows: this.state.flows.length, threats: this.state.threats.length },
+                    data: JSON.stringify(this.state)
+                };
+                SnapshotStore.add(snapshot).catch(err => console.warn('[ThreatTiger] Snapshot not saved', err));
+            }
+
+            async openSnapshotsModal() {
+                const list = document.getElementById('snapshot-list');
+                list.textContent = 'Loading…';
+                this.snapshotsModal.show();
+                let snapshots = [];
+                try { snapshots = await SnapshotStore.list(); }
+                catch (err) { list.textContent = 'Snapshots are not available in this browser.'; return; }
+                list.textContent = '';
+                if (snapshots.length === 0) { list.textContent = 'No snapshots yet. They are saved automatically while you work.'; return; }
+                snapshots.forEach(s => {
+                    const item = document.createElement('div');
+                    item.className = 'list-group-item d-flex justify-content-between align-items-center gap-2';
+                    const info = document.createElement('div'); info.className = 'small';
+                    const title = document.createElement('div'); title.className = 'fw-bold text-dark';
+                    title.textContent = `${new Date(s.savedAt).toLocaleString()} · ${s.label}`;
+                    const meta = document.createElement('div'); meta.className = 'text-muted extra-small';
+                    meta.textContent = `${s.projectTitle || 'Untitled'} — ${s.counts.elements} components, ${s.counts.flows} flows, ${s.counts.threats} threats`;
+                    info.append(title, meta);
+                    const btn = document.createElement('button');
+                    btn.type = 'button'; btn.className = 'btn btn-sm btn-outline-primary text-nowrap'; btn.textContent = 'Restore';
+                    btn.addEventListener('click', () => this.restoreSnapshot(s.id));
+                    item.append(info, btn);
+                    list.appendChild(item);
+                });
+            }
+
+            async restoreSnapshot(id) {
+                const snap = await SnapshotStore.get(id);
+                if (!snap) { this.notify('That snapshot no longer exists.'); return; }
+                this.takeSnapshot('Before restoring a snapshot', true);
+                const { session } = normalizeSession(JSON.parse(snap.data));
+                const operator = this.state.activeUser;
+                this.state = Object.assign(new ThreatModelSession(), session);
+                this.state.activeUser = operator || this.state.activeUser;
+                this.snapshotsModal.hide();
+                this.logEvent("CONFIGURE", `Restored snapshot from ${new Date(snap.savedAt).toLocaleString()} (${snap.label}).`);
+                this.refreshAppViewVisualWorkspace();
+                this.notify('Snapshot restored.', 'success');
+            }
+
+            /** Shrinks uploaded images so they fit in browser storage (BUG-006). */
+            downscaleImageDataUrl(dataUrl, maxSide) {
+                return new Promise((resolve) => {
+                    if (!/^data:image\/(png|jpe?g|webp|bmp)/i.test(dataUrl)) { resolve(sanitizeImageUrl(dataUrl)); return; }
+                    const img = new Image();
+                    img.onload = () => {
+                        const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+                        if (scale === 1 && dataUrl.length < 400000) { resolve(dataUrl); return; }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = Math.round(img.width * scale); canvas.height = Math.round(img.height * scale);
+                        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                        const webp = canvas.toDataURL('image/webp', 0.85);
+                        resolve(webp.startsWith('data:image/webp') ? webp : canvas.toDataURL('image/png'));
+                    };
+                    img.onerror = () => resolve('');
+                    img.src = dataUrl;
+                });
             }
 
             getDefaultThreatSuggestions() {
@@ -7978,7 +8495,7 @@
             }
 
             saveThreatTemplatesToLocalStorage() {
-                localStorage.setItem('stride_workbench_threat_templates', JSON.stringify(this.threatSuggestions));
+                this.safeSetItem('stride_workbench_threat_templates', JSON.stringify(this.threatSuggestions));
             }
 
             openEditTemplateModal(templateObj, type) {

@@ -32,14 +32,18 @@ test('BUG-003: deleting a node also removes threats on its cascaded flows', asyn
     s.threats.push({ id: 'th-900', title: 'flow threat', category: 'Tampering', elementId: s.flows[0].id, status: 'Open / Unmitigated', likelihood: '3', impact: '3', riskScore: 9, riskLabel: 'Medium' });
   });
   await openApp(page, { session: demo });
-  const orphans = await page.evaluate((nodeId) => {
-    window.confirm = () => true;
-    app.state.selectedElementIds = [nodeId]; app.state.selectedFlowId = null;
+  const nodeId = demo.flows[0].sourceId;
+  await page.evaluate((id) => {
+    app.state.selectedElementIds = [id]; app.state.selectedFlowId = null;
     app.executeTargetedActiveSelectionRemovalTask();
+  }, nodeId);
+  // Deletion now asks first (BUG-010); confirm it.
+  await page.click('#btn-confirm-delete');
+  const result = await page.evaluate((id) => {
     const ids = new Set([...app.state.elements, ...app.state.flows].map((x) => x.id));
-    return app.state.threats.filter((t) => !ids.has(t.elementId)).map((t) => t.id);
-  }, demo.flows[0].sourceId);
-  expect(orphans).toEqual([]);
+    return { nodeGone: !ids.has(id), orphans: app.state.threats.filter((t) => !ids.has(t.elementId)).map((t) => t.id) };
+  }, nodeId);
+  expect(result).toEqual({ nodeGone: true, orphans: [] });
 });
 
 test('BUG-004: a data store only gets data-store templates', async ({ page }) => {
