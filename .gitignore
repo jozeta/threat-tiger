@@ -3,3 +3,14 @@ test-results/
 playwright-report/
 .remember/
 .DS_Store
+
+# --- Baseline: macOS, Claude Code and secrets ---
+._*
+.claude/settings.local.json
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
