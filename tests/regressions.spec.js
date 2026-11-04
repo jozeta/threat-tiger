@@ -1,7 +1,7 @@
 // TEST-002: one regression test per confirmed bug from the audit.
 // Each test asserts the CORRECT behaviour, so it fails until the bug is fixed.
 const { test } = require('@playwright/test');
-const { expect, openApp, demoSession, importJson, downloadText, registerRows, trackPageErrors, SESSION_KEY } = require('./helpers');
+const { expect, openApp, demoSession, importJson, downloadText, registerRows, trackPageErrors } = require('./helpers');
 
 test('BUG-001: a malformed import does not break the app on reload', async ({ page }) => {
   await openApp(page, { session: demoSession() });

@@ -32,7 +32,7 @@ test('create a mitigation in the Mitigations tab and link it to several threats'
 
 test('threat dialog links existing mitigations, creates new ones, and turns template controls into mitigations (reused by title)', async ({ page }) => {
   await openApp(page, { session: model((s) => { s.mitigations = [{ id: 'mi-001', title: 'Rate-limit and monitor failed logins', status: 'Implemented' }]; }) });
-  const el = await page.evaluate(() => { const e = app.state.elements.find((x) => x.type === 'process'); app.state.selectedElementIds = [e.id]; app.refreshAppViewVisualWorkspace(); return e.id; });
+  await page.evaluate(() => { const e = app.state.elements.find((x) => x.type === 'process'); app.state.selectedElementIds = [e.id]; app.refreshAppViewVisualWorkspace(); return e.id; });
   await page.click('button[data-bs-target="#tab-panel-suggest"]');
   await page.locator('.template-card[data-template-id="P-AUTH-01"] .fw-bold.text-dark').first().click();
   await expect(page.locator('#threat-mitigation-suggested .threat-control-suggestion')).toHaveCount(4);

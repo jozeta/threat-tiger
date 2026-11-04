@@ -1,6 +1,6 @@
 // Stage 5: trust-boundary analysis, rule engine, insights, Markdown report, git-friendly export.
 const { test } = require('@playwright/test');
-const { clickControl, expect, openApp, demoSession, downloadText } = require('./helpers');
+const { expect, openApp, demoSession, downloadText } = require('./helpers');
 
 // A small model: user (outside) -> API (inside zone "DMZ") -> DB (inside), plus an unconnected cache.
 function smallModel(mutate) {

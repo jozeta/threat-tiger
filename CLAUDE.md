@@ -66,5 +66,5 @@ npm ci && npm run lint   # ESLint (dev-only), incl. the no-unsanitized rule; CI 
 npm test                 # the tests CI runs
 ```
 
-Unsafe DOM sinks and unused variables are lint **warnings** for now (existing code); new code
-shouldn't add any. Errors (eval, undefined names, parse errors) fail CI.
+Unsafe DOM sinks are lint errors. ESLint lints the `.js`/`.mjs` files (tests and scripts); the app
+itself is inline in `threat-tiger.html`, which ESLint doesn't read, so keep escaping there by hand.
