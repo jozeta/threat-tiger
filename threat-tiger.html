@@ -1635,6 +1635,16 @@
         /* FEAT-016: briefly highlight the component a threat belongs to */
         @keyframes focus-pulse-kf { 0%, 100% { filter: none; } 40% { filter: drop-shadow(0 0 10px rgba(13, 110, 253, 0.95)); } }
         .focus-pulse { animation: focus-pulse-kf 0.8s ease-in-out 2; }
+    
+    /* Respect the system's "Reduce motion" setting: animations and transitions become instant. */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+      }
+    }
     </style>
 </head>
 

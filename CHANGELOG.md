@@ -5,6 +5,7 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+- Animations and transitions respect the system's "Reduce motion" setting
 - ESLint (flat config, with the no-unsanitized rule) as a dev-only tool; CI runs `npm run lint`
 - CI workflow: lint and the existing tests on every push
 
