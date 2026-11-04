@@ -55,3 +55,16 @@ PW_BASE_URL=http://127.0.0.1:8080 npm test   # test the running container
   add a regression test for every fixed finding.
 - `1z.nu` hosts copies of `threat-tiger.html` and `threat_templates.json`. Update them after a
   release.
+
+## App standards
+
+This repo follows the app standards in `~/Desktop/code/tools/standards/STANDARDS.md` (rule IDs,
+severities; decisions and waivers in `.claude-standards`). `claude-check --repo .` checks it.
+
+```sh
+npm ci && npm run lint   # ESLint (dev-only), incl. the no-unsanitized rule; CI runs it too
+npm test                 # the tests CI runs
+```
+
+Unsafe DOM sinks and unused variables are lint **warnings** for now (existing code); new code
+shouldn't add any. Errors (eval, undefined names, parse errors) fail CI.
