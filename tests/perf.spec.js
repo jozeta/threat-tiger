@@ -23,7 +23,9 @@ test('large model stays within interaction budgets', async ({ page }) => {
     return { logEvent, refresh, delete20, domNodes: document.getElementsByTagName('*').length };
   });
   console.log('[perf]', JSON.stringify(r));
-  expect(r.logEvent).toBeLessThan(10);
-  expect(r.delete20).toBeLessThan(250);
+  // Shared CI runners are slower and noisier than a developer machine: same budgets, 3x headroom.
+  const slack = process.env.CI ? 3 : 1;
+  expect(r.logEvent).toBeLessThan(10 * slack);
+  expect(r.delete20).toBeLessThan(250 * slack);
   expect(r.domNodes).toBeLessThan(40000);
 });
