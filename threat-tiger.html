@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-b6fM/0G30/AWtYjJw5t2mufTsmiSmcVeFZ5TleD1qfA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-PE2pa7VdZGhvZ2eLPcWLzi5d78xkPv9zpxtbbcf+1xE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3292,6 +3292,13 @@
                         of component. Record the threats that apply in the register, rate them by likelihood and impact, and track
                         how they are mitigated. The <strong>Insights</strong> tab lists every open suggestion (filter by component,
                         STRIDE category or reason) and shows what is still uncovered.</p>
+                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-diagram-3 me-2 text-primary"></i>Flowcharts and swimlanes</h6>
+                    <ul class="mb-4">
+                        <li><strong>Quick add:</strong> hover a connection point of a flowchart shape to see a preview of the next step; click to add it, already connected. Drag from the point to connect to an existing node instead.</li>
+                        <li><strong>Change type:</strong> use <strong>Type</strong> in Properties to turn any node into another kind (process, data store, decision, …). Name, flows and threats stay.</li>
+                        <li><strong>Swimlanes:</strong> drop a node into a cell (it is highlighted while you drag); cells grow to fit their nodes. Drag a column or row border to resize it, double-click it for the automatic size, and pick a colour in Properties.</li>
+                        <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
+                    </ul>
 
                     <h5 class="fw-bold text-dark mb-2"><i
                             class="bi bi-file-earmark-text-fill me-2 text-secondary"></i>2. Open Source License &amp;
@@ -3522,7 +3529,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.13.1';
+        const APP_VERSION = '1.14.0';
         const SCHEMA_VERSION = 1;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded

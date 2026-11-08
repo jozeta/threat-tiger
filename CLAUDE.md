@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Threat Tiger is an offline-first, client-side threat-modelling app: an architecture canvas
 (processes, data stores, external entities, trust zones/boundaries), live trust-boundary
-analysis, a curated library of 244 threats with ranked suggestions, a STRIDE threat register,
+analysis, a curated library of 601 threats with ranked suggestions, a STRIDE threat register,
 insights, history and many export formats. **The whole app is one file, `threat-tiger.html`**
 (HTML, CSS and vanilla JS, ~11k lines), with Bootstrap, Bootstrap Icons and Font Awesome vendored
 in `vendor/`. No build step, no backend. Demo on GitHub Pages; also hosted as a copy on 1z.nu.

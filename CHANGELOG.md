@@ -5,16 +5,23 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
-- Animations and transitions respect the system's "Reduce motion" setting
-- ESLint (flat config, with the no-unsanitized rule) as a dev-only tool; CI runs `npm run lint`
-- CI workflow: lint and the existing tests on every push
-- Swimlanes: a dragged node is dropped into the cell under it, using the real column and row sizes (it used to land in the neighbouring cell once a cell had grown, so more than two nodes rarely fitted in one cell). The target cell is highlighted while dragging. Each cell grows to hold all its nodes with padding on every side, and nodes in later columns and rows move along with their cell. Deleting a column or row also removes its stored size.
+## 1.14.0
+
+### Added
 - Swimlanes: drag the border on the right of a column or below a row to resize it (snaps to 20 px, down to 100 px). The size you set is that cell's minimum: it still grows if its nodes need more room, and later cells and their nodes move along. Double-click a border to go back to the automatic size. Each resize is one undo step; manual sizes are saved in the model and checked on import.
 - Swimlanes: colour themes. Pick one in the properties panel: default, yellow, green, blue, red, grey or black, each in a light and a strong variant. A chosen theme keeps its colours on the dark canvas, is saved in the model, shows in SVG/PNG exports, and is one undo step. Unknown themes in imported models fall back to the default.
-- Type dropdown in the properties panel for every node: switch between process, data store, external entity, infrastructure and the ten flowchart shapes. The shape changes in place; name, notes, centre position, flows and threats stay. Security switches the new type also has keep their value, the rest get the new type's defaults; a customised icon is kept between threat-modelling types. One undo step.
+- Type dropdown in the properties panel for components and flowchart shapes: switch between process, data store, external entity, infrastructure and the ten flowchart shapes. The shape changes in place; name, notes, centre position, flows and threats stay. Security switches the new type also has keep their value, the rest get the new type's defaults; a customised icon is kept between threat-modelling types. One undo step.
 - Model checks: a threat whose STRIDE category does not usually apply to its component type (for example Spoofing on a data store, Elevation of Privilege on an external entity) is flagged (`MC-STRIDE-FIT`).
 - Flowchart quick add: hover one of a flowchart node's connection points to see a faded preview of a new node and line in that direction; click to add them. The new node has the same type, size and colours, and moves aside if the spot is taken. Dragging from a connection point still draws a connection. One undo step.
 - Import Mermaid flowcharts (menu → Import Mermaid flowchart…): paste the text or choose a `.mmd`/`.md` file. `flowchart`/`graph` in any direction (TD, LR, BT, RL); nodes become flowchart shapes (rectangle, rounded, stadium, diamond, hexagon, cylinder, circle, parallelogram, trapezoid, flag and the `@{ shape: … }` syntax), subgraphs (also nested) become trust zones, edge labels become flow names, dotted edges stay dashed and `<-->` stays two-way. The diagram is laid out automatically in layers, with every zone in its own band so zones never cover other nodes; loops enter from the side. If the model is not empty you are asked each time whether to add the diagram next to it or replace it; either way it is one undo step. The text is parsed, never run: labels become plain text, `click` actions, links and styling are ignored, and size limits apply (500 nodes, 2,000 connections, 100 subgraphs).
+
+### Fixed
+- Swimlanes: a dragged node is dropped into the cell under it, using the real column and row sizes (it used to land in the neighbouring cell once a cell had grown, so more than two nodes rarely fitted in one cell). The target cell is highlighted while dragging. Each cell grows to hold all its nodes with padding on every side, and nodes in later columns and rows move along with their cell. Deleting a column or row also removes its stored size.
+
+### Changed
+- Animations and transitions respect the system's "Reduce motion" setting
+- ESLint (flat config, with the no-unsanitized rule) as a dev-only tool; CI runs `npm run lint`
+- CI workflow: lint and the existing tests on every push
 
 ## 1.13.1
 
