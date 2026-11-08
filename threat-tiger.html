@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3OuZhatZhxL+IlfpIzNXZ0sbBDcRvXvGUuwaQ+F717Q='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-b6fM/0G30/AWtYjJw5t2mufTsmiSmcVeFZ5TleD1qfA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1627,6 +1627,7 @@
                 <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="btn-main-menu" style="min-width: 260px;">
                     <li><h6 class="dropdown-header">Model</h6></li>
                     <li><button class="dropdown-item" type="button" id="btn-import"><i class="bi bi-file-earmark-arrow-up me-2"></i>Import JSON…</button></li>
+                    <li><button class="dropdown-item" type="button" id="btn-import-mermaid"><i class="bi bi-diagram-3 me-2"></i>Import Mermaid flowchart…</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-export"><i class="bi bi-file-earmark-arrow-down me-2"></i>Export JSON</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-export-no-log" title="Smaller file that diffs cleanly in git"><i class="bi bi-git me-2"></i>Export JSON for git (no activity log)</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-snapshots"><i class="bi bi-clock-history me-2"></i>History…</button></li>
@@ -3364,6 +3365,45 @@
         </div>
     </div>
 
+    <!-- Mermaid flowchart import -->
+    <div class="modal fade" id="modal-mermaid-import" tabindex="-1" aria-labelledby="modal-mermaid-title" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-mermaid-title"><i class="bi bi-diagram-3 me-1"></i>Import Mermaid flowchart</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body small">
+                    <p class="mb-2">Paste a Mermaid flowchart (starting with <code>flowchart</code> or <code>graph</code>) or choose a file. Nodes become flowchart shapes, subgraphs become trust zones and edge labels become flow names. Styling and click actions are ignored.</p>
+                    <label for="mermaid-import-text" class="form-label fw-semibold mb-1">Mermaid source</label>
+                    <textarea id="mermaid-import-text" class="form-control form-control-sm font-monospace" rows="12" spellcheck="false"
+                        placeholder="flowchart TD&#10;    A[Start] --> B{Valid?}&#10;    B -->|yes| C[Save]&#10;    B -->|no| D[Show error]"></textarea>
+                    <div class="d-flex align-items-center gap-2 mt-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-mermaid-file"><i class="bi bi-folder2-open me-1"></i>Choose file…</button>
+                        <input type="file" id="mermaid-import-file" class="d-none" accept=".mmd,.mermaid,.md,.markdown,.txt,text/plain,text/markdown">
+                        <span class="text-muted extra-small" id="mermaid-import-filename"></span>
+                    </div>
+                    <fieldset id="mermaid-import-mode" class="mt-3 d-none">
+                        <legend class="fs-6 small fw-semibold mb-1" id="mermaid-import-mode-legend">The current model is not empty. What should the import do?</legend>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="mermaid-import-mode" id="mermaid-mode-add" value="add">
+                            <label class="form-check-label" for="mermaid-mode-add">Add to the current model (placed to the right of it)</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="mermaid-import-mode" id="mermaid-mode-replace" value="replace">
+                            <label class="form-check-label" for="mermaid-mode-replace">Replace the current model (removes its components, flows, threats and mitigations; Undo brings them back)</label>
+                        </div>
+                    </fieldset>
+                    <div id="mermaid-import-error" class="alert alert-danger py-1 px-2 mt-2 mb-0 d-none" role="alert"></div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="btn-mermaid-import-go">Import</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Mitigation editor (FEAT-003) -->
     <div class="modal fade" id="modal-mitigation" tabindex="-1" aria-labelledby="modal-mitigation-title" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
@@ -3573,6 +3613,345 @@
             interactor: ['Spoofing', 'Repudiation', 'Information Disclosure'],
             datastore: ['Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service'],
         };
+        // ── Mermaid flowchart import ─────────────────────────────────────────────────
+        // Pasted or loaded Mermaid text is untrusted: it is parsed (never evaluated), labels become plain text, sizes are
+        // capped, and statements that could carry links or code (click, style, classDef, …) are ignored.
+        const MERMAID_LIMITS = { chars: 200000, nodes: 500, edges: 2000, subgraphs: 100, depth: 10, label: 200 };
+        // [opener, closer, flowchart type], longest opener first. '[/' and '[\' are resolved by their closer (see below).
+        const MERMAID_SHAPES = [
+            ['(((', ')))', 'fc_connector'], ['([', '])', 'fc_terminator'], ['[[', ']]', 'fc_process'], ['[(', ')]', 'fc_database'],
+            ['((', '))', 'fc_connector'], ['{{', '}}', 'fc_preparation'], ['[/', null, null], ['[\\', null, null],
+            ['(', ')', 'fc_process'], ['[', ']', 'fc_process'], ['{', '}', 'fc_decision'], ['>', ']', 'fc_document'],
+        ];
+        // Shape names of the newer `id@{ shape: … }` syntax.
+        const MERMAID_SHAPE_NAMES = {
+            rect: 'fc_process', process: 'fc_process', proc: 'fc_process', rounded: 'fc_process', event: 'fc_process', subproc: 'fc_process', subprocess: 'fc_process',
+            stadium: 'fc_terminator', pill: 'fc_terminator', terminal: 'fc_terminator', diam: 'fc_decision', diamond: 'fc_decision', decision: 'fc_decision', question: 'fc_decision',
+            hex: 'fc_preparation', hexagon: 'fc_preparation', prepare: 'fc_preparation', cyl: 'fc_database', cylinder: 'fc_database', db: 'fc_database', database: 'fc_database',
+            circle: 'fc_connector', circ: 'fc_connector', 'sm-circ': 'fc_connector', 'dbl-circ': 'fc_connector', 'lean-r': 'fc_data', 'lean-l': 'fc_data', 'in-out': 'fc_data', 'out-in': 'fc_data',
+            'trap-t': 'fc_manual_input', 'manual-input': 'fc_manual_input', 'trap-b': 'fc_manual_input', priority: 'fc_manual_input', doc: 'fc_document', document: 'fc_document',
+            docs: 'fc_document', documents: 'fc_document', das: 'fc_stored_data', 'stored-data': 'fc_stored_data', 'sl-rect': 'fc_manual_input', 'manual-file': 'fc_manual_input',
+        };
+        const MERMAID_ID = /^[\p{L}\p{N}_]+(?:[.-][\p{L}\p{N}_]+)*/u;
+        const MERMAID_EDGE = /^(<)?(-{2,}>|-{3,}|={2,}>|={3,}|-\.+->|-\.+-|~{3,}|-{2,}[ox](?![\p{L}\p{N}_])|={2,}[ox](?![\p{L}\p{N}_])|-\.+-[ox](?![\p{L}\p{N}_]))/u;
+        const MERMAID_EDGE_END = /\s(-{2,}>|-{3,}|={2,}>|={3,}|\.-+>|\.-+|-{2,}[ox]|={2,}[ox])(?=\s|$|[\p{L}\p{N}_"|])/u;
+
+        /** Mermaid label text -> plain text: entity codes decoded, HTML tags and control characters removed, length capped. */
+        function mermaidLabel(raw) {
+            const named = { quot: '"', lt: '<', gt: '>', amp: '&', nbsp: ' ', apos: "'" };
+            let s = toText(raw).replace(/^"([\s\S]*)"$/, '$1').replace(/^`([\s\S]*)`$/, '$1');
+            s = s.replace(/<br\s*\/?>/gi, ' ').replace(/<\/?[a-z][^>]*>/gi, '');
+            s = s.replace(/#([a-z]+);/gi, (m, n) => (n.toLowerCase() in named ? named[n.toLowerCase()] : m));
+            s = s.replace(/#(\d{1,7});/g, (m, n) => { const c = Number(n); return c > 31 && c < 0x110000 && !(c >= 0xd800 && c < 0xe000) ? String.fromCodePoint(c) : ''; });
+            // eslint-disable-next-line no-control-regex
+            s = s.replace(/[\u0000-\u001f\u007f\u2028\u2029]/g, ' ').replace(/\s+/g, ' ').trim();
+            return s.slice(0, MERMAID_LIMITS.label);
+        }
+
+        /** Splits Mermaid source into statements (lines and `;`), ignoring separators inside quotes. */
+        function mermaidStatements(text) {
+            const out = [];
+            text.split(/\r\n|\r|\n/).forEach(line => {
+                let cur = '', quoted = false;
+                for (const ch of line) {
+                    if (ch === '"') quoted = !quoted;
+                    if (ch === ';' && !quoted) { out.push(cur); cur = ''; } else cur += ch;
+                }
+                out.push(cur);
+            });
+            return out.map(s => s.trim()).filter(s => s && !s.startsWith('%%'));
+        }
+
+        /**
+         * Parses a Mermaid flowchart. Returns { direction, nodes: Map(id -> { label, type, sub }), edges: [{ from, to, label,
+         * dashed, bidirectional }], subgraphs: [{ id, label, parent }], warnings: [] }. Throws an Error with a readable
+         * message when the text is not a flowchart or exceeds the limits.
+         */
+        function parseMermaidFlowchart(input) {
+            let text = toText(input);
+            if (text.length > MERMAID_LIMITS.chars) throw new Error(`The diagram is too large (more than ${MERMAID_LIMITS.chars.toLocaleString('en')} characters).`);
+            const fence = /```\s*mermaid[^\n]*\n([\s\S]*?)```/i.exec(text);
+            if (fence) text = fence[1];
+            text = text.replace(/^\s*---\n[\s\S]*?\n---\s*\n/, '').replace(/%%\{[\s\S]*?\}%%/g, '');
+            const statements = mermaidStatements(text);
+            const header = /^(flowchart|graph)(?:\s+(TB|TD|BT|LR|RL))?$/i.exec(statements[0] || '');
+            if (!header) throw new Error('Only Mermaid flowcharts can be imported: the diagram must start with "flowchart" or "graph" (for example "flowchart TD").');
+            const direction = { TB: 'TD', TD: 'TD', BT: 'BT', LR: 'LR', RL: 'RL' }[(header[2] || 'TD').toUpperCase()];
+            const nodes = new Map(), edges = [], subgraphs = [], stack = [], warnings = [];
+            const ignored = new Map();
+            const ignore = (what) => ignored.set(what, (ignored.get(what) || 0) + 1);
+
+            const define = (id, label, type) => {
+                if (!nodes.has(id)) {
+                    if (nodes.size >= MERMAID_LIMITS.nodes) throw new Error(`The diagram has more than ${MERMAID_LIMITS.nodes} nodes.`);
+                    nodes.set(id, { label: id, type: 'fc_process', sub: stack.length ? stack[stack.length - 1] : -1, explicit: false });
+                }
+                const n = nodes.get(id);
+                // As in Mermaid, mentioning a node inside a subgraph moves it there (also when it appeared outside
+                // before); a node already in a subgraph only moves deeper into a nested one.
+                const cur = stack.length ? stack[stack.length - 1] : -1;
+                if (cur !== -1 && n.sub !== cur) {
+                    let p = cur; while (p !== -1 && p !== n.sub) p = subgraphs[p].parent;
+                    if (p === n.sub) n.sub = cur;
+                }
+                if (label !== undefined) { n.label = label; n.explicit = true; }
+                if (type) { n.type = type; n.explicit = true; }
+            };
+
+            // Reads a label up to `closer` at s[i]; returns [label, nextIndex] or null.
+            const readLabel = (s, i, closers) => {
+                while (s[i] === ' ') i++;
+                if (s[i] === '"') {
+                    const end = s.indexOf('"', i + 1);
+                    if (end < 0) return null;
+                    let j = end + 1; while (s[j] === ' ') j++;
+                    const c = closers.find(x => s.startsWith(x, j));
+                    return c ? [s.slice(i, end + 1), j + c.length, c] : null;
+                }
+                let best = -1, which = null;
+                closers.forEach(c => { const k = s.indexOf(c, i); if (k >= 0 && (best < 0 || k < best)) { best = k; which = c; } });
+                return best < 0 ? null : [s.slice(i, best), best + which.length, which];
+            };
+
+            const parseNode = (s, i) => {
+                const m = MERMAID_ID.exec(s.slice(i));
+                if (!m) return null;
+                const id = m[0]; i += id.length;
+                let label, type;
+                if (s.startsWith('@{', i)) {
+                    const end = s.indexOf('}', i);
+                    if (end < 0) return null;
+                    const body = s.slice(i + 2, end);
+                    const sh = /shape\s*:\s*"?([\w-]+)"?/.exec(body), lb = /label\s*:\s*"((?:[^"\\]|\\.)*)"/.exec(body);
+                    if (sh) type = MERMAID_SHAPE_NAMES[sh[1].toLowerCase()] || 'fc_process';
+                    if (lb) label = mermaidLabel(lb[1]);
+                    i = end + 1;
+                } else {
+                    for (const [open, close, t] of MERMAID_SHAPES) {
+                        if (!s.startsWith(open, i)) continue;
+                        if (close === null) {   // [/x/] [\x\] parallelogram, [/x\] [\x/] trapezoid
+                            const r = readLabel(s, i + 2, ['/]', '\\]']);
+                            if (!r) return null;
+                            label = mermaidLabel(r[0]); type = (open[1] === r[2][0]) ? 'fc_data' : 'fc_manual_input'; i = r[1];
+                        } else {
+                            const r = readLabel(s, i + open.length, [close]);
+                            if (!r) return null;
+                            label = mermaidLabel(r[0]); type = t; i = r[1];
+                        }
+                        break;
+                    }
+                }
+                const cls = /^:::[\w-]+/.exec(s.slice(i)); if (cls) i += cls[0].length;
+                if (label === '') label = id;
+                return { id, label, type, i };
+            };
+
+            const parseGroup = (s, i) => {
+                const ids = [];
+                for (;;) {
+                    while (s[i] === ' ') i++;
+                    const n = parseNode(s, i);
+                    if (!n) return ids.length ? { ids, i } : null;
+                    define(n.id, n.label, n.type); ids.push(n.id); i = n.i;
+                    let j = i; while (s[j] === ' ') j++;
+                    if (s[j] === '&') { i = j + 1; continue; }
+                    return { ids, i };
+                }
+            };
+
+            const parseEdge = (s, i) => {
+                while (s[i] === ' ') i++;
+                const rest = s.slice(i);
+                let op, label = '', len;
+                const m = MERMAID_EDGE.exec(rest);
+                if (m) { op = (m[1] || '') + m[2]; len = m[0].length; }
+                else {
+                    const start = /^(<)?(--|==|-\.)(?=\s)/.exec(rest);
+                    if (!start) return null;
+                    const tail = rest.slice(start[0].length);
+                    const e = MERMAID_EDGE_END.exec(tail);
+                    if (!e) return null;
+                    label = tail.slice(0, e.index).trim();
+                    op = (start[1] || '') + start[2] + e[1];
+                    len = start[0].length + e.index + e[0].length;
+                }
+                i += len;
+                let j = i; while (s[j] === ' ') j++;
+                if (s[j] === '|') {
+                    const end = s.indexOf('|', j + 1);
+                    if (end < 0) return null;
+                    label = s.slice(j + 1, end); i = end + 1;
+                }
+                return { i, label: mermaidLabel(label), invisible: op.startsWith('~'), dashed: op.includes('.'), bidirectional: op.startsWith('<') && /[>ox]$/.test(op) };
+            };
+
+            statements.slice(1).forEach(st => {
+                const word = (/^[a-zA-Z]+/.exec(st) || [''])[0];
+                if (word === 'subgraph' && /^subgraph(\s|$)/.test(st)) {
+                    if (subgraphs.length >= MERMAID_LIMITS.subgraphs) throw new Error(`The diagram has more than ${MERMAID_LIMITS.subgraphs} subgraphs.`);
+                    if (stack.length >= MERMAID_LIMITS.depth) throw new Error(`Subgraphs are nested more than ${MERMAID_LIMITS.depth} levels deep.`);
+                    const rest = st.slice(8).trim();
+                    let id = '', label = '';
+                    const withLabel = /^([\p{L}\p{N}_.-]+)\s*\[([\s\S]*)\]$/u.exec(rest);
+                    if (withLabel) { id = withLabel[1]; label = mermaidLabel(withLabel[2]); }
+                    else if (/^"[\s\S]*"$/.test(rest)) label = mermaidLabel(rest);
+                    else if (MERMAID_ID.test(rest) && MERMAID_ID.exec(rest)[0] === rest) { id = rest; label = rest; }
+                    else label = mermaidLabel(rest);
+                    subgraphs.push({ id: id || `subgraph${subgraphs.length + 1}`, label: label || id || 'Subgraph', parent: stack.length ? stack[stack.length - 1] : -1 });
+                    stack.push(subgraphs.length - 1);
+                    return;
+                }
+                if (st === 'end') { if (stack.length) stack.pop(); else ignore('an "end" without a subgraph'); return; }
+                if (word === 'direction' && /^direction\s+(TB|TD|BT|LR|RL)$/i.test(st)) return;
+                if (['classDef', 'class', 'style', 'linkStyle', 'accTitle', 'accDescr', 'title'].includes(word) && /^[a-zA-Z]+(\s|:|$)/.test(st)) { ignore('styling lines'); return; }
+                if (word === 'click' || word === 'callback' || word === 'href') { ignore('click actions (links and callbacks are never imported)'); return; }
+                let g = parseGroup(st, 0);
+                if (!g) { ignore('lines that could not be read'); return; }
+                let i = g.i;
+                for (;;) {
+                    while (st[i] === ' ') i++;
+                    if (i >= st.length) break;
+                    const e = parseEdge(st, i);
+                    if (!e) { ignore('lines that could not be read'); break; }
+                    const right = parseGroup(st, e.i);
+                    if (!right) { ignore('lines that could not be read'); break; }
+                    if (!e.invisible) g.ids.forEach(a => right.ids.forEach(b => {
+                        if (edges.length >= MERMAID_LIMITS.edges) throw new Error(`The diagram has more than ${MERMAID_LIMITS.edges} connections.`);
+                        edges.push({ from: a, to: b, label: e.label, dashed: e.dashed, bidirectional: e.bidirectional });
+                    }));
+                    g = right; i = right.i;
+                }
+            });
+            if (stack.length) warnings.push(`${stack.length} subgraph(s) had no "end"; they were closed at the end of the diagram.`);
+            // Connections to a subgraph itself are not supported: drop them and the placeholder node.
+            const subIds = new Set(subgraphs.map(s => s.id));
+            const toSub = edges.filter(e => (subIds.has(e.from) && !nodes.get(e.from).explicit) || (subIds.has(e.to) && !nodes.get(e.to).explicit));
+            if (toSub.length) {
+                warnings.push(`Skipped ${toSub.length} connection(s) to a whole subgraph; connect to a node inside it instead.`);
+                toSub.forEach(e => edges.splice(edges.indexOf(e), 1));
+                subIds.forEach(id => { const n = nodes.get(id); if (n && !n.explicit) nodes.delete(id); });
+            }
+            ignored.forEach((count, what) => warnings.push(`Ignored ${count} ${what}.`));
+            if (!nodes.size) throw new Error('No nodes were found in the diagram.');
+            return { direction, nodes, edges, subgraphs, warnings };
+        }
+
+        /**
+         * Layered layout for a parsed flowchart. Ranks follow the edges (cycles are broken), nodes are ordered to reduce
+         * crossings, and every subgraph gets its own band across the ranks so trust zones never overlap other nodes.
+         * Returns { nodes: Map(id -> { x, y, w, h }), zones: [{ index, x, y, w, h }] } in canvas coordinates from (0, 0).
+         */
+        function layoutMermaidGraph(g) {
+            const ids = [...g.nodes.keys()];
+            const horizontal = g.direction === 'LR' || g.direction === 'RL';
+            const PAD = 30, LABEL = 34, CROSS_GAP = 50, RANK_GAP = horizontal ? 110 : 90;
+            const size = new Map(ids.map(id => {
+                const n = g.nodes.get(id), d = FLOWCHART_DEFAULTS[n.type] || FLOWCHART_DEFAULTS.fc_process, len = n.label.length;
+                if (n.type === 'fc_connector') { const s = Math.min(140, Math.max(d.w, Math.ceil((len * 7 + 30) / 20) * 20)); return [id, { w: s, h: s }]; }
+                return [id, { w: Math.min(320, Math.max(d.w, Math.ceil((len * 7.5 + 50) / 20) * 20)), h: d.h }];
+            }));
+            const cross = (id) => horizontal ? size.get(id).h : size.get(id).w;
+            const along = (id) => horizontal ? size.get(id).w : size.get(id).h;
+
+            // Break cycles (iterative DFS: edges back to a node on the stack are ignored for ranking).
+            const adj = new Map(ids.map(id => [id, []]));
+            g.edges.forEach(e => { if (e.from !== e.to && adj.has(e.from) && adj.has(e.to)) adj.get(e.from).push(e.to); });
+            const color = new Map(), back = new Set();
+            ids.forEach(root => {
+                if (color.get(root)) return;
+                const stack = [[root, 0]]; color.set(root, 1);
+                while (stack.length) {
+                    const top = stack[stack.length - 1], list = adj.get(top[0]);
+                    if (top[1] < list.length) {
+                        const v = list[top[1]++], c = color.get(v);
+                        if (!c) { color.set(v, 1); stack.push([v, 0]); } else if (c === 1) back.add(`${top[0]}\u0000${v}`);
+                    } else { color.set(top[0], 2); stack.pop(); }
+                }
+            });
+            const succ = new Map(ids.map(id => [id, []])), pred = new Map(ids.map(id => [id, []]));
+            adj.forEach((list, u) => list.forEach(v => { if (!back.has(`${u}\u0000${v}`)) { succ.get(u).push(v); pred.get(v).push(u); } }));
+            // Longest-path ranks (Kahn's algorithm).
+            const rank = new Map(ids.map(id => [id, 0])), indeg = new Map(ids.map(id => [id, pred.get(id).length]));
+            const queue = ids.filter(id => !indeg.get(id));
+            for (let q = 0; q < queue.length; q++) {
+                const u = queue[q];
+                succ.get(u).forEach(v => { rank.set(v, Math.max(rank.get(v), rank.get(u) + 1)); indeg.set(v, indeg.get(v) - 1); if (!indeg.get(v)) queue.push(v); });
+            }
+            const maxRank = Math.max(0, ...rank.values());
+            // Order within ranks: appearance, then barycentre sweeps down and up.
+            const layers = Array.from({ length: maxRank + 1 }, () => []);
+            ids.forEach(id => layers[rank.get(id)].push(id));
+            const pos = new Map();
+            const index = () => layers.forEach(l => l.forEach((id, k) => pos.set(id, l.length > 1 ? k / (l.length - 1) : 0.5)));
+            index();
+            const sweep = (from, to, step, nb) => {
+                for (let r = from; r !== to; r += step) {
+                    const bary = (id) => { const n = nb.get(id); return n.length ? n.reduce((a, x) => a + pos.get(x), 0) / n.length : pos.get(id); };
+                    layers[r].sort((a, b) => bary(a) - bary(b)); index();
+                }
+            };
+            for (let it = 0; it < 3; it++) { sweep(1, maxRank + 1, 1, pred); sweep(maxRank - 1, -1, -1, succ); }
+
+            // Cross-axis bands: each subgraph is a contiguous band; nodes directly in a band are centred per rank.
+            const crossPos = new Map();
+            const subsOf = (c) => g.subgraphs.map((s, k) => k).filter(k => g.subgraphs[k].parent === c);
+            const allNodesOf = (c) => ids.filter(id => { let s = g.nodes.get(id).sub; while (s !== -1 && s !== c) s = g.subgraphs[s].parent; return s === c; });
+            const mean = (list) => list.length ? list.reduce((a, id) => a + pos.get(id), 0) / list.length : 0.5;
+            const startPad = horizontal ? PAD + LABEL : PAD;   // the zone label sits at the top
+            const band = (c) => {
+                const margin = c === -1 ? [0, 0] : [startPad, PAD];
+                const items = [];
+                const direct = ids.filter(id => g.nodes.get(id).sub === c);
+                if (direct.length) {
+                    const perRank = new Map();
+                    direct.forEach(id => { const r = rank.get(id); perRank.set(r, [...(perRank.get(r) || []), id]); });
+                    const width = Math.max(...[...perRank.values()].map(l => l.reduce((a, id) => a + cross(id), 0) + CROSS_GAP * (l.length - 1)));
+                    items.push({ key: mean(direct), width, place: (o) => perRank.forEach(l => {
+                        l.sort((a, b) => pos.get(a) - pos.get(b));
+                        let x = o + (width - (l.reduce((a, id) => a + cross(id), 0) + CROSS_GAP * (l.length - 1))) / 2;
+                        l.forEach(id => { crossPos.set(id, x + cross(id) / 2); x += cross(id) + CROSS_GAP; });
+                    }) });
+                }
+                subsOf(c).forEach(k => { const b = band(k); items.push({ key: mean(allNodesOf(k)), width: b.width, place: b.place }); });
+                items.sort((a, b) => a.key - b.key);
+                const inner = items.reduce((a, it) => a + it.width, 0) + CROSS_GAP * Math.max(0, items.length - 1);
+                const width = margin[0] + Math.max(inner, c === -1 ? 0 : 160) + margin[1];
+                return { width, place: (o) => { let x = o + margin[0]; items.forEach(it => { it.place(x); x += it.width + CROSS_GAP; }); } };
+            };
+            band(-1).place(0);
+            // Along-axis: one row per rank, sized by its largest node.
+            const rankSize = layers.map(l => Math.max(0, ...l.map(along)));
+            const rankStart = []; rankSize.reduce((acc, sz, r) => { rankStart[r] = acc; return acc + sz + RANK_GAP; }, 0);
+            const totalAlong = rankStart[maxRank] + rankSize[maxRank];
+            const out = new Map();
+            ids.forEach(id => {
+                const r = rank.get(id), { w, h } = size.get(id);
+                let a = rankStart[r] + rankSize[r] / 2;
+                if (g.direction === 'BT' || g.direction === 'RL') a = totalAlong - a;
+                const c = crossPos.get(id);
+                const cx = horizontal ? a : c, cy = horizontal ? c : a;
+                out.set(id, { x: Math.round(cx - w / 2), y: Math.round(cy - h / 2), w, h });
+            });
+            // Zones: the box around their nodes and inner zones, plus padding and room for the label.
+            const zones = [];
+            const zoneBox = (k) => {
+                const boxes = ids.filter(id => g.nodes.get(id).sub === k).map(id => out.get(id));
+                subsOf(k).forEach(c => { const z = zoneBox(c); if (z) boxes.push(z); });
+                if (!boxes.length) return null;
+                const x1 = Math.min(...boxes.map(b => b.x)) - PAD, y1 = Math.min(...boxes.map(b => b.y)) - PAD - LABEL;
+                const x2 = Math.max(...boxes.map(b => b.x + b.w)) + PAD, y2 = Math.max(...boxes.map(b => b.y + b.h)) + PAD;
+                const z = { index: k, x: x1, y: y1, w: x2 - x1, h: y2 - y1 };
+                zones.push(z);
+                return z;
+            };
+            subsOf(-1).forEach(zoneBox);
+            // Shift everything so the top-left corner is (0, 0).
+            const all = [...out.values(), ...zones];
+            const minX = Math.min(...all.map(b => b.x)), minY = Math.min(...all.map(b => b.y));
+            all.forEach(b => { b.x -= minX; b.y -= minY; });
+            return { nodes: out, zones };
+        }
+
         // Swimlane colour themes ('' = default). Colours live in the CSS (.sl-theme-*); title/body are only for the picker swatches.
         const SWIMLANE_THEMES = [
             { id: '', label: 'Default', title: '#475569', body: '#eef2f8' },
@@ -5554,6 +5933,7 @@
             bindUiEvents() {
                 document.getElementById('btn-export').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile());
                 document.getElementById('btn-import').addEventListener('click', () => this.triggerWorkspaceJsonImportSelector());
+                this.setupMermaidImport();
                 document.getElementById('btn-reset-session').addEventListener('click', () => this.resetSession());
                 document.getElementById('btn-help-trigger').addEventListener('click', () => {
                     const closeBtn = document.querySelector('#modal-help .btn-close');
@@ -10509,6 +10889,102 @@
                 const name = (toText(this.state.projectTitle).trim() || 'threat-model').replace(/[^\w.-]+/g, '-').slice(0, 60);
                 this.downloadBlob(new Blob([this.buildMermaidDiagram()], { type: 'text/plain;charset=utf-8' }), `${name}.mmd`);
                 this.notify('Mermaid diagram exported. Paste it into a ```mermaid block in GitHub/GitLab Markdown or open it at mermaid.live.', 'success');
+            }
+
+            // ── Mermaid flowchart import ─────────────────────────────────────────────
+            setupMermaidImport() {
+                const modalEl = document.getElementById('modal-mermaid-import');
+                const text = document.getElementById('mermaid-import-text'), file = document.getElementById('mermaid-import-file');
+                const err = document.getElementById('mermaid-import-error'), modeBox = document.getElementById('mermaid-import-mode');
+                const showError = (m) => { err.textContent = m; err.classList.toggle('d-none', !m); };
+                document.getElementById('btn-import-mermaid').addEventListener('click', () => {
+                    showError('');
+                    document.querySelectorAll('input[name="mermaid-import-mode"]').forEach(r => { r.checked = false; });   // ask each time
+                    modeBox.classList.toggle('d-none', !this.state.elements.length);
+                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                    setTimeout(() => text.focus(), 200);
+                });
+                document.getElementById('btn-mermaid-file').addEventListener('click', () => file.click());
+                file.addEventListener('change', async () => {
+                    const f = file.files && file.files[0]; file.value = '';
+                    if (!f) return;
+                    if (f.size > MERMAID_LIMITS.chars * 4) { showError('That file is too large to be a Mermaid diagram.'); return; }
+                    text.value = await f.text();
+                    document.getElementById('mermaid-import-filename').textContent = f.name;
+                    showError('');
+                });
+                document.getElementById('btn-mermaid-import-go').addEventListener('click', () => {
+                    let mode = 'add';
+                    if (this.state.elements.length) {
+                        const picked = document.querySelector('input[name="mermaid-import-mode"]:checked');
+                        if (!picked) { showError('Choose whether to add the diagram to the current model or replace it.'); return; }
+                        mode = picked.value;
+                    }
+                    try {
+                        const result = this.importMermaidFlowchart(text.value, mode);
+                        bootstrap.Modal.getOrCreateInstance(modalEl).hide();
+                        text.value = ''; document.getElementById('mermaid-import-filename').textContent = '';
+                        const msg = `Imported ${result.nodes} node(s), ${result.flows} connection(s) and ${result.zones} trust zone(s).`;
+                        this.notify(result.warnings.length ? `${msg} ${result.warnings.join(' ')}` : msg, result.warnings.length ? 'warning' : 'success');
+                    } catch (e) {
+                        showError(e && e.message ? e.message : 'The diagram could not be imported.');
+                    }
+                });
+            }
+
+            /**
+             * Imports a Mermaid flowchart: nodes become flowchart shapes, subgraphs trust zones, edges flows (label = name).
+             * mode 'add' places it to the right of the current model; 'replace' clears components, flows, threats and
+             * mitigations first. One undo step. Throws an Error with a readable message if the text cannot be imported.
+             */
+            importMermaidFlowchart(source, mode = 'add') {
+                const g = parseMermaidFlowchart(source);
+                const lay = layoutMermaidGraph(g);
+                const s = this.state;
+                let ox = 0, oy = 0;
+                if (mode === 'replace') {
+                    s.elements = []; s.flows = []; s.threats = []; s.mitigations = []; s.selectedElementIds = []; s.selectedFlowId = null;
+                } else if (s.elements.length) {
+                    const boxes = s.elements.map(e => e.type === 'boundary_line'
+                        ? { x1: Math.min(e.x, e.x2), y1: Math.min(e.y, e.y2), x2: Math.max(e.x, e.x2), y2: Math.max(e.y, e.y2) }
+                        : { x1: e.x, y1: e.y, x2: e.x + (e.width || 240), y2: e.y + (e.height || 80) });
+                    ox = Math.max(...boxes.map(b => b.x2)) + 200; oy = Math.min(...boxes.map(b => b.y1));
+                }
+                ox = this.snapValue(ox); oy = this.snapValue(oy);
+                const stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+                const elementIds = new Map();
+                lay.zones.forEach((z, k) => {
+                    s.elements.push({ id: `el-mm${stamp}-z${k}`, type: 'boundary', name: g.subgraphs[z.index].label, x: ox + z.x, y: oy + z.y, width: z.w, height: z.h, notes: '' });
+                });
+                let k = 0;
+                g.nodes.forEach((n, key) => {
+                    const box = lay.nodes.get(key), def = this.elementDefaults(n.type), id = `el-mm${stamp}-${k++}`;
+                    elementIds.set(key, id);
+                    s.elements.push({ id, type: n.type, name: n.label, x: ox + box.x, y: oy + box.y, notes: '', ...def.props, width: box.w, height: box.h });
+                });
+                const anchors = g.direction === 'LR' ? ['right', 'left'] : g.direction === 'RL' ? ['left', 'right'] : g.direction === 'BT' ? ['top', 'bottom'] : ['bottom', 'top'];
+                // Edges that point back against the direction (loops) leave and enter from the side, so they don't
+                // run over the forward edges.
+                const forward = (a, b) => {
+                    const A = lay.nodes.get(a), B = lay.nodes.get(b);
+                    const ca = { x: A.x + A.w / 2, y: A.y + A.h / 2 }, cb = { x: B.x + B.w / 2, y: B.y + B.h / 2 };
+                    return { TD: cb.y > ca.y, BT: cb.y < ca.y, LR: cb.x > ca.x, RL: cb.x < ca.x }[g.direction];
+                };
+                const side = g.direction === 'LR' || g.direction === 'RL' ? 'bottom' : 'right';
+                g.edges.forEach((e, i) => {
+                    const fwd = forward(e.from, e.to);
+                    s.flows.push({
+                        id: `fl-mm${stamp}-${i}`, name: e.label, sourceId: elementIds.get(e.from), sourceAnchor: fwd ? anchors[0] : side,
+                        targetId: elementIds.get(e.to), targetAnchor: fwd ? anchors[1] : side, notes: '', color: 'black',
+                        secProps: { encrypted: 'false', authenticated: 'false' }, isBidirectional: !!e.bidirectional, isDashed: !!e.dashed, ports: '',
+                        bendX: 0, bendY: 0, textOffset: 0.5, points: [], curveStyle: this.isIsometric ? 'sharp' : 'smooth'
+                    });
+                });
+                const warnings = [...g.warnings];
+                if (lay.zones.length < g.subgraphs.length) warnings.push(`Skipped ${g.subgraphs.length - lay.zones.length} empty subgraph(s).`);
+                this.logEvent('IMPORT', `${mode === 'replace' ? 'Replaced the model with' : 'Imported'} a Mermaid flowchart: ${g.nodes.size} node(s), ${g.edges.length} connection(s), ${lay.zones.length} trust zone(s)`);
+                this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace(); this.zoomToFit();
+                return { nodes: g.nodes.size, flows: g.edges.length, zones: lay.zones.length, warnings };
             }
 
             /** SEC-006: threat models are sensitive; let users wipe everything this app stored in the browser. */
