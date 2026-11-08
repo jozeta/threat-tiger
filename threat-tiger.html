@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xZohlg/eQuV5kyFIa1oT1E4VK7eYS4bLiZoxqLWy/Yo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-GGfmv9cNru/Z2O/qWxyFXOE9Dk3GBUgiT0hLxY8zA8A='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1537,6 +1537,14 @@
         }
 
         /* Swimlane Custom CSS rules */
+        .swimlane-drop-highlight {
+            fill: rgba(13, 110, 253, 0.12);
+            stroke: #0d6efd;
+            stroke-width: 2;
+            stroke-dasharray: 6 4;
+            pointer-events: none;
+        }
+
         .swimlane-bg {
             fill: rgba(235, 240, 248, 0.55);
             stroke: #cbd5e1;
@@ -3585,6 +3593,8 @@
         //   any: [conditions], all: [conditions], not: {condition}
         //   type: component type(s) at a flow end ('process', 'datastore', 'interactor', 'infrastructure')
         //   zoned: true|false (component drawn inside a trust boundary)
+        // Swimlane cells: smallest size, and the space kept between nodes and the cell borders.
+        const SWIMLANE_MIN_COL = 320, SWIMLANE_MIN_ROW = 220, SWIMLANE_PADDING = 30;
         const TYPE_WORDS = { process: 'process', datastore: 'data store', interactor: 'external entity', infrastructure: 'infrastructure', custom_image: 'component' };
         const SWITCH_LABELS = {
             encrypted: ['encrypted', 'not encrypted'], authenticated: ['authenticated', 'not authenticated'],
@@ -6155,6 +6165,8 @@
                                 const item = this.state.elements.find(el => el.id === this.state.selectedElementIds[0]);
                                 if (item && item.type === 'swimlane' && item.columns && item.columns.length > 1) {
                                     item.columns.splice(index, 1);
+                                    ['colWidths', 'colMins'].forEach(k => { if (Array.isArray(item[k])) item[k].splice(index, 1); });
+                                    this.logEvent('CHANGE', `Removed a column from swimlane "${item.name}"`);
                                     this.renderSvgDiagramElements();
                                     this.renderSwimlanePropertiesInspectorControls(item);
                                     this.saveSessionToLocalStorage();
@@ -6187,6 +6199,8 @@
                                 const item = this.state.elements.find(el => el.id === this.state.selectedElementIds[0]);
                                 if (item && item.type === 'swimlane' && item.rows && item.rows.length > 1) {
                                     item.rows.splice(index, 1);
+                                    ['rowHeights', 'rowMins'].forEach(k => { if (Array.isArray(item[k])) item[k].splice(index, 1); });
+                                    this.logEvent('CHANGE', `Removed a row from swimlane "${item.name}"`);
                                     this.renderSvgDiagramElements();
                                     this.renderSwimlanePropertiesInspectorControls(item);
                                     this.saveSessionToLocalStorage();
@@ -7156,76 +7170,95 @@
                 return html;
             }
 
+            /** Swimlane geometry shared by layout, rendering, hit-testing and the drop highlight. */
+            swimlaneGeometry(swim) {
+                const cols = swim.columns && swim.columns.length ? swim.columns : ['Column 1', 'Column 2'];
+                const rows = swim.rows && swim.rows.length ? swim.rows : ['Row 1', 'Row 2'];
+                const titleHeight = 40;
+                const headerHeight = cols.every(c => !c || toText(c).trim() === '') ? 0 : 35;
+                const rowHeaderWidth = rows.every(r => !r || toText(r).trim() === '') ? 0 : 120;
+                const colWidths = cols.map((_, i) => Number((swim.colWidths || [])[i]) || SWIMLANE_MIN_COL);
+                const rowHeights = rows.map((_, i) => Number((swim.rowHeights || [])[i]) || SWIMLANE_MIN_ROW);
+                const starts = (x0, sizes) => sizes.reduce((acc, w, i) => { acc.push(i ? acc[i - 1] + sizes[i - 1] : x0); return acc; }, []);
+                const colStarts = starts(swim.x + rowHeaderWidth, colWidths);
+                const rowStarts = starts(swim.y + titleHeight + headerHeight, rowHeights);
+                return { cols, rows, titleHeight, headerHeight, rowHeaderWidth, colWidths, rowHeights, colStarts, rowStarts };
+            }
+
+            /** The swimlane cell { swim, r, c } that contains canvas point (x, y), or null. */
+            swimlaneCellAt(x, y, exceptIds = new Set()) {
+                const lanes = this.state.elements.filter(e => e.type === 'swimlane' && !exceptIds.has(e.id));
+                for (let i = lanes.length - 1; i >= 0; i--) {
+                    const swim = lanes[i]; const g = this.swimlaneGeometry(swim);
+                    const c = g.colStarts.findIndex((x0, k) => x >= x0 && x < x0 + g.colWidths[k]);
+                    const r = g.rowStarts.findIndex((y0, k) => y >= y0 && y < y0 + g.rowHeights[k]);
+                    if (c >= 0 && r >= 0) return { swim, r, c, g };
+                }
+                return null;
+            }
+
+            /**
+             * Fits every swimlane cell around the nodes in it: a node belongs to the cell its centre is in (using the
+             * real column widths and row heights), each column/row grows to hold its nodes with SWIMLANE_PADDING on all
+             * sides, and nodes in later columns/rows move along when an earlier one grows, so they stay in their cell.
+             * While nodes are being dragged nothing reflows; only the drop target is computed for the highlight.
+             */
             layoutSwimlanes() {
-                const swimlanes = this.state.elements.filter(e => e.type === 'swimlane');
-                swimlanes.forEach(swim => {
-                    const cols = swim.columns || ['Column 1', 'Column 2'];
-                    const rows = swim.rows || ['Row 1', 'Row 2'];
-                    const numCols = cols.length;
-                    const numRows = rows.length;
-
-                    const minColWidth = 320;
-                    const minRowHeight = 220;
-                    const padding = 30;
-
-                    const titleHeight = 40;
-                    const headerHeight = cols.every(c => !c || c.trim() === '') ? 0 : 35;
-                    const rowHeaderWidth = rows.every(r => !r || r.trim() === '') ? 0 : 120;
-
-                    const colWidths = new Array(numCols).fill(minColWidth);
-                    const rowHeights = new Array(numRows).fill(minRowHeight);
-
-                    const cellAssignments = [];
-
+                const pad = SWIMLANE_PADDING;
+                const skip = ['swimlane', 'boundary', 'boundary_line', 'textbox', 'headline'];
+                const dragIds = this.isDraggingElements ? new Set((this.initialDragPositions || []).map(p => p.id)) : null;
+                this.swimlaneDropTarget = null;
+                if (dragIds) {
+                    // Drop target: the cell under the centre of the dragged node (not when moving a swimlane itself).
+                    const lead = this.state.elements.find(e => dragIds.has(e.id) && !skip.includes(e.type));
+                    const movingLane = this.state.elements.some(e => dragIds.has(e.id) && e.type === 'swimlane');
+                    if (lead && !movingLane) {
+                        const hit = this.swimlaneCellAt(lead.x + (lead.width || 240) / 2, lead.y + (lead.height || 80) / 2);
+                        if (hit) this.swimlaneDropTarget = { id: hit.swim.id, r: hit.r, c: hit.c };
+                    }
+                }
+                this.state.elements.filter(e => e.type === 'swimlane').forEach(swim => {
+                    const g = this.swimlaneGeometry(swim);
+                    const minCol = g.cols.map((_, i) => Math.max(SWIMLANE_MIN_COL, Number((swim.colMins || [])[i]) || 0));
+                    const minRow = g.rows.map((_, i) => Math.max(SWIMLANE_MIN_ROW, Number((swim.rowMins || [])[i]) || 0));
+                    const finish = (colWidths, rowHeights, assigned) => {
+                        swim.colWidths = colWidths; swim.rowHeights = rowHeights;
+                        swim.width = g.rowHeaderWidth + colWidths.reduce((a, b) => a + b, 0);
+                        swim.height = g.titleHeight + g.headerHeight + rowHeights.reduce((a, b) => a + b, 0);
+                        swim.cellAssignments = assigned.map(a => ({ id: a.el.id, r: a.r, c: a.c }));
+                    };
+                    const assigned = [];
                     this.state.elements.forEach(el => {
-                        if (['swimlane', 'boundary', 'boundary_line', 'textbox', 'headline'].includes(el.type)) return;
-
-                        const elW = el.width || 240;
-                        const elH = el.height || 80;
-                        const cx = el.x + elW / 2;
-                        const cy = el.y + elH / 2;
-
-                        const rx = cx - (swim.x + rowHeaderWidth);
-                        const ry = cy - (swim.y + titleHeight + headerHeight);
-
-                        if (rx >= 0 && ry >= 0) {
-                            const c = Math.floor(rx / minColWidth);
-                            const r = Math.floor(ry / minRowHeight);
-                            if (c >= 0 && c < numCols && r >= 0 && r < numRows) {
-                                cellAssignments.push({ element: el, r, c, w: elW, h: elH });
-                            }
-                        }
+                        if (skip.includes(el.type)) return;
+                        const w = el.width || 240, h = el.height || 80;
+                        const cx = el.x + w / 2, cy = el.y + h / 2;
+                        const c = g.colStarts.findIndex((x0, k) => cx >= x0 && cx < x0 + g.colWidths[k]);
+                        const r = g.rowStarts.findIndex((y0, k) => cy >= y0 && cy < y0 + g.rowHeights[k]);
+                        if (c >= 0 && r >= 0) assigned.push({ el, r, c, w, h });
                     });
+                    if (dragIds) { finish(g.colWidths, g.rowHeights, assigned.filter(a => !dragIds.has(a.el.id))); return; }
 
-                    let currentX = swim.x + rowHeaderWidth;
-                    for (let c = 0; c < numCols; c++) {
-                        let maxW = minColWidth;
-                        const colElements = cellAssignments.filter(a => a.c === c);
-                        colElements.forEach(a => {
-                            const neededW = (a.element.x + a.w + padding) - currentX;
-                            if (neededW > maxW) maxW = neededW;
+                    // Size each column / row: room for the node's offset inside the cell (at least the padding), the node, and the padding.
+                    const need = (n, axis) => {
+                        const sizes = axis === 'x' ? minCol.slice() : minRow.slice();
+                        assigned.forEach(a => {
+                            const i = axis === 'x' ? a.c : a.r;
+                            const start = axis === 'x' ? g.colStarts[i] : g.rowStarts[i];
+                            const off = Math.max(pad, (axis === 'x' ? a.el.x : a.el.y) - start);
+                            sizes[i] = Math.max(sizes[i], off + (axis === 'x' ? a.w : a.h) + pad);
                         });
-                        colWidths[c] = this.snapValue(maxW);
-                        currentX += colWidths[c];
-                    }
-
-                    let currentY = swim.y + titleHeight + headerHeight;
-                    for (let r = 0; r < numRows; r++) {
-                        let maxH = minRowHeight;
-                        const rowElements = cellAssignments.filter(a => a.r === r);
-                        rowElements.forEach(a => {
-                            const neededH = (a.element.y + a.h + padding) - currentY;
-                            if (neededH > maxH) maxH = neededH;
-                        });
-                        rowHeights[r] = this.snapValue(maxH);
-                        currentY += rowHeights[r];
-                    }
-
-                    swim.colWidths = colWidths;
-                    swim.rowHeights = rowHeights;
-                    swim.width = rowHeaderWidth + colWidths.reduce((a, b) => a + b, 0);
-                    swim.height = titleHeight + headerHeight + rowHeights.reduce((a, b) => a + b, 0);
-                    swim.cellAssignments = cellAssignments.map(a => ({ id: a.element.id, r: a.r, c: a.c }));
+                        return sizes.map(v => Math.ceil(v / 20) * 20);
+                    };
+                    const colWidths = need(g.cols.length, 'x');
+                    const rowHeights = need(g.rows.length, 'y');
+                    const newColStarts = colWidths.reduce((acc, w, i) => { acc.push(i ? acc[i - 1] + colWidths[i - 1] : g.colStarts[0]); return acc; }, []);
+                    const newRowStarts = rowHeights.reduce((acc, h, i) => { acc.push(i ? acc[i - 1] + rowHeights[i - 1] : g.rowStarts[0]); return acc; }, []);
+                    // Keep each node at its offset inside its cell (moving along with the cell), at least `pad` from the borders.
+                    assigned.forEach(a => {
+                        a.el.x = newColStarts[a.c] + Math.max(pad, a.el.x - g.colStarts[a.c]);
+                        a.el.y = newRowStarts[a.r] + Math.max(pad, a.el.y - g.rowStarts[a.r]);
+                    });
+                    finish(colWidths, rowHeights, assigned);
                 });
             }
 
@@ -8285,6 +8318,18 @@
                         mainVLine.setAttribute('y2', totalH);
                         mainVLine.setAttribute('class', 'swimlane-border-line');
                         g.appendChild(mainVLine);
+                    }
+
+                    // Highlight the cell a dragged node will be dropped into.
+                    const drop = this.swimlaneDropTarget;
+                    if (drop && drop.id === swim.id) {
+                        const geo = this.swimlaneGeometry(swim);
+                        const hl = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                        hl.setAttribute('x', geo.colStarts[drop.c] - swim.x + 2); hl.setAttribute('y', geo.rowStarts[drop.r] - swim.y + 2);
+                        hl.setAttribute('width', Math.max(0, geo.colWidths[drop.c] - 4)); hl.setAttribute('height', Math.max(0, geo.rowHeights[drop.r] - 4));
+                        hl.setAttribute('rx', '6'); hl.setAttribute('class', 'swimlane-drop-highlight');
+                        hl.setAttribute('data-cell', `${drop.r}:${drop.c}`);
+                        g.appendChild(hl);
                     }
 
                     this.attachNodeEventHandlersLayers(swim, g);
