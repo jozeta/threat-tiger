@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-PE2pa7VdZGhvZ2eLPcWLzi5d78xkPv9zpxtbbcf+1xE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-WNXhvIgIBctabWy9FEKcf0rupkaK3IpDkweWkge8CkM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4762,6 +4762,10 @@
                 document.getElementById('modal-edit-threat').addEventListener('hidden.bs.modal', () => { this.pendingTemplate = null; });
                 this.dismissModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-dismiss-suggestion'));
                 this.mitigationModal = bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-mitigation'));
+                // Editor state for deleteMitigation: 'opening' (fading in), 'open', or closed.
+                document.getElementById('modal-mitigation').addEventListener('show.bs.modal', () => { this.mitigationModalState = 'opening'; });
+                document.getElementById('modal-mitigation').addEventListener('shown.bs.modal', () => { this.mitigationModalState = 'open'; });
+                document.getElementById('modal-mitigation').addEventListener('hide.bs.modal', () => { this.mitigationModalState = 'closed'; });
                 this.setupThreatMitigationPicker();
                 document.getElementById('btn-mitigation-new').addEventListener('click', () => this.openMitigationModal(null));
                 document.getElementById('btn-mitigation-save').addEventListener('click', () => this.commitMitigationModal());
@@ -11244,7 +11248,10 @@
                         this.refreshAppViewVisualWorkspace();
                     }
                 });
-                if (modalEl.classList.contains('show')) { modalEl.addEventListener('hidden.bs.modal', ask, { once: true }); this.mitigationModal.hide(); }
+                // Bootstrap ignores hide() while the editor is still fading in, so wait until it is fully shown first.
+                const hideThenAsk = () => { modalEl.addEventListener('hidden.bs.modal', ask, { once: true }); this.mitigationModal.hide(); };
+                if (this.mitigationModalState === 'open') hideThenAsk();
+                else if (this.mitigationModalState === 'opening') modalEl.addEventListener('shown.bs.modal', hideThenAsk, { once: true });
                 else ask();
             }
 

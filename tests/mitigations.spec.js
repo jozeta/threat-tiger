@@ -108,3 +108,14 @@ test('imported mitigations are sanitised: bad links dropped, unknown ids removed
   expect(await page.evaluate(() => window.__xss)).toEqual([]);
   await expect(page.locator('#threat-mitigation-chips')).toContainText('<img src=x');
 });
+
+test('Delete pressed while the mitigation editor is still opening still asks for confirmation', async ({ page }) => {
+  await openApp(page, { session: model((s) => { s.mitigations = [{ id: 'mi-001', title: 'WAF rules', status: 'Proposed' }]; }) });
+  for (const ms of [0, 200, 280]) {
+    await page.evaluate((d) => { app.openMitigationModal('mi-001'); setTimeout(() => document.getElementById('btn-mitigation-delete').click(), d); }, ms);
+    await expect(page.locator('#modal-confirm-delete')).toBeVisible();
+    await expect(page.locator('#modal-mitigation')).toBeHidden();         // never both at once
+    await page.click('#btn-confirm-cancel');
+    await expect(page.locator('#modal-confirm-delete')).toBeHidden();
+  }
+});

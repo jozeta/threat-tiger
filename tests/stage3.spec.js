@@ -67,6 +67,7 @@ test('BUG-015: saving a threat without a title shows a validation message', asyn
 
 test('BUG-005: a renamed built-in template does not come back as a duplicate', async ({ page }) => {
   await openApp(page);
+  await page.waitForFunction(() => app.threatSuggestions && (app.threatSuggestions.process || []).length);   // library loads async
   const original = await page.evaluate(() => {
     const t = app.threatSuggestions.process[0];
     app.openEditTemplateModal(t, 'process');
