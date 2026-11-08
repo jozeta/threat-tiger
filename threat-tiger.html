@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xZohlg/eQuV5kyFIa1oT1E4VK7eYS4bLiZoxqLWy/Yo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-pH89ANesQm1OCfMQ+62aQ5h+hv0zfi2qajcd4EtFWWk='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4711,6 +4711,7 @@
 
                 const optSnap = document.getElementById('opt-grid-snap-toggle');
                 if (optSnap) {
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: constant markup (one of two string literals)
                     optSnap.innerHTML = this.isSnappingActive ? '<i class="bi bi-check-lg me-1"></i>Snap to Grid' : 'Snap to Grid';
                     optSnap.classList.toggle('active', this.isSnappingActive);
                 }
@@ -4931,6 +4932,7 @@
                 else if (log.type === "REMOVE") actionBadgeClass = "bg-danger text-light";
                 else if (log.type === "CHANGE") actionBadgeClass = "bg-warning text-dark";
                 else if (log.type === "CONFIGURE") actionBadgeClass = "bg-primary text-light";
+                // eslint-disable-next-line no-unsanitized/property -- reviewed: every log field is esc()'d; the badge class is one of four constants
                 tr.innerHTML = `
                         <td class="text-muted" style="font-size:11px;" title="${esc(log.timestamp)}">${esc(ThreatModelingApp.formatTimestamp(log.timestamp))}</td>
                         <td><span class="fw-bold text-dark"><i class="bi bi-person-fill me-1"></i>${esc(log.operator)}</span></td>
@@ -5215,6 +5217,7 @@
                     console.error("[ThreatTiger] Export canvas as PNG failed:", err);
                     this.notify("PNG export failed: " + err.message);
                 } finally {
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: restores the button's own static markup saved at the start of this function
                     btn.innerHTML = originalHtml;
                     btn.disabled = false;
                 }
@@ -5331,6 +5334,7 @@
                         + `<thead><tr><th>ID</th><th>Mitigation</th><th>Status</th><th>Owner</th><th>Threats</th><th>Ticket</th></tr></thead><tbody>${rows}</tbody></table></div>`;
                 }
 
+                // eslint-disable-next-line no-unsanitized/property -- reviewed: all model text is esc()'d (escapeHtml = esc); classes, colours, scores and counts are constants or numbers
                 rpt.innerHTML = `
                     <div class="ptr-header">
                         <h2>Threat Register Report &mdash; ${this.escapeHtml(projectTitle)}</h2>
@@ -7243,6 +7247,7 @@
                 cols.forEach((colName, index) => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'd-flex gap-1 align-items-center mb-1';
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: column name is esc()'d inside a quoted value; index is a number
                     itemDiv.innerHTML = `
                         <input type="text" class="form-control form-control-sm py-0 px-1 shadow-none col-rename-input" style="font-size: 11px;" value="${esc(colName)}" data-index="${index}">
                         <button type="button" class="btn btn-xs btn-outline-danger p-0 d-flex align-items-center justify-content-center col-delete-btn" style="width: 20px; height: 20px; font-size: 10px;" data-index="${index}" ${cols.length <= 1 ? 'disabled' : ''}>
@@ -7257,6 +7262,7 @@
                 rows.forEach((rowName, index) => {
                     const itemDiv = document.createElement('div');
                     itemDiv.className = 'd-flex gap-1 align-items-center mb-1';
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: row name is esc()'d inside a quoted value; index is a number
                     itemDiv.innerHTML = `
                         <input type="text" class="form-control form-control-sm py-0 px-1 shadow-none row-rename-input" style="font-size: 11px;" value="${esc(rowName)}" data-index="${index}">
                         <button type="button" class="btn btn-xs btn-outline-danger p-0 d-flex align-items-center justify-content-center row-delete-btn" style="width: 20px; height: 20px; font-size: 10px;" data-index="${index}" ${rows.length <= 1 ? 'disabled' : ''}>
@@ -7295,6 +7301,7 @@
                     marker.setAttribute('refX', refX.toString());
                     marker.setAttribute('refY', refY.toString());
                     marker.setAttribute('orient', 'auto');
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: colour passed safeColor() (hex or letters only); sizes are numbers from toNumber()
                     marker.innerHTML = `<polygon points="0 0, ${w} ${refY}, 0 ${h}" fill="${colorHex}" />`;
                     defs.appendChild(marker);
                 }
@@ -7308,6 +7315,7 @@
                     marker.setAttribute('refX', refX.toString());
                     marker.setAttribute('refY', refY.toString());
                     marker.setAttribute('orient', 'auto-start-reverse');
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: colour passed safeColor() (hex or letters only); sizes are numbers from toNumber()
                     marker.innerHTML = `<polygon points="0 0, ${w} ${refY}, 0 ${h}" fill="${colorHex}" />`;
                     defs.appendChild(marker);
                 }
@@ -8378,6 +8386,7 @@
                     let textX = (1 - t) * (1 - t) * bl.x + 2 * (1 - t) * t * ctrlX + t * t * bl.x2;
                     let textY = (1 - t) * (1 - t) * bl.y + 2 * (1 - t) * t * ctrlY + t * t * bl.y2;
                     const gText = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: name is esc()'d; x/y are arithmetic results (always numbers); fill is a constant
                     gText.innerHTML = `<rect x="${textX - 65}" y="${textY - 9}" width="130" height="16" fill="white" /><text x="${textX}" y="${textY + 3}" fill="${bl.isDisabled ? '#6c757d' : '#b70918'}" font-size="10px" font-weight="bold" text-anchor="middle" style="pointer-events:none;">${esc(toText(bl.name).toUpperCase())}</text>`;
                     gText.addEventListener('click', (ev) => { ev.stopPropagation(); this.handleElementSelectionEvent(bl.id); });
                     this.dom.layerBoundaryLinesTexts.appendChild(gText);
@@ -8677,6 +8686,7 @@
                         `;
                     }
 
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: flow name, ports and crossed boundary names are esc()'d; classes and colours are constants
                     foLabel.innerHTML = `
                         <div xmlns="http://www.w3.org/1999/xhtml" class="text-center" style="overflow: visible; width: 100%;">
                             ${badgeHtml}
@@ -8793,9 +8803,11 @@
                         const disabledClass = node.isDisabled ? 'disabled' : '';
 
                         if (node.type === 'textbox') {
+                            // eslint-disable-next-line no-unsanitized/property -- reviewed: name is esc()'d; card class is a constant
                             foreignObj.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card ${cardClass} p-2 d-flex"><div class="small text-secondary card-text-render-target text-wrap overflow-hidden w-100 h-100" style="font-family: monospace; font-size:11px; line-height:1.2; white-space: pre-wrap;">${esc(node.name)}</div></div>`;
                         } else if (node.type === 'headline') {
                             const styleMode = node.orientation === 'vertical' ? 'writing-mode: vertical-lr; text-orientation: mixed;' : 'writing-mode: horizontal-tb;';
+                            // eslint-disable-next-line no-unsanitized/property -- reviewed: name is esc()'d; font size is toNumber(); class and writing mode are constants
                             foreignObj.innerHTML = `<div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card ${cardClass} p-1 d-flex" style="${styleMode}"><div class="fw-bold text-dark card-text-render-target text-wrap overflow-hidden w-100 h-100" style="font-size: ${toNumber(node.fontSize, 24)}px; line-height:1.1;">${esc(node.name)}</div></div>`;
                         } else if (node.type === 'step_activity') {
                             const colorMap = {
@@ -8806,11 +8818,13 @@
                             };
                             if (node.hideTextAndBox) {
                                 const selectedStyle = isSelected ? 'box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.4), 0 0 12px rgba(13, 110, 253, 0.6), inset 0 2px 4px rgba(0,0,0,0.15); border: 2px solid #ffffff;' : '';
+                                // eslint-disable-next-line no-unsanitized/property -- reviewed: colour is a colorMap lookup with a letters-only key (no quotes or <); step number is toNumber(); rest constant
                                 foreignObj.innerHTML = `
                                     <div xmlns="http://www.w3.org/1999/xhtml" class="d-flex align-items-center justify-content-center bg-transparent w-100 h-100 overflow-hidden canvas-card canvas-card-hidden-box ${isSelected ? 'selected' : ''}">
                                         <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 fw-bold text-white" style="background-color: ${colorMap[node.circleColor || 'blue'] || '#0d6efd'}; width: 32px; height: 32px; font-size: 13px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15); ${selectedStyle}">${esc(toNumber(node.stepNumber, 1))}</div>
                                     </div>`;
                             } else {
+                                // eslint-disable-next-line no-unsanitized/property -- reviewed: name is esc()'d; colour is a colorMap lookup with a letters-only key; step number is toNumber()
                                 foreignObj.innerHTML = `
                                     <div xmlns="http://www.w3.org/1999/xhtml" class="d-flex align-items-center bg-white p-2 w-100 h-100 overflow-hidden canvas-card ${isSelected ? 'selected' : ''}" style="border: 2px solid #6c757d; border-radius: 6px;">
                                         <div class="d-flex align-items-center justify-content-center rounded-circle flex-shrink-0 fw-bold text-white me-2" style="background-color: ${colorMap[node.circleColor || 'blue'] || '#0d6efd'}; width: 32px; height: 32px; font-size: 13px; box-shadow: inset 0 2px 4px rgba(0,0,0,0.15);">${esc(toNumber(node.stepNumber, 1))}</div>
@@ -8828,12 +8842,14 @@
                             const disabledColor = node.isDisabled ? '#ced4da' : iconColor;
                             const labelColor = node.isDisabled ? '#6c757d' : '#212529';
                             const iconFontSize = Math.max(16, Math.min(w - 16, h - 28));
+                            // eslint-disable-next-line no-unsanitized/property -- reviewed: name is esc()'d; icon via safeIcon(); colour via colorMap or safeColor(); font size is a number
                             foreignObj.innerHTML = `
                                 <div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card card-infrastructure-borderless ${disabledClass}">
                                     <i class="bi ${safeIcon(node.icon)}" style="font-size: ${iconFontSize}px; color: ${disabledColor} !important; line-height: 1;"></i>
                                     <div class="fw-bold card-text-render-target text-truncate text-center w-100 px-2 mt-1" style="font-size: 11px; color: ${labelColor}; line-height: 1.2;">${esc(node.name)}</div>
                                 </div>`;
                         } else {
+                            // eslint-disable-next-line no-unsanitized/property -- reviewed: name and notes are esc()'d; icon via safeIcon(); classes and security badges are constants
                             foreignObj.innerHTML = `
                                 <div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card ${cardClass} ${disabledClass}">
                                     <div class="card-icon-stripe ${stripeClass}"><i class="bi ${safeIcon(node.icon)}"></i></div>
@@ -8881,6 +8897,7 @@
                                     <span class="badge bg-danger me-1">${esc(t.id)}</span> <b>${esc(t.category)}:</b> ${esc(t.title)}
                                 </div>`;
                             });
+                            // eslint-disable-next-line no-unsanitized/property -- reviewed: threat id, category and title are esc()'d; count is a number
                             popover.innerHTML = summaryHtml;
                         });
                         innerBugDiv.addEventListener('mousemove', (ev) => {
@@ -9613,9 +9630,10 @@
 
                 let visibleCount = 0;
                 Object.keys(targetItem.secProps).forEach(key => {
-                    if (!labelsGlossary[key]) return;
+                    if (!Object.hasOwn(labelsGlossary, key)) return;
                     visibleCount++;
                     const div = document.createElement('div'); div.className = "form-check form-switch mb-1";
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: switch key is esc()'d; label is an own property of the constant labelsGlossary
                     div.innerHTML = `
                         <input class="form-check-input" type="checkbox" id="switch-${esc(key)}" ${targetItem.secProps[key] === 'true' ? 'checked' : ''}>
                         <label class="form-check-label extra-small text-dark fw-bold" for="switch-${esc(key)}">${labelsGlossary[key]}</label>`;
@@ -9663,6 +9681,7 @@
                     const score = parseInt(t.likelihood || 3) * parseInt(t.impact || 3);
                     const calc = ThreatModelSession.calculateRisk(t.likelihood, t.impact);
 
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: threat title, category and id are esc()'d; badge class and label are constants from calculateRisk
                     itemDiv.innerHTML = `
                         <div class="d-flex justify-content-between align-items-start mb-1">
                             <span class="fw-bold extra-small text-dark text-truncate" style="max-width: 170px;" title="${esc(t.title)}">${esc(t.title)}</span>
@@ -9786,6 +9805,7 @@
                     const head = document.createElement(opts.collapsible ? 'summary' : 'div');
                     head.className = 'd-flex justify-content-between align-items-center gap-2 mb-1 fw-bold small text-dark';
                     const h = document.createElement('span');
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: icon is a constant class string from the section() call sites
                     h.innerHTML = `<i class="bi ${icon} me-1"></i>`;
                     h.append(`${title} (${count})`);
                     head.appendChild(h);
@@ -9886,12 +9906,13 @@
                 card.setAttribute('tabindex', '0'); card.setAttribute('role', 'button');
                 card.setAttribute('data-template-id', entry.id);
                 const risk = ThreatModelSession.calculateRisk(tpl.likelihood || 3, tpl.impact || 3);
+                // eslint-disable-next-line no-unsanitized/property -- reviewed: all template text is esc()'d (likelihood/impact also clamped by sanitizeTemplate); risk badge is constant
                 card.innerHTML = `
                     <div class="d-flex justify-content-between align-items-start gap-2 mb-1">
                         <div class="fw-bold text-dark text-wrap" style="word-break: break-word; line-height: 1.25;">${esc(entry.title)}</div>
                         <div class="d-flex align-items-center gap-1 flex-shrink-0">
                             <span class="badge stride-${esc(toText(entry.category).charAt(0))} extra-small" title="${esc(entry.category)}">${esc(toText(entry.category).charAt(0))}</span>
-                            ${tpl.likelihood ? `<span class="badge ${risk.badgeClass} extra-small" title="Suggested likelihood ${tpl.likelihood} × impact ${tpl.impact}">${risk.label}</span>` : ''}
+                            ${tpl.likelihood ? `<span class="badge ${risk.badgeClass} extra-small" title="Suggested likelihood ${esc(tpl.likelihood)} × impact ${esc(tpl.impact)}">${risk.label}</span>` : ''}
                             ${entry.added ? '<span class="badge bg-success extra-small">Added</span>' : ''}
                             ${tpl.isUnsaved ? '<span class="badge bg-warning text-dark extra-small" title="Unsaved template change">Unsaved</span>' : ''}
                             <button type="button" class="btn btn-xs p-0 text-muted btn-template-edit" title="Edit template" aria-label="Edit template" style="font-size: 10px; width: 16px; height: 16px; border: none; background: transparent;"><i class="bi bi-pencil"></i></button>
@@ -9978,6 +9999,7 @@
                 });
 
                 this.dom.threatCountBadge.innerText = this.state.threats.length;
+                // eslint-disable-next-line no-unsanitized/property -- reviewed: constant markup (one of two string literals)
                 if (filtered.length === 0) { this.dom.threatRegisterTbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-3">${this.state.threats.length ? 'No threats match the current search and filters.' : 'No threats yet. Select a component and open Threat Templates, or click New Threat.'}</td></tr>`; return; }
 
                 filtered.forEach(t => {
@@ -9994,6 +10016,7 @@
                         <i class="fas fa-crown text-warning me-1 align-middle" style="font-size: 11px;" title="Crown Jewel Asset Ingress Target"></i>
                     ` : '';
 
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: all threat text is esc()'d; badge classes are constants; the coverage badge escapes its tooltip
                     tr.innerHTML = `
                         <td><small class="fw-bold text-muted">${esc(t.id)}</small></td>
                         <td><span class="badge stride-${esc(toText(t.category).charAt(0))} px-2 py-1">${esc(t.category)}</span></td>
@@ -10421,6 +10444,7 @@
                     && (!st || (st === '__open' ? !MITIGATION_DONE.includes(m.status) && m.status !== 'Not applicable' : m.status === st)));
                 tbody.textContent = '';
                 if (!rows.length) {
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: constant markup (one of two string literals)
                     tbody.innerHTML = `<tr><td colspan="6" class="text-center text-muted py-3">${list.length ? 'No mitigations match the current filters.' : 'No mitigations yet. Add them from a threat (or from its suggested controls), or click New Mitigation.'}</td></tr>`;
                     return;
                 }
@@ -10428,6 +10452,7 @@
                     const covered = this.threatsCoveredBy(m.id);
                     const tr = document.createElement('tr'); tr.style.cursor = 'pointer'; tr.setAttribute('data-mitigation-id', m.id); tr.tabIndex = 0;
                     tr.title = 'Click to edit';
+                    // eslint-disable-next-line no-unsanitized/property -- reviewed: all mitigation text is esc()'d; status class from a constant map; ticket URL must match ^https?:// and is esc()'d
                     tr.innerHTML = `
                         <td><small class="fw-bold text-muted">${esc(m.id)}</small></td>
                         <td><div class="fw-bold text-dark">${esc(m.title)}</div>${m.desc ? `<div class="text-muted extra-small text-truncate" style="max-width: 520px;">${esc(m.desc)}</div>` : ''}</td>
