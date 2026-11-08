@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qzTQjauRlUA6YaPqoMJFtcfRCJ4zeT+P6ssS7Na4ChY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LXXToyGYB8q8Dw1gRinWivrzxKFY8qVqIW+EMR0KGlg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -2334,6 +2334,10 @@
                         </div>
 
                         <form id="form-element-properties" class="d-flex flex-column gap-3">
+                            <div id="box-props-node-type" class="d-none mb-2">
+                                <label class="form-label small fw-semibold text-muted mb-1" for="props-node-type">Type</label>
+                                <select class="form-select form-select-sm shadow-none" id="props-node-type"></select>
+                            </div>
                             <div id="box-props-standard-name" class="d-none">
                                 <label class="form-label small fw-semibold text-muted mb-1">Component Label</label>
                                 <input type="text" class="form-control form-control-sm shadow-none"
@@ -3542,6 +3546,27 @@
         //   zoned: true|false (component drawn inside a trust boundary)
         // Swimlane cells: smallest size, and the space kept between nodes and the cell borders.
         const SWIMLANE_MIN_COL = 320, SWIMLANE_MIN_ROW = 220, SWIMLANE_PADDING = 30;
+        // Flowchart node types: default name, size and colours.
+        const FLOWCHART_DEFAULTS = {
+            fc_process:      { label: 'Process (rectangle)',    name: 'Process',      w: 160, h: 80,  fill: '#f5f3ff', stroke: '#2563eb' },
+            fc_decision:     { label: 'Decision (diamond)',     name: 'Decision',     w: 160, h: 100, fill: '#fef3c7', stroke: '#92400e' },
+            fc_terminator:   { label: 'Start / End (oval)',     name: 'Start / End',  w: 160, h: 60,  fill: '#fee2e2', stroke: '#dc2626' },
+            fc_data:         { label: 'Data / I-O',             name: 'Data I/O',     w: 160, h: 80,  fill: '#fce7f3', stroke: '#db2777' },
+            fc_document:     { label: 'Document',               name: 'Document',     w: 160, h: 90,  fill: '#ccfbf1', stroke: '#0d9488' },
+            fc_manual_input: { label: 'Manual input',           name: 'Manual Input', w: 160, h: 80,  fill: '#ffedd5', stroke: '#ea580c' },
+            fc_preparation:  { label: 'Preparation (hexagon)',  name: 'Preparation',  w: 160, h: 80,  fill: '#d1d5db', stroke: '#6b7280' },
+            fc_connector:    { label: 'Connector (circle)',     name: 'Connector',    w: 80,  h: 80,  fill: '#fef9c3', stroke: '#ca8a04' },
+            fc_stored_data:  { label: 'Stored data',            name: 'Stored Data',  w: 160, h: 80,  fill: '#dbeafe', stroke: '#2563eb' },
+            fc_database:     { label: 'Database (cylinder)',    name: 'Database',     w: 120, h: 100, fill: '#ecfccb', stroke: '#65a30d' },
+        };
+        // Node types the Type dropdown can switch between.
+        const MODEL_NODE_TYPES = { process: 'Process / Service', datastore: 'Data Store', interactor: 'External Entity', infrastructure: 'Infrastructure Node' };
+        const SWITCHABLE_NODE_TYPES = new Set([...Object.keys(MODEL_NODE_TYPES), ...Object.keys(FLOWCHART_DEFAULTS)]);
+        // STRIDE per element: categories that fit a node type (others are flagged in model checks).
+        const STRIDE_FIT = {
+            interactor: ['Spoofing', 'Repudiation', 'Information Disclosure'],
+            datastore: ['Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service'],
+        };
         // Swimlane colour themes ('' = default). Colours live in the CSS (.sl-theme-*); title/body are only for the picker swatches.
         const SWIMLANE_THEMES = [
             { id: '', label: 'Default', title: '#475569', body: '#eef2f8' },
@@ -6092,6 +6117,10 @@
                 document.getElementById('props-btn-bring-forward').addEventListener('click', () => this.changeSelectionZDepth('bring-forward'));
                 document.getElementById('props-btn-bring-front').addEventListener('click', () => this.changeSelectionZDepth('bring-front'));
 
+                // Type dropdown: switch a node to another type.
+                const nodeTypeSel = document.getElementById('props-node-type');
+                if (nodeTypeSel) nodeTypeSel.addEventListener('change', () => { this.changeNodeType(nodeTypeSel.dataset.elementId, nodeTypeSel.value); });
+
                 // Swimlane Property Panel Event Bindings
                 const colsList = document.getElementById('props-swimlane-cols-list');
                 const rowsList = document.getElementById('props-swimlane-rows-list');
@@ -6805,61 +6834,57 @@
                 this.refreshAppViewVisualWorkspace();
             }
 
-            instantiateNewCanvasElementNode(type, customX = null, customY = null) {
-                const rect = this.dom.svg.getBoundingClientRect();
-                const canvasLeft = -this.panX / this.zoomScale;
-                const canvasBottom = (rect.height - this.panY) / this.zoomScale;
-                const id = `el-${Date.now()}`;
-
-                let defaultName = 'Processing Service Node';
+            /**
+             * Defaults for a new element of `type`: its name, size and type-specific fields (security switches, icon,
+             * flowchart colours, …). Used when adding an element, changing a node's type and quick-adding flowchart nodes.
+             */
+            elementDefaults(type) {
+                let name = 'Processing Service Node';
                 let secProps = { runAsAdmin: 'false', loggingEnabled: 'false', handlesSensitiveData: 'false', isCrownJewel: 'false' };
                 let icon = 'bi-server';
-
                 if (type === 'datastore') {
-                    defaultName = 'Relational Database Store'; icon = 'bi-database-fill';
+                    name = 'Relational Database Store'; icon = 'bi-database-fill';
                     secProps = { auditLogged: 'false', storesCredentials: 'false', storesPii: 'false', encryptedAtRest: 'false', handlesSensitiveData: 'false', isCrownJewel: 'false' };
                 } else if (type === 'interactor') {
-                    defaultName = 'External Threat Client'; icon = 'bi-person-fill';
+                    name = 'External Threat Client'; icon = 'bi-person-fill';
                     secProps = { unauthAccess: 'false', isPrivilegedUser: 'false', mfaRequired: 'false', vpnRequired: 'false' };
-                } else if (type === 'infrastructure') {
-                    defaultName = 'Infrastructure Node'; icon = 'bi-server';
-                    secProps = {};
-                } else if (type === 'boundary') { defaultName = 'Network Isolation Perimeter'; }
-                else if (type === 'boundary_line') { defaultName = 'Trust Boundary Line'; }
-                else if (type === 'step_activity') { defaultName = 'Describe interaction track sequence details...'; }
-                else if (type === 'textbox') { defaultName = 'Click inside properties sheet to edit commentary...'; }
-                else if (type === 'headline') { defaultName = 'Section Banner Headline'; }
-                else if (type === 'custom_image') { defaultName = 'Custom Graphic Image'; }
-                else if (type === 'swimlane') { defaultName = 'Swimlane Grid Layout'; }
-                else if (type === 'fc_process') { defaultName = 'Process'; }
-                else if (type === 'fc_decision') { defaultName = 'Decision'; }
-                else if (type === 'fc_terminator') { defaultName = 'Start / End'; }
-                else if (type === 'fc_data') { defaultName = 'Data I/O'; }
-                else if (type === 'fc_document') { defaultName = 'Document'; }
-                else if (type === 'fc_manual_input') { defaultName = 'Manual Input'; }
-                else if (type === 'fc_preparation') { defaultName = 'Preparation'; }
-                else if (type === 'fc_connector') { defaultName = 'Connector'; }
-                else if (type === 'fc_stored_data') { defaultName = 'Stored Data'; }
-                else if (type === 'fc_database') { defaultName = 'Database'; }
+                } else if (type === 'infrastructure') { name = 'Infrastructure Node'; secProps = {}; }
+                else if (type === 'boundary') name = 'Network Isolation Perimeter';
+                else if (type === 'boundary_line') name = 'Trust Boundary Line';
+                else if (type === 'step_activity') name = 'Describe interaction track sequence details...';
+                else if (type === 'textbox') name = 'Click inside properties sheet to edit commentary...';
+                else if (type === 'headline') name = 'Section Banner Headline';
+                else if (type === 'custom_image') name = 'Custom Graphic Image';
+                else if (type === 'swimlane') name = 'Swimlane Grid Layout';
+                else if (FLOWCHART_DEFAULTS[type]) name = FLOWCHART_DEFAULTS[type].name;
 
-                // Determine dimensions for lower-left positioning
-                let w = 240;
-                let h = 80;
+                let w = 240, h = 80;
                 if (type === 'boundary') { w = 320; h = 240; }
                 else if (type === 'step_activity') { w = 260; h = 50; }
                 else if (type === 'infrastructure') { w = 80; h = 70; }
                 else if (type === 'custom_image') { w = 120; h = 120; }
                 else if (type === 'swimlane') { w = 680; h = 480; }
-                else if (type === 'fc_process') { w = 160; h = 80; }
-                else if (type === 'fc_decision') { w = 160; h = 100; }
-                else if (type === 'fc_terminator') { w = 160; h = 60; }
-                else if (type === 'fc_data') { w = 160; h = 80; }
-                else if (type === 'fc_document') { w = 160; h = 90; }
-                else if (type === 'fc_manual_input') { w = 160; h = 80; }
-                else if (type === 'fc_preparation') { w = 160; h = 80; }
-                else if (type === 'fc_connector') { w = 80; h = 80; }
-                else if (type === 'fc_stored_data') { w = 160; h = 80; }
-                else if (type === 'fc_database') { w = 120; h = 100; }
+                else if (FLOWCHART_DEFAULTS[type]) { w = FLOWCHART_DEFAULTS[type].w; h = FLOWCHART_DEFAULTS[type].h; }
+
+                const props = {
+                    ...((type === 'textbox' || type === 'headline') && { width: 240, height: 80 }),
+                    ...(type === 'headline' && { orientation: 'horizontal', fontSize: '24' }),
+                    ...(type === 'step_activity' && { width: 260, height: 50, stepNumber: 1, circleColor: 'blue' }),
+                    ...(['process', 'datastore', 'interactor'].includes(type) && { secProps, icon, width: w, height: h }),
+                    ...(type === 'infrastructure' && { icon, width: w, height: h, iconColor: 'cyan' }),
+                    ...(type === 'boundary' && { width: 320, height: 240 }),
+                    ...(type === 'custom_image' && { width: w, height: h, imageUrl: '' }),
+                    ...(type === 'swimlane' && { width: w, height: h, columns: ['Column 1', 'Column 2'], rows: ['Row 1', 'Row 2'] }),
+                    ...(FLOWCHART_DEFAULTS[type] && { width: w, height: h, fcFillColor: FLOWCHART_DEFAULTS[type].fill, fcStrokeColor: FLOWCHART_DEFAULTS[type].stroke, fcStrokeWidth: 2 }),
+                };
+                return { name, width: w, height: h, props };
+            }
+
+            instantiateNewCanvasElementNode(type, customX = null, customY = null) {
+                const rect = this.dom.svg.getBoundingClientRect();
+                const id = `el-${Date.now()}`;
+                const def = this.elementDefaults(type);
+                const defaultName = def.name, w = def.width, h = def.height;
 
                 let targetX, targetY;
                 if (customX !== null && customY !== null) {
@@ -6873,38 +6898,53 @@
 
                 const elementObj = {
                     id, type, name: defaultName, x: targetX, y: targetY, notes: '',
-                    ...((type === 'textbox' || type === 'headline') && { width: 240, height: 80 }),
-                    ...(type === 'headline' && { orientation: 'horizontal', fontSize: '24' }),
-                    ...(type === 'step_activity' && { width: 260, height: 50, stepNumber: 1, circleColor: 'blue' }),
+                    ...def.props,
                     ...(type === 'boundary_line' && { x2: targetX + 150, y2: targetY, bendX: 0, bendY: 0, textOffset: 0.5 }),
-                    ...(type !== 'boundary' && type !== 'boundary_line' && type !== 'textbox' && type !== 'headline' && type !== 'step_activity' && type !== 'infrastructure' && type !== 'custom_image' && type !== 'swimlane' && !type.startsWith('fc_') && { secProps, icon, width: w, height: h }),
-                    ...(type === 'infrastructure' && { icon, width: w, height: h, iconColor: 'cyan' }),
-                    ...(type === 'boundary' && { width: 320, height: 240 }),
-                    ...(type === 'custom_image' && { width: w, height: h, imageUrl: '' }),
-                    ...(type === 'swimlane' && { width: w, height: h, columns: ['Column 1', 'Column 2'], rows: ['Row 1', 'Row 2'] }),
-                    ...(type.startsWith('fc_') && (() => {
-                        // Per-shape default fill + stroke colors
-                        const fcColorMap = {
-                            fc_process:      { fcFillColor: '#f5f3ff', fcStrokeColor: '#2563eb' }, // Pale Purple / Blue
-                            fc_decision:     { fcFillColor: '#fef3c7', fcStrokeColor: '#92400e' }, // Pale Brown  / Brown
-                            fc_terminator:   { fcFillColor: '#fee2e2', fcStrokeColor: '#dc2626' }, // Pale Red    / Red
-                            fc_data:         { fcFillColor: '#fce7f3', fcStrokeColor: '#db2777' }, // Pale Pink   / Pink
-                            fc_document:     { fcFillColor: '#ccfbf1', fcStrokeColor: '#0d9488' }, // Pale Teal   / Teal
-                            fc_manual_input: { fcFillColor: '#ffedd5', fcStrokeColor: '#ea580c' }, // Pale Orange / Orange
-                            fc_preparation:  { fcFillColor: '#d1d5db', fcStrokeColor: '#6b7280' }, // Silver      / Mid Grey
-                            fc_connector:    { fcFillColor: '#fef9c3', fcStrokeColor: '#ca8a04' }, // Pale Yellow / Amber
-                            fc_stored_data:  { fcFillColor: '#dbeafe', fcStrokeColor: '#2563eb' }, // Pale Blue   / Blue
-                            fc_database:     { fcFillColor: '#ecfccb', fcStrokeColor: '#65a30d' }, // Pale Lime   / Lime
-                        };
-                        const colors = fcColorMap[type] || { fcFillColor: '#f5f3ff', fcStrokeColor: '#7c3aed' };
-                        return { width: w, height: h, ...colors, fcStrokeWidth: 2 };
-                    })()), 
                 };
 
                 this.state.elements.push(elementObj);
                 this.logEvent("CREATE", `Added ${type.replace(/_/g, ' ')} "${defaultName}"`);
                 this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace();
                 this.handleElementSelectionEvent(id);
+            }
+
+            /** Fills the Type dropdown for a node (threat-modelling and flowchart types). */
+            renderNodeTypeSelect(item) {
+                const box = document.getElementById('box-props-node-type'), sel = document.getElementById('props-node-type');
+                if (!box || !sel) return;
+                box.classList.remove('d-none');
+                sel.replaceChildren();
+                [['Threat modelling', MODEL_NODE_TYPES], ['Flowchart', Object.fromEntries(Object.entries(FLOWCHART_DEFAULTS).map(([k, v]) => [k, v.label]))]].forEach(([label, types]) => {
+                    const g = document.createElement('optgroup'); g.label = label;
+                    Object.entries(types).forEach(([value, text]) => g.appendChild(new Option(text, value)));
+                    sel.appendChild(g);
+                });
+                sel.value = item.type;
+                sel.dataset.elementId = item.id;
+            }
+
+            /**
+             * Changes a node's type. Keeps id, name, position (centre), notes, state, flows and threats; security switches
+             * the new type also has keep their value, the rest get the new type's defaults. The icon is kept between
+             * threat-modelling types if it was customised. One undo step.
+             */
+            changeNodeType(id, newType) {
+                const el = this.state.elements.find(e => e.id === id);
+                if (!el || !SWITCHABLE_NODE_TYPES.has(el.type) || !SWITCHABLE_NODE_TYPES.has(newType) || el.type === newType) return false;
+                const oldType = el.type, oldDef = this.elementDefaults(oldType), def = this.elementDefaults(newType);
+                const cx = el.x + (el.width || oldDef.width) / 2, cy = el.y + (el.height || oldDef.height) / 2;
+                const oldSec = el.secProps || {}, oldIcon = el.icon;
+                const customIcon = oldIcon && oldIcon !== oldDef.props.icon;
+                ['secProps', 'icon', 'iconColor', 'fcFillColor', 'fcStrokeColor', 'fcStrokeWidth', 'width', 'height'].forEach(k => delete el[k]);
+                Object.assign(el, JSON.parse(JSON.stringify(def.props)));
+                el.type = newType;
+                if (el.secProps) Object.keys(el.secProps).forEach(k => { if (k in oldSec) el.secProps[k] = oldSec[k]; });
+                if (customIcon && 'icon' in def.props) el.icon = oldIcon;
+                el.x = this.snapValue(cx - def.width / 2); el.y = this.snapValue(cy - def.height / 2);
+                const fromLabel = MODEL_NODE_TYPES[oldType] || FLOWCHART_DEFAULTS[oldType].label, toLabel = MODEL_NODE_TYPES[newType] || FLOWCHART_DEFAULTS[newType].label;
+                this.logEvent('CHANGE', `Changed "${el.name}" from ${fromLabel} to ${toLabel}`);
+                this.refreshAppViewVisualWorkspace();
+                return true;
             }
 
             handleElementSelectionEvent(id) {
@@ -7724,6 +7764,11 @@
                 const DEFAULT_NAMES = ['processing service node', 'relational database store', 'external threat client', 'infrastructure node', 'network isolation perimeter', 'trust boundary line'];
                 const defaults = this.state.elements.filter(e => [...modelTypes, 'boundary', 'boundary_line'].includes(e.type) && DEFAULT_NAMES.includes(toText(e.name).trim().toLowerCase().replace(/ - copy$/, '')));
                 if (defaults.length) w.push({ level: 'info', code: 'MC-NAME', text: `${defaults.length} item(s) still have their default name (${defaults.slice(0, 3).map(nameOf).join(', ')}${defaults.length > 3 ? '…' : ''}). Real names make threats and suggestions more specific.`, id: defaults[0].id });
+                this.state.threats.forEach(t => {
+                    const e = byId.get(t.elementId), fit = e && STRIDE_FIT[e.type];
+                    if (fit && STRIDE_CATEGORIES.includes(t.category) && !fit.includes(t.category))
+                        w.push({ level: 'info', code: 'MC-STRIDE-FIT', text: `Threat ${t.id} (${t.category}) is on ${nameOf(e)}, a ${MODEL_NODE_TYPES[e.type]}; ${t.category} does not usually apply to that type. Check the threat, or move it to the right component.`, id: e.id });
+                });
                 const threatTargets = new Set(this.state.threats.map(t => t.elementId));
                 this.state.elements.filter(e => e.secProps && e.secProps.isCrownJewel === 'true' && !threatTargets.has(e.id))
                     .forEach(e => w.push({ level: 'warning', code: 'MC-CROWN', text: `Crown jewel ${nameOf(e)} has no threats recorded yet.`, id: e.id }));
@@ -9320,7 +9365,7 @@
             }
 
             updatePropertiesInspectorView() {
-                const boxIds = ['box-props-standard-name', 'box-props-status-state', 'box-props-icon-customization', 'box-props-flow-routing', 'box-props-step-activity', 'box-props-text-offset', 'box-props-textbox-textarea', 'box-props-headline-customization', 'box-props-security', 'box-props-zdepth', 'box-props-custom-image', 'box-props-isometric-toggle', 'box-props-swimlane', 'box-props-flowchart'];
+                const boxIds = ['box-props-node-type', 'box-props-standard-name', 'box-props-status-state', 'box-props-icon-customization', 'box-props-flow-routing', 'box-props-step-activity', 'box-props-text-offset', 'box-props-textbox-textarea', 'box-props-headline-customization', 'box-props-security', 'box-props-zdepth', 'box-props-custom-image', 'box-props-isometric-toggle', 'box-props-swimlane', 'box-props-flowchart'];
                 boxIds.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('d-none'); });
 
                 const textContentInput = document.getElementById('props-input-text-content');
@@ -9348,6 +9393,7 @@
 
                 let displayType = targetItem.type ? targetItem.type.replace(/_/g, ' ').toUpperCase() : 'COMMUNICATION STREAM';
                 document.getElementById('props-element-type-lbl').innerText = displayType;
+                if (SWITCHABLE_NODE_TYPES.has(targetItem.type)) this.renderNodeTypeSelect(targetItem);
 
                 if (targetItem.type === 'swimlane') {
                     document.getElementById('box-props-standard-name').classList.remove('d-none');
