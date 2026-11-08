@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-UM0l7FHmEOEK7mo6N4rUQYL4UCfNm3YRdnnv8mrae8Q='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-6fsDZgjlaHIEx9eiM2gjNbt780TyrK8Yr/6/Dai0oW4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1554,18 +1554,18 @@
         /* Swimlane colours come from variables: defaults, dark canvas defaults, then the chosen theme (wins in both). */
         .swimlane-group { --sl-bg: rgba(235, 240, 248, 0.55); --sl-border: #cbd5e1; --sl-title: #475569; --sl-title-text: #ffffff; --sl-head: #94a3b8; --sl-head-text: #ffffff; --sl-rowhead: #f1f5f9; --sl-rowhead-text: #475569; --sl-grid: #cbd5e1; --sl-line: #94a3b8; }
         .dark-theme-canvas .swimlane-group { --sl-bg: rgba(30, 30, 42, 0.6); --sl-border: #475569; --sl-title: #1e293b; --sl-title-text: #ffffff; --sl-head: #334155; --sl-head-text: #ffffff; --sl-rowhead: #0f172a; --sl-rowhead-text: #94a3b8; --sl-grid: #475569; --sl-line: #334155; }
-        .swimlane-group.sl-theme-yellow { --sl-bg: #fefce8; --sl-border: #fde047; --sl-title: #a16207; --sl-title-text: #ffffff; --sl-head: #fde68a; --sl-head-text: #713f12; --sl-rowhead: #fef9c3; --sl-rowhead-text: #854d0e; --sl-grid: #fde68a; --sl-line: #eab308; }
-        .swimlane-group.sl-theme-yellow-strong { --sl-bg: #fef08a; --sl-border: #a16207; --sl-title: #854d0e; --sl-title-text: #ffffff; --sl-head: #eab308; --sl-head-text: #422006; --sl-rowhead: #fde047; --sl-rowhead-text: #713f12; --sl-grid: #facc15; --sl-line: #a16207; }
-        .swimlane-group.sl-theme-green { --sl-bg: #f0fdf4; --sl-border: #86efac; --sl-title: #15803d; --sl-title-text: #ffffff; --sl-head: #bbf7d0; --sl-head-text: #14532d; --sl-rowhead: #dcfce7; --sl-rowhead-text: #166534; --sl-grid: #bbf7d0; --sl-line: #4ade80; }
-        .swimlane-group.sl-theme-green-strong { --sl-bg: #bbf7d0; --sl-border: #15803d; --sl-title: #14532d; --sl-title-text: #ffffff; --sl-head: #16a34a; --sl-head-text: #ffffff; --sl-rowhead: #86efac; --sl-rowhead-text: #14532d; --sl-grid: #4ade80; --sl-line: #15803d; }
-        .swimlane-group.sl-theme-blue { --sl-bg: #eff6ff; --sl-border: #93c5fd; --sl-title: #2563eb; --sl-title-text: #ffffff; --sl-head: #bfdbfe; --sl-head-text: #1e3a8a; --sl-rowhead: #dbeafe; --sl-rowhead-text: #1e40af; --sl-grid: #bfdbfe; --sl-line: #60a5fa; }
-        .swimlane-group.sl-theme-blue-strong { --sl-bg: #bfdbfe; --sl-border: #1d4ed8; --sl-title: #1e3a8a; --sl-title-text: #ffffff; --sl-head: #2563eb; --sl-head-text: #ffffff; --sl-rowhead: #93c5fd; --sl-rowhead-text: #1e3a8a; --sl-grid: #60a5fa; --sl-line: #1d4ed8; }
-        .swimlane-group.sl-theme-red { --sl-bg: #fef2f2; --sl-border: #fca5a5; --sl-title: #dc2626; --sl-title-text: #ffffff; --sl-head: #fecaca; --sl-head-text: #7f1d1d; --sl-rowhead: #fee2e2; --sl-rowhead-text: #991b1b; --sl-grid: #fecaca; --sl-line: #f87171; }
-        .swimlane-group.sl-theme-red-strong { --sl-bg: #fecaca; --sl-border: #b91c1c; --sl-title: #7f1d1d; --sl-title-text: #ffffff; --sl-head: #dc2626; --sl-head-text: #ffffff; --sl-rowhead: #fca5a5; --sl-rowhead-text: #7f1d1d; --sl-grid: #f87171; --sl-line: #b91c1c; }
+        .swimlane-group.sl-theme-yellow { --sl-bg: #faf7ec; --sl-border: #e3d9b0; --sl-title: #8a7434; --sl-title-text: #ffffff; --sl-head: #ece3c2; --sl-head-text: #5c4d22; --sl-rowhead: #f4efdc; --sl-rowhead-text: #6b5a2a; --sl-grid: #e8dfbd; --sl-line: #c9b77a; }
+        .swimlane-group.sl-theme-yellow-strong { --sl-bg: #efe6c6; --sl-border: #8a7434; --sl-title: #6b5a2a; --sl-title-text: #ffffff; --sl-head: #806c33; --sl-head-text: #ffffff; --sl-rowhead: #e3d6a8; --sl-rowhead-text: #4f421e; --sl-grid: #d4c48e; --sl-line: #8a7434; }
+        .swimlane-group.sl-theme-green { --sl-bg: #f3f7f3; --sl-border: #bcd3bf; --sl-title: #4f7a57; --sl-title-text: #ffffff; --sl-head: #d6e5d8; --sl-head-text: #2f4a34; --sl-rowhead: #e8f0e9; --sl-rowhead-text: #3d5e43; --sl-grid: #d2e2d4; --sl-line: #93b399; }
+        .swimlane-group.sl-theme-green-strong { --sl-bg: #dbe8dc; --sl-border: #4f7a57; --sl-title: #3a5c40; --sl-title-text: #ffffff; --sl-head: #557a5c; --sl-head-text: #ffffff; --sl-rowhead: #c6dbc9; --sl-rowhead-text: #2f4a34; --sl-grid: #a9c6ad; --sl-line: #4f7a57; }
+        .swimlane-group.sl-theme-blue { --sl-bg: #f2f5f9; --sl-border: #bccbdc; --sl-title: #4f6b8f; --sl-title-text: #ffffff; --sl-head: #d5dfeb; --sl-head-text: #2c3e57; --sl-rowhead: #e7edf4; --sl-rowhead-text: #3b5273; --sl-grid: #d1dbe7; --sl-line: #92a8c4; }
+        .swimlane-group.sl-theme-blue-strong { --sl-bg: #d9e2ed; --sl-border: #4f6b8f; --sl-title: #3b5273; --sl-title-text: #ffffff; --sl-head: #5b7598; --sl-head-text: #ffffff; --sl-rowhead: #c3d1e1; --sl-rowhead-text: #2c3e57; --sl-grid: #a6b8cf; --sl-line: #4f6b8f; }
+        .swimlane-group.sl-theme-red { --sl-bg: #faf3f2; --sl-border: #e0c0bc; --sl-title: #9a5850; --sl-title-text: #ffffff; --sl-head: #eed8d5; --sl-head-text: #5e302b; --sl-rowhead: #f5e8e6; --sl-rowhead-text: #7a433c; --sl-grid: #ebd4d0; --sl-line: #c99a93; }
+        .swimlane-group.sl-theme-red-strong { --sl-bg: #efdcd9; --sl-border: #9a5850; --sl-title: #7a433c; --sl-title-text: #ffffff; --sl-head: #a0645c; --sl-head-text: #ffffff; --sl-rowhead: #e4c6c1; --sl-rowhead-text: #5e302b; --sl-grid: #d4aaa4; --sl-line: #9a5850; }
         .swimlane-group.sl-theme-grey { --sl-bg: #f9fafb; --sl-border: #d1d5db; --sl-title: #6b7280; --sl-title-text: #ffffff; --sl-head: #e5e7eb; --sl-head-text: #374151; --sl-rowhead: #f3f4f6; --sl-rowhead-text: #4b5563; --sl-grid: #e5e7eb; --sl-line: #9ca3af; }
         .swimlane-group.sl-theme-grey-strong { --sl-bg: #e5e7eb; --sl-border: #4b5563; --sl-title: #374151; --sl-title-text: #ffffff; --sl-head: #6b7280; --sl-head-text: #ffffff; --sl-rowhead: #d1d5db; --sl-rowhead-text: #1f2937; --sl-grid: #9ca3af; --sl-line: #4b5563; }
-        .swimlane-group.sl-theme-black { --sl-bg: #ffffff; --sl-border: #1f2937; --sl-title: #111827; --sl-title-text: #ffffff; --sl-head: #374151; --sl-head-text: #ffffff; --sl-rowhead: #f3f4f6; --sl-rowhead-text: #111827; --sl-grid: #d1d5db; --sl-line: #1f2937; }
-        .swimlane-group.sl-theme-black-strong { --sl-bg: #1f2937; --sl-border: #000000; --sl-title: #000000; --sl-title-text: #ffffff; --sl-head: #111827; --sl-head-text: #e5e7eb; --sl-rowhead: #111827; --sl-rowhead-text: #e5e7eb; --sl-grid: #374151; --sl-line: #4b5563; }
+        .swimlane-group.sl-theme-black { --sl-bg: #ffffff; --sl-border: #4a5059; --sl-title: #2b3038; --sl-title-text: #ffffff; --sl-head: #4a5059; --sl-head-text: #ffffff; --sl-rowhead: #f1f2f4; --sl-rowhead-text: #2b3038; --sl-grid: #d5d8dc; --sl-line: #4a5059; }
+        .swimlane-group.sl-theme-black-strong { --sl-bg: #2b3038; --sl-border: #1c2026; --sl-title: #1c2026; --sl-title-text: #ffffff; --sl-head: #2b3038; --sl-head-text: #e5e7eb; --sl-rowhead: #2b3038; --sl-rowhead-text: #e5e7eb; --sl-grid: #464c55; --sl-line: #555c66; }
 
         .swimlane-bg { fill: var(--sl-bg); stroke: var(--sl-border); stroke-width: 1.5px; transition: fill 0.15s, stroke 0.15s; }
         .swimlane-title-bg { fill: var(--sl-title); transition: fill 0.15s; }
@@ -3962,18 +3962,18 @@
         // Swimlane colour themes ('' = default). Colours live in the CSS (.sl-theme-*); title/body are only for the picker swatches.
         const SWIMLANE_THEMES = [
             { id: '', label: 'Default', title: '#475569', body: '#eef2f8' },
-            { id: 'yellow', label: 'Yellow', title: '#a16207', body: '#fefce8' },
-            { id: 'yellow-strong', label: 'Yellow (strong)', title: '#854d0e', body: '#fef08a' },
-            { id: 'green', label: 'Green', title: '#15803d', body: '#f0fdf4' },
-            { id: 'green-strong', label: 'Green (strong)', title: '#14532d', body: '#bbf7d0' },
-            { id: 'blue', label: 'Blue', title: '#2563eb', body: '#eff6ff' },
-            { id: 'blue-strong', label: 'Blue (strong)', title: '#1e3a8a', body: '#bfdbfe' },
-            { id: 'red', label: 'Red', title: '#dc2626', body: '#fef2f2' },
-            { id: 'red-strong', label: 'Red (strong)', title: '#7f1d1d', body: '#fecaca' },
+            { id: 'yellow', label: 'Yellow', title: '#8a7434', body: '#faf7ec' },
+            { id: 'yellow-strong', label: 'Yellow (strong)', title: '#6b5a2a', body: '#efe6c6' },
+            { id: 'green', label: 'Green', title: '#4f7a57', body: '#f3f7f3' },
+            { id: 'green-strong', label: 'Green (strong)', title: '#3a5c40', body: '#dbe8dc' },
+            { id: 'blue', label: 'Blue', title: '#4f6b8f', body: '#f2f5f9' },
+            { id: 'blue-strong', label: 'Blue (strong)', title: '#3b5273', body: '#d9e2ed' },
+            { id: 'red', label: 'Red', title: '#9a5850', body: '#faf3f2' },
+            { id: 'red-strong', label: 'Red (strong)', title: '#7a433c', body: '#efdcd9' },
             { id: 'grey', label: 'Grey', title: '#6b7280', body: '#f9fafb' },
             { id: 'grey-strong', label: 'Grey (strong)', title: '#374151', body: '#e5e7eb' },
-            { id: 'black', label: 'Black', title: '#111827', body: '#ffffff' },
-            { id: 'black-strong', label: 'Black (strong)', title: '#000000', body: '#1f2937' }
+            { id: 'black', label: 'Black', title: '#2b3038', body: '#ffffff' },
+            { id: 'black-strong', label: 'Black (strong)', title: '#1c2026', body: '#2b3038' }
         ];
         const SWIMLANE_THEME_IDS = new Set(SWIMLANE_THEMES.map(t => t.id));
         // Smallest size a column or row can be given by dragging its resize handle.

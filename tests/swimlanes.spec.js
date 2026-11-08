@@ -189,12 +189,12 @@ test('swimlane colour themes: picker, colours, dark canvas, undo, sanitised impo
   await expect(swatches.first()).toHaveAttribute('aria-pressed', 'true');
   await page.locator('#props-swimlane-theme [data-theme="green-strong"]').click();
   expect(await page.evaluate(() => app.state.elements.find((x) => x.id === 'lane').theme)).toBe('green-strong');
-  await expect.poll(() => fill('.swimlane-title-bg')).toBe('rgb(20, 83, 45)');          // #14532d
-  await expect.poll(() => fill('.swimlane-bg')).toBe('rgb(187, 247, 208)');             // #bbf7d0
+  await expect.poll(() => fill('.swimlane-title-bg')).toBe('rgb(58, 92, 64)');          // #3a5c40
+  await expect.poll(() => fill('.swimlane-bg')).toBe('rgb(219, 232, 220)');             // #dbe8dc
   await expect(page.locator('#props-swimlane-theme [data-theme="green-strong"]')).toHaveAttribute('aria-pressed', 'true');
   // A chosen theme keeps its colours on the dark canvas; the default one switches to dark.
   await page.evaluate(() => { app.canvasTheme = 'dark'; app.applyCanvasTheme(); });
-  await expect.poll(() => fill('.swimlane-title-bg')).toBe('rgb(20, 83, 45)');
+  await expect.poll(() => fill('.swimlane-title-bg')).toBe('rgb(58, 92, 64)');
   await page.click('#btn-undo');
   expect(await page.evaluate(() => app.state.elements.find((x) => x.id === 'lane').theme || '')).toBe('');
   await expect.poll(() => fill('.swimlane-title-bg')).toBe('rgb(30, 41, 59)');          // dark default #1e293b
