@@ -67,4 +67,10 @@ npm test                 # the tests CI runs
 ```
 
 Unsafe DOM sinks are lint errors. ESLint lints the `.js`/`.mjs` files (tests and scripts); the app
-itself is inline in `threat-tiger.html`, which ESLint doesn't read, so keep escaping there by hand.
+itself is inline in `threat-tiger.html`, which ESLint doesn't read, so keep escaping there by hand:
+text and quoted attributes through `esc()`, colours through `safeColor()`, icons through `safeIcon()`,
+numbers through `toNumber()`. Every `innerHTML` sink in the app has a
+`// eslint-disable-next-line no-unsanitized/property -- reviewed: <why>` comment above it (SEC-DOM-2,
+checked by `claude-check`); a new sink needs one too, and only once you've traced every value in it.
+`tests/xss.spec.js` checks both that payloads never run and that they inject no elements or attributes
+(the CSP would hide injected markup from the first check alone): add new fields there.

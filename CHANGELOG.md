@@ -23,6 +23,8 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 - Animations and transitions respect the system's "Reduce motion" setting
 - ESLint (flat config, with the no-unsanitized rule) as a dev-only tool; CI runs `npm run lint`
 - CI workflow: lint and the existing tests on every push
+- SEC-DOM-2 review of all 25 `innerHTML` sinks in the app: none was exploitable (every model value is escaped with `esc()`, validated with `safeColor`/`safeIcon`/`sanitizeTemplate`, or a number); each now carries a `reviewed:` comment with the reason. Hardening: security switch labels only come from the app's own list (a `toString` key no longer shows a function's text), and a template's suggested likelihood/impact is escaped in its tooltip too
+- XSS suite: a new test puts payloads in attribute, style and SVG contexts (colours, icons, font sizes, swimlane cells, switch keys, mitigations, templates) and checks that no element or attribute was injected, since the CSP alone would hide injected markup from the "never executes" tests
 
 ## 1.13.1
 
