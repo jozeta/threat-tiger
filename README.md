@@ -22,6 +22,8 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 *   **Import / export**: JSON (full, or a git-friendly variant that diffs cleanly), Mermaid flowcharts (import: nodes become flowchart shapes, subgraphs trust zones, laid out automatically), CSV, Markdown report (with an embedded Mermaid diagram), Mermaid diagram, PNG and a print-ready report.
 *   **Keyboard and screen-reader friendly**, works on narrow screens, light and dark canvas themes, isometric views.
 
+![Flowchart in a swimlane: hovering a connection point previews the next step; the Type dropdown switches shapes](docs/images/flowchart-swimlanes.png)
+
 ---
 
 ## 🛠️ How to Get Started
