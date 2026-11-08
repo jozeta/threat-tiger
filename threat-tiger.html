@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-LXXToyGYB8q8Dw1gRinWivrzxKFY8qVqIW+EMR0KGlg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3OuZhatZhxL+IlfpIzNXZ0sbBDcRvXvGUuwaQ+F717Q='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -653,6 +653,8 @@
         /* Selection fixes: invisible geometry must not steal clicks from neighbouring items.
            Connection dots only react while their component is hovered or selected (or while wiring). */
         .node-connect-indicator { pointer-events: none; }
+        .quick-add-ghost { opacity: 0.45; }
+        .quick-add-ghost .quick-add-line { fill: none; stroke: #0d6efd; stroke-width: 2; stroke-dasharray: 6 4; }
         .node-element:hover .node-connect-indicator,
         .node-element.selected .node-connect-indicator { pointer-events: auto; }
         /* Wide transparent stroke along each data flow makes thin lines easy to click. */
@@ -2227,6 +2229,7 @@
                         <g id="layers-boundary-lines-texts-group"></g>
                         <g id="layers-nodes-group"></g>
                         <g id="layers-interactive-handles-group"></g>
+                        <g id="quick-add-ghost-group" class="quick-add-ghost" style="pointer-events: none;"></g>
 
                         <path id="interactive-phantom-wire" fill="none" stroke="#0d6efd" stroke-width="2"
                             stroke-dasharray="4,4" visibility="hidden" style="pointer-events:none;" />
@@ -3559,6 +3562,9 @@
             fc_stored_data:  { label: 'Stored data',            name: 'Stored Data',  w: 160, h: 80,  fill: '#dbeafe', stroke: '#2563eb' },
             fc_database:     { label: 'Database (cylinder)',    name: 'Database',     w: 120, h: 100, fill: '#ecfccb', stroke: '#65a30d' },
         };
+        // Quick add: space between a flowchart node and the node added from one of its anchors.
+        const QUICK_ADD_GAP = 80;
+        const OPPOSITE_ANCHOR = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
         // Node types the Type dropdown can switch between.
         const MODEL_NODE_TYPES = { process: 'Process / Service', datastore: 'Data Store', interactor: 'External Entity', infrastructure: 'Infrastructure Node' };
         const SWITCHABLE_NODE_TYPES = new Set([...Object.keys(MODEL_NODE_TYPES), ...Object.keys(FLOWCHART_DEFAULTS)]);
@@ -6585,6 +6591,14 @@
                             if (el.id === this.phantomWireSourceId || ['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(el.type)) return;
                             if (this.isPointInsideElement(el, canvasSpaceCoords)) dropTargetId = el.id;
                         });
+                        const press = this.phantomWirePress; this.phantomWirePress = null;
+                        const isClick = press && Math.hypot(ev.clientX - press.x, ev.clientY - press.y) < 5;
+                        const srcEl = this.state.elements.find(e => e.id === this.phantomWireSourceId);
+                        if (!dropTargetId && isClick && srcEl && FLOWCHART_DEFAULTS[srcEl.type]) {
+                            this.hideQuickAddGhost();
+                            this.quickAddFlowchartNode(srcEl.id, this.phantomWireSourceAnchor);
+                            this.phantomWireSourceId = null; this.phantomWireSourceAnchor = null; return;
+                        }
                         if (dropTargetId) {
                             const flowId = `fl-${Date.now()}`;
                             const srcNode = this.state.elements.find(e => e.id === this.phantomWireSourceId);
@@ -6945,6 +6959,77 @@
                 this.logEvent('CHANGE', `Changed "${el.name}" from ${fromLabel} to ${toLabel}`);
                 this.refreshAppViewVisualWorkspace();
                 return true;
+            }
+
+            /**
+             * Where a quick-added node goes: QUICK_ADD_GAP beyond the source in the anchor's direction, same size as the
+             * source, centred on it. If that spot overlaps another node, it moves sideways (alternating) until it is free.
+             * Returns { x, y, w, h, dir }.
+             */
+            quickAddPlacement(src, anchorId) {
+                const dir = ['top', 'bottom', 'left', 'right'].find(d => toText(anchorId).startsWith(d)) || 'right';
+                const w = src.width || FLOWCHART_DEFAULTS[src.type].w, h = src.height || FLOWCHART_DEFAULTS[src.type].h;
+                const gap = QUICK_ADD_GAP;
+                const base = {
+                    right: { x: src.x + w + gap, y: src.y }, left: { x: src.x - gap - w, y: src.y },
+                    bottom: { x: src.x, y: src.y + h + gap }, top: { x: src.x, y: src.y - gap - h },
+                }[dir];
+                const horizontal = dir === 'left' || dir === 'right';
+                const blockers = this.state.elements.filter(e => !['swimlane', 'boundary', 'boundary_line', 'headline', 'textbox'].includes(e.type));
+                const free = (x, y) => !blockers.some(e => {
+                    const ew = e.width || 240, eh = e.height || 80, m = 20;
+                    return x < e.x + ew + m && x + w + m > e.x && y < e.y + eh + m && y + h + m > e.y;
+                });
+                const step = horizontal ? h + gap / 2 : w + gap / 2;
+                for (let i = 0; i <= 12; i++) {
+                    const k = i === 0 ? 0 : (i % 2 ? 1 : -1) * Math.ceil(i / 2);
+                    const x = horizontal ? base.x : base.x + k * step, y = horizontal ? base.y + k * step : base.y;
+                    if (free(x, y)) return { x: this.snapValue(x), y: this.snapValue(y), w, h, dir };
+                }
+                return { x: this.snapValue(base.x), y: this.snapValue(base.y), w, h, dir };
+            }
+
+            /** Semi-transparent preview of the node and line that clicking anchor `anchorId` of `srcId` would add. */
+            showQuickAddGhost(srcId, anchorId) {
+                const src = this.state.elements.find(e => e.id === srcId), layer = document.getElementById('quick-add-ghost-group');
+                if (!src || !layer || !FLOWCHART_DEFAULTS[src.type]) return;
+                const p = this.quickAddPlacement(src, anchorId);
+                const ns = 'http://www.w3.org/2000/svg';
+                layer.replaceChildren();
+                const from = this.getAnchorCoordinates(src, anchorId);
+                const ghostEl = { ...src, x: p.x, y: p.y, width: p.w, height: p.h };
+                const to = this.getAnchorCoordinates(ghostEl, OPPOSITE_ANCHOR[p.dir]);
+                const line = document.createElementNS(ns, 'path');
+                line.setAttribute('d', `M ${from.x} ${from.y} L ${to.x} ${to.y}`); line.setAttribute('class', 'quick-add-line');
+                const g = document.createElementNS(ns, 'g');
+                g.setAttribute('transform', `translate(${p.x}, ${p.y})`); g.setAttribute('data-ghost-type', src.type);
+                this.renderFlowchartShapeSvg(g, src.type, p.w, p.h, src.fcFillColor || FLOWCHART_DEFAULTS[src.type].fill, src.fcStrokeColor || FLOWCHART_DEFAULTS[src.type].stroke, src.fcStrokeWidth || 2, false);
+                layer.append(line, g);
+                layer.dataset.dir = p.dir;
+            }
+
+            hideQuickAddGhost() { const layer = document.getElementById('quick-add-ghost-group'); if (layer && layer.firstChild) layer.replaceChildren(); }
+
+            /** Adds a node of the same type, size and colours as `srcId` in the anchor's direction, connected by a flow. One undo step. */
+            quickAddFlowchartNode(srcId, anchorId) {
+                const src = this.state.elements.find(e => e.id === srcId);
+                if (!src || !FLOWCHART_DEFAULTS[src.type]) return null;
+                const p = this.quickAddPlacement(src, anchorId);
+                const id = `el-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+                const def = this.elementDefaults(src.type);
+                const node = { id, type: src.type, name: def.name, x: p.x, y: p.y, notes: '', ...def.props, width: p.w, height: p.h };
+                Object.keys(src).filter(k => /^fc[A-Z]/.test(k)).forEach(k => { node[k] = src[k]; });   // same colours and line style
+                this.state.elements.push(node);
+                this.state.flows.push({
+                    id: `fl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: '', sourceId: src.id, sourceAnchor: p.dir,
+                    targetId: id, targetAnchor: OPPOSITE_ANCHOR[p.dir], notes: '', color: 'black',
+                    secProps: { encrypted: 'false', authenticated: 'false' }, isBidirectional: false, isDashed: false, ports: '',
+                    bendX: 0, bendY: 0, textOffset: 0.5, points: [], curveStyle: this.isIsometric ? 'sharp' : 'smooth'
+                });
+                this.logEvent('CREATE', `Quick-added ${FLOWCHART_DEFAULTS[src.type].label} "${node.name}" after "${src.name}"`);
+                this.state.selectedFlowId = null; this.state.selectedElementIds = [id];
+                this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace();
+                return id;
             }
 
             handleElementSelectionEvent(id) {
@@ -8836,6 +8921,7 @@
                     this.dom.layerFlowsTexts.appendChild(gText);
                 });
 
+                this.hideQuickAddGhost();   // anchor dots are recreated, so their hover state is lost
                 this.state.elements.filter(e => e.type !== 'boundary' && e.type !== 'boundary_line' && e.type !== 'swimlane').forEach(node => {
                     const isSelected = this.state.selectedElementIds.includes(node.id);
                     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -9072,11 +9158,18 @@
                             }
                             indicatorDot.setAttribute('data-anchor-id', a.id);
                             indicatorDot.setAttribute('title', `Connect from ${a.id}`);
+                            if (FLOWCHART_DEFAULTS[node.type]) {
+                                // Quick add: hovering shows a preview of the next node; a click (no drag) adds it.
+                                indicatorDot.setAttribute('title', 'Click to add a connected node here, or drag to connect');
+                                indicatorDot.addEventListener('mouseenter', () => { if (!this.isDrawingPhantomWire && !this.isDraggingElements) this.showQuickAddGhost(node.id, a.id); });
+                                indicatorDot.addEventListener('mouseleave', () => this.hideQuickAddGhost());
+                            }
                             indicatorDot.addEventListener('mousedown', (ev) => {
                                 ev.stopPropagation(); ev.preventDefault(); if (ev.button !== 0) return;
                                 this.isDrawingPhantomWire = true;
                                 this.phantomWireSourceId = node.id;
                                 this.phantomWireSourceAnchor = a.id;
+                                this.phantomWirePress = { x: ev.clientX, y: ev.clientY };
                                 this.dom.phantomWire.setAttribute('visibility', 'visible');
                             });
                             g.appendChild(indicatorDot);

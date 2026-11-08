@@ -13,6 +13,7 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 - Swimlanes: colour themes. Pick one in the properties panel: default, yellow, green, blue, red, grey or black, each in a light and a strong variant. A chosen theme keeps its colours on the dark canvas, is saved in the model, shows in SVG/PNG exports, and is one undo step. Unknown themes in imported models fall back to the default.
 - Type dropdown in the properties panel for every node: switch between process, data store, external entity, infrastructure and the ten flowchart shapes. The shape changes in place; name, notes, centre position, flows and threats stay. Security switches the new type also has keep their value, the rest get the new type's defaults; a customised icon is kept between threat-modelling types. One undo step.
 - Model checks: a threat whose STRIDE category does not usually apply to its component type (for example Spoofing on a data store, Elevation of Privilege on an external entity) is flagged (`MC-STRIDE-FIT`).
+- Flowchart quick add: hover one of a flowchart node's connection points to see a faded preview of a new node and line in that direction; click to add them. The new node has the same type, size and colours, and moves aside if the spot is taken. Dragging from a connection point still draws a connection. One undo step.
 
 ## 1.13.1
 
