@@ -7,7 +7,7 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ### Changed
 
-- Swimlane colour themes are softer: muted, less saturated yellow, green, blue, red and black (light and strong). All header text keeps at least 4.5:1 contrast
+- Swimlane colour themes are much softer: yellow, green, blue and red are now dim, low-saturation tints (the light versions have a pale title bar with dark text), and black is softer. All header text keeps at least 4.5:1 contrast
 
 ## 1.14.0
 

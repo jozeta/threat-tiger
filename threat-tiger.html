@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-6fsDZgjlaHIEx9eiM2gjNbt780TyrK8Yr/6/Dai0oW4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-6yFpuc/NfJMz4Oa6hWvq9Rm9sHGOO5CedlJRpxiNMOU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1554,14 +1554,14 @@
         /* Swimlane colours come from variables: defaults, dark canvas defaults, then the chosen theme (wins in both). */
         .swimlane-group { --sl-bg: rgba(235, 240, 248, 0.55); --sl-border: #cbd5e1; --sl-title: #475569; --sl-title-text: #ffffff; --sl-head: #94a3b8; --sl-head-text: #ffffff; --sl-rowhead: #f1f5f9; --sl-rowhead-text: #475569; --sl-grid: #cbd5e1; --sl-line: #94a3b8; }
         .dark-theme-canvas .swimlane-group { --sl-bg: rgba(30, 30, 42, 0.6); --sl-border: #475569; --sl-title: #1e293b; --sl-title-text: #ffffff; --sl-head: #334155; --sl-head-text: #ffffff; --sl-rowhead: #0f172a; --sl-rowhead-text: #94a3b8; --sl-grid: #475569; --sl-line: #334155; }
-        .swimlane-group.sl-theme-yellow { --sl-bg: #faf7ec; --sl-border: #e3d9b0; --sl-title: #8a7434; --sl-title-text: #ffffff; --sl-head: #ece3c2; --sl-head-text: #5c4d22; --sl-rowhead: #f4efdc; --sl-rowhead-text: #6b5a2a; --sl-grid: #e8dfbd; --sl-line: #c9b77a; }
-        .swimlane-group.sl-theme-yellow-strong { --sl-bg: #efe6c6; --sl-border: #8a7434; --sl-title: #6b5a2a; --sl-title-text: #ffffff; --sl-head: #806c33; --sl-head-text: #ffffff; --sl-rowhead: #e3d6a8; --sl-rowhead-text: #4f421e; --sl-grid: #d4c48e; --sl-line: #8a7434; }
-        .swimlane-group.sl-theme-green { --sl-bg: #f3f7f3; --sl-border: #bcd3bf; --sl-title: #4f7a57; --sl-title-text: #ffffff; --sl-head: #d6e5d8; --sl-head-text: #2f4a34; --sl-rowhead: #e8f0e9; --sl-rowhead-text: #3d5e43; --sl-grid: #d2e2d4; --sl-line: #93b399; }
-        .swimlane-group.sl-theme-green-strong { --sl-bg: #dbe8dc; --sl-border: #4f7a57; --sl-title: #3a5c40; --sl-title-text: #ffffff; --sl-head: #557a5c; --sl-head-text: #ffffff; --sl-rowhead: #c6dbc9; --sl-rowhead-text: #2f4a34; --sl-grid: #a9c6ad; --sl-line: #4f7a57; }
-        .swimlane-group.sl-theme-blue { --sl-bg: #f2f5f9; --sl-border: #bccbdc; --sl-title: #4f6b8f; --sl-title-text: #ffffff; --sl-head: #d5dfeb; --sl-head-text: #2c3e57; --sl-rowhead: #e7edf4; --sl-rowhead-text: #3b5273; --sl-grid: #d1dbe7; --sl-line: #92a8c4; }
-        .swimlane-group.sl-theme-blue-strong { --sl-bg: #d9e2ed; --sl-border: #4f6b8f; --sl-title: #3b5273; --sl-title-text: #ffffff; --sl-head: #5b7598; --sl-head-text: #ffffff; --sl-rowhead: #c3d1e1; --sl-rowhead-text: #2c3e57; --sl-grid: #a6b8cf; --sl-line: #4f6b8f; }
-        .swimlane-group.sl-theme-red { --sl-bg: #faf3f2; --sl-border: #e0c0bc; --sl-title: #9a5850; --sl-title-text: #ffffff; --sl-head: #eed8d5; --sl-head-text: #5e302b; --sl-rowhead: #f5e8e6; --sl-rowhead-text: #7a433c; --sl-grid: #ebd4d0; --sl-line: #c99a93; }
-        .swimlane-group.sl-theme-red-strong { --sl-bg: #efdcd9; --sl-border: #9a5850; --sl-title: #7a433c; --sl-title-text: #ffffff; --sl-head: #a0645c; --sl-head-text: #ffffff; --sl-rowhead: #e4c6c1; --sl-rowhead-text: #5e302b; --sl-grid: #d4aaa4; --sl-line: #9a5850; }
+        .swimlane-group.sl-theme-yellow { --sl-bg: #f6f5f4; --sl-border: #d8d4cb; --sl-title: #d3cfc5; --sl-title-text: #3a362c; --sl-head: #e7e5df; --sl-head-text: #4c4739; --sl-rowhead: #edece8; --sl-rowhead-text: #575142; --sl-grid: #e2e0d9; --sl-line: #c6c1b3; }
+        .swimlane-group.sl-theme-yellow-strong { --sl-bg: #e5e2dc; --sl-border: #9c947c; --sl-title: #6e6753; --sl-title-text: #ffffff; --sl-head: #7a725c; --sl-head-text: #ffffff; --sl-rowhead: #d8d4cb; --sl-rowhead-text: #403c30; --sl-grid: #cac6b9; --sl-line: #9c947c; }
+        .swimlane-group.sl-theme-green { --sl-bg: #f4f5f5; --sl-border: #cdd5cf; --sl-title: #c7d1ca; --sl-title-text: #2e3831; --sl-head: #e0e5e2; --sl-head-text: #3c483f; --sl-rowhead: #e9ecea; --sl-rowhead-text: #465349; --sl-grid: #dbe1dc; --sl-line: #b7c3ba; }
+        .swimlane-group.sl-theme-green-strong { --sl-bg: #dee3df; --sl-border: #829787; --sl-title: #586a5d; --sl-title-text: #ffffff; --sl-head: #617566; --sl-head-text: #ffffff; --sl-rowhead: #cdd5cf; --sl-rowhead-text: #333d36; --sl-grid: #bcc7bf; --sl-line: #829787; }
+        .swimlane-group.sl-theme-blue { --sl-bg: #f4f5f6; --sl-border: #ccd0d7; --sl-title: #c6cbd2; --sl-title-text: #2d3239; --sl-head: #e0e3e6; --sl-head-text: #3a414a; --sl-rowhead: #e8eaed; --sl-rowhead-text: #434b56; --sl-grid: #dadde2; --sl-line: #b5bcc5; }
+        .swimlane-group.sl-theme-blue-strong { --sl-bg: #dde0e4; --sl-border: #7e8a9a; --sl-title: #555f6d; --sl-title-text: #ffffff; --sl-head: #5e6978; --sl-head-text: #ffffff; --sl-rowhead: #ccd0d7; --sl-rowhead-text: #31373f; --sl-grid: #bac1c9; --sl-line: #7e8a9a; }
+        .swimlane-group.sl-theme-red { --sl-bg: #f6f4f4; --sl-border: #d7cccb; --sl-title: #d3c7c5; --sl-title-text: #3a2e2c; --sl-head: #e7e0df; --sl-head-text: #4b3b3a; --sl-rowhead: #ede8e8; --sl-rowhead-text: #564543; --sl-grid: #e2dada; --sl-line: #c5b6b4; }
+        .swimlane-group.sl-theme-red-strong { --sl-bg: #e4dddc; --sl-border: #9b807d; --sl-title: #6d5754; --sl-title-text: #ffffff; --sl-head: #79605d; --sl-head-text: #ffffff; --sl-rowhead: #d7cccb; --sl-rowhead-text: #3f3231; --sl-grid: #cabbba; --sl-line: #9b807d; }
         .swimlane-group.sl-theme-grey { --sl-bg: #f9fafb; --sl-border: #d1d5db; --sl-title: #6b7280; --sl-title-text: #ffffff; --sl-head: #e5e7eb; --sl-head-text: #374151; --sl-rowhead: #f3f4f6; --sl-rowhead-text: #4b5563; --sl-grid: #e5e7eb; --sl-line: #9ca3af; }
         .swimlane-group.sl-theme-grey-strong { --sl-bg: #e5e7eb; --sl-border: #4b5563; --sl-title: #374151; --sl-title-text: #ffffff; --sl-head: #6b7280; --sl-head-text: #ffffff; --sl-rowhead: #d1d5db; --sl-rowhead-text: #1f2937; --sl-grid: #9ca3af; --sl-line: #4b5563; }
         .swimlane-group.sl-theme-black { --sl-bg: #ffffff; --sl-border: #4a5059; --sl-title: #2b3038; --sl-title-text: #ffffff; --sl-head: #4a5059; --sl-head-text: #ffffff; --sl-rowhead: #f1f2f4; --sl-rowhead-text: #2b3038; --sl-grid: #d5d8dc; --sl-line: #4a5059; }
@@ -3962,14 +3962,14 @@
         // Swimlane colour themes ('' = default). Colours live in the CSS (.sl-theme-*); title/body are only for the picker swatches.
         const SWIMLANE_THEMES = [
             { id: '', label: 'Default', title: '#475569', body: '#eef2f8' },
-            { id: 'yellow', label: 'Yellow', title: '#8a7434', body: '#faf7ec' },
-            { id: 'yellow-strong', label: 'Yellow (strong)', title: '#6b5a2a', body: '#efe6c6' },
-            { id: 'green', label: 'Green', title: '#4f7a57', body: '#f3f7f3' },
-            { id: 'green-strong', label: 'Green (strong)', title: '#3a5c40', body: '#dbe8dc' },
-            { id: 'blue', label: 'Blue', title: '#4f6b8f', body: '#f2f5f9' },
-            { id: 'blue-strong', label: 'Blue (strong)', title: '#3b5273', body: '#d9e2ed' },
-            { id: 'red', label: 'Red', title: '#9a5850', body: '#faf3f2' },
-            { id: 'red-strong', label: 'Red (strong)', title: '#7a433c', body: '#efdcd9' },
+            { id: 'yellow', label: 'Yellow', title: '#d3cfc5', body: '#f6f5f4' },
+            { id: 'yellow-strong', label: 'Yellow (strong)', title: '#6e6753', body: '#e5e2dc' },
+            { id: 'green', label: 'Green', title: '#c7d1ca', body: '#f4f5f5' },
+            { id: 'green-strong', label: 'Green (strong)', title: '#586a5d', body: '#dee3df' },
+            { id: 'blue', label: 'Blue', title: '#c6cbd2', body: '#f4f5f6' },
+            { id: 'blue-strong', label: 'Blue (strong)', title: '#555f6d', body: '#dde0e4' },
+            { id: 'red', label: 'Red', title: '#d3c7c5', body: '#f6f4f4' },
+            { id: 'red-strong', label: 'Red (strong)', title: '#6d5754', body: '#e4dddc' },
             { id: 'grey', label: 'Grey', title: '#6b7280', body: '#f9fafb' },
             { id: 'grey-strong', label: 'Grey (strong)', title: '#374151', body: '#e5e7eb' },
             { id: 'black', label: 'Black', title: '#2b3038', body: '#ffffff' },
