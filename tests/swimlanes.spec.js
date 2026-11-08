@@ -178,3 +178,40 @@ test('imported manual sizes are sanitised', async ({ page }) => {
   expect(l.rowMins).toBeUndefined();
   expect(l.colWidths).toEqual([100, 320, 5000]);
 });
+
+test('swimlane colour themes: picker, colours, dark canvas, undo, sanitised import', async ({ page }) => {
+  await setup(page);
+  const fill = (sel) => page.evaluate((s) => getComputedStyle(document.querySelector(`[data-id="lane"] ${s}`)).fill, sel);
+  const defaultTitle = await fill('.swimlane-title-bg');
+  await page.evaluate(() => { app.state.selectedElementIds = ['lane']; app.refreshAppViewVisualWorkspace(); });
+  const swatches = page.locator('#props-swimlane-theme .swimlane-theme-swatch');
+  expect(await swatches.count()).toBe(13);                                   // default + 6 colours x 2
+  await expect(swatches.first()).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('#props-swimlane-theme [data-theme="green-strong"]').click();
+  expect(await page.evaluate(() => app.state.elements.find((x) => x.id === 'lane').theme)).toBe('green-strong');
+  await expect.poll(() => fill('.swimlane-title-bg')).toBe('rgb(20, 83, 45)');          // #14532d
+  await expect.poll(() => fill('.swimlane-bg')).toBe('rgb(187, 247, 208)');             // #bbf7d0
+  await expect(page.locator('#props-swimlane-theme [data-theme="green-strong"]')).toHaveAttribute('aria-pressed', 'true');
+  // A chosen theme keeps its colours on the dark canvas; the default one switches to dark.
+  await page.evaluate(() => { app.canvasTheme = 'dark'; app.applyCanvasTheme(); });
+  await expect.poll(() => fill('.swimlane-title-bg')).toBe('rgb(20, 83, 45)');
+  await page.click('#btn-undo');
+  expect(await page.evaluate(() => app.state.elements.find((x) => x.id === 'lane').theme || '')).toBe('');
+  await expect.poll(() => fill('.swimlane-title-bg')).toBe('rgb(30, 41, 59)');          // dark default #1e293b
+  await page.evaluate(() => { app.canvasTheme = 'light'; app.applyCanvasTheme(); });
+  await expect.poll(() => fill('.swimlane-title-bg')).toBe(defaultTitle);
+});
+
+test('an unknown imported swimlane theme falls back to the default', async ({ page }) => {
+  await openApp(page, { session: demoSession((s) => {
+    s.elements = [
+      { id: 'l1', type: 'swimlane', name: 'A', x: 0, y: 0, columns: ['A'], rows: ['R'], theme: 'red' },
+      { id: 'l2', type: 'swimlane', name: 'B', x: 0, y: 600, columns: ['A'], rows: ['R'], theme: 'x" onload="alert(1)' },
+    ];
+    s.flows = []; s.threats = [];
+  }) });
+  const t = await page.evaluate(() => app.state.elements.map((e) => e.theme));
+  expect(t).toEqual(['red', '']);
+  await expect(page.locator('[data-id="l1"].sl-theme-red')).toHaveCount(1);
+  expect(await page.locator('[data-id="l2"]').getAttribute('class')).not.toContain('sl-theme');
+});

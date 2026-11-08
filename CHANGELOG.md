@@ -10,6 +10,7 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 - CI workflow: lint and the existing tests on every push
 - Swimlanes: a dragged node is dropped into the cell under it, using the real column and row sizes (it used to land in the neighbouring cell once a cell had grown, so more than two nodes rarely fitted in one cell). The target cell is highlighted while dragging. Each cell grows to hold all its nodes with padding on every side, and nodes in later columns and rows move along with their cell. Deleting a column or row also removes its stored size.
 - Swimlanes: drag the border on the right of a column or below a row to resize it (snaps to 20 px, down to 100 px). The size you set is that cell's minimum: it still grows if its nodes need more room, and later cells and their nodes move along. Double-click a border to go back to the automatic size. Each resize is one undo step; manual sizes are saved in the model and checked on import.
+- Swimlanes: colour themes. Pick one in the properties panel: default, yellow, green, blue, red, grey or black, each in a light and a strong variant. A chosen theme keeps its colours on the dark canvas, is saved in the model, shows in SVG/PNG exports, and is one undo step. Unknown themes in imported models fall back to the default.
 
 ## 1.13.1
 
