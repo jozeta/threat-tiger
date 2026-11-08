@@ -118,3 +118,63 @@ test('moving a swimlane carries its nodes; deleting a column drops its stored wi
   expect(s.cols).toEqual(['Team B']);
   expect(s.widths[0]).toBeLessThan(500);
 });
+
+/** Drags the resize handle of column/row `index` by (dx, dy) canvas units. */
+async function dragHandle(page, axis, index, dx, dy) {
+  const box = await page.locator(`.swimlane-resize-${axis}[data-index="${index}"]`).boundingBox();
+  // Grab the handle away from the other axis' handles (rows: near the left; columns: in the middle).
+  const sx = axis === 'col' ? box.x + box.width / 2 : box.x + 60, sy = axis === 'col' ? box.y + box.height / 2 : box.y + box.height / 2;
+  const scale = await page.evaluate(() => app.zoomScale);
+  await page.mouse.move(sx, sy); await page.mouse.down();
+  for (let i = 1; i <= 6; i++) await page.mouse.move(sx + dx * scale * i / 6, sy + dy * scale * i / 6);
+  await page.mouse.up();
+}
+
+test('dragging a column border resizes it; later nodes move along; one undo step reverts it', async ({ page }) => {
+  await setup(page);
+  let g = await lane(page);
+  await dragTo(page, 'd', g.colStarts[1] + 120, g.rowStarts[0] + 80);    // "Plan / Team B"
+  const before = await node(page, 'd');
+  const w0 = (await lane(page)).colWidths[0];
+  await dragHandle(page, 'col', 0, 200, 0);
+  g = await lane(page);
+  expect(g.colWidths[0]).toBe(w0 + 200);
+  expect((await node(page, 'd')).x).toBe(before.x + 200);                // moved with its cell
+  expect(cellOf(g.cells, 'd')).toBe('0:1');
+  expect(await page.evaluate(() => app.state.elements.find((x) => x.id === 'lane').colMins[0])).toBe(w0 + 200);
+  await page.click('#btn-undo');
+  g = await lane(page);
+  expect(g.colWidths[0]).toBe(w0);
+  expect((await node(page, 'd')).x).toBe(before.x);
+});
+
+test('a row can be made smaller than the default, but never smaller than its nodes need', async ({ page }) => {
+  await setup(page);
+  // Empty row 1 ("Do"): shrink it well below the default height.
+  const h1 = (await lane(page)).rowHeights[1];
+  await dragHandle(page, 'row', 1, 0, -100);
+  expect((await lane(page)).rowHeights[1]).toBe(h1 - 100);
+  // Row 0 holds a node: shrinking it hard stops at node height + padding.
+  let g = await lane(page);
+  await dragTo(page, 'a', g.colStarts[0] + 120, g.rowStarts[0] + 40);
+  await dragHandle(page, 'row', 0, 0, -400);
+  g = await lane(page);
+  const a = await node(page, 'a');
+  expect(g.rowHeights[0]).toBeGreaterThanOrEqual(a.h + 2 * PAD);
+  expect(g.rowStarts[0] + g.rowHeights[0] - (a.y + a.h)).toBeGreaterThanOrEqual(PAD);
+  expect(cellOf(g.cells, 'a')).toBe('0:0');
+  // Double-click returns the row to its automatic size.
+  await page.locator('.swimlane-resize-row[data-index="1"]').dblclick({ position: { x: 60, y: 5 } });
+  expect((await lane(page)).rowHeights[1]).toBe(220);
+});
+
+test('imported manual sizes are sanitised', async ({ page }) => {
+  await openApp(page, { session: demoSession((s) => {
+    s.elements = [{ id: 'lane', type: 'swimlane', name: 'L', x: 0, y: 0, columns: ['A', 'B', 'C'], rows: ['R'], colMins: [5, 'x', 99999], rowMins: '<b>' }];
+    s.flows = []; s.threats = [];
+  }) });
+  const l = await page.evaluate(() => { const e = app.state.elements.find((x) => x.id === 'lane'); return { colMins: e.colMins, rowMins: e.rowMins, colWidths: e.colWidths }; });
+  expect(l.colMins).toEqual([100, 0, 5000]);
+  expect(l.rowMins).toBeUndefined();
+  expect(l.colWidths).toEqual([100, 320, 5000]);
+});

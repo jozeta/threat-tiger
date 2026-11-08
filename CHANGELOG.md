@@ -9,6 +9,7 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 - ESLint (flat config, with the no-unsanitized rule) as a dev-only tool; CI runs `npm run lint`
 - CI workflow: lint and the existing tests on every push
 - Swimlanes: a dragged node is dropped into the cell under it, using the real column and row sizes (it used to land in the neighbouring cell once a cell had grown, so more than two nodes rarely fitted in one cell). The target cell is highlighted while dragging. Each cell grows to hold all its nodes with padding on every side, and nodes in later columns and rows move along with their cell. Deleting a column or row also removes its stored size.
+- Swimlanes: drag the border on the right of a column or below a row to resize it (snaps to 20 px, down to 100 px). The size you set is that cell's minimum: it still grows if its nodes need more room, and later cells and their nodes move along. Double-click a border to go back to the automatic size. Each resize is one undo step; manual sizes are saved in the model and checked on import.
 
 ## 1.13.1
 

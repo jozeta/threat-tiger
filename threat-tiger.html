@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-GGfmv9cNru/Z2O/qWxyFXOE9Dk3GBUgiT0hLxY8zA8A='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FUeCxpWQx9HYVuNACk+6kklJQq0aNZ9VSfhrdYbWQX8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1537,6 +1537,10 @@
         }
 
         /* Swimlane Custom CSS rules */
+        .swimlane-resize-handle { fill: transparent; }
+        .swimlane-resize-col { cursor: col-resize; }
+        .swimlane-resize-row { cursor: row-resize; }
+        .swimlane-resize-handle:hover { fill: rgba(13, 110, 253, 0.35); }
         .swimlane-drop-highlight {
             fill: rgba(13, 110, 253, 0.12);
             stroke: #0d6efd;
@@ -3595,6 +3599,8 @@
         //   zoned: true|false (component drawn inside a trust boundary)
         // Swimlane cells: smallest size, and the space kept between nodes and the cell borders.
         const SWIMLANE_MIN_COL = 320, SWIMLANE_MIN_ROW = 220, SWIMLANE_PADDING = 30;
+        // Smallest size a column or row can be given by dragging its resize handle.
+        const SWIMLANE_FLOOR = 100;
         const TYPE_WORDS = { process: 'process', datastore: 'data store', interactor: 'external entity', infrastructure: 'infrastructure', custom_image: 'component' };
         const SWITCH_LABELS = {
             encrypted: ['encrypted', 'not encrypted'], authenticated: ['authenticated', 'not authenticated'],
@@ -4060,6 +4066,8 @@
             }
             ['columns', 'rows'].forEach(k => { if (k in raw) el[k] = Array.isArray(raw[k]) ? raw[k].map(toText) : []; });
             ['colWidths', 'rowHeights'].forEach(k => { if (k in raw) el[k] = Array.isArray(raw[k]) ? raw[k].map(v => toNumber(v, 200)) : undefined; });
+            // Manual minimum sizes from the resize handles: 0 (auto) or a size within the allowed range.
+            ['colMins', 'rowMins'].forEach(k => { if (k in raw) el[k] = Array.isArray(raw[k]) ? raw[k].slice(0, 500).map(v => { const n = toNumber(v, 0); return n > 0 ? Math.min(5000, Math.max(SWIMLANE_FLOOR, n)) : 0; }) : undefined; });
             if ('dismissedSuggestions' in raw) el.dismissedSuggestions = normalizeDismissed(raw.dismissedSuggestions);
             return el;
         }
@@ -6291,6 +6299,7 @@
                 window.addEventListener('mousemove', (ev) => {
                     const canvasSpaceCoords = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
                     this.currentMouseCanvasCoords = canvasSpaceCoords;
+                    if (this.swimlaneResize) { this.updateSwimlaneResize(canvasSpaceCoords); return; }
                     if (this.activeFlowDragMode) {
                         const flow = this.state.flows.find(f => f.id === this.activeFlowDragId);
                         const bl = this.state.elements.find(e => e.id === this.activeFlowDragId);
@@ -6529,6 +6538,12 @@
                 });
 
                 window.addEventListener('mouseup', (ev) => {
+                    if (this.swimlaneResize) {
+                        const rs = this.swimlaneResize; this.swimlaneResize = null;
+                        const swim = this.state.elements.find(e => e.id === rs.id);
+                        if (rs.changed && swim) { this.logEvent('CHANGE', `Resized ${rs.label} of swimlane "${swim.name}"`); this.refreshAppViewVisualWorkspace(); }
+                        return;
+                    }
                     if (this.activeFlowDragMode) {
                         if (this.activeFlowDragMode === 'flow_source' || this.activeFlowDragMode === 'flow_target') {
                             const flow = this.state.flows.find(f => f.id === this.activeFlowDragId);
@@ -7219,8 +7234,10 @@
                 }
                 this.state.elements.filter(e => e.type === 'swimlane').forEach(swim => {
                     const g = this.swimlaneGeometry(swim);
-                    const minCol = g.cols.map((_, i) => Math.max(SWIMLANE_MIN_COL, Number((swim.colMins || [])[i]) || 0));
-                    const minRow = g.rows.map((_, i) => Math.max(SWIMLANE_MIN_ROW, Number((swim.rowMins || [])[i]) || 0));
+                    // A size set with a resize handle replaces the default minimum; nodes can still make the cell bigger.
+                    const manual = (list, i, def) => { const n = Number((list || [])[i]) || 0; return n > 0 ? Math.max(SWIMLANE_FLOOR, n) : def; };
+                    const minCol = g.cols.map((_, i) => manual(swim.colMins, i, SWIMLANE_MIN_COL));
+                    const minRow = g.rows.map((_, i) => manual(swim.rowMins, i, SWIMLANE_MIN_ROW));
                     const finish = (colWidths, rowHeights, assigned) => {
                         swim.colWidths = colWidths; swim.rowHeights = rowHeights;
                         swim.width = g.rowHeaderWidth + colWidths.reduce((a, b) => a + b, 0);
@@ -7260,6 +7277,58 @@
                     });
                     finish(colWidths, rowHeights, assigned);
                 });
+            }
+
+            /**
+             * Resize handles on the right edge of every column and the bottom edge of every row. Dragging one sets that
+             * column's / row's minimum size (colMins / rowMins); the layout still grows it if its nodes need more room.
+             * Double-click a handle to go back to the automatic size.
+             */
+            appendSwimlaneResizeHandles(swim, g, totalW, totalH) {
+                const geo = this.swimlaneGeometry(swim);
+                const NS = 'http://www.w3.org/2000/svg';
+                const add = (axis, index, x, y, w, h, label) => {
+                    const r = document.createElementNS(NS, 'rect');
+                    r.setAttribute('x', x); r.setAttribute('y', y); r.setAttribute('width', w); r.setAttribute('height', h);
+                    r.setAttribute('class', `swimlane-resize-handle swimlane-resize-${axis}`);
+                    r.setAttribute('data-axis', axis); r.setAttribute('data-index', index);
+                    const t = document.createElementNS(NS, 'title'); t.textContent = `Drag to resize ${label}; double-click for automatic size`; r.appendChild(t);
+                    const reset = () => {
+                        const key = axis === 'col' ? 'colMins' : 'rowMins';
+                        if (!Array.isArray(swim[key]) || !(swim[key][index] > 0)) return;
+                        swim[key][index] = 0;
+                        this.logEvent('CHANGE', `Reset ${label} of swimlane "${swim.name}" to automatic size`);
+                        this.refreshAppViewVisualWorkspace();
+                    };
+                    r.addEventListener('mousedown', (ev) => {
+                        if (ev.button !== 0) return;
+                        ev.stopPropagation(); ev.preventDefault();
+                        if (ev.detail >= 2) { this.swimlaneResize = null; reset(); return; }   // double-click
+                        const sizes = axis === 'col' ? geo.colWidths : geo.rowHeights;
+                        const start = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
+                        this.swimlaneResize = { id: swim.id, axis, index, label, start, startSize: sizes[index], changed: false };
+                    });
+                    r.addEventListener('dblclick', (ev) => { ev.stopPropagation(); ev.preventDefault(); });
+                    g.appendChild(r);
+                };
+                geo.cols.forEach((name, i) => add('col', i, geo.colStarts[i] + geo.colWidths[i] - swim.x - 5, geo.titleHeight, 10, totalH - geo.titleHeight, `column "${toText(name) || i + 1}"`));
+                geo.rows.forEach((name, i) => add('row', i, 0, geo.rowStarts[i] + geo.rowHeights[i] - swim.y - 5, totalW, 10, `row "${toText(name) || i + 1}"`));
+            }
+
+            /** Mouse move while a swimlane resize handle is held: sets the manual size, snapped to 20 px. */
+            updateSwimlaneResize(pos) {
+                const rs = this.swimlaneResize;
+                const swim = this.state.elements.find(e => e.id === rs.id);
+                if (!swim) { this.swimlaneResize = null; return; }
+                const delta = rs.axis === 'col' ? pos.x - rs.start.x : pos.y - rs.start.y;
+                const size = Math.max(SWIMLANE_FLOOR, Math.round((rs.startSize + delta) / 20) * 20);
+                const key = rs.axis === 'col' ? 'colMins' : 'rowMins';
+                const count = rs.axis === 'col' ? (swim.columns || []).length : (swim.rows || []).length;
+                if (!Array.isArray(swim[key])) swim[key] = [];
+                while (swim[key].length < count) swim[key].push(0);
+                if (swim[key][rs.index] === size) return;
+                swim[key][rs.index] = size; rs.changed = true;
+                this.scheduleDiagramRender();
             }
 
             renderSwimlanePropertiesInspectorControls(swim) {
@@ -8319,6 +8388,8 @@
                         mainVLine.setAttribute('class', 'swimlane-border-line');
                         g.appendChild(mainVLine);
                     }
+
+                    this.appendSwimlaneResizeHandles(swim, g, totalW, totalH);
 
                     // Highlight the cell a dragged node will be dropped into.
                     const drop = this.swimlaneDropTarget;
