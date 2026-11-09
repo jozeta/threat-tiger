@@ -104,3 +104,51 @@ test('Insights lists ranked paths; picking a start filters; clicking highlights;
   expect(md).toContain('## Attack paths');
   expect(md).toMatch(/1\. User → DB \(score [\d.]+/);
 });
+
+// ── Review fixes ──
+test('an unreachable crown jewel stops the search at once and is not reported as truncated', async ({ page }) => {
+  await setup(page);
+  const r = await page.evaluate(() => {
+    let seed = 9; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const elements = [{ id: 'u', type: 'interactor', name: 'U' }, { id: 'j', type: 'datastore', name: 'J', secProps: { isCrownJewel: 'true' } }];
+    for (let i = 0; i < 80; i++) elements.push({ id: 'n' + i, type: 'process', name: 'N' + i });
+    const flows = [{ id: 'fu', sourceId: 'u', targetId: 'n0', secProps: {} }, { id: 'fj', sourceId: 'j', targetId: 'n1', secProps: {} }];   // the jewel only sends data out
+    for (let i = 0; i < 300; i++) flows.push({ id: 'f' + i, sourceId: 'n' + Math.floor(rnd() * 80), targetId: 'n' + Math.floor(rnd() * 80), isBidirectional: true, secProps: {} });
+    const t0 = performance.now(); const out = computeAttackPaths({ elements, flows, threats: [], nodeZones: new Map(), zoneCount: 0 });
+    return { ms: performance.now() - t0, n: out.paths.length, truncated: out.truncated };
+  });
+  expect(r).toMatchObject({ n: 0, truncated: false });
+  expect(r.ms).toBeLessThan(20);
+});
+
+test('keyboard focus stays on the picker after it changes the list; a highlighted path is not exported to PNG', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await openApp(page, { session: demoSession((s) => {
+    s.elements = [
+      { id: 'u', type: 'interactor', name: 'User', x: 0, y: 0, width: 240, height: 80, secProps: {} },
+      { id: 'w', type: 'process', name: 'Web', x: 400, y: 0, width: 240, height: 80, secProps: {} },
+      { id: 'd', type: 'datastore', name: 'DB', x: 800, y: 0, width: 240, height: 80, secProps: { isCrownJewel: 'true' } },
+    ];
+    s.flows = [
+      { id: 'f1', name: 'req', sourceId: 'u', targetId: 'w', sourceAnchor: 'right-2', targetAnchor: 'left-2', points: [], secProps: {} },
+      { id: 'f2', name: 'sql', sourceId: 'w', targetId: 'd', sourceAnchor: 'right-2', targetAnchor: 'left-2', points: [], secProps: {} },
+    ];
+    s.threats = [];
+  }) });
+  await page.click('#tab-insights-trigger');
+  await page.locator('#attack-path-start').selectOption('w');
+  expect(await page.evaluate(() => document.activeElement && document.activeElement.id)).toBe('attack-path-start');
+  await page.locator('#insights-attack-paths .attack-path-row').first().click();
+  expect(await page.evaluate(() => document.activeElement && document.activeElement.classList.contains('attack-path-row'))).toBe(true);
+  const svgText = await page.evaluate(async () => {
+    let captured = '';
+    const orig = XMLSerializer.prototype.serializeToString;
+    XMLSerializer.prototype.serializeToString = function (n) { const s = orig.call(this, n); if (n && n.id === 'canvas-svg') captured = s; return s; };
+    app.downloadBlob = () => {};
+    try { await app.exportCanvasAsPng(); } catch (e) { /* the canvas step may fail headless; the serialised SVG is what matters */ }
+    XMLSerializer.prototype.serializeToString = orig;
+    return captured;
+  });
+  expect(svgText.length).toBeGreaterThan(100);
+  expect(svgText).not.toMatch(/class="[^"]*\bap-(dim|on)\b/);   // the stylesheet text may mention the classes; no element may carry them
+});

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-odRzl6ZpY8NAzR6JMH6o9Zw4pbYOjMD7omHmJTYdC9Y='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-PNrEaDP02AZ1WkLy9UW+7J8/RGHMdQqC0taxNzMGo/0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3776,9 +3776,14 @@
                 cur.score += (toNumber(t.likelihood, 3) * toNumber(t.impact, 3) / 5) * w; cur.count++;
                 threatBy.set(t.elementId, cur);
             });
+            // Only nodes that can still reach a target are worth visiting (walk the flows backwards from the targets).
+            const back = new Map();
+            adj.forEach((list, from) => list.forEach(({ to }) => { if (!back.has(to)) back.set(to, []); back.get(to).push(from); }));
+            const canReach = new Set(targets);
+            for (let stack = [...targets]; stack.length;) (back.get(stack.pop()) || []).forEach(n => { if (!canReach.has(n)) { canReach.add(n); stack.push(n); } });
             const paths = [];
             let truncated = false, expansions = 0;
-            const queue = entries.map(id => ({ at: id, nodes: [id], flows: [] }));   // a path needs at least one hop (see below)
+            const queue = entries.filter(id => canReach.has(id)).map(id => ({ at: id, nodes: [id], flows: [] }));   // a path needs at least one hop (see below)
             for (let qi = 0; qi < queue.length; qi++) {
                 const cur = queue[qi];
                 if (cur.flows.length > 0 && targetSet.has(cur.at)) {
@@ -3789,7 +3794,7 @@
                 if (cur.flows.length >= ATTACK_PATH_LIMITS.hops) continue;
                 if (++expansions > ATTACK_PATH_LIMITS.expansions) { truncated = true; break; }
                 (adj.get(cur.at) || []).forEach(({ to, flow }) => {
-                    if (!cur.nodes.includes(to)) queue.push({ at: to, nodes: [...cur.nodes, to], flows: [...cur.flows, flow] });
+                    if (canReach.has(to) && !cur.nodes.includes(to)) queue.push({ at: to, nodes: [...cur.nodes, to], flows: [...cur.flows, flow] });
                 });
             }
             const scored = paths.map(p => {
@@ -6117,6 +6122,9 @@
                     // 4. Clone the canvas SVG
                     const svgEl = document.getElementById('canvas-svg');
                     const clone = svgEl.cloneNode(true);
+                    // The attack-path highlight is a view state: it never goes into an exported image.
+                    clone.classList.remove('ap-active');
+                    clone.querySelectorAll('.ap-dim, .ap-on').forEach(n => n.classList.remove('ap-dim', 'ap-on'));
 
                     // 5. Setup clone dimensions & viewbox
                     clone.setAttribute('width', width);
@@ -9359,13 +9367,13 @@
                     sel.appendChild(new Option('Auto', ''));
                     comps.forEach(c => sel.appendChild(new Option(toText(c.name) || c.id, c.id)));
                     sel.value = choice[key];
-                    sel.addEventListener('change', () => { choice[key] = sel.value; this.renderInsights(); });
+                    sel.addEventListener('change', () => { choice[key] = sel.value; this.renderInsights(); const again = document.getElementById(id); if (again) again.focus(); });
                     wrap.appendChild(sel); return wrap;
                 };
                 head.append(picker('attack-path-start', 'From', 'start'), picker('attack-path-target', 'To', 'target'));
                 const clear = el('button', 'btn btn-sm btn-outline-secondary', 'Clear highlight'); clear.type = 'button'; clear.id = 'btn-attack-path-clear';
                 clear.disabled = !this.attackPathHighlight;
-                clear.addEventListener('click', () => this.highlightAttackPath(null));
+                clear.addEventListener('click', () => { this.highlightAttackPath(null); const again = document.getElementById('attack-path-start'); if (again) again.focus(); });
                 head.appendChild(clear);
                 card.appendChild(head);
                 if (!result.targets.length) {
@@ -9381,8 +9389,15 @@
                         body.append(el('div', 'small fw-semibold', this.attackPathNames(p)), el('div', 'extra-small text-muted', this.attackPathReasons(p)));
                         const badge = el('span', `badge ${p.score >= 20 ? 'bg-danger' : p.score >= 12 ? 'bg-warning text-dark' : 'bg-secondary'}`, String(p.score));
                         row.append(body, badge);
-                        if (this.attackPathHighlight && this.attackPathHighlight.key === p.nodes.join('>') + '|' + p.flows.join('>')) row.classList.add('active');
-                        row.addEventListener('click', () => this.highlightAttackPath(p));
+                        const key = p.nodes.join('>') + '|' + p.flows.join('>');
+                        row.dataset.pathKey = key;
+                        const active = !!this.attackPathHighlight && this.attackPathHighlight.key === key;
+                        row.classList.toggle('active', active); row.setAttribute('aria-pressed', String(active));
+                        row.addEventListener('click', () => {
+                            this.highlightAttackPath(p);
+                            const again = [...document.querySelectorAll('#insights-attack-paths .attack-path-row')].find(r => r.dataset.pathKey === key);
+                            if (again) again.focus();
+                        });
                         list.appendChild(row);
                     });
                     card.appendChild(list);
