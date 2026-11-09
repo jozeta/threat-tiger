@@ -18,7 +18,7 @@ test('zoom and pan survive a reload', async ({ page }) => {
 test('a broken saved view is ignored', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await openApp(page, { session: demoSession() });
-  await page.evaluate(() => localStorage.setItem('canvas_view', JSON.stringify({ zoom: 'x', panX: 1e400, panY: null })));
+  await page.evaluate(() => localStorage.setItem('canvas_view', JSON.stringify({ zoom: 'x', panX: 'Infinity', panY: null })));
   await page.reload();
   await page.waitForFunction(() => window.app);
   const v = await page.evaluate(() => [app.zoomScale, app.panX, app.panY].every(Number.isFinite));

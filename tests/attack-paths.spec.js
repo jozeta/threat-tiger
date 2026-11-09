@@ -22,7 +22,6 @@ const M = (extra = {}) => ({
   ],
   threats: [], zoneCount: 1, ...extra,
 });
-const zonesAll = (ids) => ({ nodeZones: new Map(ids.map((id) => [id, [{ id: 'z' }]])) });
 
 test('paths run from the entry to the crown jewel, shortest first, no cycles, ranked by score', async ({ page }) => {
   await setup(page);
