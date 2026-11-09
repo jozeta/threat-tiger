@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-nx0TyWiZ2dpDFOe3fe00qRPLhWKXycvvwJtNUB7AMro='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-yTA6fNE9nyGYhkvePwjSuHCprQwvWnA1R52RH//gyr4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1318,7 +1318,7 @@
 
         /* Dark Theme Overrides for Canvas */
         #canvas-svg.painting, #canvas-svg.painting .node-element { cursor: copy !important; }
-        #btn-menu-minimap[aria-checked="false"] .menu-check { visibility: hidden; }
+        #btn-menu-minimap[aria-checked="false"] .menu-check, #btn-menu-line-jumps[aria-checked="false"] .menu-check { visibility: hidden; }
         #btn-format-painter[aria-pressed="true"] { background: #dbeafe; color: #1d4ed8; }
         #minimap { position: absolute; right: 1rem; top: 1rem; width: 200px; height: 140px; z-index: 10;
             background: #ffffff; border: 1px solid #dee2e6; border-radius: 6px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); cursor: pointer; }
@@ -1648,6 +1648,7 @@
                     <li><hr class="dropdown-divider"></li>
                     <li><h6 class="dropdown-header">View</h6></li>
                     <li><button class="dropdown-item d-flex align-items-center" type="button" id="btn-menu-minimap" role="menuitemcheckbox" aria-checked="false"><i class="bi bi-map me-2"></i>Show minimap<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                    <li><button class="dropdown-item d-flex align-items-center" type="button" id="btn-menu-line-jumps" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-bezier2 me-2"></i>Line jumps where flows cross<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><button class="dropdown-item" type="button" id="btn-help-trigger"><i class="bi bi-question-circle me-2"></i>Help &amp; License</button></li>
                     <li><button class="dropdown-item text-danger" type="button" id="btn-reset-session"><i class="bi bi-trash me-2"></i>Reset canvas…</button></li>
@@ -2485,6 +2486,10 @@
                                         <option value="smooth">Smooth Curved Spline</option>
                                         <option value="sharp">Sharp Angled Polyline</option>
                                     </select>
+                                </div>
+                                <div class="mb-2">
+                                    <div class="extra-small text-muted mb-1">Click the line to add a bend point; drag it to move; click a point to remove it.</div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary w-100" id="btn-flow-clear-points"><i class="bi bi-eraser me-1"></i>Clear bend points</button>
                                 </div>
                                 <div class="form-check form-switch mt-1">
                                     <input class="form-check-input" type="checkbox"
@@ -3353,6 +3358,7 @@
                         <li><strong>Align and distribute:</strong> select two or more shapes to line them up or space them evenly from the small toolbar above the canvas controls.</li>
                         <li><strong>Minimap:</strong> turn it on from ☰ menu → <strong>Show minimap</strong>. It shows the whole diagram in the top-right corner of the canvas; click or drag in it to move the view.</li>
                         <li><strong>Format painter:</strong> select a shape, click the brush, then click another shape of the same kind to copy its colours (not its name, type or security settings). Double-click the brush to paint several; Esc stops.</li>
+                        <li><strong>Line jumps:</strong> where two flows cross, the later one hops over the other; switch it off in ☰ menu → <strong>Line jumps where flows cross</strong>. <strong>Bend points:</strong> click a selected flow to add one, drag to move, click to remove, or use <strong>Clear bend points</strong> in Properties.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
 
@@ -3678,6 +3684,77 @@
             const w = e.width || ({ custom_image: 120, infrastructure: 80, step_activity: 260 }[e.type] || 240);
             const h = e.height || ({ custom_image: 120, infrastructure: 70, step_activity: 50 }[e.type] || 80);
             return { id: e.id, x: e.x || 0, y: e.y || 0, w, h };
+        }
+        // ── Line jumps ───────────────────────────────────────────────────────────────
+        // Where two flows cross, the flow drawn later hops over the earlier one with a small arc.
+        const LINE_JUMP_RADIUS = 6;
+        // The renderer's smooth flow curve: Catmull-Rom through the points, as cubic Béziers [p1, cp1, cp2, p2].
+        function catmullRomBeziers(allPts, tension = 0.85) {
+            const out = [];
+            for (let i = 0; i < allPts.length - 1; i++) {
+                const p0 = allPts[i > 0 ? i - 1 : i], p1 = allPts[i], p2 = allPts[i + 1];
+                const p3 = allPts[i + 2 < allPts.length ? i + 2 : allPts.length - 1];
+                out.push([p1, [p1[0] + (p2[0] - p0[0]) / 6 * tension, p1[1] + (p2[1] - p0[1]) / 6 * tension],
+                    [p2[0] - (p3[0] - p1[0]) / 6 * tension, p2[1] - (p3[1] - p1[1]) / 6 * tension], p2]);
+            }
+            return out;
+        }
+        // A flow's drawn path as points: straight segments, or the smooth curve sampled at 12 steps per cubic.
+        function flowPolyline(startPt, controlPoints, endPt, smooth) {
+            const pts = [startPt, ...controlPoints, endPt];
+            if (!smooth || controlPoints.length === 0) return pts.map(p => [p[0], p[1]]);
+            const out = [[startPt[0], startPt[1]]];
+            catmullRomBeziers(pts).forEach(([a, b, c, d]) => {
+                for (let k = 1; k <= 12; k++) {
+                    const t = k / 12, u = 1 - t;
+                    out.push([u * u * u * a[0] + 3 * u * u * t * b[0] + 3 * u * t * t * c[0] + t * t * t * d[0],
+                        u * u * u * a[1] + 3 * u * u * t * b[1] + 3 * u * t * t * c[1] + t * t * t * d[1]]);
+                }
+            });
+            return out;
+        }
+        // Crossings of poly with earlier polylines, in path order. Crossings near either line's ends (shared
+        // anchors) and crossings too close to the previous one are skipped; parallel segments never cross.
+        function findLineJumps(poly, earlierPolys, r = LINE_JUMP_RADIUS) {
+            const near = (x, y, p) => Math.hypot(x - p[0], y - p[1]) < 2 * r;
+            const found = [];
+            for (let i = 0; i < poly.length - 1; i++) {
+                const [ax, ay] = poly[i], [bx, by] = poly[i + 1];
+                const hits = [];
+                earlierPolys.forEach(other => {
+                    for (let j = 0; j < other.length - 1; j++) {
+                        const [cx, cy] = other[j], [dx, dy] = other[j + 1];
+                        const den = (bx - ax) * (dy - cy) - (by - ay) * (dx - cx);
+                        if (Math.abs(den) < 1e-9) continue;
+                        const t = ((cx - ax) * (dy - cy) - (cy - ay) * (dx - cx)) / den;
+                        const u = ((cx - ax) * (by - ay) - (cy - ay) * (bx - ax)) / den;
+                        if (t < 0 || t > 1 || u < 0 || u > 1) continue;
+                        const x = ax + t * (bx - ax), y = ay + t * (by - ay);
+                        if (near(x, y, poly[0]) || near(x, y, poly[poly.length - 1]) || near(x, y, other[0]) || near(x, y, other[other.length - 1])) continue;
+                        hits.push({ t, x, y });
+                    }
+                });
+                hits.sort((a, b) => a.t - b.t).forEach(h => {
+                    const prev = found[found.length - 1];
+                    if (prev && Math.hypot(h.x - prev.x, h.y - prev.y) < 2 * r) return;
+                    found.push({ seg: i, x: h.x, y: h.y });
+                });
+            }
+            return found;
+        }
+        // An SVG path along poly with an arc of radius r over each jump.
+        function jumpPathD(poly, jumps, r = LINE_JUMP_RADIUS) {
+            const f = v => Math.round(v * 100) / 100;
+            let d = `M ${f(poly[0][0])} ${f(poly[0][1])}`;
+            for (let i = 0; i < poly.length - 1; i++) {
+                const [ax, ay] = poly[i], [bx, by] = poly[i + 1];
+                const len = Math.hypot(bx - ax, by - ay) || 1, ux = (bx - ax) / len, uy = (by - ay) / len;
+                jumps.filter(j => j.seg === i).forEach(j => {
+                    d += ` L ${f(j.x - ux * r)} ${f(j.y - uy * r)} A ${r} ${r} 0 0 1 ${f(j.x + ux * r)} ${f(j.y + uy * r)}`;
+                });
+                d += ` L ${f(bx)} ${f(by)}`;
+            }
+            return d;
         }
         // ── Format painter ───────────────────────────────────────────────────────────
         // Look-only properties per kind of shape; the painter copies them between shapes of the same kind.
@@ -6134,6 +6211,10 @@
                 document.getElementById('btn-canvas-zoom-out').addEventListener('click', () => { this.zoomScale = Math.max(this.zoomScale - 0.1, MIN_ZOOM); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-reset').addEventListener('click', () => this.zoomToFit());
                 document.getElementById('btn-menu-minimap').addEventListener('click', () => this.toggleMinimap());
+                try { this.lineJumps = localStorage.getItem('line_jumps') !== 'false'; } catch { this.lineJumps = true; }
+                document.getElementById('btn-menu-line-jumps').setAttribute('aria-checked', String(this.lineJumps));
+                document.getElementById('btn-menu-line-jumps').addEventListener('click', () => this.toggleLineJumps());
+                document.getElementById('btn-flow-clear-points').addEventListener('click', () => this.clearFlowBendPoints());
                 this.setupMinimap();
                 this.formatPainter = null;
                 document.getElementById('btn-format-painter').addEventListener('click', (ev) => {
@@ -7315,6 +7396,23 @@
             syncMinimapButton() {
                 const item = document.getElementById('btn-menu-minimap');
                 if (item) item.setAttribute('aria-checked', String(!!this.minimapVisible));
+            }
+
+            // View setting (no undo step): hop arcs where flows cross.
+            toggleLineJumps() {
+                this.lineJumps = !this.lineJumps;
+                try { localStorage.setItem('line_jumps', String(this.lineJumps)); } catch { /* view setting only */ }
+                document.getElementById('btn-menu-line-jumps').setAttribute('aria-checked', String(this.lineJumps));
+                this.renderSvgDiagramElements();
+            }
+
+            // Removes every bend point of the selected flow (one undo step).
+            clearFlowBendPoints() {
+                const flow = this.state.flows.find(f => f.id === this.state.selectedFlowId);
+                if (!flow || !((flow.points && flow.points.length) || flow.bendX || flow.bendY)) return;
+                flow.points = []; flow.bendX = 0; flow.bendY = 0;
+                this.logEvent('CHANGE', `Cleared the bend points of flow "${flow.name}"`);
+                this.refreshAppViewVisualWorkspace();
             }
 
             toggleMinimap() {
@@ -9231,6 +9329,7 @@
                     this.dom.layerBoundaryLinesTexts.appendChild(gText);
                 });
 
+                const drawnFlowPolys = [];   // line jumps: { poly, box } of the flows already drawn in this render
                 this.state.flows.forEach(f => {
                     const srcNode = this.state.elements.find(e => e.id === f.sourceId);
                     const dstNode = this.state.elements.find(e => e.id === f.targetId);
@@ -9324,22 +9423,20 @@
                         });
                         pathD += ` L ${endPt[0]} ${endPt[1]}`;
                     } else {
-                        const allPts = [startPt, ...controlPoints, endPt];
-                        const tension = 0.85;
-                        for (let i = 0; i < allPts.length - 1; i++) {
-                            const p0 = allPts[i > 0 ? i - 1 : i];
-                            const p1_pt = allPts[i];
-                            const p2_pt = allPts[i + 1];
-                            const p3 = allPts[i + 2 < allPts.length ? i + 2 : allPts.length - 1];
+                        catmullRomBeziers([startPt, ...controlPoints, endPt]).forEach(([, c1, c2, p2]) => {
+                            pathD += ` C ${c1[0]} ${c1[1]}, ${c2[0]} ${c2[1]}, ${p2[0]} ${p2[1]}`;
+                        });
+                    }
 
-                            const cp1x = p1_pt[0] + (p2_pt[0] - p0[0]) / 6 * tension;
-                            const cp1y = p1_pt[1] + (p2_pt[1] - p0[1]) / 6 * tension;
-
-                            const cp2x = p2_pt[0] - (p3[0] - p1_pt[0]) / 6 * tension;
-                            const cp2y = p2_pt[1] - (p3[1] - p1_pt[1]) / 6 * tension;
-
-                            pathD += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2_pt[0]} ${p2_pt[1]}`;
-                        }
+                    if (this.lineJumps) {
+                        const smooth = (f.curveStyle || (this.isIsometric ? 'sharp' : 'smooth')) !== 'sharp';
+                        const poly = flowPolyline(startPt, controlPoints, endPt, smooth);
+                        const xs = poly.map(p => p[0]), ys = poly.map(p => p[1]);
+                        const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
+                        const others = drawnFlowPolys.filter(o => o.box[0] <= box[2] && box[0] <= o.box[2] && o.box[1] <= box[3] && box[1] <= o.box[3]).map(o => o.poly);
+                        const jumps = others.length ? findLineJumps(poly, others) : [];
+                        if (jumps.length) pathD = jumpPathD(poly, jumps);
+                        drawnFlowPolys.push({ poly, box });
                     }
 
                     const gLine = document.createElementNS('http://www.w3.org/2000/svg', 'g');
@@ -10341,6 +10438,7 @@
                     if (curveStyleSelect) {
                         curveStyleSelect.value = targetItem.curveStyle || (this.isIsometric ? 'sharp' : 'smooth');
                     }
+                    document.getElementById('btn-flow-clear-points').disabled = !((targetItem.points && targetItem.points.length) || targetItem.bendX || targetItem.bendY);
                     document.getElementById('props-input-text-offset').value = targetItem.textOffset || 0.5;
 
                     const thicknessSlider = document.getElementById('props-flow-thickness-slider');

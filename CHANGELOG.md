@@ -7,6 +7,7 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ### Added
 
+- Line jumps: where two flows cross, the later one hops over the other (☰ menu to switch off); flow Properties explain bend points and can clear them
 - Format painter: copy a shape's colours, line width or font size onto other shapes of the same kind; double-click to paint several
 - Minimap: an overview of the whole diagram in the canvas corner; click or drag to move the view. Hidden by default: turn it on from ☰ menu → Show minimap
 - Align and distribute: with two or more shapes selected, a toolbar lines up their left/centre/right or top/middle/bottom edges, or spaces three or more evenly; one undo step
