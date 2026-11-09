@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-H+a18QzW9cf2hWSXVZnx33aCNVlyLpnqmRPfR4GlA8A='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-L+UQ4ZzWbGFHxdnqQCiSarO8tSJVwXuhqtLcTrgbuek='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3741,6 +3741,66 @@
             const h = e.height || ({ custom_image: 120, infrastructure: 70, step_activity: 50 }[e.type] || 80);
             return { id: e.id, x: e.x || 0, y: e.y || 0, w, h };
         }
+        // ── Attack paths ─────────────────────────────────────────────────────────────
+        // Routes an attacker could take from an entry point to a crown jewel along the data flows.
+        const ATTACK_PATH_LIMITS = { hops: 8, paths: 200, expansions: 50000 };
+        const ATTACK_PATH_NODE_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'custom_image', ...Object.keys(FLOWCHART_DEFAULTS)]);
+        const THREAT_WEIGHT = { 'Open / Unmitigated': 1, 'Partially mitigated': 0.5 };
+        // model: { elements, flows, threats, nodeZones: Map(id -> zones[]), zoneCount }. Breadth-first over simple paths, so the
+        // shortest are found first; stops at the hop, path or expansion limit (then truncated = true). Ranked by score.
+        function computeAttackPaths(model, { start = '', target = '' } = {}) {
+            const nodes = model.elements.filter(e => ATTACK_PATH_NODE_TYPES.has(e.type));
+            const ids = new Set(nodes.map(e => e.id));
+            const jewel = (e) => !!(e.secProps && e.secProps.isCrownJewel === 'true');
+            const zonesOf = (id) => (model.nodeZones && model.nodeZones.get(id)) || [];
+            const entries = start && ids.has(start) ? [start]
+                : nodes.filter(e => !jewel(e) && (e.type === 'interactor' || (model.zoneCount > 0 && zonesOf(e.id).length === 0))).map(e => e.id);
+            const targets = target && ids.has(target) ? [target] : nodes.filter(jewel).map(e => e.id);
+            const targetSet = new Set(targets);
+            const adj = new Map();
+            const link = (from, to, flow) => { if (!adj.has(from)) adj.set(from, []); adj.get(from).push({ to, flow }); };
+            model.flows.forEach(f => {
+                if (f.isDisabled || !ids.has(f.sourceId) || !ids.has(f.targetId) || f.sourceId === f.targetId) return;
+                link(f.sourceId, f.targetId, f);
+                if (f.isBidirectional) link(f.targetId, f.sourceId, f);
+            });
+            const threatBy = new Map();
+            (model.threats || []).forEach(t => {
+                const w = THREAT_WEIGHT[t.status];
+                if (!w) return;
+                const cur = threatBy.get(t.elementId) || { score: 0, count: 0 };
+                cur.score += (toNumber(t.likelihood, 3) * toNumber(t.impact, 3) / 5) * w; cur.count++;
+                threatBy.set(t.elementId, cur);
+            });
+            const paths = [];
+            let truncated = false, expansions = 0;
+            const queue = entries.map(id => ({ at: id, nodes: [id], flows: [] }));   // a path needs at least one hop (see below)
+            for (let qi = 0; qi < queue.length; qi++) {
+                const cur = queue[qi];
+                if (cur.flows.length > 0 && targetSet.has(cur.at)) {
+                    paths.push(cur);
+                    if (paths.length >= ATTACK_PATH_LIMITS.paths) { truncated = qi < queue.length - 1; break; }
+                    continue;   // a path ends at the first crown jewel it reaches
+                }
+                if (cur.flows.length >= ATTACK_PATH_LIMITS.hops) continue;
+                if (++expansions > ATTACK_PATH_LIMITS.expansions) { truncated = true; break; }
+                (adj.get(cur.at) || []).forEach(({ to, flow }) => {
+                    if (!cur.nodes.includes(to)) queue.push({ at: to, nodes: [...cur.nodes, to], flows: [...cur.flows, flow] });
+                });
+            }
+            const scored = paths.map(p => {
+                const unencrypted = p.flows.filter(f => !(f.secProps && f.secProps.encrypted === 'true')).length;
+                const unauthenticated = p.flows.filter(f => !(f.secProps && f.secProps.authenticated === 'true')).length;
+                let threatScore = 0, openThreats = 0;
+                [...p.nodes, ...p.flows.map(f => f.id)].forEach(id => { const t = threatBy.get(id); if (t) { threatScore += t.score; openThreats += t.count; } });
+                const hops = p.flows.length;
+                const score = Math.round((unencrypted * 2 + unauthenticated * 2 + threatScore + (ATTACK_PATH_LIMITS.hops - hops) * 1.5) * 10) / 10;
+                return { nodes: p.nodes, flows: p.flows.map(f => f.id), score, reasons: { unencrypted, unauthenticated, openThreats, hops } };
+            });
+            scored.sort((a, b) => b.score - a.score || a.reasons.hops - b.reasons.hops);
+            return { paths: scored, entries, targets, truncated };
+        }
+
         // ── Line jumps ───────────────────────────────────────────────────────────────
         // Where two flows cross, the flow drawn later hops over the earlier one with a small arc.
         const LINE_JUMP_RADIUS = 6;
