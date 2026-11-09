@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-wikBDoHqiF5qkBuHKN0zvMJ0pPNuZ/1UHuS7B83CF3s='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-PyE2F94zEyzAARkL+tA5s4R+fKTs0iLPRTlX3nfH7nk='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1318,6 +1318,12 @@
 
         /* Dark Theme Overrides for Canvas */
         #canvas-svg .layer-hidden { display: none !important; }
+        .card-icon-stripe img.stencil-icon { width: 26px; height: 26px; object-fit: contain; }
+        .stencil-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 4px; max-height: 320px; overflow-y: auto; }
+        .stencil-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; border: 1px solid #e9ecef; border-radius: 6px; background: #fff; font-size: 9px; line-height: 1.1; text-align: center; color: #343a40; overflow: hidden; }
+        .stencil-item:hover, .stencil-item:focus-visible { border-color: #0d6efd; background: #eef4ff; }
+        .stencil-item img { width: 28px; height: 28px; object-fit: contain; }
+        .stencil-item span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; width: 100%; }
         .layer-row { display: flex; align-items: center; gap: 2px; padding: 2px 4px; border: 1px solid #e9ecef; border-radius: 6px; background: #fff; }
         .layer-row.active { border-color: #0d6efd; background: #eef4ff; }
         .layer-row .layer-name { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600; }
@@ -1662,6 +1668,12 @@
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-left" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar me-2"></i>Show left panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-right" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar-reverse me-2"></i>Show right panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-bottom" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-window-dock me-2"></i>Show bottom panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><h6 class="dropdown-header ps-2 pb-1">Icon sets</h6></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-aws" data-stencil-toggle="aws" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>AWS<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-azure" data-stencil-toggle="azure" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Azure<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-entra" data-stencil-toggle="entra" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Microsoft Entra<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-gcp" data-stencil-toggle="gcp" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Google Cloud<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-k8s" data-stencil-toggle="k8s" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Kubernetes<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><h6 class="dropdown-header ps-2 pb-1">Panel tabs</h6></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-props-trigger" data-tab-trigger="tab-props-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Properties<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-suggest-trigger" data-tab-trigger="tab-suggest-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Threat Templates<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
@@ -2218,6 +2230,21 @@
                                             Common in system/architecture diagrams.</div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Cloud stencils -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingStencils">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseStencils" aria-expanded="false" aria-controls="collapseStencils">
+                                Cloud Stencils
+                            </button>
+                        </h2>
+                        <div id="collapseStencils" class="accordion-collapse collapse" aria-labelledby="headingStencils">
+                            <div class="accordion-body d-flex flex-column gap-2">
+                                <div class="extra-small text-muted">Official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons. A placed icon is a normal component, so threat suggestions work. Icons belong to their owners (see Help &amp; License).</div>
+                                <div id="stencil-sets" class="d-flex flex-column gap-1"></div>
                             </div>
                         </div>
                     </div>
@@ -3395,8 +3422,11 @@
                         <li><strong>Line jumps:</strong> where two flows cross, the later one hops over the other; switch it off in ☰ menu → <strong>View</strong>. <strong>Bend points:</strong> click a selected flow to add one, drag to move, click to remove, or use <strong>Clear bend points</strong> in Properties.</li>
                         <li><strong>Layers:</strong> in the <strong>Layers</strong> tab of the right panel, add layers, click one to make it active (new shapes go there), double-click to rename, hide or lock it, or move the selection to it. Hidden layers still count in the threat analysis.</li>
                         <li><strong>View:</strong> ☰ menu → <strong>View</strong> shows or hides the minimap, line jumps, each panel (left, right, bottom) and each panel tab.</li>
+                        <li><strong>Cloud stencils:</strong> official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons in the palette (each set loads when you open it; search by name). A placed icon is a normal component (data store, process, …), so threat suggestions work. Hide sets you don't use in ☰ → <strong>View</strong>.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
+
+                    <p class="small text-muted mb-4"><strong>Third-party icons:</strong> the cloud stencils are official icons from AWS, Microsoft (Azure, Entra), Google Cloud and the Kubernetes project. They are not covered by Threat Tiger's MIT licence and are included under their owners' terms for use in architecture diagrams (Kubernetes: Apache-2.0 or CC-BY-4.0). Details in <code>vendor/stencils/README.md</code>.</p>
 
                     <h5 class="fw-bold text-dark mb-2"><i
                             class="bi bi-file-earmark-text-fill me-2 text-secondary"></i>2. Open Source License &amp;
@@ -4660,6 +4690,16 @@
             return Number.isFinite(n) ? Math.min(max, Math.max(min, n)) : fallback;
         }
 
+        // ── Cloud stencils ───────────────────────────────────────────────────────────
+        const STENCIL_SETS = [['aws', 'AWS'], ['azure', 'Azure'], ['entra', 'Microsoft Entra'], ['gcp', 'Google Cloud'], ['k8s', 'Kubernetes']];
+        const STENCIL_ID = /^[a-z0-9]+:[\w.-]{1,120}$/i;
+        const STENCIL_ICON = /^data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+$/;
+        // A placed stencil's icon: only a base64 SVG data URL (shown as <img>, where SVG cannot run script).
+        function safeStencilIcon(v) {
+            const t = toText(v);
+            return t.length <= 120000 && STENCIL_ICON.test(t) ? t : '';
+        }
+
         function normalizeElement(raw, ctx) {
             if (!isPlainObject(raw)) { ctx.warn('Skipped a component entry that was not an object.'); return null; }
             const id = toText(raw.id).trim();
@@ -4687,6 +4727,11 @@
             // Manual minimum sizes from the resize handles: 0 (auto) or a size within the allowed range.
             ['colMins', 'rowMins'].forEach(k => { if (k in raw) el[k] = Array.isArray(raw[k]) ? raw[k].slice(0, 500).map(v => { const n = toNumber(v, 0); return n > 0 ? Math.min(5000, Math.max(SWIMLANE_FLOOR, n)) : 0; }) : undefined; });
             if ('dismissedSuggestions' in raw) el.dismissedSuggestions = normalizeDismissed(raw.dismissedSuggestions);
+            // Stencil fields are untrusted: a valid id, a base64 SVG data URL, and known subtypes only.
+            delete el.stencil; delete el.stencilIcon; delete el.stencilTags;
+            if (STENCIL_ID.test(toText(raw.stencil))) el.stencil = toText(raw.stencil);
+            if (safeStencilIcon(raw.stencilIcon)) el.stencilIcon = safeStencilIcon(raw.stencilIcon);
+            if (Array.isArray(raw.stencilTags)) el.stencilTags = raw.stencilTags.map(toText).filter(t => Object.prototype.hasOwnProperty.call(SUBTYPE_LABELS, t)).slice(0, 6);
             return el;
         }
 
@@ -6503,6 +6548,7 @@
                 document.getElementById('btn-canvas-zoom-reset').addEventListener('click', () => this.zoomToFit());
                 document.getElementById('btn-menu-minimap').addEventListener('click', () => this.toggleMinimap());
                 this.setupViewMenu();
+                this.setupStencils();
                 try { this.lineJumps = localStorage.getItem('line_jumps') !== 'false'; } catch { this.lineJumps = true; }
                 document.getElementById('btn-menu-line-jumps').setAttribute('aria-checked', String(this.lineJumps));
                 document.getElementById('btn-menu-line-jumps').addEventListener('click', () => this.toggleLineJumps());
@@ -7732,6 +7778,104 @@
                 menuBtn.addEventListener('hidden.bs.dropdown', () => setOpen(false));
             }
 
+            // ── Cloud stencils ───────────────────────────────────────────────────────
+            setupStencils() {
+                try { this.hiddenStencilSets = new Set(JSON.parse(localStorage.getItem('hidden_stencil_sets') || '[]').filter(x => typeof x === 'string')); } catch { this.hiddenStencilSets = new Set(); }
+                this.stencilLoads = new Map();
+                const root = document.getElementById('stencil-sets');
+                root.replaceChildren(...STENCIL_SETS.map(([id, title]) => {
+                    const box = document.createElement('div');
+                    box.className = 'stencil-set border rounded'; box.dataset.stencilSet = id;
+                    const toggle = document.createElement('button');
+                    toggle.type = 'button'; toggle.className = 'btn btn-sm btn-light w-100 text-start fw-semibold stencil-set-toggle d-flex align-items-center';
+                    toggle.setAttribute('aria-expanded', 'false');
+                    const label = document.createElement('span'); label.textContent = title;
+                    const chev = document.createElement('i'); chev.className = 'bi bi-chevron-down ms-auto'; chev.setAttribute('aria-hidden', 'true');
+                    toggle.append(label, chev);
+                    const body = document.createElement('div'); body.className = 'stencil-set-body p-1 d-none';
+                    toggle.addEventListener('click', () => {
+                        const open = body.classList.contains('d-none');
+                        body.classList.toggle('d-none', !open); toggle.setAttribute('aria-expanded', String(open));
+                        chev.className = `bi ${open ? 'bi-chevron-up' : 'bi-chevron-down'} ms-auto`;
+                        if (open && !body.dataset.ready) this.fillStencilSet(id, body);
+                    });
+                    box.append(toggle, body);
+                    box.classList.toggle('d-none', this.hiddenStencilSets.has(id));
+                    return box;
+                }));
+                document.querySelectorAll('#menu-view-items [data-stencil-toggle]').forEach(item => item.addEventListener('click', () => {
+                    const id = item.dataset.stencilToggle;
+                    if (this.hiddenStencilSets.has(id)) this.hiddenStencilSets.delete(id); else this.hiddenStencilSets.add(id);
+                    try { localStorage.setItem('hidden_stencil_sets', JSON.stringify([...this.hiddenStencilSets])); } catch { /* view setting only */ }
+                    const box = document.querySelector(`[data-stencil-set="${id}"]`);
+                    if (box) box.classList.toggle('d-none', this.hiddenStencilSets.has(id));
+                    this.syncViewMenu();
+                }));
+            }
+
+            // Loads vendor/stencils/<id>.js once (a <script>, so it also works from file://).
+            loadStencilSet(id) {
+                if (this.stencilLoads.has(id)) return this.stencilLoads.get(id);
+                const p = new Promise((resolve, reject) => {
+                    const done = () => { const pack = window.TT_STENCILS && window.TT_STENCILS[id]; if (pack && Array.isArray(pack.icons)) resolve(pack); else reject(new Error('not registered')); };
+                    const tag = document.createElement('script');
+                    tag.src = `vendor/stencils/${id}.js`;
+                    tag.addEventListener('load', done);
+                    tag.addEventListener('error', () => { tag.remove(); reject(new Error('load failed')); });
+                    document.head.appendChild(tag);
+                });
+                p.catch(() => this.stencilLoads.delete(id));   // allow a retry
+                this.stencilLoads.set(id, p);
+                return p;
+            }
+
+            fillStencilSet(id, body) {
+                body.replaceChildren(Object.assign(document.createElement('div'), { className: 'extra-small text-muted p-1', textContent: 'Loading…' }));
+                this.loadStencilSet(id).then(pack => {
+                    body.dataset.ready = '1';
+                    const search = document.createElement('input');
+                    search.type = 'search'; search.className = 'form-control form-control-sm mb-1';
+                    search.placeholder = `Search ${pack.icons.length} icons`; search.setAttribute('aria-label', `Search ${toText(pack.title)} icons`);
+                    const grid = document.createElement('div'); grid.className = 'stencil-grid';
+                    const items = pack.icons.map(icon => {
+                        const [iconId, name, , type] = icon;
+                        const b = document.createElement('button');
+                        b.type = 'button'; b.className = 'stencil-item';
+                        b.dataset.stencil = `${id}:${toText(iconId)}`;
+                        b.dataset.search = `${toText(name)} ${toText(icon[2])}`.toLowerCase();
+                        b.title = `${toText(name)} (${MODEL_NODE_TYPES[type] || type})`;
+                        b.setAttribute('aria-label', toText(name));
+                        const img = document.createElement('img'); img.alt = ''; img.loading = 'lazy';
+                        img.src = 'data:image/svg+xml;base64,' + toText(icon[5]);
+                        const span = document.createElement('span'); span.textContent = toText(name);
+                        b.append(img, span);
+                        b.addEventListener('click', () => this.addStencilNode(id, icon));
+                        return b;
+                    });
+                    grid.append(...items);
+                    search.addEventListener('input', () => {
+                        const q = search.value.trim().toLowerCase();
+                        items.forEach(b => { b.hidden = !!q && !b.dataset.search.includes(q); });
+                    });
+                    body.replaceChildren(search, grid);
+                }).catch(() => {
+                    body.replaceChildren(Object.assign(document.createElement('div'), { className: 'extra-small text-danger p-1', textContent: 'Could not load this icon set. Open the app from its folder (with vendor/stencils) and try again.' }));
+                });
+            }
+
+            // Places a stencil as a normal component of the icon's type, carrying its icon and subtypes (one undo step).
+            addStencilNode(setId, icon) {
+                const [iconId, name, , type, tags, b64] = icon;
+                const kind = MODEL_NODE_TYPES[type] ? type : 'process';
+                const url = safeStencilIcon('data:image/svg+xml;base64,' + toText(b64));
+                const extra = { name: toText(name).slice(0, 120) || 'Cloud service' };
+                const sid = `${setId}:${toText(iconId)}`;
+                if (STENCIL_ID.test(sid)) extra.stencil = sid;
+                if (url) extra.stencilIcon = url;
+                extra.stencilTags = (Array.isArray(tags) ? tags : []).map(toText).filter(t => SUBTYPE_LABELS[t]).slice(0, 6);
+                return this.instantiateNewCanvasElementNode(kind, null, null, extra);
+            }
+
             // Shows or hides one panel tab (☰ → View → Panel tabs). Hiding the shown tab moves to the next visible one.
             setTabVisible(triggerId, visible, { save = true } = {}) {
                 const trigger = document.getElementById(triggerId);
@@ -7749,6 +7893,7 @@
 
             syncViewMenu() {
                 const set = (id, on) => { const el = document.getElementById(id); if (el) el.setAttribute('aria-checked', String(!!on)); };
+                document.querySelectorAll('#menu-view-items [data-stencil-toggle]').forEach(item => item.setAttribute('aria-checked', String(!(this.hiddenStencilSets && this.hiddenStencilSets.has(item.dataset.stencilToggle)))));
                 document.querySelectorAll('#menu-view-items [data-tab-trigger]').forEach(item => item.setAttribute('aria-checked', String(!(this.hiddenTabs && this.hiddenTabs.has(item.dataset.tabTrigger)))));
                 set('btn-menu-minimap', this.minimapVisible);
                 set('btn-menu-line-jumps', this.lineJumps);
@@ -7935,7 +8080,7 @@
                 return { name, width: w, height: h, props };
             }
 
-            instantiateNewCanvasElementNode(type, customX = null, customY = null) {
+            instantiateNewCanvasElementNode(type, customX = null, customY = null, extra = null) {
                 const rect = this.dom.svg.getBoundingClientRect();
                 const id = `el-${Date.now()}`;
                 const def = this.elementDefaults(type);
@@ -7955,13 +8100,15 @@
                     id, type, name: defaultName, x: targetX, y: targetY, notes: '',
                     ...def.props,
                     ...(type === 'boundary_line' && { x2: targetX + 150, y2: targetY, bendX: 0, bendY: 0, textOffset: 0.5 }),
+                    ...(extra || {}),
                 };
 
                 this.state.elements.push(elementObj);
-                this.logEvent("CREATE", `Added ${type.replace(/_/g, ' ')} "${defaultName}"`);
+                this.logEvent("CREATE", `Added ${type.replace(/_/g, ' ')} "${elementObj.name}"`);
                 this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace();
                 if (this.formatPainter) this.disarmFormatPainter();   // adding a shape ends painting; never paint the new shape
                 this.handleElementSelectionEvent(id);
+                return id;
             }
 
             /** Fills the Type dropdown for a node (threat-modelling and flowchart types). */
@@ -8662,6 +8809,7 @@
                     return out;
                 }
                 iconSubtypesFor(item.icon, item.type).forEach(t => out.add(t));
+                (Array.isArray(item.stencilTags) ? item.stencilTags : []).forEach(t => { if (SUBTYPE_LABELS[t]) out.add(t); });
                 const text = `${toText(item.name)} ${toText(item.notes)}`;
                 NAME_SUBTYPES.forEach(([re, tag]) => { if (re.test(text)) out.add(tag); });
                 if (item.secProps && item.secProps.isPrivilegedUser === 'true') out.add('admin');
@@ -10131,17 +10279,17 @@
                             const disabledColor = node.isDisabled ? '#ced4da' : iconColor;
                             const labelColor = node.isDisabled ? '#6c757d' : '#212529';
                             const iconFontSize = Math.max(16, Math.min(w - 16, h - 28));
-                            // eslint-disable-next-line no-unsanitized/property -- reviewed: name is esc()'d; icon via safeIcon(); colour via colorMap or safeColor(); font size is a number
+                            // eslint-disable-next-line no-unsanitized/property -- reviewed: name is esc()'d; icon via safeIcon() or stencil image via safeStencilIcon()+esc(); colour via colorMap or safeColor(); font size is a number
                             foreignObj.innerHTML = `
                                 <div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card card-infrastructure-borderless ${disabledClass}">
-                                    <i class="bi ${safeIcon(node.icon)}" style="font-size: ${iconFontSize}px; color: ${disabledColor} !important; line-height: 1;"></i>
+                                    ${safeStencilIcon(node.stencilIcon) ? `<img class="stencil-icon" src="${esc(safeStencilIcon(node.stencilIcon))}" alt="" style="width: ${iconFontSize}px; height: ${iconFontSize}px;">` : `<i class="bi ${safeIcon(node.icon)}" style="font-size: ${iconFontSize}px; color: ${disabledColor} !important; line-height: 1;"></i>`}
                                     <div class="fw-bold card-text-render-target text-truncate text-center w-100 px-2 mt-1" style="font-size: 11px; color: ${labelColor}; line-height: 1.2;">${esc(node.name)}</div>
                                 </div>`;
                         } else {
-                            // eslint-disable-next-line no-unsanitized/property -- reviewed: name and notes are esc()'d; icon via safeIcon(); classes and security badges are constants
+                            // eslint-disable-next-line no-unsanitized/property -- reviewed: name and notes are esc()'d; icon via safeIcon() or stencil image via safeStencilIcon()+esc(); classes and security badges are constants
                             foreignObj.innerHTML = `
                                 <div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card ${cardClass} ${disabledClass}">
-                                    <div class="card-icon-stripe ${stripeClass}"><i class="bi ${safeIcon(node.icon)}"></i></div>
+                                    <div class="card-icon-stripe ${stripeClass}">${safeStencilIcon(node.stencilIcon) ? `<img class="stencil-icon" src="${esc(safeStencilIcon(node.stencilIcon))}" alt="">` : `<i class="bi ${safeIcon(node.icon)}"></i>`}</div>
                                     <div class="card-main-body">
                                         <div class="fw-bold text-dark text-truncate small card-text-render-target" style="font-size:12px; line-height:1.1;">${esc(node.name)}</div>
                                         <div class="text-muted text-truncate w-100" style="font-size:10px; font-weight:normal; line-height:1.1; white-space:nowrap;" title="${esc(node.notes)}">${esc(node.notes)}</div>

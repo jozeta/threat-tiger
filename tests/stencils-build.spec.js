@@ -18,6 +18,8 @@ test('classify maps databases, secrets, network and users', async () => {
   expect(classify('Key Vaults', 'security')).toEqual({ type: 'datastore', tags: ['secrets'] });
   expect(classify('Application Load Balancer', 'Networking')).toEqual({ type: 'infrastructure', tags: ['network-device'] });
   expect(classify('Users', 'General')).toEqual({ type: 'interactor', tags: [] });
+  expect(classify('Arc PostgreSQL', 'arc')).toEqual({ type: 'datastore', tags: ['database'] });
+  expect(classify('Azure Cosmos DB', 'databases')).toEqual({ type: 'datastore', tags: ['nosql'] });
 });
 
 test('every generated pack loads, has icons, and every icon is clean', async () => {

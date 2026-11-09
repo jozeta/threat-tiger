@@ -51,7 +51,7 @@ export function cleanSvg(text) {
 const RULES = [
     [/\b(api gateway|api management|apigee|endpoints)\b/i, 'process', ['api']],
     [/\b(dynamo|cosmos|firestore|bigtable|documentdb|nosql|opensearch|elasticsearch|keyspaces|neptune|search)/i, 'datastore', ['nosql']],
-    [/\b(rds|aurora|sql|database|databases|db|spanner|alloydb|postgres|mysql|maria|autonomous|timestream)\b/i, 'datastore', ['database']],
+    [/\b(rds|aurora|\w*sql|database|databases|db|spanner|alloydb|postgre\w*|maria\w*|autonomous|timestream)\b/i, 'datastore', ['database']],
     [/\b(s3|bucket|buckets|blob|object storage|cloud storage|storage|storage accounts?|glacier|backup)\b/i, 'datastore', ['object-storage']],
     [/\b(cache|redis|memcached?|elasticache|memorystore)/i, 'datastore', ['cache']],
     [/\b(efs|fsx|file shares?|files|filestore|netapp)\b/i, 'datastore', ['file-share']],

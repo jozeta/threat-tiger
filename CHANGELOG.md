@@ -7,6 +7,7 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ### Added
 
+- Cloud stencils: official AWS (305), Azure (720), Microsoft Entra (7), Google Cloud (45) and Kubernetes (39) icons in the palette, loaded per set when opened, with search. A placed icon is a normal component of the right kind (database, secrets store, network device, …), so threat suggestions work; its icon is saved in the model and checked on import. Hide sets in ☰ → View. Icons stay under their owners' terms (`vendor/stencils/README.md`)
 - ☰ menu → View: expands in place to show or hide the minimap, line jumps, each panel (left, right, bottom), in step with the panels' own handles, and each panel tab (remembered)
 - Layers: add, rename, hide, lock and delete layers; new shapes go to the active layer; move the selection to a layer; hidden layers still count in the analysis
 - Line jumps: where two flows cross, the later one hops over the other (☰ menu → View to switch off); flow Properties explain bend points and can clear them
