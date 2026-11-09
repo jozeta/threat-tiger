@@ -6,8 +6,8 @@ scripts, event handlers, outside links and metadata, and minifying.
 
 | File | Set | Source | Version | Terms |
 |------|-----|--------|---------|-------|
-| `aws.js` | AWS Architecture Icons (305 service icons, 48 px) | <https://aws.amazon.com/architecture/icons/> | Icon package 31 July 2026 | "We allow customers and partners to use these toolkits and assets to create architecture diagrams." |
-| `azure.js` | Azure architecture icons (720) | <https://learn.microsoft.com/en-us/azure/architecture/icons/> | Azure_Public_Service_Icons_V25 | "Microsoft permits the use of these icons in architectural diagrams, training materials, or documentation. You can copy, distribute, and display the icons only for the permitted use unless granted explicit permission by Microsoft. Microsoft reserves all other rights." |
+| `aws.js` | AWS Architecture Icons (303 service icons, 48 px) | <https://aws.amazon.com/architecture/icons/> | Icon package 31 July 2026 | "We allow customers and partners to use these toolkits and assets to create architecture diagrams." |
+| `azure.js` | Azure architecture icons (643, duplicates removed) | <https://learn.microsoft.com/en-us/azure/architecture/icons/> | Azure_Public_Service_Icons_V25 | "Microsoft permits the use of these icons in architectural diagrams, training materials, or documentation. You can copy, distribute, and display the icons only for the permitted use unless granted explicit permission by Microsoft. Microsoft reserves all other rights." |
 | `entra.js` | Microsoft Entra architecture icons (7, colour) | <https://learn.microsoft.com/en-us/entra/architecture/architecture-icons> | October 2023 | Same Microsoft terms as Azure. |
 | `gcp.js` | Google Cloud product and category icons (45) | <https://cloud.google.com/icons> | core-products-icons.zip and category-icons.zip, downloaded 9 November 2026 | Official Google Cloud icon library, for architecture diagrams. |
 | `k8s.js` | Kubernetes icons (39, labelled) | <https://github.com/kubernetes/community/tree/main/icons> | `main`, 9 November 2026 | Apache-2.0 or CC-BY-4.0, at your choice. The Kubernetes logo is a trademark of The Linux Foundation. |

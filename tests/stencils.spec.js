@@ -56,3 +56,12 @@ test('a set that fails to load says so, and View can hide a set from the palette
   await page.click('#btn-menu-stencil-gcp');
   await expect(page.locator('[data-stencil-set="gcp"]')).toBeHidden();
 });
+
+test('picking an icon replaces the stencil image; changing the type drops the stencil kinds', async ({ page }) => {
+  await setup(page, [{ id: 's', type: 'datastore', name: 'Orders', x: 0, y: 0, width: 240, height: 80, secProps: {}, stencil: 'aws:Amazon-RDS', stencilIcon: 'data:image/svg+xml;base64,PHN2Zy8+', stencilTags: ['database'] }]);
+  await page.evaluate(() => { app.state.selectedElementIds = ['s']; app.refreshAppViewVisualWorkspace(); app.changeNodeType('s', 'process'); });
+  expect(await page.evaluate(() => [app.state.elements[0].stencilTags, [...app.subtypesOf(app.state.elements[0])].includes('database')])).toEqual([undefined, false]);
+  await page.evaluate(() => { const sel = document.getElementById('props-input-icon'); sel.value = sel.options[1].value; sel.dispatchEvent(new Event('change')); });
+  expect(await page.evaluate(() => app.state.elements[0].stencilIcon)).toBeUndefined();
+  await expect(page.locator('#layers-nodes-group [data-id="s"] img.stencil-icon')).toHaveCount(0);
+});

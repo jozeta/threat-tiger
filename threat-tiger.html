@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-PyE2F94zEyzAARkL+tA5s4R+fKTs0iLPRTlX3nfH7nk='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-dgNl7PsDWCU7G0VBdPefy30kzD+AHjnkRUqcuo5tqsQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -6704,6 +6704,7 @@
                         const item = this.state.elements.find(el => el.id === this.state.selectedElementIds[0]);
                         if (item) {
                             item.icon = ev.target.value;
+                            delete item.stencilIcon;   // a picked icon replaces a cloud stencil's image
                             this.logEvent("CHANGE", `Altered component classification graphic icon subtype for element "${item.name}"`);
                             this.saveSessionToLocalStorage(); this.renderSvgDiagramElements();
                         }
@@ -8138,7 +8139,7 @@
                 const cx = el.x + (el.width || oldDef.width) / 2, cy = el.y + (el.height || oldDef.height) / 2;
                 const oldSec = el.secProps || {}, oldIcon = el.icon;
                 const customIcon = oldIcon && oldIcon !== oldDef.props.icon;
-                ['secProps', 'icon', 'iconColor', 'fcFillColor', 'fcStrokeColor', 'fcStrokeWidth', 'width', 'height'].forEach(k => delete el[k]);
+                ['secProps', 'icon', 'iconColor', 'fcFillColor', 'fcStrokeColor', 'fcStrokeWidth', 'width', 'height', 'stencilTags'].forEach(k => delete el[k]);   // a new type: the stencil's kinds no longer apply
                 Object.assign(el, JSON.parse(JSON.stringify(def.props)));
                 el.type = newType;
                 if (el.secProps) Object.keys(el.secProps).forEach(k => { if (k in oldSec) el.secProps[k] = oldSec[k]; });

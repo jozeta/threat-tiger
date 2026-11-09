@@ -19,6 +19,15 @@ test('classify maps databases, secrets, network and users', async () => {
   expect(classify('Application Load Balancer', 'Networking')).toEqual({ type: 'infrastructure', tags: ['network-device'] });
   expect(classify('Users', 'General')).toEqual({ type: 'interactor', tags: [] });
   expect(classify('Arc PostgreSQL', 'arc')).toEqual({ type: 'datastore', tags: ['database'] });
+  // Review fixes: internal services are never external entities; HSM is a secrets store; transfer tools are processes.
+  expect(classify('App Services', 'mobile').type).toBe('process');
+  expect(classify('AWS Amplify', 'Front End Web Mobile').type).toBe('process');
+  expect(classify('Notification Hubs', 'mobile').type).toBe('process');
+  expect(classify('User Notifications', 'Management').type).toBe('process');
+  expect(classify('AWS CloudHSM', 'Security Identity Compliance')).toEqual({ type: 'datastore', tags: ['secrets'] });
+  expect(classify('Database Migration Service', 'Database').type).toBe('process');
+  expect(classify('AWS Snowball', 'Storage').type).toBe('process');
+  expect(classify('Defender Industrial Robot', 'iot')).toEqual({ type: 'process', tags: ['iot'] });
   expect(classify('Azure Cosmos DB', 'databases')).toEqual({ type: 'datastore', tags: ['nosql'] });
 });
 
@@ -34,5 +43,14 @@ test('every generated pack loads, has icons, and every icon is clean', async () 
       const svg = Buffer.from(b64, 'base64').toString('utf8');
       expect(svg, `${set}:${name}`).not.toMatch(/<script|\son\w+=|<foreignObject|<!DOCTYPE/i);
     }
+  }
+});
+
+test('no pack shows two icons with the same name', () => {
+  for (const set of ['aws', 'azure', 'entra', 'gcp', 'k8s']) {
+    const ctx = { window: {} };
+    vm.runInNewContext(fs.readFileSync(path.join(ROOT, `vendor/stencils/${set}.js`), 'utf8'), ctx);
+    const names = ctx.window.TT_STENCILS[set].icons.map((i) => i[1].toLowerCase());
+    expect(names.length - new Set(names).size, set).toBe(0);
   }
 });
