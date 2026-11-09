@@ -28,11 +28,16 @@ test('classify maps databases, secrets, network and users', async () => {
   expect(classify('Database Migration Service', 'Database').type).toBe('process');
   expect(classify('AWS Snowball', 'Storage').type).toBe('process');
   expect(classify('Defender Industrial Robot', 'iot')).toEqual({ type: 'process', tags: ['iot'] });
+  expect(classify('Cloud Load Balancing', 'Product')).toEqual({ type: 'infrastructure', tags: ['network-device'] });
+  expect(classify('Jenkins', 'server ci')).toEqual({ type: 'process', tags: ['ci-cd'] });
+  expect(classify('Terraform', 'iac')).toEqual({ type: 'process', tags: ['ci-cd'] });
+  expect(classify('Nginx', 'server')).toEqual({ type: 'process', tags: ['web'] });
+  expect(classify('Docker', 'containers')).toEqual({ type: 'process', tags: ['container'] });
   expect(classify('Azure Cosmos DB', 'databases')).toEqual({ type: 'datastore', tags: ['nosql'] });
 });
 
 test('every generated pack loads, has icons, and every icon is clean', async () => {
-  for (const set of ['aws', 'azure', 'entra', 'gcp', 'k8s']) {
+  for (const set of ['aws', 'azure', 'entra', 'gcp', 'k8s', 'devicon', 'brands', 'fluent']) {
     const ctx = { window: {} };
     vm.runInNewContext(fs.readFileSync(path.join(ROOT, `vendor/stencils/${set}.js`), 'utf8'), ctx);
     const pack = ctx.window.TT_STENCILS[set];
@@ -47,10 +52,19 @@ test('every generated pack loads, has icons, and every icon is clean', async () 
 });
 
 test('no pack shows two icons with the same name', () => {
-  for (const set of ['aws', 'azure', 'entra', 'gcp', 'k8s']) {
+  for (const set of ['aws', 'azure', 'entra', 'gcp', 'k8s', 'devicon', 'brands', 'fluent']) {
     const ctx = { window: {} };
     vm.runInNewContext(fs.readFileSync(path.join(ROOT, `vendor/stencils/${set}.js`), 'utf8'), ctx);
     const names = ctx.window.TT_STENCILS[set].icons.map((i) => i[1].toLowerCase());
     expect(names.length - new Set(names).size, set).toBe(0);
   }
+});
+
+test('the key OS, security and device icons are present', () => {
+  const load = (set) => { const ctx = { window: {} }; vm.runInNewContext(fs.readFileSync(path.join(ROOT, `vendor/stencils/${set}.js`), 'utf8'), ctx); return ctx.window.TT_STENCILS[set].icons.map((i) => i[1]); };
+  const devicon = load('devicon'), brands = load('brands'), fluent = load('fluent'), gcp = load('gcp');
+  for (const n of ['Linux', 'Windows', 'Windows 11', 'Apple', 'Ubuntu', 'Docker', 'Jenkins', 'Python']) expect(devicon, n).toContain(n);
+  for (const n of ['Kali Linux', 'Metasploit', 'Wireshark', 'Burp Suite', 'VirusTotal', 'Splunk', 'Snyk', 'Okta', 'Vault']) expect(brands, n).toContain(n);
+  for (const n of ['Laptop', 'Server', 'Bug / malware', 'Incident', 'Firewall / protection', 'Code']) expect(fluent, n).toContain(n);
+  for (const n of ['Secret Manager', 'Key Management Service', 'Cloud Armor', 'Cloud Load Balancing']) expect(gcp, n).toContain(n);
 });

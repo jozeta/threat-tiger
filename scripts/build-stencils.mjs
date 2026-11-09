@@ -21,6 +21,9 @@ export const SETS = {
     entra: { title: 'Microsoft Entra', source: 'https://learn.microsoft.com/en-us/entra/architecture/architecture-icons', terms: 'Microsoft permits the use of these icons in architectural diagrams, training materials, or documentation. Microsoft reserves all other rights.' },
     gcp: { title: 'Google Cloud', source: 'https://cloud.google.com/icons', terms: 'Google Cloud product icons from the official icon library, for architecture diagrams.' },
     oci: { title: 'Oracle Cloud', source: 'https://docs.oracle.com/iaas/Content/General/Reference/graphicsfordiagrams.htm', terms: 'Oracle Cloud Infrastructure Architecture Diagram Toolkit icons, for architecture diagrams.' },
+    devicon: { title: 'Tech & OS logos', source: 'https://github.com/devicons/devicon', terms: 'Devicon, MIT licence (Copyright (c) 2015 konpa). Logos are trademarks of their owners.' },
+    brands: { title: 'Security & DevOps brands', source: 'https://github.com/simple-icons/simple-icons', terms: 'Simple Icons, CC0-1.0. Logos are trademarks of their owners; use them only to refer to the product.' },
+    fluent: { title: 'Devices & security', source: 'https://github.com/microsoft/fluentui-system-icons', terms: 'Microsoft Fluent UI System Icons, MIT licence (Copyright (c) Microsoft Corporation).' },
     k8s: { title: 'Kubernetes', source: 'https://github.com/kubernetes/community/tree/main/icons', terms: 'Kubernetes icons, licensed under Apache-2.0 or CC-BY-4.0 (your choice).' },
 };
 
@@ -76,9 +79,11 @@ const RULES = [
     [/\b(cdn|cloudfront|front ?door)\b/i, 'infrastructure', ['network-device', 'cdn']],
     [/\b(dns|route ?53)\b/i, 'infrastructure', ['network-device', 'dns']],
     [/\b(vpn|express ?route|direct connect|interconnect)\b/i, 'infrastructure', ['network-device', 'vpn']],
-    [/\b(load balancers?|gateways?|nat|vpc|virtual networks?|vnet|subnets?|network|networking|private link|transit)\b/i, 'infrastructure', ['network-device']],
+    [/\b(load balanc\w*|gateways?|nat|vpc|virtual networks?|vnet|subnets?|network|networking|private link|transit)\b/i, 'infrastructure', ['network-device']],
+    [/\b(jenkins|github actions|gitlab|circleci|travis( ci)?|argo( ?cd)?|teamcity|bamboo|tekton|spinnaker|azure devops|terraform|ansible|puppet|chef|packer|vagrant|pulumi|ci ?\/ ?cd|pipelines?)\b/i, 'process', ['ci-cd']],
+    [/\b(nginx|apache|httpd|tomcat|caddy|iis|web servers?)\b/i, 'process', ['web']],
     [/\b(lambda|functions?|cloud run|app engine|serverless)\b/i, 'process', ['serverless']],
-    [/\b(kubernetes|eks|aks|gke|containers?|ecs|fargate|openshift|pods?|registry)\b/i, 'process', ['container']],
+    [/\b(kubernetes|eks|aks|gke|containers?|ecs|fargate|openshift|pods?|registry|docker|podman)\b/i, 'process', ['container']],
     [/\b(sqs|sns|queues?|service bus|event ?(hubs?|grid|bridge)|pub ?\/? ?sub|kafka|mq|messaging)\b/i, 'process', ['queue', 'messaging']],
     [/\b(sagemaker|bedrock|openai|vertex|ai|machine learning|cognitive|gemini|foundry)\b/i, 'process', ['llm']],
     [/\b(ec2|virtual machines?|vms?|compute|instances?|servers?)\b/i, 'process', ['cloud-host']],
@@ -113,6 +118,56 @@ const K8S_CLASS = {
     api: ['process', ['api', 'container']], sa: ['process', ['identity']], role: ['process', ['identity']], 'c-role': ['process', ['identity']],
     rb: ['process', ['identity']], crb: ['process', ['identity']], psp: ['process', ['security-control']], cm: ['datastore', ['config']],
 };
+
+// Devicon: operating systems and code are recognised by name; the rest goes through classify().
+const OS_NAMES = /^(linux|windows8|windows11|apple|macos|ubuntu|debian|redhat|fedora|centos|android|ios|freebsd|archlinux|opensuse|alpinelinux|rockylinux|almalinux|kalilinux|raspberrypi|chrome ?os)$/i;
+const DEVICON_LABELS = { windows8: 'Windows', windows11: 'Windows 11', redhat: 'Red Hat', githubactions: 'GitHub Actions', gitlab: 'GitLab', github: 'GitHub', nodejs: 'Node.js', javascript: 'JavaScript', typescript: 'TypeScript', postgresql: 'PostgreSQL', mysql: 'MySQL', mongodb: 'MongoDB', sonarqube: 'SonarQube', argocd: 'Argo CD', azuredevops: 'Azure DevOps', powershell: 'PowerShell', bash: 'Bash', csharp: 'C#', cplusplus: 'C++', dotnetcore: '.NET Core', vscode: 'VS Code', kalilinux: 'Kali Linux', macos: 'macOS', ios: 'iOS' };
+
+// Simple Icons: a curated security / hacking / incident response / DevSecOps / identity / OS / code subset.
+// [group, type, tags, slugs]
+const BRAND_GROUPS = [
+    ['Operating systems', 'process', ['host'], 'linux apple macos ios android ubuntu debian redhat fedora centos kalilinux parrotsecurity archlinux freebsd opensuse alpinelinux rockylinux almalinux qubesos tails'],
+    ['Pentest & hacking', 'interactor', ['threat-actor'], 'kalilinux parrotsecurity metasploit burpsuite wireshark hackthebox tryhackme offsec portswigger owasp zap hashcat ghidra radare2 nmap kismet aircrack'],
+    ['Incident response & SIEM', 'process', ['monitoring', 'logs'], 'splunk elastic elasticsearch kibana logstash graylog sumologic datadog newrelic pagerduty opsgenie grafana prometheus wazuh velociraptor thehive misp securityonion sentry'],
+    ['Malware & threat intel', 'process', ['security-control'], 'virustotal abuseipdb malwarebytes sentinelone sophos eset kaspersky avast avira bitdefender mcafee norton trendmicro recordedfuture shodan censys greynoise alienvault'],
+    ['Network security', 'infrastructure', ['security-control', 'network-device'], 'fortinet paloaltonetworks checkpoint cisco zscaler cloudflare akamai f5 pfsense opnsense wireguard openvpn tailscale zerotier netbird crowdsec suricata snort'],
+    ['DevSecOps', 'process', ['ci-cd', 'security-control'], 'snyk sonarqube sonarcloud checkmarx trivy falco aqua semgrep dependabot renovatebot sigstore openpolicyagent kyverno gitguardian trufflehog mend veracode sonatype jfrog harbor anchore grype syft'],
+    ['DevOps & CI/CD', 'process', ['ci-cd'], 'githubactions gitlab jenkins circleci travisci argo buildkite teamcity bamboo azuredevops drone tekton spinnaker octopusdeploy terraform ansible pulumi puppet chef saltproject vagrant packer docker podman kubernetes helm rancher openshift'],
+    ['Secrets & identity', 'process', ['identity'], 'okta auth0 keycloak authelia authentik openid fido yubico duo onelogin pingidentity jumpcloud letsencrypt'],
+    ['Password & secrets stores', 'datastore', ['secrets'], 'vault hashicorp 1password bitwarden lastpass keepassxc dashlane keeper doppler infisical'],
+    ['Code & repositories', 'process', ['app-code'], 'git github gitlab bitbucket gitea codeberg visualstudiocode jetbrains python javascript typescript go rust openjdk dotnet php nodedotjs gnubash powershell'],
+    ['Messaging & collaboration', 'process', ['messaging'], 'discord signal telegram mattermost element matrix zulip rocketdotchat jira confluence'],
+];
+
+// Fluent: curated generic devices, servers, security and incident-response symbols. [name, label, type, tags]
+const FLUENT_ICONS = [
+    ['laptop', 'Laptop', 'interactor', ['workstation']], ['desktop', 'Desktop', 'interactor', ['workstation']],
+    ['phone', 'Phone', 'interactor', ['mobile']], ['tablet', 'Tablet', 'interactor', ['mobile']],
+    ['person', 'Person', 'interactor', ['human']], ['people', 'People', 'interactor', ['human']], ['people_team', 'Team', 'interactor', ['human']],
+    ['bot', 'Bot', 'interactor', ['bot']], ['building', 'Office / site', 'interactor', []],
+    ['server', 'Server', 'process', ['host']], ['database', 'Database', 'datastore', ['database']],
+    ['storage', 'Storage', 'datastore', ['object-storage']], ['hard_drive', 'Hard drive', 'datastore', ['local-disk']],
+    ['folder', 'Folder / file share', 'datastore', ['file-share']], ['document', 'Document', 'datastore', ['documents']],
+    ['document_lock', 'Protected document', 'datastore', ['documents']], ['cloud', 'Cloud', 'process', ['cloud-host']],
+    ['router', 'Router', 'infrastructure', ['network-device']], ['virtual_network', 'Virtual network', 'infrastructure', ['network-device']],
+    ['wifi_1', 'Wi-Fi', 'infrastructure', ['network-device']], ['globe', 'Internet', 'interactor', []],
+    ['plug_connected', 'Connector', 'process', ['integration']], ['mail', 'Email', 'process', ['email']],
+    ['shield', 'Shield', 'infrastructure', ['security-control']], ['shield_lock', 'Firewall / protection', 'infrastructure', ['security-control']],
+    ['shield_checkmark', 'Security check passed', 'infrastructure', ['security-control']], ['shield_error', 'Security alert', 'process', ['monitoring']],
+    ['shield_task', 'Security task', 'process', ['security-control']], ['lock_shield', 'Encryption', 'infrastructure', ['security-control']],
+    ['lock_closed', 'Lock', 'infrastructure', ['security-control']], ['key', 'Key', 'datastore', ['secrets']],
+    ['key_multiple', 'Keys / secrets', 'datastore', ['secrets']], ['password', 'Password', 'datastore', ['secrets']],
+    ['certificate', 'Certificate', 'datastore', ['secrets']], ['fingerprint', 'Biometric', 'process', ['biometric']],
+    ['bug', 'Bug / malware', 'interactor', ['threat-actor']], ['warning', 'Warning', 'process', ['monitoring']],
+    ['alert', 'Alert', 'process', ['monitoring']], ['error_circle', 'Incident', 'process', ['monitoring']],
+    ['fire', 'Incident (critical)', 'process', ['monitoring']], ['eye', 'Monitoring', 'process', ['monitoring']],
+    ['search', 'Investigation', 'process', ['monitoring']], ['beaker', 'Sandbox / test', 'process', ['non-prod']],
+    ['code', 'Code', 'process', ['app-code']], ['code_block', 'Code block', 'process', ['app-code']],
+    ['window_console', 'Terminal', 'process', ['script']], ['window_dev_tools', 'Developer tools', 'process', ['app-code']],
+    ['branch', 'Branch', 'process', ['ci-cd']], ['branch_fork', 'Fork', 'process', ['ci-cd']], ['pipeline', 'Pipeline', 'process', ['ci-cd']],
+    ['box', 'Package', 'process', ['supply-chain']], ['cube', 'Container', 'process', ['container']], ['apps', 'Applications', 'process', ['web']],
+    ['data_usage', 'Analytics', 'process', ['analytics']], ['calendar', 'Scheduled job', 'process', ['scheduler']],
+];
 
 function walk(dir, out = []) {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -157,8 +212,47 @@ function collect(set, dir) {
             if (!prev || score > prev.score) byFolder.set(key, { f, score, group: rel[0], product: rel[1] });
         });
         return [...byFolder.values()].map(({ f, group, product }) => ({
-            name: product.replace(/\s*_\s*/g, ' & '), category: group === 'Category Icons' ? 'Category' : 'Product', svgText: fs.readFileSync(f, 'utf8'),
+            name: group === 'Legacy'
+                ? product.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase()).replace(/\b(Gke|Iam|Kms|Vpc|Dns|Api|Sql|Cdn|Nat|Vpn|Ai|Ml|Iot)\b/g, w => w.toUpperCase())
+                : product.replace(/\s*_\s*/g, ' & '),
+            category: group === 'Category Icons' ? 'Category' : 'Product', svgText: fs.readFileSync(f, 'utf8'),
         }));
+    }
+    if (set === 'devicon') {
+        const index = JSON.parse(fs.readFileSync(path.join(dir, 'devicon.json'), 'utf8'));
+        const byName = new Map(index.map(e => [e.name, e]));
+        return files.map(f => {
+            const key = path.basename(f, '.svg').replace(/-(original|plain|line)(-wordmark)?$/, '');
+            const e = byName.get(key) || { name: key, tags: [] };
+            const label = DEVICON_LABELS[key] || key.charAt(0).toUpperCase() + key.slice(1);
+            const tags = Array.isArray(e.tags) ? e.tags : [];
+            if (OS_NAMES.test(key)) return { name: label, category: 'Operating system', svgText: fs.readFileSync(f, 'utf8'), type: 'process', tags: ['host'] };
+            if (tags.includes('language')) return { name: label, category: 'Language', svgText: fs.readFileSync(f, 'utf8'), type: 'process', tags: ['app-code'] };
+            return { name: label, category: tags.join(' ') || 'Technology', svgText: fs.readFileSync(f, 'utf8') };
+        });
+    }
+    if (set === 'brands') {
+        const data = JSON.parse(fs.readFileSync(path.join(dir, 'data', 'simple-icons.json'), 'utf8'));
+        const bySlug = new Map(data.map(d => [d.slug, d]));
+        const permissive = (d) => !d.license || ['CC0-1.0', 'MIT', 'Apache-2.0', 'CC-BY-4.0', 'CC-BY-SA-4.0'].includes(d.license.type);
+        const out = [];
+        BRAND_GROUPS.forEach(([group, type, tags, slugs]) => slugs.split(/\s+/).forEach(slug => {
+            const d = bySlug.get(slug);
+            const file = path.join(dir, 'icons', `${slug}.svg`);
+            if (!d || !permissive(d) || !fs.existsSync(file)) return;
+            const hex = /^[0-9A-F]{6}$/i.test(d.hex) ? d.hex : '333333';
+            out.push({ name: d.title, category: group, type, tags: [...tags],
+                svgText: fs.readFileSync(file, 'utf8').replace(/^<svg/i, `<svg fill="#${hex}"`) });
+        }));
+        return out;
+    }
+    if (set === 'fluent') {
+        const icons = path.join(dir, 'icons');
+        return FLUENT_ICONS.map(([name, label, type, tags]) => {
+            const file = [`${name}_color.svg`, `${name}_32_regular.svg`, `${name}_28_regular.svg`, `${name}_24_regular.svg`, `${name}_20_regular.svg`]
+                .map(n => path.join(icons, n)).find(fs.existsSync);
+            return file ? { name: label, category: 'Fluent', type, tags: [...tags], svgText: fs.readFileSync(file, 'utf8') } : null;
+        }).filter(Boolean);
     }
     if (set === 'k8s') {
         return files.map(f => {

@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-i/wzmhSB0/0BmqFou/zHUMOPnDS/SBboyNULyrlL0Y0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-H+a18QzW9cf2hWSXVZnx33aCNVlyLpnqmRPfR4GlA8A='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1669,6 +1669,9 @@
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-right" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar-reverse me-2"></i>Show right panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-bottom" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-window-dock me-2"></i>Show bottom panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><h6 class="dropdown-header ps-2 pb-1">Icon sets</h6></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-fluent" data-stencil-toggle="fluent" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Devices &amp; security<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-brands" data-stencil-toggle="brands" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Security &amp; DevOps brands<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-devicon" data-stencil-toggle="devicon" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Tech &amp; OS logos<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-aws" data-stencil-toggle="aws" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>AWS<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-azure" data-stencil-toggle="azure" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Azure<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-entra" data-stencil-toggle="entra" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Microsoft Entra<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
@@ -3409,11 +3412,11 @@
                         <li><strong>Line jumps:</strong> where two flows cross, the later one hops over the other; switch it off in ☰ menu → <strong>View</strong>. <strong>Bend points:</strong> click a selected flow to add one, drag to move, click to remove, or use <strong>Clear bend points</strong> in Properties.</li>
                         <li><strong>Layers:</strong> in the <strong>Layers</strong> tab of the right panel, add layers, click one to make it active (new shapes go there), double-click to rename, hide or lock it, or move the selection to it. Hidden layers still count in the threat analysis.</li>
                         <li><strong>View:</strong> ☰ menu → <strong>View</strong> shows or hides the minimap, line jumps, each panel (left, right, bottom) and each panel tab.</li>
-                        <li><strong>Cloud stencils:</strong> official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons in the palette under <strong>Data Nodes &amp; Icons</strong> (each set loads when you open it; search by name). A placed icon shows as the icon with its name underneath and is a normal component (data store, process, …), so threat suggestions work. Hide sets you don't use in ☰ → <strong>View</strong>.</li>
+                        <li><strong>Icon sets:</strong> devices and security symbols, security and DevOps brands (pentest, incident response, threat intel, DevSecOps, identity), tech and OS logos (Linux, Windows, Apple, languages, tools), and official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons in the palette under <strong>Data Nodes &amp; Icons</strong> (each set loads when you open it; search by name). A placed icon shows as the icon with its name underneath and is a normal component (data store, process, …), so threat suggestions work. Hide sets you don't use in ☰ → <strong>View</strong>.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
 
-                    <p class="small text-muted mb-4"><strong>Third-party icons:</strong> the cloud stencils are official icons from AWS, Microsoft (Azure, Entra), Google Cloud and the Kubernetes project. They are not covered by Threat Tiger's MIT licence and are included under their owners' terms for use in architecture diagrams (Kubernetes: Apache-2.0 or CC-BY-4.0). Details in <code>vendor/stencils/README.md</code>.</p>
+                    <p class="small text-muted mb-4"><strong>Third-party icons:</strong> the icon sets come from AWS, Microsoft (Azure, Entra, Fluent UI), Google Cloud, the Kubernetes project, Devicon and Simple Icons. They are not covered by Threat Tiger's MIT licence and are included under their owners' terms (Fluent UI and Devicon: MIT; Simple Icons: CC0; Kubernetes: Apache-2.0 or CC-BY-4.0; cloud providers: for architecture diagrams). Brand logos are trademarks of their owners. Details in <code>vendor/stencils/README.md</code>.</p>
 
                     <h5 class="fw-bold text-dark mb-2"><i
                             class="bi bi-file-earmark-text-fill me-2 text-secondary"></i>2. Open Source License &amp;
@@ -4678,7 +4681,7 @@
         }
 
         // ── Cloud stencils ───────────────────────────────────────────────────────────
-        const STENCIL_SETS = [['aws', 'AWS'], ['azure', 'Azure'], ['entra', 'Microsoft Entra'], ['gcp', 'Google Cloud'], ['k8s', 'Kubernetes']];
+        const STENCIL_SETS = [['fluent', 'Devices & security'], ['brands', 'Security & DevOps brands'], ['devicon', 'Tech & OS logos'], ['aws', 'AWS'], ['azure', 'Azure'], ['entra', 'Microsoft Entra'], ['gcp', 'Google Cloud'], ['k8s', 'Kubernetes']];
         const STENCIL_ID = /^[a-z0-9]+:[\w.-]{1,120}$/i;
         const STENCIL_ICON = /^data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+$/;
         // A placed stencil's icon: only a base64 SVG data URL (shown as <img>, where SVG cannot run script).
@@ -10785,6 +10788,16 @@
             }
 
             updatePropertiesInspectorView() {
+                this.updatePropertiesInspectorViewCore();
+                // Cloud icons: no Type dropdown, graphic icon picker or Security Controls (the user's choice for icon shapes).
+                const ids = this.state.selectedElementIds || [];
+                const one = ids.length === 1 && !this.state.selectedFlowId ? this.state.elements.find(e => e.id === ids[0]) : null;
+                if (one && safeStencilIcon(one.stencilIcon)) {
+                    ['box-props-node-type', 'box-props-icon-customization', 'box-props-security'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('d-none'); });
+                }
+            }
+
+            updatePropertiesInspectorViewCore() {
                 this.updateAlignToolbar();
                 this.updateFormatPainterButton();
                 const boxIds = ['box-props-node-type', 'box-props-standard-name', 'box-props-status-state', 'box-props-icon-customization', 'box-props-flow-routing', 'box-props-step-activity', 'box-props-text-offset', 'box-props-textbox-textarea', 'box-props-headline-customization', 'box-props-security', 'box-props-zdepth', 'box-props-custom-image', 'box-props-isometric-toggle', 'box-props-swimlane', 'box-props-flowchart'];

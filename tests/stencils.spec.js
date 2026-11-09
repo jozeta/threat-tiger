@@ -81,3 +81,16 @@ test('stencil sets live under Data Nodes & Icons; a placed stencil is just the i
   const [img, label] = await Promise.all([node.locator('img.stencil-icon').boundingBox(), node.locator('.stencil-card .card-text-render-target').boundingBox()]);
   expect(label.y).toBeGreaterThan(img.y + img.height - 1);   // the label sits under the icon
 });
+
+test('Properties for a cloud icon hide Type, the graphic icon picker and Security Controls', async ({ page }) => {
+  await setup(page, [
+    { id: 's', type: 'datastore', name: 'Orders', x: 0, y: 0, width: 110, height: 96, secProps: { encryptedAtRest: 'false' }, stencil: 'aws:Amazon-RDS', stencilIcon: 'data:image/svg+xml;base64,PHN2Zy8+', stencilTags: ['database'] },
+    { id: 'p', type: 'process', name: 'API', x: 400, y: 0, width: 240, height: 80, secProps: { runAsAdmin: 'false', loggingEnabled: 'false' } },
+  ]);
+  const boxes = ['#box-props-node-type', '#box-props-icon-customization', '#box-props-security'];
+  await page.evaluate(() => { app.state.selectedElementIds = ['p']; app.refreshAppViewVisualWorkspace(); });
+  for (const b of boxes) await expect(page.locator(b)).toBeVisible();
+  await page.evaluate(() => { app.state.selectedElementIds = ['s']; app.refreshAppViewVisualWorkspace(); });
+  for (const b of boxes) await expect(page.locator(b)).toBeHidden();
+  await expect(page.locator('#box-props-standard-name')).toBeVisible();
+});

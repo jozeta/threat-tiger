@@ -9,9 +9,12 @@
   "vendor/fontawesome-6.5.1/webfonts/fa-regular-400.woff2": "sha384-2hgsGQjjgVclDGAvWslIa+GwYh3Bn/ztuvakT4ICpV95tadfxcw0WMPHsEKjsPVT",
   "vendor/fontawesome-6.5.1/webfonts/fa-solid-900.woff2": "sha384-YxWlWCDksuL6Ljn1HkJNPH8l+jSRIWPpMpPw3pFa0QnmLXjwV/uPwpDm/b9vn/o1",
   "vendor/fontawesome-6.5.1/webfonts/fa-v4compatibility.woff2": "sha384-6yorJ/xqzXG3JEHRf9/CTu1dz8bBnMqYf652Dy8345NBoSPcA7DDsScvfnCbJEOf",
-  "vendor/stencils/aws.js": "sha384-wfh1FU3hPZa3gkpB6d2soKb+81byGlBfkG9jTRitTMZZLmtliBucCrAfU8el1Vvh",
-  "vendor/stencils/azure.js": "sha384-q4vIVtj3CueGp3+S/omFiLqF1OB44BN0YomwStP3tp7Zcew8A7M63qnV0tEMSSU/",
+  "vendor/stencils/aws.js": "sha384-gWOMxZO6/0y2wcZdR9IcmSFm2mf7KfYtB5ZNLTEfNVxwCgiF3X0JDutptubsRFum",
+  "vendor/stencils/azure.js": "sha384-Xl2BDKmBwVeMLnhe/fslvHi7P1e9c41gvtATmZcUgU4walN95IfQDjk7+RF9jbJ1",
   "vendor/stencils/entra.js": "sha384-LF1josZ3r4PIc+0lwJaV2h1v8lJGIpeAc91mSUwwjmRgHSzTvMDCsAWJ5QIEXaHe",
-  "vendor/stencils/gcp.js": "sha384-kojREy5nVdF1SOjFySrHotacec1AzCB+kmcsTEoO/LQgkvSvJa3Ma0dK8bRp57rZ",
-  "vendor/stencils/k8s.js": "sha384-b7Uu7Bpa1BqDIUSE+4+R6pE4AMhZvkr94Xy5LpUT4q7TAh6RIajQ7uYONDww0gIy"
+  "vendor/stencils/gcp.js": "sha384-R82mK+wRWNxifEdZUGVNAI7l0LC7EJAmz0earH1cMuBdzJYKuht+xr1Fvyiv0idm",
+  "vendor/stencils/k8s.js": "sha384-b7Uu7Bpa1BqDIUSE+4+R6pE4AMhZvkr94Xy5LpUT4q7TAh6RIajQ7uYONDww0gIy",
+  "vendor/stencils/devicon.js": "sha384-XpmkaN8OfDADGhS+HwDqbL0co53GsFdya7UObwZEjfw5f9ZERVeashvy6s+BaoVn",
+  "vendor/stencils/brands.js": "sha384-fmpKwrDQ6NT0a3jC0D+iVRrqGIf/xvkDZL7xRHX1Gal5Bfzm1Y4ApsUd8WUIIfjA",
+  "vendor/stencils/fluent.js": "sha384-INUlo03slxL1SO5MeXe9+wjUo9xkK0gWpmk+s2bx8T9dIHgdm/kdSwBiHFUL4mvk"
 }
