@@ -68,7 +68,7 @@ test('the later flow hops over the earlier one; the hit area matches; the ☰ sw
   expect(await d(page, 'f1')).not.toContain(' A ');
   expect(await d(page, 'f2')).toContain(' A 6 6 0 0 1 ');
   expect(await page.locator('[data-flow-id="f2"] path.flow-hit-area').getAttribute('d')).toBe(await d(page, 'f2'));
-  await page.click('#btn-main-menu');
+  await page.click('#btn-main-menu'); await page.click('#btn-menu-view');
   await expect(page.locator('#btn-menu-line-jumps')).toHaveAttribute('aria-checked', 'true');
   await page.click('#btn-menu-line-jumps');
   expect(await d(page, 'f2')).not.toContain(' A ');

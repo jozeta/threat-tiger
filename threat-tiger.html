@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-+5x7rUCL8/r+z0re7jRPpUb3R1l5qX+hfgetzYPpRSo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-cnZMterIMxFU4+6T+owfjsBHfATj2dLfWoT8zbCYz0E='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1325,7 +1325,8 @@
         .layer-row .btn { padding: 1px 5px; font-size: 12px; }
         #canvas-svg .layer-locked, #canvas-svg .layer-locked * { cursor: not-allowed !important; }
         #canvas-svg.painting, #canvas-svg.painting .node-element { cursor: copy !important; }
-        #btn-menu-minimap[aria-checked="false"] .menu-check, #btn-menu-line-jumps[aria-checked="false"] .menu-check { visibility: hidden; }
+        .menu-view-item[aria-checked="false"] .menu-check { visibility: hidden; }
+        #btn-format-painter:disabled { opacity: .3; }
         #btn-format-painter[aria-pressed="true"] { background: #dbeafe; color: #1d4ed8; }
         #minimap { position: absolute; right: 1rem; top: 1rem; width: 200px; height: 140px; z-index: 10;
             background: #ffffff; border: 1px solid #dee2e6; border-radius: 6px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); cursor: pointer; }
@@ -1653,9 +1654,16 @@
                     <li><button class="dropdown-item" type="button" id="btn-export-markdown"><i class="bi bi-markdown me-2"></i>Export Markdown report</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-export-mermaid"><i class="bi bi-diagram-3 me-2"></i>Export Mermaid diagram</button></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><h6 class="dropdown-header">View</h6></li>
-                    <li><button class="dropdown-item d-flex align-items-center" type="button" id="btn-menu-minimap" role="menuitemcheckbox" aria-checked="false"><i class="bi bi-map me-2"></i>Show minimap<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
-                    <li><button class="dropdown-item d-flex align-items-center" type="button" id="btn-menu-line-jumps" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-bezier2 me-2"></i>Line jumps where flows cross<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                    <li><button class="dropdown-item d-flex align-items-center" type="button" id="btn-menu-view" aria-expanded="false" aria-controls="menu-view-items"><i class="bi bi-window-sidebar me-2"></i>View<i class="bi bi-chevron-down ms-auto" id="menu-view-chevron" aria-hidden="true"></i></button></li>
+                    <li id="menu-view-items" class="d-none">
+                        <ul class="list-unstyled mb-0 ps-3" role="group" aria-label="View">
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-minimap" role="menuitemcheckbox" aria-checked="false"><i class="bi bi-map me-2"></i>Show minimap<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-line-jumps" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-bezier2 me-2"></i>Line jumps where flows cross<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-left" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar me-2"></i>Show left panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-right" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar-reverse me-2"></i>Show right panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-bottom" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-window-dock me-2"></i>Show bottom panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                        </ul>
+                    </li>
                     <li><hr class="dropdown-divider"></li>
                     <li><button class="dropdown-item" type="button" id="btn-help-trigger"><i class="bi bi-question-circle me-2"></i>Help &amp; License</button></li>
                     <li><button class="dropdown-item text-danger" type="button" id="btn-reset-session"><i class="bi bi-trash me-2"></i>Reset canvas…</button></li>
@@ -3374,10 +3382,11 @@
                         <li><strong>Change type:</strong> use <strong>Type</strong> in Properties to turn any node into another kind (process, data store, decision, …). Name, flows and threats stay.</li>
                         <li><strong>Swimlanes:</strong> drop a node into a cell (it is highlighted while you drag); cells grow to fit their nodes. Drag a column or row border to resize it, double-click it for the automatic size, and pick a colour in Properties.</li>
                         <li><strong>Align and distribute:</strong> select two or more shapes to line them up or space them evenly from the small toolbar above the canvas controls.</li>
-                        <li><strong>Minimap:</strong> turn it on from ☰ menu → <strong>Show minimap</strong>. It shows the whole diagram in the top-right corner of the canvas; click or drag in it to move the view.</li>
+                        <li><strong>Minimap:</strong> turn it on from ☰ menu → <strong>View</strong> → <strong>Show minimap</strong>. It shows the whole diagram in the top-right corner of the canvas; click or drag in it to move the view.</li>
                         <li><strong>Format painter:</strong> select a shape, click the brush, then click another shape of the same kind to copy its colours (not its name, type or security settings). Double-click the brush to paint several; Esc stops.</li>
-                        <li><strong>Line jumps:</strong> where two flows cross, the later one hops over the other; switch it off in ☰ menu → <strong>Line jumps where flows cross</strong>. <strong>Bend points:</strong> click a selected flow to add one, drag to move, click to remove, or use <strong>Clear bend points</strong> in Properties.</li>
+                        <li><strong>Line jumps:</strong> where two flows cross, the later one hops over the other; switch it off in ☰ menu → <strong>View</strong>. <strong>Bend points:</strong> click a selected flow to add one, drag to move, click to remove, or use <strong>Clear bend points</strong> in Properties.</li>
                         <li><strong>Layers:</strong> in the <strong>Layers</strong> tab of the right panel, add layers, click one to make it active (new shapes go there), double-click to rename, hide or lock it, or move the selection to it. Hidden layers still count in the threat analysis.</li>
+                        <li><strong>View:</strong> ☰ menu → <strong>View</strong> shows or hides the minimap, line jumps and each panel (left, right, bottom).</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
 
@@ -6485,6 +6494,7 @@
                 document.getElementById('btn-canvas-zoom-out').addEventListener('click', () => { this.zoomScale = Math.max(this.zoomScale - 0.1, MIN_ZOOM); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-reset').addEventListener('click', () => this.zoomToFit());
                 document.getElementById('btn-menu-minimap').addEventListener('click', () => this.toggleMinimap());
+                this.setupViewMenu();
                 try { this.lineJumps = localStorage.getItem('line_jumps') !== 'false'; } catch { this.lineJumps = true; }
                 document.getElementById('btn-menu-line-jumps').setAttribute('aria-checked', String(this.lineJumps));
                 document.getElementById('btn-menu-line-jumps').addEventListener('click', () => this.toggleLineJumps());
@@ -7690,6 +7700,32 @@
                 flow.points = []; flow.bendX = 0; flow.bendY = 0;
                 this.logEvent('CHANGE', `Cleared the bend points of flow "${flow.name}"`);
                 this.refreshAppViewVisualWorkspace();
+            }
+
+            // ☰ menu → View: expands in place; its switches keep the menu open so several can be set in a row.
+            setupViewMenu() {
+                const btn = document.getElementById('btn-menu-view'), list = document.getElementById('menu-view-items');
+                const setOpen = (open) => {
+                    list.classList.toggle('d-none', !open);
+                    btn.setAttribute('aria-expanded', String(open));
+                    document.getElementById('menu-view-chevron').className = `bi ${open ? 'bi-chevron-up' : 'bi-chevron-down'} ms-auto`;
+                };
+                btn.addEventListener('click', (ev) => { ev.stopPropagation(); setOpen(list.classList.contains('d-none')); this.syncViewMenu(); });
+                list.querySelectorAll('.menu-view-item').forEach(item => item.addEventListener('click', (ev) => { ev.stopPropagation(); }));
+                const panels = { left: () => this.toggleLeftPanel(), right: () => this.toggleRightPanel(), bottom: () => this.toggleBottomPanel() };
+                Object.entries(panels).forEach(([side, toggle]) => document.getElementById(`btn-menu-panel-${side}`).addEventListener('click', () => { toggle(); this.syncViewMenu(); }));
+                const menuBtn = document.getElementById('btn-main-menu');
+                menuBtn.addEventListener('show.bs.dropdown', () => this.syncViewMenu());
+                menuBtn.addEventListener('hidden.bs.dropdown', () => setOpen(false));
+            }
+
+            syncViewMenu() {
+                const set = (id, on) => { const el = document.getElementById(id); if (el) el.setAttribute('aria-checked', String(!!on)); };
+                set('btn-menu-minimap', this.minimapVisible);
+                set('btn-menu-line-jumps', this.lineJumps);
+                set('btn-menu-panel-left', !this.isLeftCollapsed);
+                set('btn-menu-panel-right', !this.isRightCollapsed);
+                set('btn-menu-panel-bottom', !this.isBottomCollapsed);
             }
 
             toggleMinimap() {

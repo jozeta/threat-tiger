@@ -7,10 +7,11 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ### Added
 
+- ☰ menu → View: expands in place to show or hide the minimap, line jumps and each panel (left, right, bottom), in step with the panels' own handles
 - Layers: add, rename, hide, lock and delete layers; new shapes go to the active layer; move the selection to a layer; hidden layers still count in the analysis
-- Line jumps: where two flows cross, the later one hops over the other (☰ menu to switch off); flow Properties explain bend points and can clear them
+- Line jumps: where two flows cross, the later one hops over the other (☰ menu → View to switch off); flow Properties explain bend points and can clear them
 - Format painter: copy a shape's colours, line width or font size onto other shapes of the same kind; double-click to paint several
-- Minimap: an overview of the whole diagram in the canvas corner; click or drag to move the view. Hidden by default: turn it on from ☰ menu → Show minimap
+- Minimap: an overview of the whole diagram in the canvas corner; click or drag to move the view. Hidden by default: turn it on from ☰ menu → View → Show minimap
 - Align and distribute: with two or more shapes selected, a toolbar lines up their left/centre/right or top/middle/bottom edges, or spaces three or more evenly; one undo step
 - Flowchart shape **Cube (3D box)** under Flowchart Diagram Items, next to the cylinder: shaded top and right faces, the label centred on the front face, anchors on the visible faces. It works with the Type dropdown and quick add, and exports to Mermaid as a rounded box
 
