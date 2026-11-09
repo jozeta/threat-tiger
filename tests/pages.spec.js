@@ -83,3 +83,59 @@ test('jumping to a component on another page switches to that page', async ({ pa
   expect(await page.evaluate(() => app.state.activePageId)).toBe('p2');
   expect(await nodeVisible(page, 'b')).toBe(true);
 });
+
+// ── Task 3: delete, move, drill-down, register, exports ──
+const flowAB = { id: 'f', name: 'AB', sourceId: 'a', targetId: 'b', sourceAnchor: 'right-2', targetAnchor: 'left-2', points: [], secProps: {} };
+
+test('deleting a page asks first, deletes its shapes, flows and threats, and undo brings them back; the only page cannot be deleted', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' }), node('b', 100000, { pageId: 'p2' }), node('c', 100400, { pageId: 'p2', linkedPageId: 'p1' }), node('l', 400, { pageId: 'p1', linkedPageId: 'p2' })], {
+    ...TWO, flows: [{ ...flowAB, id: 'g', sourceId: 'b', targetId: 'c' }], threats: [{ id: 'th-001', title: 'T', category: 'Spoofing', status: 'Open / Unmitigated', likelihood: 3, impact: 3, elementId: 'b' }],
+  });
+  await page.evaluate(() => app.setActivePage('p2'));
+  await page.click('#btn-page-delete');
+  await expect(page.locator('#modal-confirm-delete')).toBeVisible();
+  await page.click('#btn-confirm-delete');
+  await expect(page.locator('#modal-confirm-delete')).toBeHidden();
+  const r = await page.evaluate(() => ({ pages: app.state.pages.map((p) => p.id), active: app.state.activePageId, els: app.state.elements.map((e) => e.id), flows: app.state.flows.length, threats: app.state.threats.length, link: app.state.elements.find((e) => e.id === 'l').linkedPageId }));
+  expect(r).toEqual({ pages: ['p1'], active: 'p1', els: ['a', 'l'], flows: 0, threats: 0, link: undefined });
+  await expect(page.locator('#btn-page-delete')).toHaveCount(0);
+  await page.click('#btn-undo');
+  expect(await page.evaluate(() => [app.state.pages.length, app.state.elements.length, app.state.threats.length, app.state.elements.find((e) => e.id === 'l').linkedPageId])).toEqual([2, 4, 1, 'p2']);
+});
+
+test('moving shapes to another page shifts them into its area, and is refused when a flow would cross pages', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' }), node('b', 400, { pageId: 'p1' }), node('c', 800, { pageId: 'p1' })], { ...TWO, flows: [flowAB] });
+  await page.evaluate(() => { app.state.selectedElementIds = ['a']; app.refreshAppViewVisualWorkspace(); });
+  expect(await page.evaluate(() => app.moveSelectionToPage('p2'))).toBe(false);
+  expect(await page.evaluate(() => app.state.elements.find((e) => e.id === 'a').pageId)).toBe('p1');
+  await page.evaluate(() => { app.state.selectedElementIds = ['a', 'b']; app.refreshAppViewVisualWorkspace(); });
+  await page.locator('#page-move-select').selectOption('p2');
+  expect(await page.evaluate(() => app.state.elements.filter((e) => ['a', 'b'].includes(e.id)).map((e) => [e.pageId, e.x]))).toEqual([['p2', 100000], ['p2', 100400]]);
+  await page.evaluate(() => { app.state.selectedElementIds = ['c']; app.refreshAppViewVisualWorkspace(); });
+  expect(await page.evaluate(() => app.moveSelectionToPage('p2'))).toBe(true);
+});
+
+test('a shape links to a detail page: Properties picker, badge opens it, Back returns', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' }), node('b', 100000, { pageId: 'p2' })], TWO);
+  await page.evaluate(() => { app.state.selectedElementIds = ['a']; app.refreshAppViewVisualWorkspace(); });
+  await page.locator('#props-linked-page').selectOption('p2');
+  expect(await page.evaluate(() => app.state.elements.find((e) => e.id === 'a').linkedPageId)).toBe('p2');
+  await page.locator('[data-owner-id="a"].page-link-badge').click();
+  expect(await page.evaluate(() => app.state.activePageId)).toBe('p2');
+  await page.click('#btn-page-back');
+  expect(await page.evaluate(() => app.state.activePageId)).toBe('p1');
+});
+
+test('the register names the page; the Markdown report has one diagram per page; Mermaid export is the current page', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' }), node('b', 100000, { pageId: 'p2' })], {
+    ...TWO, threats: [{ id: 'th-001', title: 'T', category: 'Spoofing', status: 'Open / Unmitigated', likelihood: 3, impact: 3, elementId: 'b' }],
+  });
+  await expect(page.locator('#threat-register-tbody')).toContainText('B (Payments)');
+  const md = await page.evaluate(() => app.buildMarkdownReport());
+  expect(md).toContain('### Overview');
+  expect(md).toContain('### Payments');
+  expect((md.match(/```mermaid/g) || []).length).toBe(2);
+  const mer = await page.evaluate(() => app.buildMermaidDiagram());
+  expect(mer).toContain('"A"');
+  expect(mer).not.toContain('"B"');
+});

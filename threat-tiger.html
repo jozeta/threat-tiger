@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-NWpnSIX7IgMDOF6+sg+aVbhUe6DTD37PR9O1ibH1W/k='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-RRTCG1X3is6X7eEfKgBY4u9+GXzj6M1cPvwUAMjWfrw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1318,6 +1318,7 @@
 
         /* Dark Theme Overrides for Canvas */
         #canvas-svg .layer-hidden { display: none !important; }
+        .page-link-badge { cursor: pointer; }
         #page-tabs { position: absolute; top: .75rem; left: 1rem; z-index: 10; max-width: calc(100% - 260px); }
         #page-tabs .page-tab { font-size: 12px; padding: 2px 10px; border: 1px solid #dee2e6; background: #fff; border-radius: 6px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); }
         #page-tabs .page-tab[aria-selected="true"] { border-color: #0d6efd; color: #0d6efd; font-weight: 600; background: #eef4ff; }
@@ -2454,6 +2455,11 @@
                                 <input type="text" class="form-control form-control-sm shadow-none"
                                     id="props-input-name" required>
                             </div>
+                            <div id="box-props-linked-page" class="d-none mb-2">
+                                <label class="form-label small fw-semibold text-muted mb-1" for="props-linked-page">Detail page</label>
+                                <select class="form-select form-select-sm shadow-none" id="props-linked-page"></select>
+                                <div class="extra-small text-muted mt-1">The shape gets a ↗ badge that opens this page.</div>
+                            </div>
 
                             <div id="box-props-status-state" class="d-none card card-body p-2 bg-light border">
                                 <h6 class="small fw-bold text-dark border-bottom pb-1 mb-2"><i
@@ -3423,6 +3429,7 @@
                         <li><strong>View:</strong> ☰ menu → <strong>View</strong> shows or hides the minimap, line jumps, each panel (left, right, bottom) and each panel tab.</li>
                         <li><strong>Icon sets:</strong> devices and security symbols, security and DevOps brands (pentest, incident response, threat intel, DevSecOps, identity), tech and OS logos (Linux, Windows, Apple, languages, tools), and official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons in the palette under <strong>Data Nodes &amp; Icons</strong> (each set loads when you open it; search by name). A placed icon shows as the icon with its name underneath and is a normal component (data store, process, …), so threat suggestions work. Hide sets you don't use in ☰ → <strong>View</strong>.</li>
                         <li><strong>Attack paths:</strong> Insights → <strong>Attack paths</strong> lists routes from entry points (external entities, and components outside every trust zone) to crown jewels, ranked by risk: unencrypted or unauthenticated hops, open threats on the way, and shorter routes score higher. Pick a start or target, and click a path to highlight it on the canvas.</li>
+                        <li><strong>Pages:</strong> the tabs at the top-left of the canvas split a big model over pages (one threat register and one set of insights for all of them). <strong>+</strong> adds a page, double-click renames, <strong>×</strong> deletes the current page with its shapes (after asking; undo brings it back), and <strong>Move selection to…</strong> moves shapes to another page. Give a shape a <strong>Detail page</strong> in Properties to get a ↗ badge that opens it; <strong>◀</strong> goes back.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
 
@@ -5734,8 +5741,109 @@
                 strip.replaceChildren(...this.pageStripExtras('before'), ...tabs, add, ...this.pageStripExtras('after'));
             }
 
-            // Extra controls in the strip (delete, back, move); filled in below.
-            pageStripExtras() { return []; }
+            // Extra controls in the strip: Back (after a drill-down), delete the current page, move the selection.
+            pageStripExtras(where) {
+                const s = this.state, out = [];
+                if (where === 'before' && (this.pageTrail || []).length) {
+                    const back = document.createElement('button');
+                    back.type = 'button'; back.id = 'btn-page-back'; back.className = 'page-tab';
+                    const prev = this.pageById(this.pageTrail[this.pageTrail.length - 1]);
+                    back.textContent = `◀ ${prev ? prev.name : 'Back'}`; back.title = 'Back to the previous page';
+                    back.addEventListener('click', () => { const id = this.pageTrail.pop(); this.setActivePage(id); });
+                    out.push(back);
+                }
+                if (where === 'after' && s.pages.length > 1) {
+                    const del = document.createElement('button');
+                    del.type = 'button'; del.id = 'btn-page-delete'; del.className = 'page-tab text-danger';
+                    del.textContent = '×'; del.title = 'Delete this page and its shapes'; del.setAttribute('aria-label', 'Delete this page and its shapes');
+                    del.addEventListener('click', () => this.deletePage(s.activePageId));
+                    out.push(del);
+                    if ((s.selectedElementIds || []).length) {
+                        const sel = document.createElement('select');
+                        sel.id = 'page-move-select'; sel.className = 'form-select form-select-sm'; sel.setAttribute('aria-label', 'Move the selection to another page');
+                        sel.appendChild(new Option('Move selection to…', ''));
+                        s.pages.filter(p => p.id !== s.activePageId).forEach(p => sel.appendChild(new Option(p.name, p.id)));
+                        sel.addEventListener('change', () => { if (sel.value) this.moveSelectionToPage(sel.value); });
+                        out.push(sel);
+                    }
+                }
+                return out;
+            }
+
+            deletePage(id) {
+                const s = this.state, pageObj = this.pageById(id);
+                if (!pageObj || s.pages.length < 2) return;
+                const els = s.elements.filter(e => e.pageId === id), elIds = new Set(els.map(e => e.id));
+                const flows = s.flows.filter(f => elIds.has(f.sourceId) || elIds.has(f.targetId)), gone = new Set([...elIds, ...flows.map(f => f.id)]);
+                const threats = s.threats.filter(t => gone.has(t.elementId));
+                this.confirmAction({
+                    title: `Delete page "${pageObj.name}"?`,
+                    body: `This deletes the page with its ${els.length} shape${els.length === 1 ? '' : 's'}, ${flows.length} data flow${flows.length === 1 ? '' : 's'} and ${threats.length} threat${threats.length === 1 ? '' : 's'}. You can undo it.`,
+                    confirmLabel: 'Delete page',
+                    onConfirm: () => {
+                        if (threats.length) this.takeSnapshot(`Before deleting page "${pageObj.name}"`, true);
+                        const idx = s.pages.findIndex(p => p.id === id);
+                        s.elements = s.elements.filter(e => !elIds.has(e.id));
+                        s.flows = s.flows.filter(f => !gone.has(f.id));
+                        s.threats = s.threats.filter(t => !gone.has(t.elementId));
+                        s.pages = s.pages.filter(p => p.id !== id);
+                        s.elements.forEach(e => { if (e.linkedPageId === id) delete e.linkedPageId; });
+                        this.pageTrail = (this.pageTrail || []).filter(x => x !== id);
+                        if (s.activePageId === id) s.activePageId = s.pages[Math.max(0, idx - 1)].id;
+                        s.selectedElementIds = []; s.selectedFlowId = null;
+                        this.logEvent('DELETE', `Deleted page "${pageObj.name}" with ${els.length} shapes and ${threats.length} threats`);
+                        this.refreshAppViewVisualWorkspace();
+                        this.zoomToFit();
+                    }
+                });
+            }
+
+            // Moves the selected shapes to another page (into its area); refused when a flow would join two pages.
+            moveSelectionToPage(id) {
+                const s = this.state, to = this.pageById(id), from = this.pageById(s.activePageId);
+                if (!to || !from || to.id === from.id) return false;
+                const ids = new Set(s.selectedElementIds || []);
+                if (!ids.size) return false;
+                const split = s.flows.find(f => ids.has(f.sourceId) !== ids.has(f.targetId));
+                if (split) {
+                    this.notify(`Can't move: the data flow "${toText(split.name) || 'unnamed'}" would connect two pages. Select both ends, or remove the flow first.`, 'warning');
+                    this.renderPageTabs();
+                    return false;
+                }
+                const dx = to.offset - from.offset;
+                s.elements.forEach(e => { if (ids.has(e.id)) { e.pageId = to.id; e.x = (e.x || 0) + dx; if (typeof e.x2 === 'number') e.x2 += dx; } });
+                s.flows.forEach(f => { if (ids.has(f.sourceId) && Array.isArray(f.points)) f.points = f.points.map(p => ({ x: p.x + dx, y: p.y })); });
+                this.logEvent('CHANGE', `Moved ${ids.size} shape${ids.size === 1 ? '' : 's'} to page "${to.name}"`);
+                s.selectedElementIds = [];
+                this.refreshAppViewVisualWorkspace();
+                return true;
+            }
+
+            // Drill-down: a badge on shapes that link to a page; clicking it opens that page (Back returns).
+            applyPageLinkBadges() {
+                const layer = this.dom.layerInteractiveHandles;
+                if (!layer) return;
+                layer.querySelectorAll('.page-link-badge').forEach(n => n.remove());
+                const ns = 'http://www.w3.org/2000/svg';
+                this.state.elements.forEach(e => {
+                    if (!e.linkedPageId || !this.pageById(e.linkedPageId) || !this.isItemVisible(e)) return;
+                    const pt = this.projectCoordinates((e.x || 0) + 4, (e.y || 0) + 4);   // top-left: the threat badge uses the top-right
+                    const g = document.createElementNS(ns, 'g');
+                    g.setAttribute('class', 'page-link-badge'); g.setAttribute('data-owner-id', e.id);
+                    g.setAttribute('transform', `translate(${pt.x}, ${pt.y})`);
+                    g.setAttribute('role', 'button'); g.setAttribute('tabindex', '0');
+                    g.setAttribute('aria-label', `Open page ${toText(this.pageById(e.linkedPageId).name)}`);
+                    const c = document.createElementNS(ns, 'circle'); c.setAttribute('r', '10'); c.setAttribute('fill', '#0d6efd'); c.setAttribute('stroke', '#fff'); c.setAttribute('stroke-width', '2');
+                    const t = document.createElementNS(ns, 'text'); t.setAttribute('text-anchor', 'middle'); t.setAttribute('dominant-baseline', 'central'); t.setAttribute('fill', '#fff'); t.setAttribute('font-size', '12'); t.setAttribute('font-weight', '700'); t.textContent = '↗';
+                    const title = document.createElementNS(ns, 'title'); title.textContent = `Open page "${toText(this.pageById(e.linkedPageId).name)}"`;
+                    g.append(title, c, t);
+                    const open = (ev) => { ev.stopPropagation(); ev.preventDefault(); this.pageTrail = [...(this.pageTrail || []), this.state.activePageId]; this.setActivePage(e.linkedPageId); };
+                    g.addEventListener('mousedown', (ev) => ev.stopPropagation());
+                    g.addEventListener('click', open);
+                    g.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') open(ev); });
+                    layer.appendChild(g);
+                });
+            }
 
             startPageRename(btn, page) {
                 const input = document.createElement('input');
@@ -6396,7 +6504,9 @@
                     const evalObj = ThreatModelSession.calculateRisk(t.likelihood, t.impact);
                     const connectedNode = nodeById.get(t.elementId);
                     const connectedFlow = !connectedNode ? flowById.get(t.elementId) : null;
-                    const componentName = connectedNode ? connectedNode.name : (connectedFlow ? connectedFlow.name : 'Unknown');
+                    const hostEl = connectedNode || (connectedFlow ? nodeById.get(connectedFlow.sourceId) : null);
+                    const hostPage = (this.state.pages || []).length > 1 && hostEl ? this.pageById(hostEl.pageId) : null;
+                    const componentName = (connectedNode ? connectedNode.name : (connectedFlow ? connectedFlow.name : 'Unknown')) + (hostPage ? ` (${hostPage.name})` : '');
                     const isCrownJewel = connectedNode && connectedNode.secProps && connectedNode.secProps.isCrownJewel === 'true';
 
                     const strideKey = t.category ? t.category.charAt(0).toUpperCase() : 'S';
@@ -6776,6 +6886,15 @@
                 document.getElementById('btn-flow-clear-points').addEventListener('click', () => this.clearFlowBendPoints());
                 this.setupMinimap();
                 document.getElementById('btn-layer-add').addEventListener('click', () => this.addLayer());
+                document.getElementById('props-linked-page').addEventListener('change', (ev) => {
+                    const el = this.state.elements.find(x => x.id === ev.target.dataset.elementId);
+                    if (!el) return;
+                    const v = ev.target.value;
+                    if ((el.linkedPageId || '') === v) return;
+                    if (v && this.pageById(v)) el.linkedPageId = v; else delete el.linkedPageId;
+                    this.logEvent('CHANGE', v ? `Linked "${el.name}" to page "${this.pageById(v).name}"` : `Removed the page link from "${el.name}"`);
+                    this.refreshAppViewVisualWorkspace();
+                });
                 this.formatPainter = null;
                 document.getElementById('btn-format-painter').addEventListener('click', (ev) => {
                     if (ev.detail >= 2) { this.armFormatPainter(true); return; }   // the second click of a double-click
@@ -9613,7 +9732,10 @@
                     const list = s.threats.filter(t => risk(t).label === sev);
                     out.push(`| ${sev} | ${statuses.map(st => list.filter(t => t.status === st).length).join(' | ')} | ${list.length} |`);
                 });
-                out.push('', '## Diagram', '', '```mermaid', this.buildMermaidDiagram().trimEnd(), '```', '');
+                if ((s.pages || []).length > 1) {
+                    out.push('', '## Diagrams', '');
+                    s.pages.forEach(pg => out.push(`### ${para(pg.name)}`, '', '```mermaid', this.buildMermaidDiagram({ pageId: pg.id }).trimEnd(), '```', ''));
+                } else out.push('', '## Diagram', '', '```mermaid', this.buildMermaidDiagram().trimEnd(), '```', '');
                 const ap = computeAttackPaths(this.attackPathModel());
                 out.push('## Attack paths', '');
                 if (!ap.targets.length) out.push('_No crown jewels are marked, so no attack paths were computed._', '');
@@ -9867,6 +9989,7 @@
                 this.renderSvgDiagramElementsCore();
                 this.applyLayerVisibility();
                 this.applyAttackPathHighlight();
+                this.applyPageLinkBadges();
                 this.applyCanvasAccessibility();
                 this.renderMinimap();
                 if (focusKey) { const el = this.dom.svg.querySelector(focusKey); if (el) el.focus({ preventScroll: true }); }
@@ -11134,6 +11257,18 @@
                 // Cloud icons: no Type dropdown, graphic icon picker or Security Controls (the user's choice for icon shapes).
                 const ids = this.state.selectedElementIds || [];
                 const one = ids.length === 1 && !this.state.selectedFlowId ? this.state.elements.find(e => e.id === ids[0]) : null;
+                const linkBox = document.getElementById('box-props-linked-page');
+                if (linkBox) {
+                    const pages = this.state.pages || [];
+                    const show = !!one && pages.length > 1 && ATTACK_PATH_NODE_TYPES.has(one.type);
+                    linkBox.classList.toggle('d-none', !show);
+                    if (show) {
+                        const sel = document.getElementById('props-linked-page');
+                        sel.replaceChildren(new Option('None', ''), ...pages.filter(p => p.id !== one.pageId).map(p => new Option(p.name, p.id)));
+                        sel.value = one.linkedPageId && this.pageById(one.linkedPageId) ? one.linkedPageId : '';
+                        sel.dataset.elementId = one.id;
+                    }
+                }
                 if (one && safeStencilIcon(one.stencilIcon)) {
                     ['box-props-node-type', 'box-props-icon-customization', 'box-props-security'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('d-none'); });
                 }
@@ -11918,7 +12053,9 @@
 
                     const connectedNode = nodeById.get(t.elementId);
                     const connectedFlow = !connectedNode ? flowById.get(t.elementId) : null;
-                    const componentName = connectedNode ? connectedNode.name : (connectedFlow ? connectedFlow.name : 'Unknown');
+                    const hostEl = connectedNode || (connectedFlow ? nodeById.get(connectedFlow.sourceId) : null);
+                    const hostPage = (this.state.pages || []).length > 1 && hostEl ? this.pageById(hostEl.pageId) : null;
+                    const componentName = (connectedNode ? connectedNode.name : (connectedFlow ? connectedFlow.name : 'Unknown')) + (hostPage ? ` (${hostPage.name})` : '');
 
                     const isCrownJewelActive = connectedNode && connectedNode.secProps && connectedNode.secProps.isCrownJewel === 'true';
 
@@ -12138,10 +12275,11 @@
              * Builds a Mermaid flowchart of the diagram: components as nodes (shape by type), trust zones as
              * subgraphs, data flows as labelled edges. Used by "Export Mermaid diagram" and the Markdown report.
              */
-            buildMermaidDiagram() {
+            buildMermaidDiagram({ pageId } = {}) {
+                const onPage = (e) => !(this.state.pages || []).length || (e.pageId || this.state.pages[0].id) === (pageId || this.state.activePageId);
                 const label = (s) => '"' + toText(s).replace(/"/g, '#quot;').replace(/[\r\n]+/g, ' ').replace(/[<>]/g, (c) => c === '<' ? '#lt;' : '#gt;') + '"';
                 const center = (e) => ({ x: e.x + (e.width || 0) / 2, y: e.y + (e.height || 0) / 2 });
-                const zones = this.state.elements.filter(e => e.type === 'boundary');
+                const zones = this.state.elements.filter(e => e.type === 'boundary' && onPage(e));
                 const zoneOf = (e) => {
                     const c = center(e);
                     const inside = zones.filter(z => c.x >= z.x && c.x <= z.x + (z.width || 0) && c.y >= z.y && c.y <= z.y + (z.height || 0));
@@ -12149,7 +12287,7 @@
                     return inside[0] || null;
                 };
                 const skip = ['boundary', 'boundary_line', 'textbox', 'headline', 'swimlane'];
-                const nodes = this.state.elements.filter(e => !skip.includes(e.type));
+                const nodes = this.state.elements.filter(e => !skip.includes(e.type) && onPage(e));
                 const ids = new Map(nodes.map((e, i) => [e.id, `n${i + 1}`]));
                 const shape = (e) => {
                     const text = e.type === 'step_activity' ? `${e.stepNumber || ''}. ${e.name}` : e.name;
