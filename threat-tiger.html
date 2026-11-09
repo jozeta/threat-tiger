@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7jiQvFOB7uHlAK73Y/DTHgnueOHyopEIw0GsXJmmwPk='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-nx0TyWiZ2dpDFOe3fe00qRPLhWKXycvvwJtNUB7AMro='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1320,7 +1320,7 @@
         #canvas-svg.painting, #canvas-svg.painting .node-element { cursor: copy !important; }
         #btn-menu-minimap[aria-checked="false"] .menu-check { visibility: hidden; }
         #btn-format-painter[aria-pressed="true"] { background: #dbeafe; color: #1d4ed8; }
-        #minimap { position: absolute; right: 1rem; bottom: 1rem; width: 200px; height: 140px; z-index: 10;
+        #minimap { position: absolute; right: 1rem; top: 1rem; width: 200px; height: 140px; z-index: 10;
             background: #ffffff; border: 1px solid #dee2e6; border-radius: 6px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); cursor: pointer; }
         #minimap .minimap-item { fill: #cbd5e1; stroke: #94a3b8; vector-effect: non-scaling-stroke; stroke-width: 1px; }
         #minimap .minimap-viewport { fill: rgba(37, 99, 235, 0.08); stroke: #2563eb; vector-effect: non-scaling-stroke; stroke-width: 1.5px; pointer-events: none; }
@@ -2306,8 +2306,6 @@
                         class="bi bi-zoom-out"></i></button>
                 <button class="btn btn-sm btn-light border-0" id="btn-canvas-zoom-reset" title="Zoom to fit"><i
                         class="bi bi-fullscreen"></i></button>
-                <button class="btn btn-sm btn-light border-0" id="btn-canvas-minimap" title="Show or hide the minimap"
-                    aria-label="Minimap" aria-pressed="false"><i class="bi bi-map"></i></button>
                 <button class="btn btn-sm btn-light border-0" id="btn-format-painter" disabled aria-pressed="false"
                     title="Format painter: copy this shape's look to another shape (double-click to paint several, Esc stops)"
                     aria-label="Format painter"><i class="bi bi-brush"></i></button>
@@ -3353,7 +3351,7 @@
                         <li><strong>Change type:</strong> use <strong>Type</strong> in Properties to turn any node into another kind (process, data store, decision, …). Name, flows and threats stay.</li>
                         <li><strong>Swimlanes:</strong> drop a node into a cell (it is highlighted while you drag); cells grow to fit their nodes. Drag a column or row border to resize it, double-click it for the automatic size, and pick a colour in Properties.</li>
                         <li><strong>Align and distribute:</strong> select two or more shapes to line them up or space them evenly from the small toolbar above the canvas controls.</li>
-                        <li><strong>Minimap:</strong> turn it on from ☰ menu → <strong>Show minimap</strong> (or the map button below the canvas). It shows the whole diagram in the bottom-right corner; click or drag in it to move the view.</li>
+                        <li><strong>Minimap:</strong> turn it on from ☰ menu → <strong>Show minimap</strong>. It shows the whole diagram in the top-right corner of the canvas; click or drag in it to move the view.</li>
                         <li><strong>Format painter:</strong> select a shape, click the brush, then click another shape of the same kind to copy its colours (not its name, type or security settings). Double-click the brush to paint several; Esc stops.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
@@ -6135,7 +6133,6 @@
                 document.getElementById('btn-canvas-zoom-in').addEventListener('click', () => { this.zoomScale = Math.min(this.zoomScale + 0.1, 2.5); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-out').addEventListener('click', () => { this.zoomScale = Math.max(this.zoomScale - 0.1, MIN_ZOOM); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-reset').addEventListener('click', () => this.zoomToFit());
-                document.getElementById('btn-canvas-minimap').addEventListener('click', () => this.toggleMinimap());
                 document.getElementById('btn-menu-minimap').addEventListener('click', () => this.toggleMinimap());
                 this.setupMinimap();
                 this.formatPainter = null;
@@ -7316,8 +7313,6 @@
             }
 
             syncMinimapButton() {
-                const btn = document.getElementById('btn-canvas-minimap');
-                if (btn) btn.setAttribute('aria-pressed', String(!!this.minimapVisible));
                 const item = document.getElementById('btn-menu-minimap');
                 if (item) item.setAttribute('aria-checked', String(!!this.minimapVisible));
             }
@@ -7525,6 +7520,7 @@
                 this.state.elements.push(elementObj);
                 this.logEvent("CREATE", `Added ${type.replace(/_/g, ' ')} "${defaultName}"`);
                 this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace();
+                if (this.formatPainter) this.disarmFormatPainter();   // adding a shape ends painting; never paint the new shape
                 this.handleElementSelectionEvent(id);
             }
 
@@ -10180,6 +10176,10 @@
                 if (!btn) return;
                 const ids = this.state.selectedElementIds || [];
                 const one = ids.length === 1 ? this.state.elements.find(e => e.id === ids[0]) : null;
+                if (this.formatPainter && !this.state.elements.some(e => e.id === this.formatPainter.sourceId)) {
+                    this.formatPainter = null;          // the source was deleted, undone or replaced
+                    this.dom.svg.classList.remove('painting');
+                }
                 btn.setAttribute('aria-pressed', String(!!this.formatPainter));
                 btn.disabled = !this.formatPainter && !(one && styleFamily(one));
             }
@@ -11709,6 +11709,7 @@
 
             /** Applies a normalised import result. */
             applyImportedSession(result, fileName) {
+                if (this.formatPainter) this.disarmFormatPainter();   // ids in the new model may be reused by other shapes
                 const previous = this.state;
                 this.takeSnapshot('Before import', true);
                 try {

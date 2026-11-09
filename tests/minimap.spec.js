@@ -34,11 +34,10 @@ test('minimap shows one item per element and a viewport; hidden when empty; togg
   await expect(map).toBeVisible();
   await expect(map.locator('.minimap-item')).toHaveCount(2);
   await expect(map.locator('.minimap-viewport')).toHaveCount(1);
-  await page.click('#btn-canvas-minimap');
+  await page.click('#btn-main-menu'); await page.click('#btn-menu-minimap');
   await expect(map).toBeHidden();
-  await expect(page.locator('#btn-canvas-minimap')).toHaveAttribute('aria-pressed', 'false');
   expect(await page.evaluate(() => localStorage.getItem('minimap_visible'))).toBe('false');
-  await page.click('#btn-canvas-minimap');
+  await page.click('#btn-main-menu'); await page.click('#btn-menu-minimap');
   await page.evaluate(() => { app.state.elements = []; app.refreshAppViewVisualWorkspace(); });
   await expect(map).toBeHidden();
   await page.evaluate(() => { app.state.elements = [{ id: 'c', type: 'process', name: 'C', x: 0, y: 0, width: 240, height: 80, secProps: {} }]; app.refreshAppViewVisualWorkspace(); });
@@ -61,5 +60,24 @@ for (const mode of ['flat', 'ne-isometric']) {
     expect(off[0]).toBeLessThan(60);
     expect(off[1]).toBeLessThan(60);
     expect(await page.evaluate(() => app.undoStack.length)).toBe(0);
+  });
+}
+
+test('there is no minimap button on the canvas toolbar (the ☰ menu controls it)', async ({ page }) => {
+  await setup(page, [{ id: 'a', type: 'process', name: 'A', x: 0, y: 0, width: 240, height: 80, secProps: {} }]);
+  await expect(page.locator('#btn-canvas-minimap')).toHaveCount(0);
+});
+
+for (const width of [1280, 1366]) {
+  test(`the minimap does not overlap the canvas toolbars at ${width}px`, async ({ page }) => {
+    await setup(page, [{ id: 'a', type: 'process', name: 'A', x: 0, y: 0, width: 240, height: 80, secProps: {} }]);
+    await page.setViewportSize({ width, height: 800 });
+    await page.evaluate(() => { app.state.selectedElementIds = ['a']; app.refreshAppViewVisualWorkspace(); });
+    const overlap = await page.evaluate(() => {
+      const m = document.getElementById('minimap').getBoundingClientRect();
+      const bars = [document.getElementById('btn-undo').parentElement, document.getElementById('align-toolbar')];
+      return bars.some((b) => { const r = b.getBoundingClientRect(); return r.width && m.left < r.right && r.left < m.right && m.top < r.bottom && r.top < m.bottom; });
+    });
+    expect(overlap).toBe(false);
   });
 }

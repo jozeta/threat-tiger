@@ -67,3 +67,25 @@ test('a paint that changes nothing does not move the selection to the clicked sh
   await clickNode(page, 'p');                       // a process: nothing to copy
   expect(await page.evaluate(() => app.state.selectedElementIds)).toEqual(['f1']);
 });
+
+test('adding a shape while the painter is on does not paint it, and turns the painter off', async ({ page }) => {
+  await setup(page, els);
+  await select(page, ['f1']);
+  await page.dblclick('#btn-format-painter');
+  await page.evaluate(() => document.getElementById('collapseFlowchart').classList.add('show'));
+  await page.click('#pal-fc-process');
+  const added = await page.evaluate(() => JSON.parse(JSON.stringify(app.state.elements.find((e) => !['f1', 'f2', 'f3', 'p'].includes(e.id)))));
+  expect(added.fcFillColor).not.toBe('#fee2e2');
+  expect(await page.evaluate(() => app.formatPainter)).toBeNull();
+  expect(await page.evaluate(() => app.state.selectedElementIds)).toEqual([added.id]);
+});
+
+test('the painter turns off when its source shape disappears (delete, undo)', async ({ page }) => {
+  await setup(page, els);
+  await select(page, ['f1']);
+  await page.dblclick('#btn-format-painter');
+  await page.evaluate(() => { app.state.elements = app.state.elements.filter((e) => e.id !== 'f1'); app.refreshAppViewVisualWorkspace(); });
+  expect(await page.evaluate(() => app.formatPainter)).toBeNull();
+  await clickNode(page, 'f2');
+  expect(await page.evaluate(() => app.state.selectedElementIds)).toEqual(['f2']);   // clicks select again
+});
