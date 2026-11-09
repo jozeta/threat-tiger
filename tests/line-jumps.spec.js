@@ -91,3 +91,33 @@ test('a selected flow with a jump can still be clicked to add a bend point; Clea
   expect(await page.evaluate(() => app.undoStack.length)).toBe(before + 1);
   await expect(clear).toBeDisabled();
 });
+
+test('jumpPathD measures the hop along the whole path: no spikes at corners or on short segments', async ({ page }) => {
+  await setup(page);
+  const r = await page.evaluate(() => ({
+    corner: jumpPathD([[0, 0], [100, 0], [100, 100]], [{ seg: 0, x: 97, y: 0 }]),
+    short: jumpPathD([[0, 50], [48, 50], [52, 50], [100, 50]], [{ seg: 1, x: 50, y: 50 }]),
+  }));
+  expect(r.corner).toBe('M 0 0 L 91 0 A 6 6 0 0 1 100 3 L 100 100');
+  expect(r.short).toBe('M 0 50 L 44 50 A 6 6 0 0 1 56 50 L 100 50');
+});
+
+test('no jumps are computed while dragging; they return when the drag ends', async ({ page }) => {
+  await setupFlows(page);
+  await page.evaluate(() => { app.isDraggingElements = true; app.renderSvgDiagramElements(); });
+  expect(await d(page, 'f2')).not.toContain(' A ');
+  await page.evaluate(() => { app.isDraggingElements = false; app.renderSvgDiagramElements(); });
+  expect(await d(page, 'f2')).toContain(' A ');
+});
+
+test('line jumps stay fast on a dense model (300 long curved flows)', async ({ page }) => {
+  await setup(page);
+  const ms = await page.evaluate(() => {
+    let seed = 7; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    const els = []; for (let i = 0; i < 120; i++) els.push({ id: 'n' + i, type: 'process', name: 'N' + i, x: Math.round(rnd() * 4000), y: Math.round(rnd() * 3000), width: 120, height: 60, secProps: {} });
+    const flows = []; for (let i = 0; i < 300; i++) flows.push({ id: 'f' + i, name: '', sourceId: 'n' + (i % 120), targetId: 'n' + ((i * 7 + 13) % 120), sourceAnchor: 'right-2', targetAnchor: 'left-2', points: [{ x: Math.round(rnd() * 4000), y: Math.round(rnd() * 3000) }], secProps: {}, curveStyle: 'smooth' });
+    app.state.elements = els; app.state.flows = flows; app.renderSvgDiagramElements();
+    const t0 = performance.now(); for (let k = 0; k < 3; k++) app.renderSvgDiagramElements(); return (performance.now() - t0) / 3;
+  });
+  expect(ms).toBeLessThan(250);
+});

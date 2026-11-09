@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-yTA6fNE9nyGYhkvePwjSuHCprQwvWnA1R52RH//gyr4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FBJYmNNV/Ix7Qr7FSj21XzzPPwNzW943k5JPcJOgY/4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3724,6 +3724,8 @@
                 earlierPolys.forEach(other => {
                     for (let j = 0; j < other.length - 1; j++) {
                         const [cx, cy] = other[j], [dx, dy] = other[j + 1];
+                        if (Math.max(ax, bx) < Math.min(cx, dx) || Math.max(cx, dx) < Math.min(ax, bx) ||
+                            Math.max(ay, by) < Math.min(cy, dy) || Math.max(cy, dy) < Math.min(ay, by)) continue;
                         const den = (bx - ax) * (dy - cy) - (by - ay) * (dx - cx);
                         if (Math.abs(den) < 1e-9) continue;
                         const t = ((cx - ax) * (dy - cy) - (cy - ay) * (dx - cx)) / den;
@@ -3742,17 +3744,27 @@
             }
             return found;
         }
-        // An SVG path along poly with an arc of radius r over each jump.
+        // An SVG path along poly with an arc of radius r over each jump. The arc's ends are measured along the
+        // whole path (not one segment), so short sampled segments and nearby corners never make spikes.
         function jumpPathD(poly, jumps, r = LINE_JUMP_RADIUS) {
             const f = v => Math.round(v * 100) / 100;
-            let d = `M ${f(poly[0][0])} ${f(poly[0][1])}`;
-            for (let i = 0; i < poly.length - 1; i++) {
-                const [ax, ay] = poly[i], [bx, by] = poly[i + 1];
-                const len = Math.hypot(bx - ax, by - ay) || 1, ux = (bx - ax) / len, uy = (by - ay) / len;
-                jumps.filter(j => j.seg === i).forEach(j => {
-                    d += ` L ${f(j.x - ux * r)} ${f(j.y - uy * r)} A ${r} ${r} 0 0 1 ${f(j.x + ux * r)} ${f(j.y + uy * r)}`;
-                });
-                d += ` L ${f(bx)} ${f(by)}`;
+            const cum = [0];
+            for (let i = 1; i < poly.length; i++) cum.push(cum[i - 1] + Math.hypot(poly[i][0] - poly[i - 1][0], poly[i][1] - poly[i - 1][1]));
+            const pointAt = (dist) => {
+                let i = 1;
+                while (i < poly.length - 1 && cum[i] < dist) i++;
+                const seg = cum[i] - cum[i - 1] || 1, t = Math.min(1, Math.max(0, (dist - cum[i - 1]) / seg));
+                return [poly[i - 1][0] + t * (poly[i][0] - poly[i - 1][0]), poly[i - 1][1] + t * (poly[i][1] - poly[i - 1][1])];
+            };
+            const at = jumps.map(j => cum[j.seg] + Math.hypot(j.x - poly[j.seg][0], j.y - poly[j.seg][1])).sort((a, b) => a - b);
+            let d = `M ${f(poly[0][0])} ${f(poly[0][1])}`, k = 0, skipUntil = -Infinity;
+            for (let i = 1; i < poly.length; i++) {
+                while (k < at.length && at[k] - r < cum[i]) {
+                    const a = pointAt(at[k] - r), b = pointAt(at[k] + r);
+                    d += ` L ${f(a[0])} ${f(a[1])} A ${r} ${r} 0 0 1 ${f(b[0])} ${f(b[1])}`;
+                    skipUntil = at[k] + r; k++;
+                }
+                if (cum[i] > skipUntil) d += ` L ${f(poly[i][0])} ${f(poly[i][1])}`;
             }
             return d;
         }
@@ -9428,7 +9440,8 @@
                         });
                     }
 
-                    if (this.lineJumps) {
+                    // Not while dragging: the canvas redraws on every mouse move; the hops return on release.
+                    if (this.lineJumps && !this.isDraggingElements && !this.activeFlowDragMode && !this.resizingElementId) {
                         const smooth = (f.curveStyle || (this.isIsometric ? 'sharp' : 'smooth')) !== 'sharp';
                         const poly = flowPolyline(startPt, controlPoints, endPt, smooth);
                         const xs = poly.map(p => p[0]), ys = poly.map(p => p[1]);
