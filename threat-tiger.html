@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ttWWnuibgDv/Y5FcG1stxp89bztYeXAUmGz/zwVaATo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Z5F+2t43G5eVHlZvjnGRbf5yOCkBj7owTa6/Wq24gtg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1317,6 +1317,8 @@
         }
 
         /* Dark Theme Overrides for Canvas */
+        #canvas-svg .layer-hidden { display: none !important; }
+        #canvas-svg .layer-locked, #canvas-svg .layer-locked * { cursor: not-allowed !important; }
         #canvas-svg.painting, #canvas-svg.painting .node-element { cursor: copy !important; }
         #btn-menu-minimap[aria-checked="false"] .menu-check, #btn-menu-line-jumps[aria-checked="false"] .menu-check { visibility: hidden; }
         #btn-format-painter[aria-pressed="true"] { background: #dbeafe; color: #1d4ed8; }
@@ -5505,6 +5507,57 @@
                 const ids = new Set(s.layers.map(l => l.id));
                 if (!ids.has(s.activeLayerId)) s.activeLayerId = 'main';
                 [...s.elements, ...s.flows].forEach(item => { if (!item.layerId || !ids.has(item.layerId)) item.layerId = s.activeLayerId; });
+                this.indexLayers();
+            }
+
+            // Per-render lookup: which layers are visible or locked, and which elements are visible.
+            indexLayers() {
+                const s = this.state;
+                const byId = new Map((s.layers || []).map(l => [l.id, l]));
+                const elVisible = new Map(s.elements.map(e => [e.id, (byId.get(e.layerId) || DEFAULT_LAYER).visible !== false]));
+                this.layerIndex = { byId, elVisible };
+            }
+
+            layerOf(item) {
+                if (!this.layerIndex) this.indexLayers();
+                return this.layerIndex.byId.get(item && item.layerId) || this.layerIndex.byId.get('main') || DEFAULT_LAYER;
+            }
+
+            // Elements need their layer visible; flows also need both ends visible.
+            isItemVisible(item) {
+                if (!item || this.layerOf(item).visible === false) return false;
+                if (item.sourceId !== undefined) {
+                    const v = this.layerIndex.elVisible;
+                    return v.get(item.sourceId) !== false && v.get(item.targetId) !== false;
+                }
+                return true;
+            }
+
+            isItemLocked(item) { return !!item && this.layerOf(item).locked === true; }
+
+            // After drawing: hide items on hidden layers and mark locked ones (the analysis is unaffected).
+            applyLayerVisibility() {
+                const hidden = new Set(), locked = new Set();
+                [...this.state.elements, ...this.state.flows].forEach(it => {
+                    if (!this.isItemVisible(it)) hidden.add(it.id); else if (this.isItemLocked(it)) locked.add(it.id);
+                });
+                if (!hidden.size && !locked.size && !this.layerMarksApplied) return;
+                this.layerMarksApplied = hidden.size > 0 || locked.size > 0;
+                this.dom.svg.querySelectorAll('[data-id], [data-flow-id], [data-owner-id]').forEach(el => {
+                    const id = el.getAttribute('data-id') || el.getAttribute('data-flow-id') || el.getAttribute('data-owner-id');
+                    el.classList.toggle('layer-hidden', hidden.has(id));
+                    el.classList.toggle('layer-locked', locked.has(id));
+                });
+            }
+
+            // Hidden or locked items can never stay selected, whatever path selected them.
+            filterSelectableSelection() {
+                const s = this.state;
+                this.indexLayers();
+                const ok = (it) => it && this.isItemVisible(it) && !this.isItemLocked(it);
+                const byId = new Map(s.elements.map(e => [e.id, e]));
+                if ((s.selectedElementIds || []).some(id => !ok(byId.get(id)))) s.selectedElementIds = s.selectedElementIds.filter(id => ok(byId.get(id)));
+                if (s.selectedFlowId && !ok(s.flows.find(f => f.id === s.selectedFlowId))) s.selectedFlowId = null;
             }
 
             resetUndoHistory() {
@@ -6166,6 +6219,7 @@
             refreshAppViewVisualWorkspace() {
                 if (this.deferRenders) { this.scheduleFullRefresh(); return; }
                 if (this.pendingRefreshFrame) { cancelAnimationFrame(this.pendingRefreshFrame); this.pendingRefreshFrame = null; }
+                this.filterSelectableSelection();
                 this.renderSvgDiagramElements(); this.renderThreatRegisterTableGrid();
                 this.syncMetadataInputsAndLabels(); this.updatePropertiesInspectorView();
                 this.updateThreatSuggestionsWizardView(); this.renderActivityLedgerTable();
@@ -7477,7 +7531,7 @@
                 const map = document.getElementById('minimap');
                 if (!map) return;
                 const ns = 'http://www.w3.org/2000/svg';
-                const items = (this.state.elements || []).filter(e => e.type !== 'boundary_line');
+                const items = (this.state.elements || []).filter(e => e.type !== 'boundary_line' && this.isItemVisible(e));
                 map.replaceChildren();
                 if (!this.minimapVisible || items.length === 0) { map.classList.add('d-none'); return; }
                 map.classList.remove('d-none');
@@ -9094,6 +9148,7 @@
                     ? (active.getAttribute('data-flow-id') ? `[data-flow-id="${CSS.escape(active.getAttribute('data-flow-id'))}"]` : (active.getAttribute('data-id') ? `[data-id="${CSS.escape(active.getAttribute('data-id'))}"]` : null))
                     : null;
                 this.renderSvgDiagramElementsCore();
+                this.applyLayerVisibility();
                 this.applyCanvasAccessibility();
                 this.renderMinimap();
                 if (focusKey) { const el = this.dom.svg.querySelector(focusKey); if (el) el.focus({ preventScroll: true }); }
@@ -9377,6 +9432,7 @@
                     const gText = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                     // eslint-disable-next-line no-unsanitized/property -- reviewed: name is esc()'d; x/y are arithmetic results (always numbers); fill is a constant
                     gText.innerHTML = `<rect x="${textX - 65}" y="${textY - 9}" width="130" height="16" fill="white" /><text x="${textX}" y="${textY + 3}" fill="${bl.isDisabled ? '#6c757d' : '#b70918'}" font-size="10px" font-weight="bold" text-anchor="middle" style="pointer-events:none;">${esc(toText(bl.name).toUpperCase())}</text>`;
+                    gText.setAttribute('data-owner-id', bl.id);   // layers: hidden with its line
                     gText.addEventListener('click', (ev) => { ev.stopPropagation(); this.handleElementSelectionEvent(bl.id); });
                     this.dom.layerBoundaryLinesTexts.appendChild(gText);
                 });
@@ -9481,7 +9537,7 @@
                     }
 
                     // Not while dragging: the canvas redraws on every mouse move; the hops return on release.
-                    if (this.lineJumps && !this.isDraggingElements && !this.activeFlowDragMode && !this.resizingElementId) {
+                    if (this.lineJumps && !this.isDraggingElements && !this.activeFlowDragMode && !this.resizingElementId && this.isItemVisible(f)) {
                         const smooth = (f.curveStyle || (this.isIsometric ? 'sharp' : 'smooth')) !== 'sharp';
                         const poly = flowPolyline(startPt, controlPoints, endPt, smooth);
                         const xs = poly.map(p => p[0]), ys = poly.map(p => p[1]);
@@ -9683,6 +9739,7 @@
                         </div>
                     `;
                     gText.appendChild(foLabel);
+                    gText.setAttribute('data-owner-id', f.id);   // layers: hidden with its flow
                     gText.addEventListener('click', (ev) => { ev.stopPropagation(); this.handleFlowSelectionEvent(f.id); });
                     this.dom.layerFlowsTexts.appendChild(gText);
                 });
@@ -9976,6 +10033,7 @@
             attachNodeEventHandlersLayers(elementObj, gElement) {
                 gElement.addEventListener('mousedown', (ev) => {
                     if (this.isDrawingPhantomWire || this.resizingElementId || ev.button !== 0 || this.activeFlowDragMode) return;
+                    if (this.isItemLocked(elementObj) || !this.isItemVisible(elementObj)) return;   // layers: not editable here
                     ev.stopPropagation();
                     // Format painter: paint on press; no selection change and no drag (the re-render would eat the click).
                     if (this.formatPainter) { ev.preventDefault(); this.painterPressId = elementObj.id; this.handleElementSelectionEvent(elementObj.id); return; }

@@ -35,3 +35,37 @@ test('layers round-trip through JSON export', async ({ page }) => {
   expect(json.layers).toEqual([{ id: 'main', name: 'Main', visible: true, locked: false }, { id: 'net', name: 'Network', visible: false, locked: true }]);
   expect(json.elements[0].layerId).toBe('net');
 });
+
+const two = [
+  { id: 'a', type: 'process', name: 'A', x: 0, y: 0, width: 240, height: 80, secProps: {}, layerId: 'main' },
+  { id: 'b', type: 'datastore', name: 'B', x: 400, y: 0, width: 240, height: 80, secProps: {}, layerId: 'net' },
+];
+const flowAB = [{ id: 'f', name: 'AB', sourceId: 'a', targetId: 'b', sourceAnchor: 'right-2', targetAnchor: 'left-2', points: [], secProps: {}, layerId: 'main' }];
+const nodeHidden = (page, id) => page.evaluate((i) => getComputedStyle(document.querySelector(`#layers-nodes-group [data-id="${i}"]`)).display === 'none', id);
+
+test('hiding a layer hides its items and flows touching them, keeps them in the analysis, and drops them from the selection', async ({ page }) => {
+  await setup(page, two, { flows: flowAB, layers: [{ id: 'main', name: 'Main' }, { id: 'net', name: 'Network' }] });
+  await page.evaluate(() => { app.state.selectedElementIds = ['a', 'b']; app.refreshAppViewVisualWorkspace(); });
+  const before = await page.evaluate(() => app.computeModelWarnings().length);
+  await page.evaluate(() => { app.state.layers[1].visible = false; app.refreshAppViewVisualWorkspace(); });
+  expect(await nodeHidden(page, 'b')).toBe(true);
+  expect(await nodeHidden(page, 'a')).toBe(false);
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('[data-flow-id="f"]')).display)).toBe('none');
+  expect(await page.evaluate(() => app.state.selectedElementIds)).toEqual(['a']);
+  expect(await page.evaluate(() => app.computeModelWarnings().length)).toBe(before);
+  await page.evaluate(() => { app.state.layers[1].visible = true; app.refreshAppViewVisualWorkspace(); });
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('[data-flow-id="f"]')).display)).not.toBe('none');
+});
+
+test('locked items cannot be selected, dragged or deleted from the canvas', async ({ page }) => {
+  await setup(page, two, { layers: [{ id: 'main', name: 'Main' }, { id: 'net', name: 'Network', locked: true }] });
+  await page.evaluate(() => { app.zoomScale = 1; app.panX = 100; app.panY = 100; app.applySvgViewportTransformations(); });
+  const node = page.locator('#layers-nodes-group [data-id="b"]').first();
+  const box = await node.boundingBox();
+  await page.mouse.move(box.x + 120, box.y + 40); await page.mouse.down(); await page.mouse.move(box.x + 220, box.y + 140); await page.mouse.up();
+  expect(await page.evaluate(() => app.state.elements.find((e) => e.id === 'b').x)).toBe(400);
+  expect(await page.evaluate(() => app.state.selectedElementIds.includes('b'))).toBe(false);
+  await page.evaluate(() => { app.state.selectedElementIds = ['a', 'b']; app.refreshAppViewVisualWorkspace(); });
+  await page.keyboard.press('Delete');
+  expect(await page.evaluate(() => app.state.elements.map((e) => e.id))).toEqual(['b']);
+});
