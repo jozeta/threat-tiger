@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-L+UQ4ZzWbGFHxdnqQCiSarO8tSJVwXuhqtLcTrgbuek='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-odRzl6ZpY8NAzR6JMH6o9Zw4pbYOjMD7omHmJTYdC9Y='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1318,6 +1318,9 @@
 
         /* Dark Theme Overrides for Canvas */
         #canvas-svg .layer-hidden { display: none !important; }
+        #canvas-svg .ap-dim { opacity: .18; }
+        #canvas-svg .ap-on .flow-line { stroke: #dc3545 !important; stroke-width: 4px !important; }
+        #canvas-svg .node-element.ap-on { filter: drop-shadow(0 0 6px rgba(220, 53, 69, .8)); }
         .card-icon-stripe img.stencil-icon { width: 26px; height: 26px; object-fit: contain; }
         .stencil-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 4px; max-height: 320px; overflow-y: auto; }
         .stencil-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; border: 1px solid #e9ecef; border-radius: 6px; background: #fff; font-size: 9px; line-height: 1.1; text-align: center; color: #343a40; overflow: hidden; }
@@ -3413,6 +3416,7 @@
                         <li><strong>Layers:</strong> in the <strong>Layers</strong> tab of the right panel, add layers, click one to make it active (new shapes go there), double-click to rename, hide or lock it, or move the selection to it. Hidden layers still count in the threat analysis.</li>
                         <li><strong>View:</strong> ☰ menu → <strong>View</strong> shows or hides the minimap, line jumps, each panel (left, right, bottom) and each panel tab.</li>
                         <li><strong>Icon sets:</strong> devices and security symbols, security and DevOps brands (pentest, incident response, threat intel, DevSecOps, identity), tech and OS logos (Linux, Windows, Apple, languages, tools), and official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons in the palette under <strong>Data Nodes &amp; Icons</strong> (each set loads when you open it; search by name). A placed icon shows as the icon with its name underneath and is a normal component (data store, process, …), so threat suggestions work. Hide sets you don't use in ☰ → <strong>View</strong>.</li>
+                        <li><strong>Attack paths:</strong> Insights → <strong>Attack paths</strong> lists routes from entry points (external entities, and components outside every trust zone) to crown jewels, ranked by risk: unencrypted or unauthenticated hops, open threats on the way, and shorter routes score higher. Pick a start or target, and click a path to highlight it on the canvas.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
 
@@ -9319,6 +9323,99 @@
                 });
                 wc.appendChild(cl);
                 root.appendChild(row);
+                this.renderAttackPathsCard(root);
+            }
+
+            // ── Attack paths (Insights) ──────────────────────────────────────────────
+            attackPathModel() {
+                const analysis = this.computeTrustAnalysis();
+                return { elements: this.state.elements, flows: this.state.flows, threats: this.state.threats, nodeZones: analysis.nodeZones, zoneCount: analysis.zones.length };
+            }
+
+            attackPathNames(path) {
+                const byId = new Map(this.state.elements.map(e => [e.id, e]));
+                return path.nodes.map(id => toText((byId.get(id) || {}).name) || id).join(' → ');
+            }
+
+            attackPathReasons(p) {
+                const r = p.reasons, n = (k, one, many) => `${k} ${k === 1 ? one : many}`;
+                return [n(r.hops, 'hop', 'hops'), n(r.unencrypted, 'unencrypted', 'unencrypted'), n(r.unauthenticated, 'unauthenticated', 'unauthenticated'), n(r.openThreats, 'open threat', 'open threats')].join(' · ');
+            }
+
+            renderAttackPathsCard(root) {
+                const el = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+                const ids = new Set(this.state.elements.map(e => e.id));
+                const choice = this.attackPathChoice || (this.attackPathChoice = { start: '', target: '' });
+                if (choice.start && !ids.has(choice.start)) choice.start = '';
+                if (choice.target && !ids.has(choice.target)) choice.target = '';
+                const result = computeAttackPaths(this.attackPathModel(), choice);
+                const card = el('div', 'border rounded p-2 mt-3'); card.id = 'insights-attack-paths';
+                const head = el('div', 'd-flex flex-wrap align-items-center gap-2 mb-2');
+                head.appendChild(el('div', 'fw-bold small me-auto', `Attack paths (${result.paths.length}${result.truncated ? '+' : ''})`));
+                const comps = this.state.elements.filter(e => ATTACK_PATH_NODE_TYPES.has(e.type)).sort((a, b) => toText(a.name).localeCompare(toText(b.name)));
+                const picker = (id, label, key) => {
+                    const wrap = el('label', 'd-flex align-items-center gap-1 extra-small text-muted', label);
+                    const sel = el('select', 'form-select form-select-sm'); sel.id = id; sel.style.width = 'auto';
+                    sel.appendChild(new Option('Auto', ''));
+                    comps.forEach(c => sel.appendChild(new Option(toText(c.name) || c.id, c.id)));
+                    sel.value = choice[key];
+                    sel.addEventListener('change', () => { choice[key] = sel.value; this.renderInsights(); });
+                    wrap.appendChild(sel); return wrap;
+                };
+                head.append(picker('attack-path-start', 'From', 'start'), picker('attack-path-target', 'To', 'target'));
+                const clear = el('button', 'btn btn-sm btn-outline-secondary', 'Clear highlight'); clear.type = 'button'; clear.id = 'btn-attack-path-clear';
+                clear.disabled = !this.attackPathHighlight;
+                clear.addEventListener('click', () => this.highlightAttackPath(null));
+                head.appendChild(clear);
+                card.appendChild(head);
+                if (!result.targets.length) {
+                    card.appendChild(el('div', 'text-muted extra-small', 'Mark a component as a crown jewel in Properties to find attack paths.'));
+                } else {
+                    card.appendChild(el('div', 'text-muted extra-small mb-2', `${result.paths.length} path${result.paths.length === 1 ? '' : 's'} from ${result.entries.length} entry point${result.entries.length === 1 ? '' : 's'} to ${result.targets.length} crown jewel${result.targets.length === 1 ? '' : 's'}. Higher scores: unencrypted or unauthenticated hops, open threats on the way, and shorter routes.`));
+                    if (result.truncated) card.appendChild(el('div', 'text-warning extra-small mb-2', `More paths exist; showing the ${result.paths.length} shortest.`));
+                    const list = el('div', 'list-group list-group-flush');
+                    const limit = this.attackPathShowAll ? result.paths.length : 20;
+                    result.paths.slice(0, limit).forEach(p => {
+                        const row = el('button', 'list-group-item list-group-item-action attack-path-row d-flex gap-2 align-items-start py-1'); row.type = 'button';
+                        const body = el('div', 'flex-grow-1 text-start');
+                        body.append(el('div', 'small fw-semibold', this.attackPathNames(p)), el('div', 'extra-small text-muted', this.attackPathReasons(p)));
+                        const badge = el('span', `badge ${p.score >= 20 ? 'bg-danger' : p.score >= 12 ? 'bg-warning text-dark' : 'bg-secondary'}`, String(p.score));
+                        row.append(body, badge);
+                        if (this.attackPathHighlight && this.attackPathHighlight.key === p.nodes.join('>') + '|' + p.flows.join('>')) row.classList.add('active');
+                        row.addEventListener('click', () => this.highlightAttackPath(p));
+                        list.appendChild(row);
+                    });
+                    card.appendChild(list);
+                    if (result.paths.length > limit) {
+                        const more = el('button', 'btn btn-link btn-sm p-0 mt-1', `Show all ${result.paths.length}`); more.type = 'button';
+                        more.addEventListener('click', () => { this.attackPathShowAll = true; this.renderInsights(); });
+                        card.appendChild(more);
+                    }
+                }
+                root.appendChild(card);
+            }
+
+            // View state only (never saved, no undo step).
+            highlightAttackPath(path) {
+                this.attackPathHighlight = path ? { key: path.nodes.join('>') + '|' + path.flows.join('>'), nodes: new Set(path.nodes), flows: new Set(path.flows) } : null;
+                this.renderSvgDiagramElements();
+                this.renderInsights();
+            }
+
+            applyAttackPathHighlight() {
+                const h = this.attackPathHighlight;
+                if (h) {
+                    const ids = new Set([...this.state.elements.map(e => e.id), ...this.state.flows.map(f => f.id)]);
+                    if ([...h.nodes, ...h.flows].some(id => !ids.has(id))) this.attackPathHighlight = null;   // a path item was deleted
+                }
+                const hl = this.attackPathHighlight;
+                this.dom.svg.classList.toggle('ap-active', !!hl);
+                this.dom.svg.querySelectorAll('[data-id], [data-flow-id], [data-owner-id]').forEach(n => {
+                    const id = n.getAttribute('data-id') || n.getAttribute('data-flow-id') || n.getAttribute('data-owner-id');
+                    const on = !!hl && (hl.nodes.has(id) || hl.flows.has(id));
+                    n.classList.toggle('ap-on', on);
+                    n.classList.toggle('ap-dim', !!hl && !on);
+                });
             }
 
             // ── Markdown report (FEAT-008) ────────────────────────────────────────────
@@ -9342,6 +9439,15 @@
                     out.push(`| ${sev} | ${statuses.map(st => list.filter(t => t.status === st).length).join(' | ')} | ${list.length} |`);
                 });
                 out.push('', '## Diagram', '', '```mermaid', this.buildMermaidDiagram().trimEnd(), '```', '');
+                const ap = computeAttackPaths(this.attackPathModel());
+                out.push('## Attack paths', '');
+                if (!ap.targets.length) out.push('_No crown jewels are marked, so no attack paths were computed._', '');
+                else if (!ap.paths.length) out.push('_No route from an entry point to a crown jewel._', '');
+                else {
+                    out.push(`Routes from entry points to crown jewels, highest risk first (${ap.paths.length}${ap.truncated ? '+' : ''} found).`, '');
+                    ap.paths.slice(0, 10).forEach((p, i) => out.push(`${i + 1}. ${para(this.attackPathNames(p))} (score ${p.score}: ${this.attackPathReasons(p)})`));
+                    out.push('');
+                }
                 out.push('## Threats', '');
                 if (!s.threats.length) out.push('_No threats recorded._', '');
                 const groups = new Map();
@@ -9585,6 +9691,7 @@
                     : null;
                 this.renderSvgDiagramElementsCore();
                 this.applyLayerVisibility();
+                this.applyAttackPathHighlight();
                 this.applyCanvasAccessibility();
                 this.renderMinimap();
                 if (focusKey) { const el = this.dom.svg.querySelector(focusKey); if (el) el.focus({ preventScroll: true }); }

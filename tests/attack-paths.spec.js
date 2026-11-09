@@ -71,3 +71,36 @@ test('a dense model stays fast and reports truncation', async ({ page }) => {
   expect(r.n).toBe(200);
   expect(r.truncated).toBe(true);
 });
+
+test('Insights lists ranked paths; picking a start filters; clicking highlights; Markdown has the section', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await openApp(page, { session: demoSession((s) => {
+    s.elements = [
+      { id: 'u', type: 'interactor', name: 'User', x: 0, y: 0, width: 240, height: 80, secProps: {} },
+      { id: 'w', type: 'process', name: 'Web', x: 400, y: 0, width: 240, height: 80, secProps: {} },
+      { id: 'd', type: 'datastore', name: 'DB', x: 800, y: 0, width: 240, height: 80, secProps: { isCrownJewel: 'true' } },
+      { id: 'x', type: 'process', name: 'Other', x: 400, y: 400, width: 240, height: 80, secProps: {} },
+    ];
+    s.flows = [
+      { id: 'f1', name: 'req', sourceId: 'u', targetId: 'w', sourceAnchor: 'right-2', targetAnchor: 'left-2', points: [], secProps: {} },
+      { id: 'f2', name: 'sql', sourceId: 'w', targetId: 'd', sourceAnchor: 'right-2', targetAnchor: 'left-2', points: [], secProps: {} },
+    ];
+    s.threats = [];
+  }) });
+  await page.click('#tab-insights-trigger');
+  const card = page.locator('#insights-attack-paths');
+  await expect(card.locator('.attack-path-row')).toHaveCount(1);
+  await expect(card.locator('.attack-path-row').first()).toContainText('User → Web → DB');
+  await card.locator('.attack-path-row').first().click();
+  await expect(page.locator('#layers-nodes-group [data-id="x"]').first()).toHaveClass(/ap-dim/);
+  await expect(page.locator('[data-flow-id="f2"]')).toHaveClass(/ap-on/);
+  await card.locator('#attack-path-start').selectOption('w');
+  await expect(card.locator('.attack-path-row').first()).toContainText('Web → DB');
+  await page.evaluate(() => { app.state.elements = app.state.elements.filter((e) => e.id !== 'w'); app.state.flows = app.state.flows.filter((f) => f.sourceId !== 'w' && f.targetId !== 'w'); app.refreshAppViewVisualWorkspace(); app.renderInsights(); });
+  await expect(card.locator('#attack-path-start')).toHaveValue('');
+  expect(await page.evaluate(() => app.attackPathHighlight)).toBeNull();
+  await card.locator('#attack-path-start').selectOption('');
+  const md = await page.evaluate(() => { app.state.flows.push({ id: 'f3', name: 'x', sourceId: 'u', targetId: 'd', points: [], secProps: {} }); return app.buildMarkdownReport(); });
+  expect(md).toContain('## Attack paths');
+  expect(md).toMatch(/1\. User → DB \(score [\d.]+/);
+});
