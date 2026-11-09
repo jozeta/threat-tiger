@@ -2205,22 +2205,6 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Layers -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="headingLayers">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                data-bs-target="#collapseLayers" aria-expanded="false" aria-controls="collapseLayers">
-                                Layers
-                            </button>
-                        </h2>
-                        <div id="collapseLayers" class="accordion-collapse collapse" aria-labelledby="headingLayers">
-                            <div class="accordion-body d-flex flex-column gap-1">
-                                <div class="extra-small text-muted">Click a layer to make it active: new shapes go there. Double-click to rename. Hidden layers still count in the analysis.</div>
-                                <div id="layers-panel" class="d-flex flex-column gap-1" role="list" aria-label="Layers"></div>
-                                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-layer-add"><i class="bi bi-plus-lg me-1"></i>Add layer</button>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
             <div style="height: 100%;"></div>
@@ -2388,14 +2372,18 @@
         </div>
 
         <aside class="sidebar-right d-flex flex-column">
-            <ul class="nav nav-tabs nav-fill border-bottom bg-light" id="sidebar-tabs" role="tablist">
+            <ul class="nav nav-tabs nav-fill flex-nowrap border-bottom bg-light" id="sidebar-tabs" role="tablist">
                 <li class="nav-item">
-                    <button class="nav-link active py-2 small fw-semibold" id="tab-props-trigger" data-bs-toggle="tab"
+                    <button class="nav-link active py-2 px-2 small fw-semibold text-nowrap" id="tab-props-trigger" data-bs-toggle="tab"
                         data-bs-target="#tab-panel-props" type="button">Properties</button>
                 </li>
                 <li class="nav-item">
-                    <button class="nav-link py-2 small fw-semibold" id="tab-suggest-trigger" data-bs-toggle="tab"
+                    <button class="nav-link py-2 px-2 small fw-semibold text-nowrap" id="tab-suggest-trigger" data-bs-toggle="tab"
                         data-bs-target="#tab-panel-suggest" type="button">Threat Templates</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link py-2 px-2 small fw-semibold text-nowrap" id="tab-layers-trigger" data-bs-toggle="tab"
+                        data-bs-target="#tab-panel-layers" type="button">Layers</button>
                 </li>
             </ul>
 
@@ -2895,6 +2883,13 @@
                     </div>
                 </div>
 
+                <div class="tab-pane fade h-100 tab-scrollable p-3" id="tab-panel-layers">
+                    <div class="d-flex flex-column gap-2">
+                        <div class="small text-muted">Click a layer to make it active: new shapes go there. Double-click to rename. Hidden layers still count in the analysis.</div>
+                        <div id="layers-panel" class="d-flex flex-column gap-1" role="list" aria-label="Layers"></div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btn-layer-add"><i class="bi bi-plus-lg me-1"></i>Add layer</button>
+                    </div>
+                </div>
                 <div class="tab-pane fade h-100 tab-scrollable p-3" id="tab-panel-suggest">
                     <!-- Template Actions Toolbar -->
                     <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
@@ -3382,7 +3377,7 @@
                         <li><strong>Minimap:</strong> turn it on from ☰ menu → <strong>Show minimap</strong>. It shows the whole diagram in the top-right corner of the canvas; click or drag in it to move the view.</li>
                         <li><strong>Format painter:</strong> select a shape, click the brush, then click another shape of the same kind to copy its colours (not its name, type or security settings). Double-click the brush to paint several; Esc stops.</li>
                         <li><strong>Line jumps:</strong> where two flows cross, the later one hops over the other; switch it off in ☰ menu → <strong>Line jumps where flows cross</strong>. <strong>Bend points:</strong> click a selected flow to add one, drag to move, click to remove, or use <strong>Clear bend points</strong> in Properties.</li>
-                        <li><strong>Layers:</strong> in the left column, add layers, click one to make it active (new shapes go there), double-click to rename, hide or lock it, or move the selection to it. Hidden layers still count in the threat analysis.</li>
+                        <li><strong>Layers:</strong> in the <strong>Layers</strong> tab of the right panel, add layers, click one to make it active (new shapes go there), double-click to rename, hide or lock it, or move the selection to it. Hidden layers still count in the threat analysis.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
 

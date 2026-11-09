@@ -72,7 +72,8 @@ test('locked items cannot be selected, dragged or deleted from the canvas', asyn
 
 test('the Layers panel adds, renames, hides, locks, moves the selection and deletes, each one undo step', async ({ page }) => {
   await setup(page, two.map((e) => ({ ...e, layerId: 'main' })));
-  await page.evaluate(() => document.getElementById('collapseLayers').classList.add('show'));
+  await page.click('#tab-layers-trigger');
+  await expect(page.locator('.sidebar-right #layers-panel')).toBeVisible();
   await page.click('#btn-layer-add');
   const row = page.locator('.layer-row').nth(1);
   await expect(row.locator('.layer-name')).toHaveText('Layer 2');
