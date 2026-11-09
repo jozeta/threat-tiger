@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-6yFpuc/NfJMz4Oa6hWvq9Rm9sHGOO5CedlJRpxiNMOU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-DQk3o+Sics5nnhwuaCPCKbd0MMxtdqgXg5CE89VhMvU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -2158,6 +2158,30 @@
                                             system/architecture diagrams.</div>
                                     </div>
                                 </div>
+                                <!-- FC: Cube (3D box) -->
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="fc_cube" id="pal-fc-cube">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                            <polygon points="3,7 19,7 19,18 3,18" fill="#fff" stroke="#495057"
+                                                stroke-width="1.6" stroke-linejoin="round" />
+                                            <polygon points="3,7 8,2 24,2 19,7" fill="#f1f3f5" stroke="#495057"
+                                                stroke-width="1.6" stroke-linejoin="round" />
+                                            <polygon points="19,7 24,2 24,13 19,18" fill="#dee2e6" stroke="#495057"
+                                                stroke-width="1.6" stroke-linejoin="round" />
+                                        </svg>
+                                        <div>
+                                            <div class="fw-semibold small">Cube (3D Box)</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title" style="color:#adb5bd;">Cube (3D Box)</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Flowchart Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">A three-dimensional box, for a
+                                            server, a container, a package or any other physical or deployable unit.
+                                            Common in system/architecture diagrams.</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -3608,6 +3632,7 @@
             fc_connector:    { label: 'Connector (circle)',     name: 'Connector',    w: 80,  h: 80,  fill: '#fef9c3', stroke: '#ca8a04' },
             fc_stored_data:  { label: 'Stored data',            name: 'Stored Data',  w: 160, h: 80,  fill: '#dbeafe', stroke: '#2563eb' },
             fc_database:     { label: 'Database (cylinder)',    name: 'Database',     w: 120, h: 100, fill: '#ecfccb', stroke: '#65a30d' },
+            fc_cube:         { label: 'Cube (3D box)',          name: 'Cube',         w: 140, h: 100, fill: '#e0e7ff', stroke: '#4f46e5' },
         };
         // Quick add: space between a flowchart node and the node added from one of its anchors.
         const QUICK_ADD_GAP = 80;
@@ -6090,7 +6115,7 @@
                     this.sessionMetaModal.show();
                 });
 
-                const paletteIds = ['pal-process', 'pal-datastore', 'pal-interactor', 'pal-boundary', 'pal-boundary-line', 'pal-step-activity', 'pal-textbox', 'pal-headline', 'pal-infrastructure', 'pal-custom-image', 'pal-swimlane', 'pal-fc-process', 'pal-fc-decision', 'pal-fc-terminator', 'pal-fc-data', 'pal-fc-document', 'pal-fc-manual-input', 'pal-fc-preparation', 'pal-fc-connector', 'pal-fc-stored-data', 'pal-fc-database'];
+                const paletteIds = ['pal-process', 'pal-datastore', 'pal-interactor', 'pal-boundary', 'pal-boundary-line', 'pal-step-activity', 'pal-textbox', 'pal-headline', 'pal-infrastructure', 'pal-custom-image', 'pal-swimlane', 'pal-fc-process', 'pal-fc-decision', 'pal-fc-terminator', 'pal-fc-data', 'pal-fc-document', 'pal-fc-manual-input', 'pal-fc-preparation', 'pal-fc-connector', 'pal-fc-stored-data', 'pal-fc-database', 'pal-fc-cube'];
                 paletteIds.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) {
@@ -9356,6 +9381,11 @@
                         if (node.type === 'fc_document') {
                             // Visible area is top 72% of bounding box; center within that
                             lblY = (h * 0.72) / 2;
+                        } else if (node.type === 'fc_cube') {
+                            // Centre on the front face (the top and right faces take d = 20% of the shorter side)
+                            const d = Math.min(w, h) * 0.2;
+                            lbl.setAttribute('x', (w - d) / 2);
+                            lblY = (h + d) / 2;
                         } else if (node.type === 'fc_manual_input') {
                             // Top-left corner is at sl=h*0.2, top-right at 0; avg top edge = h*0.1
                             lblY = (h * 0.1 + h) / 2;
@@ -9693,6 +9723,15 @@
                         { id: 'left',   cx: 0,     cy: h / 2 },
                         { id: 'right',  cx: w,     cy: h / 2 },
                     ];
+                } else if (type === 'fc_cube') {
+                    // 3D box: front face bottom-left, top and right faces recede up-right by d (see renderFlowchartShapeSvg)
+                    const d = Math.min(w, h) * 0.2;
+                    return [
+                        { id: 'top',    cx: w / 2,     cy: d / 2 },
+                        { id: 'bottom', cx: (w - d) / 2, cy: h },
+                        { id: 'left',   cx: 0,         cy: (h + d) / 2 },
+                        { id: 'right',  cx: w - d / 2, cy: h / 2 },
+                    ];
                 } else if (type === 'fc_stored_data') {
                     // D-shape: top/bottom center, left/right mid
                     return [
@@ -9813,6 +9852,33 @@
                     el = document.createElementNS(ns, 'path');
                     el.setAttribute('d', `M${rx},0 H${w - rx} A${rx},${h / 2} 0 0 1 ${w - rx},${h} H${rx} A${rx},${h / 2} 0 0 1 ${rx},0 Z`);
 
+                } else if (type === 'fc_cube') {
+                    // 3D box: a front face plus a top and a right face receding by d; the side faces are shaded
+                    const d = Math.min(w, h) * 0.2;
+                    const g2 = document.createElementNS(ns, 'g');
+                    g2.setAttribute('style', selRingStyle);
+                    const faces = [
+                        [`0,${d} ${w - d},${d} ${w - d},${h} 0,${h}`, 0],                 // front
+                        [`0,${d} ${d},0 ${w},0 ${w - d},${d}`, 0.08],                    // top
+                        [`${w - d},${d} ${w},0 ${w},${h - d} ${w - d},${h}`, 0.18],      // right
+                    ];
+                    faces.forEach(([points, shade]) => {
+                        const face = document.createElementNS(ns, 'polygon');
+                        face.setAttribute('points', points);
+                        face.setAttribute('fill', fill);
+                        face.setAttribute('stroke', stroke); face.setAttribute('stroke-width', sw);
+                        face.setAttribute('stroke-linejoin', 'round');
+                        g2.appendChild(face);
+                        if (shade) {
+                            const tint = document.createElementNS(ns, 'polygon');
+                            tint.setAttribute('points', points);
+                            tint.setAttribute('fill', '#000'); tint.setAttribute('fill-opacity', shade);
+                            tint.setAttribute('stroke', 'none'); tint.setAttribute('pointer-events', 'none');
+                            g2.appendChild(tint);
+                        }
+                    });
+                    g.appendChild(g2);
+                    return;
                 } else if (type === 'fc_database') {
                     const ey = h * 0.15;
                     const g2 = document.createElementNS(ns, 'g');
