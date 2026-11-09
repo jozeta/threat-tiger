@@ -65,6 +65,7 @@ test('the key OS, security and device icons are present', () => {
   const devicon = load('devicon'), brands = load('brands'), fluent = load('fluent'), gcp = load('gcp');
   for (const n of ['Linux', 'Windows', 'Windows 11', 'Apple', 'Ubuntu', 'Docker', 'Jenkins', 'Python']) expect(devicon, n).toContain(n);
   for (const n of ['Kali Linux', 'Metasploit', 'Wireshark', 'Burp Suite', 'VirusTotal', 'Splunk', 'Snyk', 'Okta', 'Vault']) expect(brands, n).toContain(n);
-  for (const n of ['Laptop', 'Server', 'Bug / malware', 'Incident', 'Firewall / protection', 'Code']) expect(fluent, n).toContain(n);
+  for (const n of ['Laptop', 'Server', 'Bug / malware', 'Incident', 'Firewall / protection', 'Code', 'Server rack', 'Mac', 'Web portal', 'Cloud database', 'Access control', 'Anonymous attacker', 'Pull request', 'AI model']) expect(fluent, n).toContain(n);
+  expect(fluent.length).toBeGreaterThan(180);
   for (const n of ['Secret Manager', 'Key Management Service', 'Cloud Armor', 'Cloud Load Balancing']) expect(gcp, n).toContain(n);
 });
