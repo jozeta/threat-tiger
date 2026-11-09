@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-DQk3o+Sics5nnhwuaCPCKbd0MMxtdqgXg5CE89VhMvU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Z7VyvtvUNq35PpUkXLtTVRORiAFqfXrmKOvu4LeJ2RA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -2268,6 +2268,18 @@
                 style="position: fixed; display: none; z-index: 9999; pointer-events: none; width: 350px; background: #212529; padding: 10px; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
             </div>
 
+            <div id="align-toolbar" role="toolbar" aria-label="Align and distribute"
+                class="position-absolute start-0 m-3 d-flex gap-1 bg-white p-1 rounded shadow-sm border d-none"
+                style="z-index: 10; bottom: 48px;">
+                <button class="btn btn-sm btn-light border-0" data-align="left" title="Align left" aria-label="Align left"><i class="bi bi-align-start"></i></button>
+                <button class="btn btn-sm btn-light border-0" data-align="center" title="Align centres" aria-label="Align centres"><i class="bi bi-align-center"></i></button>
+                <button class="btn btn-sm btn-light border-0" data-align="right" title="Align right" aria-label="Align right"><i class="bi bi-align-end"></i></button>
+                <button class="btn btn-sm btn-light border-0" data-align="top" title="Align top" aria-label="Align top"><i class="bi bi-align-top"></i></button>
+                <button class="btn btn-sm btn-light border-0" data-align="middle" title="Align middles" aria-label="Align middles"><i class="bi bi-align-middle"></i></button>
+                <button class="btn btn-sm btn-light border-0" data-align="bottom" title="Align bottom" aria-label="Align bottom"><i class="bi bi-align-bottom"></i></button>
+                <button class="btn btn-sm btn-light border-0" data-align="hspace" title="Space evenly across (3 or more)" aria-label="Space evenly across"><i class="bi bi-distribute-horizontal"></i></button>
+                <button class="btn btn-sm btn-light border-0" data-align="vspace" title="Space evenly down (3 or more)" aria-label="Space evenly down"><i class="bi bi-distribute-vertical"></i></button>
+            </div>
             <div class="position-absolute bottom-0 start-0 m-3 d-flex gap-2 bg-white p-1 rounded shadow-sm border"
                 style="z-index: 10;">
                 <button class="btn btn-sm btn-light border-0" id="btn-undo" title="Undo (Ctrl/Cmd+Z)" aria-label="Undo" disabled><i
@@ -3321,6 +3333,7 @@
                         <li><strong>Quick add:</strong> hover a connection point of a flowchart shape to see a preview of the next step; click to add it, already connected. Drag from the point to connect to an existing node instead.</li>
                         <li><strong>Change type:</strong> use <strong>Type</strong> in Properties to turn any node into another kind (process, data store, decision, …). Name, flows and threats stay.</li>
                         <li><strong>Swimlanes:</strong> drop a node into a cell (it is highlighted while you drag); cells grow to fit their nodes. Drag a column or row border to resize it, double-click it for the automatic size, and pick a colour in Properties.</li>
+                        <li><strong>Align and distribute:</strong> select two or more shapes to line them up or space them evenly from the small toolbar above the canvas controls.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
 
@@ -3637,6 +3650,43 @@
         // Quick add: space between a flowchart node and the node added from one of its anchors.
         const QUICK_ADD_GAP = 80;
         const OPPOSITE_ANCHOR = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
+        // ── Align and distribute ─────────────────────────────────────────────────────
+        // Shapes the align toolbar moves (flows, boundary lines, swimlanes and text are left alone).
+        const ALIGNABLE_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'custom_image', 'step_activity', 'boundary', ...Object.keys(FLOWCHART_DEFAULTS)]);
+        // An element's box in model coordinates; missing sizes use the renderer's per-type defaults.
+        function alignableBox(e) {
+            if (!e || !ALIGNABLE_TYPES.has(e.type)) return null;
+            const w = e.width || ({ custom_image: 120, infrastructure: 80, step_activity: 260 }[e.type] || 240);
+            const h = e.height || ({ custom_image: 120, infrastructure: 70, step_activity: 50 }[e.type] || 80);
+            return { id: e.id, x: e.x || 0, y: e.y || 0, w, h };
+        }
+        // New positions for boxes that move. Modes: left, center, right, top, middle, bottom (2+ boxes);
+        // hspace, vspace (3+): the outermost boxes stay put and the gaps between boxes become equal.
+        function computeAlignment(boxes, mode) {
+            const out = new Map();
+            const horizontal = ['left', 'center', 'right', 'hspace'].includes(mode);
+            const pos = horizontal ? 'x' : 'y', size = horizontal ? 'w' : 'h';
+            const set = (b, v) => {
+                v = Math.round(v);
+                if (v !== b[pos]) out.set(b.id, { x: horizontal ? v : b.x, y: horizontal ? b.y : v });
+            };
+            if (mode === 'hspace' || mode === 'vspace') {
+                if (boxes.length < 3) return out;
+                const sorted = [...boxes].sort((a, b) => a[pos] - b[pos]);
+                const first = sorted[0], last = sorted[sorted.length - 1];
+                const span = last[pos] + last[size] - first[pos];
+                const gap = (span - sorted.reduce((s, b) => s + b[size], 0)) / (sorted.length - 1);
+                let at = first[pos] + first[size] + gap;
+                sorted.slice(1, -1).forEach(b => { set(b, at); at += b[size] + gap; });
+                return out;
+            }
+            if (boxes.length < 2) return out;
+            const lo = Math.min(...boxes.map(b => b[pos])), hi = Math.max(...boxes.map(b => b[pos] + b[size]));
+            const edge = { left: 'lo', top: 'lo', right: 'hi', bottom: 'hi', center: 'mid', middle: 'mid' }[mode];
+            if (!edge) return out;
+            boxes.forEach(b => set(b, edge === 'lo' ? lo : edge === 'hi' ? hi - b[size] : (lo + hi) / 2 - b[size] / 2));
+            return out;
+        }
         // Node types the Type dropdown can switch between.
         const MODEL_NODE_TYPES = { process: 'Process / Service', datastore: 'Data Store', interactor: 'External Entity', infrastructure: 'Infrastructure Node' };
         const SWITCHABLE_NODE_TYPES = new Set([...Object.keys(MODEL_NODE_TYPES), ...Object.keys(FLOWCHART_DEFAULTS)]);
@@ -6043,6 +6093,8 @@
                 document.getElementById('btn-canvas-zoom-in').addEventListener('click', () => { this.zoomScale = Math.min(this.zoomScale + 0.1, 2.5); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-out').addEventListener('click', () => { this.zoomScale = Math.max(this.zoomScale - 0.1, MIN_ZOOM); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-reset').addEventListener('click', () => this.zoomToFit());
+                document.querySelectorAll('#align-toolbar [data-align]').forEach(btn =>
+                    btn.addEventListener('click', () => this.alignSelection(btn.dataset.align)));
                 document.getElementById('btn-canvas-save-png').addEventListener('click', () => this.exportCanvasAsPng());
                 document.getElementById('btn-print-report').addEventListener('click', () => {
                     // Close the menu first: print() blocks, so an open dropdown would otherwise end up on paper.
@@ -9931,7 +9983,34 @@
                 g.appendChild(el);
             }
 
+            // Selected elements the align toolbar can move.
+            alignableSelection() {
+                const ids = new Set(this.state.selectedElementIds || []);
+                return this.state.elements.filter(e => ids.has(e.id)).map(alignableBox).filter(Boolean);
+            }
+
+            // Aligns or distributes the selection (see computeAlignment); one undo step, none when nothing moves.
+            alignSelection(mode) {
+                const moves = computeAlignment(this.alignableSelection(), mode);
+                if (moves.size === 0) return 0;
+                this.state.elements.forEach(e => { const m = moves.get(e.id); if (m) { e.x = m.x; e.y = m.y; } });
+                const label = { left: 'left', center: 'centres', right: 'right', top: 'top', middle: 'middles', bottom: 'bottom', hspace: 'spaced across', vspace: 'spaced down' }[mode];
+                this.logEvent('CHANGE', `Aligned ${moves.size} element${moves.size === 1 ? '' : 's'} (${label})`);
+                this.refreshAppViewVisualWorkspace();
+                return moves.size;
+            }
+
+            // Shows the align toolbar for 2+ alignable selected elements; distributing needs 3+.
+            updateAlignToolbar() {
+                const bar = document.getElementById('align-toolbar');
+                if (!bar) return;
+                const n = this.alignableSelection().length;
+                bar.classList.toggle('d-none', n < 2);
+                bar.querySelectorAll('[data-align="hspace"], [data-align="vspace"]').forEach(b => { b.disabled = n < 3; });
+            }
+
             updatePropertiesInspectorView() {
+                this.updateAlignToolbar();
                 const boxIds = ['box-props-node-type', 'box-props-standard-name', 'box-props-status-state', 'box-props-icon-customization', 'box-props-flow-routing', 'box-props-step-activity', 'box-props-text-offset', 'box-props-textbox-textarea', 'box-props-headline-customization', 'box-props-security', 'box-props-zdepth', 'box-props-custom-image', 'box-props-isometric-toggle', 'box-props-swimlane', 'box-props-flowchart'];
                 boxIds.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('d-none'); });
 
