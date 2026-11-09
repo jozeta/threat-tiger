@@ -24,6 +24,12 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 ![Flowchart in a swimlane: hovering a connection point previews the next step; the Type dropdown switches shapes](docs/images/flowchart-swimlanes.png)
 
+![Attack paths in Insights: routes from entry points to a crown jewel, ranked by risk, with the top path highlighted on the canvas](docs/images/attack-paths.png)
+
+![Icon sets: a small Azure architecture drawn with stencils (laptop, Front Door, App Services, Key Vault, SQL Database, Okta), with the icon sets in the palette](docs/images/icon-sets.png)
+
+![Pages and layers: page tabs at the top-left of the canvas, a drill-down badge on Webfront, the minimap, and the Layers tab with a hidden-or-locked layer](docs/images/pages-layers.png)
+
 ---
 
 ## 🛠️ How to Get Started

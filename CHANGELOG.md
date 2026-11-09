@@ -5,6 +5,10 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.15.0
+
+Diagramming and attack-path release: pages, layers, attack paths, about 2,000 icons, and Visio-style editing tools.
+
 ### Added
 
 - The canvas zoom and position (and each page's view) are remembered between reloads
