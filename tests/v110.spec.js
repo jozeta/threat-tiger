@@ -141,6 +141,7 @@ test('picking a suggested name is one undo step', async ({ page }) => {
 
 test('Insights list: added suggestions leave it, Ignore hides one, and a summary counts what was handled', async ({ page }) => {
   await openApp(page, { session: model((s) => { s.elements.find((e) => e.id === 'bot').secProps.loggingEnabled = 'false'; s.elements.find((e) => e.id === 'bot').secProps.runAsAdmin = 'true'; }) });
+  await page.waitForFunction(() => app.threatSuggestions.process.length);   // the threat library loads asynchronously
   await page.click('#tab-insights-trigger');
   const rows = page.locator('#insights-suggestion-list .list-group-item');
   const n0 = await rows.count();

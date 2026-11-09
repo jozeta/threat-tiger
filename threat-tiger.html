@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-SH34LhnffMW4cu8bHN4Fyp2mDfLs1tFqdSLLbasybAA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bqDTJVG+YRcclT05N41mGqDukW0scA4+B6K76KRFg7k='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1317,6 +1317,12 @@
         }
 
         /* Dark Theme Overrides for Canvas */
+        #minimap { position: absolute; right: 1rem; bottom: 1rem; width: 200px; height: 140px; z-index: 10;
+            background: #ffffff; border: 1px solid #dee2e6; border-radius: 6px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); cursor: pointer; }
+        #minimap .minimap-item { fill: #cbd5e1; stroke: #94a3b8; vector-effect: non-scaling-stroke; stroke-width: 1px; }
+        #minimap .minimap-viewport { fill: rgba(37, 99, 235, 0.08); stroke: #2563eb; vector-effect: non-scaling-stroke; stroke-width: 1.5px; pointer-events: none; }
+        .dark-theme-canvas #minimap { background: #1e1e2a; border-color: #475569; }
+        .dark-theme-canvas #minimap .minimap-item { fill: #475569; stroke: #64748b; }
         .dark-theme-canvas {
             --canvas-bg: #1e1e24 !important;
             background-color: #1e1e24 !important;
@@ -2268,6 +2274,8 @@
                 style="position: fixed; display: none; z-index: 9999; pointer-events: none; width: 350px; background: #212529; padding: 10px; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
             </div>
 
+            <svg id="minimap" class="d-none" role="img" aria-label="Diagram overview: click or drag to move the view"
+                xmlns="http://www.w3.org/2000/svg"></svg>
             <div id="align-toolbar" role="toolbar" aria-label="Align and distribute"
                 class="position-absolute start-0 m-3 d-flex gap-1 bg-white p-1 rounded shadow-sm border d-none"
                 style="z-index: 10; bottom: 48px;">
@@ -2292,6 +2300,8 @@
                         class="bi bi-zoom-out"></i></button>
                 <button class="btn btn-sm btn-light border-0" id="btn-canvas-zoom-reset" title="Zoom to fit"><i
                         class="bi bi-fullscreen"></i></button>
+                <button class="btn btn-sm btn-light border-0" id="btn-canvas-minimap" title="Show or hide the minimap"
+                    aria-label="Minimap" aria-pressed="true"><i class="bi bi-map"></i></button>
                 <button class="btn btn-sm btn-light border-0 text-primary" id="btn-canvas-save-png"
                     title="Save as PNG"><i class="bi bi-filetype-png"></i></button>
                 <div class="dropdown d-inline-block">
@@ -3334,6 +3344,7 @@
                         <li><strong>Change type:</strong> use <strong>Type</strong> in Properties to turn any node into another kind (process, data store, decision, …). Name, flows and threats stay.</li>
                         <li><strong>Swimlanes:</strong> drop a node into a cell (it is highlighted while you drag); cells grow to fit their nodes. Drag a column or row border to resize it, double-click it for the automatic size, and pick a colour in Properties.</li>
                         <li><strong>Align and distribute:</strong> select two or more shapes to line them up or space them evenly from the small toolbar above the canvas controls.</li>
+                        <li><strong>Minimap:</strong> the map in the bottom-right corner shows the whole diagram; click or drag in it to move the view. Turn it on or off with the map button.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
 
@@ -6096,6 +6107,8 @@
                 document.getElementById('btn-canvas-zoom-in').addEventListener('click', () => { this.zoomScale = Math.min(this.zoomScale + 0.1, 2.5); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-out').addEventListener('click', () => { this.zoomScale = Math.max(this.zoomScale - 0.1, MIN_ZOOM); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-reset').addEventListener('click', () => this.zoomToFit());
+                document.getElementById('btn-canvas-minimap').addEventListener('click', () => this.toggleMinimap());
+                this.setupMinimap();
                 document.querySelectorAll('#align-toolbar [data-align]').forEach(btn =>
                     btn.addEventListener('click', () => this.alignSelection(btn.dataset.align)));
                 document.getElementById('btn-canvas-save-png').addEventListener('click', () => this.exportCanvasAsPng());
@@ -7245,6 +7258,86 @@
             applySvgViewportTransformations() {
                 this.dom.transformGroup.setAttribute('transform', `translate(${this.panX}, ${this.panY}) scale(${this.zoomScale})`);
                 this.dom.zoomLbl.innerText = `${Math.round(this.zoomScale * 100)}%`;
+                this.updateMinimapViewport();
+            }
+
+            // ── Minimap ──────────────────────────────────────────────────────────────
+            // An overview of every element, drawn with the canvas's own projection (flat or isometric).
+            setupMinimap() {
+                try { this.minimapVisible = localStorage.getItem('minimap_visible') !== 'false'; } catch { this.minimapVisible = true; }
+                const map = document.getElementById('minimap');
+                const toContent = (ev) => {
+                    const ctm = map.getScreenCTM();
+                    if (!ctm) return null;
+                    const pt = new DOMPoint(ev.clientX, ev.clientY).matrixTransform(ctm.inverse());
+                    return pt;
+                };
+                const pan = (ev) => { const pt = toContent(ev); if (pt) this.panMinimapTo(pt.x, pt.y); };
+                map.addEventListener('mousedown', (ev) => { if (ev.button !== 0) return; ev.preventDefault(); ev.stopPropagation(); this.minimapDragging = true; pan(ev); });
+                window.addEventListener('mousemove', (ev) => { if (this.minimapDragging) pan(ev); });
+                window.addEventListener('mouseup', () => { this.minimapDragging = false; });
+                this.syncMinimapButton();
+            }
+
+            syncMinimapButton() {
+                const btn = document.getElementById('btn-canvas-minimap');
+                if (btn) btn.setAttribute('aria-pressed', String(!!this.minimapVisible));
+            }
+
+            toggleMinimap() {
+                this.minimapVisible = !this.minimapVisible;
+                try { localStorage.setItem('minimap_visible', String(this.minimapVisible)); } catch { /* view setting only */ }
+                this.syncMinimapButton();
+                this.renderMinimap();
+            }
+
+            renderMinimap() {
+                const map = document.getElementById('minimap');
+                if (!map) return;
+                const ns = 'http://www.w3.org/2000/svg';
+                const items = (this.state.elements || []).filter(e => e.type !== 'boundary_line');
+                map.replaceChildren();
+                if (!this.minimapVisible || items.length === 0) { map.classList.add('d-none'); return; }
+                map.classList.remove('d-none');
+                const bb = this.getIsometricBoundingBox();
+                const w = Math.max(1, bb.maxX - bb.minX), h = Math.max(1, bb.maxY - bb.minY);
+                const pad = Math.max(w, h) * 0.05;
+                map.setAttribute('viewBox', `${bb.minX - pad} ${bb.minY - pad} ${w + pad * 2} ${h + pad * 2}`);
+                map.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+                items.forEach(e => {
+                    const box = alignableBox(e) || (e.width && e.height ? { x: e.x || 0, y: e.y || 0, w: e.width, h: e.height } : null);
+                    if (!box) return;
+                    const pts = [[box.x, box.y], [box.x + box.w, box.y], [box.x + box.w, box.y + box.h], [box.x, box.y + box.h]]
+                        .map(([x, y]) => { const p = this.projectCoordinates(x, y); return `${p.x},${p.y}`; }).join(' ');
+                    const poly = document.createElementNS(ns, 'polygon');
+                    poly.setAttribute('class', 'minimap-item');
+                    poly.setAttribute('data-minimap-id', e.id);
+                    poly.setAttribute('points', pts);
+                    if (e.type === 'boundary' || e.type === 'swimlane') poly.setAttribute('fill-opacity', '0.35');
+                    map.appendChild(poly);
+                });
+                const vp = document.createElementNS(ns, 'rect');
+                vp.setAttribute('class', 'minimap-viewport');
+                map.appendChild(vp);
+                this.updateMinimapViewport();
+            }
+
+            // Visible canvas area in content coordinates: the inverse of translate(pan) scale(zoom).
+            updateMinimapViewport() {
+                const vp = document.querySelector('#minimap .minimap-viewport');
+                if (!vp || !this.dom || !this.dom.svg) return;
+                const r = this.dom.svg.getBoundingClientRect();
+                const z = this.zoomScale || 1;
+                vp.setAttribute('x', -this.panX / z); vp.setAttribute('y', -this.panY / z);
+                vp.setAttribute('width', Math.max(0, r.width / z)); vp.setAttribute('height', Math.max(0, r.height / z));
+            }
+
+            // Centres the canvas on a content point (a view change: no undo step).
+            panMinimapTo(cx, cy) {
+                const r = this.dom.svg.getBoundingClientRect();
+                this.panX = r.width / 2 - cx * this.zoomScale;
+                this.panY = r.height / 2 - cy * this.zoomScale;
+                this.applySvgViewportTransformations();
             }
 
             zoomToFit() {
@@ -8811,6 +8904,7 @@
                     : null;
                 this.renderSvgDiagramElementsCore();
                 this.applyCanvasAccessibility();
+                this.renderMinimap();
                 if (focusKey) { const el = this.dom.svg.querySelector(focusKey); if (el) el.focus({ preventScroll: true }); }
             }
 
