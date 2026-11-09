@@ -107,3 +107,59 @@ test('hiding or locking the active layer moves "active" to a visible, unlocked l
   await page.evaluate(() => { app.setLayerVisible('net', true); app.setActiveLayer('net'); app.setLayerLocked('net', true); });
   expect(await page.evaluate(() => app.state.activeLayerId)).toBe('main');
 });
+
+// ── Review fixes ──
+const fc = (id, x, layerId, extra = {}) => ({ id, type: 'fc_process', name: id, x, y: 100, width: 160, height: 80, fcFillColor: '#ffffff', fcStrokeColor: '#000000', fcStrokeWidth: 2, layerId, ...extra });
+const lockedNet = { layers: [{ id: 'main', name: 'Main' }, { id: 'net', name: 'Network', locked: true }] };
+async function view(page) { await page.evaluate(() => { app.zoomScale = 1; app.panX = 100; app.panY = 100; app.applySvgViewportTransformations(); }); }
+
+test('the format painter never repaints a shape on a locked layer', async ({ page }) => {
+  await setup(page, [fc('s', 0, 'main', { fcFillColor: '#fee2e2' }), fc('t', 400, 'net')], lockedNet);
+  await view(page);
+  await page.evaluate(() => { app.state.selectedElementIds = ['s']; app.refreshAppViewVisualWorkspace(); app.armFormatPainter(false); });
+  await page.locator('#layers-nodes-group [data-id="t"]').first().click();
+  expect(await page.evaluate(() => app.state.elements.find((e) => e.id === 't').fcFillColor)).toBe('#ffffff');
+});
+
+test('locked swimlanes and locked shapes show no resize handles or connection dots', async ({ page }) => {
+  await setup(page, [{ id: 'sw', type: 'swimlane', name: 'S', x: 0, y: 400, columns: ['A', 'B'], rows: ['R'], layerId: 'net' }, fc('t', 400, 'net')], lockedNet);
+  await view(page);
+  await expect(page.locator('[data-id="sw"] .swimlane-resize-handle')).toHaveCount(0);
+  await page.locator('#layers-nodes-group [data-id="t"]').first().hover({ force: true });
+  await expect(page.locator('#layers-nodes-group [data-id="t"] [data-anchor-id]')).toHaveCount(0);
+});
+
+test('paste puts the copies on the active layer', async ({ page }) => {
+  await setup(page, [fc('s', 0, 'main')], { layers: [{ id: 'main', name: 'Main' }, { id: 'net', name: 'Network' }] });
+  await page.evaluate(() => { app.state.selectedElementIds = ['s']; app.refreshAppViewVisualWorkspace(); app.copySelection(); app.setActiveLayer('net'); app.pasteSelection(); });
+  expect(await page.evaluate(() => app.state.elements.filter((e) => e.id !== 's').map((e) => e.layerId))).toEqual(['net']);
+});
+
+test('a wire released over a hidden shape does not connect to it', async ({ page }) => {
+  await setup(page, [fc('s', 0, 'main'), fc('h', 400, 'net')], { layers: [{ id: 'main', name: 'Main' }, { id: 'net', name: 'Network', visible: false }] });
+  await view(page);
+  await page.locator('#layers-nodes-group [data-id="s"]').first().hover();
+  const dot = page.locator('#layers-nodes-group [data-id="s"] [data-anchor-id="right"]');
+  const b = await dot.boundingBox();
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2); await page.mouse.down();
+  await page.mouse.move(b.x + 200, b.y + 5, { steps: 5 }); await page.mouse.move(b.x + 320, b.y + b.height / 2, { steps: 5 }); await page.mouse.up();   // centre of h (canvas x 480)
+  expect(await page.evaluate(() => app.state.flows.filter((f) => f.targetId === 'h').length)).toBe(0);
+});
+
+test('keyboard: F2 renames a layer, and focus stays on the layer after panel actions', async ({ page }) => {
+  await setup(page, [fc('s', 0, 'main')], { layers: [{ id: 'main', name: 'Main' }, { id: 'net', name: 'Network' }] });
+  await page.click('#tab-layers-trigger');
+  await page.locator('.layer-row').nth(1).locator('.layer-name').focus();
+  await page.keyboard.press('F2');
+  await page.keyboard.type('Servers'); await page.keyboard.press('Enter');
+  await expect(page.locator('.layer-row').nth(1).locator('.layer-name')).toHaveText('Servers');
+  expect(await page.evaluate(() => document.activeElement.closest('.layer-row')?.dataset.layerId)).toBe('net');
+  await page.locator('.layer-row').nth(1).locator('.layer-visible').focus();
+  await page.keyboard.press('Enter');
+  expect(await page.evaluate(() => [document.activeElement.classList.contains('layer-visible'), document.activeElement.closest('.layer-row')?.dataset.layerId])).toEqual([true, 'net']);
+});
+
+test('a hidden Main layer is never left active (new shapes would vanish)', async ({ page }) => {
+  await setup(page, [fc('s', 0, 'net')], { layers: [{ id: 'main', name: 'Main', visible: false }, { id: 'net', name: 'Network' }], activeLayerId: 'main' });
+  expect(await page.evaluate(() => app.state.activeLayerId)).toBe('net');
+});

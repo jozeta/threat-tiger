@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-zkRUC2BDC0U6BwfXVragH8Csd9QINyhM9JI8b8+kt3s='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-+5x7rUCL8/r+z0re7jRPpUb3R1l5qX+hfgetzYPpRSo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -5523,6 +5523,7 @@
                 if (!Array.isArray(s.layers) || s.layers.length === 0) s.layers = [{ ...DEFAULT_LAYER }];
                 const ids = new Set(s.layers.map(l => l.id));
                 if (!ids.has(s.activeLayerId)) s.activeLayerId = 'main';
+                this.keepActiveLayerUsable();
                 [...s.elements, ...s.flows].forEach(item => { if (!item.layerId || !ids.has(item.layerId)) item.layerId = s.activeLayerId; });
                 this.indexLayers();
             }
@@ -5572,6 +5573,11 @@
                 const panel = document.getElementById('layers-panel');
                 if (!panel) return;
                 const s = this.state, hasSel = (s.selectedElementIds || []).length > 0 || !!s.selectedFlowId;
+                // Keep keyboard focus on the same control of the same layer across the rebuild.
+                const act = document.activeElement;
+                const focusRow = act && panel.contains(act) ? act.closest('.layer-row') : null;
+                const focusKey = focusRow ? [focusRow.dataset.layerId, ['layer-name', 'layer-visible', 'layer-lock', 'layer-move-here', 'layer-delete'].find(c => act.classList.contains(c)) || 'layer-name'] : (this.layerFocusAfterRender || null);
+                this.layerFocusAfterRender = null;
                 const btn = (cls, icon, label, pressed) => {
                     const b = document.createElement('button');
                     b.type = 'button'; b.className = `btn btn-sm btn-light border-0 ${cls}`;
@@ -5588,9 +5594,10 @@
                     if (l.id === s.activeLayerId) row.setAttribute('aria-current', 'true');
                     const name = document.createElement('button');
                     name.type = 'button'; name.className = 'btn btn-sm btn-link text-dark text-decoration-none layer-name';
-                    name.textContent = l.name; name.title = 'Click to make active; double-click to rename';
+                    name.textContent = l.name; name.title = 'Click to make active; double-click or F2 to rename';
                     name.addEventListener('click', (ev) => { if (ev.detail < 2) this.setActiveLayer(l.id); });
                     name.addEventListener('dblclick', () => this.startLayerRename(row, l));
+                    name.addEventListener('keydown', (ev) => { if (ev.key === 'F2') { ev.preventDefault(); this.startLayerRename(row, l); } });
                     const vis = btn('layer-visible', l.visible ? 'bi-eye' : 'bi-eye-slash', `${l.visible ? 'Hide' : 'Show'} layer ${l.name}`, l.visible);
                     vis.addEventListener('click', () => this.setLayerVisible(l.id, !l.visible));
                     const lock = btn('layer-lock', l.locked ? 'bi-lock' : 'bi-unlock', `${l.locked ? 'Unlock' : 'Lock'} layer ${l.name}`, l.locked);
@@ -5608,6 +5615,11 @@
                 }));
                 const add = document.getElementById('btn-layer-add');
                 if (add) add.disabled = s.layers.length >= MAX_LAYERS;
+                if (focusKey) {
+                    const row = [...panel.querySelectorAll('.layer-row')].find(r => r.dataset.layerId === focusKey[0]);
+                    const target = row && (row.querySelector('.' + focusKey[1]) || row.querySelector('.layer-name'));
+                    if (target) target.focus({ preventScroll: true });
+                }
             }
 
             startLayerRename(row, layer) {
@@ -5616,7 +5628,11 @@
                 input.type = 'text'; input.className = 'form-control form-control-sm'; input.value = layer.name; input.maxLength = 60;
                 input.setAttribute('aria-label', 'Layer name');
                 let done = false;
-                const finish = (save) => { if (done) return; done = true; if (save) this.renameLayer(layer.id, input.value); else this.renderLayersPanel(); };
+                const finish = (save) => {
+                    if (done) return; done = true;
+                    this.layerFocusAfterRender = [layer.id, 'layer-name'];
+                    if (save) this.renameLayer(layer.id, input.value); else this.renderLayersPanel();
+                };
                 input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); finish(true); } if (ev.key === 'Escape') { ev.preventDefault(); finish(false); } });
                 input.addEventListener('blur', () => finish(true));
                 nameBtn.replaceWith(input);
@@ -5677,9 +5693,10 @@
             // New shapes must stay visible and editable: a hidden or locked active layer hands over to the
             // first visible, unlocked one (Main when every layer is hidden or locked).
             keepActiveLayerUsable() {
-                const s = this.state, a = this.layerById(s.activeLayerId);
+                const s = this.state, a = s.layers.find(l => l.id === s.activeLayerId);
                 if (a && a.visible && !a.locked) return;
-                s.activeLayerId = (s.layers.find(l => l.visible && !l.locked) || s.layers[0]).id;
+                const usable = s.layers.find(l => l.visible && !l.locked);
+                if (usable) s.activeLayerId = usable.id;
             }
 
             // View state: no undo step (saved with the model as activeLayerId).
@@ -7447,7 +7464,7 @@
                         let dropTargetId = null;
                         this.state.elements.forEach(el => {
                             if (el.id === this.phantomWireSourceId || ['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(el.type)) return;
-                            if (this.isPointInsideElement(el, canvasSpaceCoords)) dropTargetId = el.id;
+                            if (this.isItemVisible(el) && this.isPointInsideElement(el, canvasSpaceCoords)) dropTargetId = el.id;
                         });
                         const press = this.phantomWirePress; this.phantomWirePress = null;
                         const isClick = press && Math.hypot(ev.clientX - press.x, ev.clientY - press.y) < 5;
@@ -7596,6 +7613,7 @@
                         pastedEl.y2 = (pastedEl.y2 || 0) + offset;
                     }
                     if (pastedEl.name) pastedEl.name = pastedEl.name + " - copy";
+                    delete pastedEl.layerId;   // stampLayers puts copies on the active layer
                     this.state.elements.push(pastedEl);
                     newElementIds.push(pastedEl.id);
                 });
@@ -7607,6 +7625,7 @@
                     pastedFlow.sourceId = idMap[f.sourceId];
                     pastedFlow.targetId = idMap[f.targetId];
                     if (Array.isArray(pastedFlow.points)) pastedFlow.points = pastedFlow.points.map(p => ({ x: p.x + offset, y: p.y + offset }));
+                    delete pastedFlow.layerId;
                     this.state.flows.push(pastedFlow);
                 });
 
@@ -9478,7 +9497,7 @@
                         g.appendChild(mainVLine);
                     }
 
-                    this.appendSwimlaneResizeHandles(swim, g, totalW, totalH);
+                    if (!this.isItemLocked(swim)) this.appendSwimlaneResizeHandles(swim, g, totalW, totalH);
 
                     // Highlight the cell a dragged node will be dropped into.
                     const drop = this.swimlaneDropTarget;
@@ -10117,7 +10136,7 @@
                         bugG.appendChild(bugFO); g.appendChild(bugG);
                     }
 
-                    if (!['textbox', 'headline', 'step_activity', 'swimlane'].includes(node.type)) {
+                    if (!['textbox', 'headline', 'step_activity', 'swimlane'].includes(node.type) && !this.isItemLocked(node) && this.isItemVisible(node)) {
                         let forceShowAnchors = false;
                         if ((this.isDrawingPhantomWire || this.activeFlowDragMode === 'flow_source' || this.activeFlowDragMode === 'flow_target') && this.currentMouseCanvasCoords) {
                             const nodeCenter = { x: node.x + w / 2, y: node.y + h / 2 };
@@ -10522,7 +10541,7 @@
             paintFormatOnto(id) {
                 const src = this.formatPainter && this.state.elements.find(e => e.id === this.formatPainter.sourceId);
                 const dst = this.state.elements.find(e => e.id === id);
-                if (!src || !dst) return false;
+                if (!src || !dst || this.isItemLocked(dst) || !this.isItemVisible(dst)) return false;   // layers
                 const style = paintableStyle(src, dst);
                 const changed = Object.keys(style).filter(k => dst[k] !== style[k]);
                 if (changed.length === 0) return false;
