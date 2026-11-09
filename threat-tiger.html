@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Z5F+2t43G5eVHlZvjnGRbf5yOCkBj7owTa6/Wq24gtg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-zkRUC2BDC0U6BwfXVragH8Csd9QINyhM9JI8b8+kt3s='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1318,6 +1318,11 @@
 
         /* Dark Theme Overrides for Canvas */
         #canvas-svg .layer-hidden { display: none !important; }
+        .layer-row { display: flex; align-items: center; gap: 2px; padding: 2px 4px; border: 1px solid #e9ecef; border-radius: 6px; background: #fff; }
+        .layer-row.active { border-color: #0d6efd; background: #eef4ff; }
+        .layer-row .layer-name { flex: 1; min-width: 0; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; font-weight: 600; }
+        .layer-row input { flex: 1; min-width: 0; font-size: 12px; }
+        .layer-row .btn { padding: 1px 5px; font-size: 12px; }
         #canvas-svg .layer-locked, #canvas-svg .layer-locked * { cursor: not-allowed !important; }
         #canvas-svg.painting, #canvas-svg.painting .node-element { cursor: copy !important; }
         #btn-menu-minimap[aria-checked="false"] .menu-check, #btn-menu-line-jumps[aria-checked="false"] .menu-check { visibility: hidden; }
@@ -2197,6 +2202,22 @@
                                             Common in system/architecture diagrams.</div>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Layers -->
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="headingLayers">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseLayers" aria-expanded="false" aria-controls="collapseLayers">
+                                Layers
+                            </button>
+                        </h2>
+                        <div id="collapseLayers" class="accordion-collapse collapse" aria-labelledby="headingLayers">
+                            <div class="accordion-body d-flex flex-column gap-1">
+                                <div class="extra-small text-muted">Click a layer to make it active: new shapes go there. Double-click to rename. Hidden layers still count in the analysis.</div>
+                                <div id="layers-panel" class="d-flex flex-column gap-1" role="list" aria-label="Layers"></div>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-layer-add"><i class="bi bi-plus-lg me-1"></i>Add layer</button>
                             </div>
                         </div>
                     </div>
@@ -3361,6 +3382,7 @@
                         <li><strong>Minimap:</strong> turn it on from ☰ menu → <strong>Show minimap</strong>. It shows the whole diagram in the top-right corner of the canvas; click or drag in it to move the view.</li>
                         <li><strong>Format painter:</strong> select a shape, click the brush, then click another shape of the same kind to copy its colours (not its name, type or security settings). Double-click the brush to paint several; Esc stops.</li>
                         <li><strong>Line jumps:</strong> where two flows cross, the later one hops over the other; switch it off in ☰ menu → <strong>Line jumps where flows cross</strong>. <strong>Bend points:</strong> click a selected flow to add one, drag to move, click to remove, or use <strong>Clear bend points</strong> in Properties.</li>
+                        <li><strong>Layers:</strong> in the left column, add layers, click one to make it active (new shapes go there), double-click to rename, hide or lock it, or move the selection to it. Hidden layers still count in the threat analysis.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
 
@@ -5550,6 +5572,140 @@
                 });
             }
 
+            // ── Layers panel ─────────────────────────────────────────────────────────
+            renderLayersPanel() {
+                const panel = document.getElementById('layers-panel');
+                if (!panel) return;
+                const s = this.state, hasSel = (s.selectedElementIds || []).length > 0 || !!s.selectedFlowId;
+                const btn = (cls, icon, label, pressed) => {
+                    const b = document.createElement('button');
+                    b.type = 'button'; b.className = `btn btn-sm btn-light border-0 ${cls}`;
+                    b.title = label; b.setAttribute('aria-label', label);
+                    if (pressed !== undefined) b.setAttribute('aria-pressed', String(pressed));
+                    const i = document.createElement('i'); i.className = `bi ${icon}`; b.appendChild(i);
+                    return b;
+                };
+                panel.replaceChildren(...s.layers.map(l => {
+                    const row = document.createElement('div');
+                    row.className = 'layer-row' + (l.id === s.activeLayerId ? ' active' : '');
+                    row.setAttribute('role', 'listitem');
+                    row.dataset.layerId = l.id;
+                    if (l.id === s.activeLayerId) row.setAttribute('aria-current', 'true');
+                    const name = document.createElement('button');
+                    name.type = 'button'; name.className = 'btn btn-sm btn-link text-dark text-decoration-none layer-name';
+                    name.textContent = l.name; name.title = 'Click to make active; double-click to rename';
+                    name.addEventListener('click', (ev) => { if (ev.detail < 2) this.setActiveLayer(l.id); });
+                    name.addEventListener('dblclick', () => this.startLayerRename(row, l));
+                    const vis = btn('layer-visible', l.visible ? 'bi-eye' : 'bi-eye-slash', `${l.visible ? 'Hide' : 'Show'} layer ${l.name}`, l.visible);
+                    vis.addEventListener('click', () => this.setLayerVisible(l.id, !l.visible));
+                    const lock = btn('layer-lock', l.locked ? 'bi-lock' : 'bi-unlock', `${l.locked ? 'Unlock' : 'Lock'} layer ${l.name}`, l.locked);
+                    lock.addEventListener('click', () => this.setLayerLocked(l.id, !l.locked));
+                    const move = btn('layer-move-here', 'bi-box-arrow-in-down', `Move the selection to ${l.name}`);
+                    move.disabled = !hasSel;
+                    move.addEventListener('click', () => this.moveSelectionToLayer(l.id));
+                    row.append(name, vis, lock, move);
+                    if (l.id !== 'main') {
+                        const del = btn('layer-delete text-danger', 'bi-trash', `Delete layer ${l.name} (its shapes move to Main)`);
+                        del.addEventListener('click', () => this.deleteLayer(l.id));
+                        row.appendChild(del);
+                    }
+                    return row;
+                }));
+                const add = document.getElementById('btn-layer-add');
+                if (add) add.disabled = s.layers.length >= MAX_LAYERS;
+            }
+
+            startLayerRename(row, layer) {
+                const nameBtn = row.querySelector('.layer-name');
+                const input = document.createElement('input');
+                input.type = 'text'; input.className = 'form-control form-control-sm'; input.value = layer.name; input.maxLength = 60;
+                input.setAttribute('aria-label', 'Layer name');
+                let done = false;
+                const finish = (save) => { if (done) return; done = true; if (save) this.renameLayer(layer.id, input.value); else this.renderLayersPanel(); };
+                input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); finish(true); } if (ev.key === 'Escape') { ev.preventDefault(); finish(false); } });
+                input.addEventListener('blur', () => finish(true));
+                nameBtn.replaceWith(input);
+                input.focus(); input.select();
+            }
+
+            layerById(id) { return this.state.layers.find(l => l.id === id); }
+
+            addLayer() {
+                const s = this.state;
+                if (s.layers.length >= MAX_LAYERS) return null;
+                let n = s.layers.length + 1, id;
+                do { id = `layer-${Date.now().toString(36)}-${n}`; n++; } while (this.layerById(id));
+                const layer = { id, name: `Layer ${s.layers.length + 1}`, visible: true, locked: false };
+                s.layers.push(layer);
+                this.logEvent('CHANGE', `Added layer "${layer.name}"`);
+                this.refreshAppViewVisualWorkspace();
+                return id;
+            }
+
+            renameLayer(id, name) {
+                const l = this.layerById(id);
+                const clean = toText(name).trim().slice(0, 60);
+                if (!l || !clean || clean === l.name) { this.renderLayersPanel(); return; }
+                const old = l.name; l.name = clean;
+                this.logEvent('CHANGE', `Renamed layer "${old}" to "${clean}"`);
+                this.refreshAppViewVisualWorkspace();
+            }
+
+            deleteLayer(id) {
+                const s = this.state, l = this.layerById(id);
+                if (!l || id === 'main') return;
+                [...s.elements, ...s.flows].forEach(it => { if (it.layerId === id) it.layerId = 'main'; });
+                s.layers = s.layers.filter(x => x.id !== id);
+                if (s.activeLayerId === id) s.activeLayerId = 'main';
+                this.logEvent('CHANGE', `Deleted layer "${l.name}" (its shapes moved to Main)`);
+                this.refreshAppViewVisualWorkspace();
+            }
+
+            setLayerVisible(id, visible) {
+                const l = this.layerById(id);
+                if (!l || l.visible === visible) return;
+                l.visible = visible;
+                this.keepActiveLayerUsable();
+                this.logEvent('CHANGE', `${visible ? 'Showed' : 'Hid'} layer "${l.name}"`);
+                this.refreshAppViewVisualWorkspace();
+            }
+
+            setLayerLocked(id, locked) {
+                const l = this.layerById(id);
+                if (!l || l.locked === locked) return;
+                l.locked = locked;
+                this.keepActiveLayerUsable();
+                this.logEvent('CHANGE', `${locked ? 'Locked' : 'Unlocked'} layer "${l.name}"`);
+                this.refreshAppViewVisualWorkspace();
+            }
+
+            // New shapes must stay visible and editable: a hidden or locked active layer hands over to the
+            // first visible, unlocked one (Main when every layer is hidden or locked).
+            keepActiveLayerUsable() {
+                const s = this.state, a = this.layerById(s.activeLayerId);
+                if (a && a.visible && !a.locked) return;
+                s.activeLayerId = (s.layers.find(l => l.visible && !l.locked) || s.layers[0]).id;
+            }
+
+            // View state: no undo step (saved with the model as activeLayerId).
+            setActiveLayer(id) {
+                if (!this.layerById(id) || this.state.activeLayerId === id) return;
+                this.state.activeLayerId = id;
+                this.saveSessionToLocalStorage();
+                this.renderLayersPanel();
+            }
+
+            moveSelectionToLayer(id) {
+                const s = this.state, l = this.layerById(id);
+                if (!l) return;
+                const sel = new Set(s.selectedElementIds || []);
+                const items = [...s.elements.filter(e => sel.has(e.id)), ...s.flows.filter(f => f.id === s.selectedFlowId)].filter(it => it.layerId !== id);
+                if (!items.length) return;
+                items.forEach(it => { it.layerId = id; });
+                this.logEvent('CHANGE', `Moved ${items.length} item${items.length === 1 ? '' : 's'} to layer "${l.name}"`);
+                this.refreshAppViewVisualWorkspace();
+            }
+
             // Hidden or locked items can never stay selected, whatever path selected them.
             filterSelectableSelection() {
                 const s = this.state;
@@ -6221,6 +6377,7 @@
                 if (this.pendingRefreshFrame) { cancelAnimationFrame(this.pendingRefreshFrame); this.pendingRefreshFrame = null; }
                 this.filterSelectableSelection();
                 this.renderSvgDiagramElements(); this.renderThreatRegisterTableGrid();
+                this.renderLayersPanel();
                 this.syncMetadataInputsAndLabels(); this.updatePropertiesInspectorView();
                 this.updateThreatSuggestionsWizardView(); this.renderActivityLedgerTable();
                 const insights = document.getElementById('tab-panel-insights');
@@ -6321,6 +6478,7 @@
                 document.getElementById('btn-menu-line-jumps').addEventListener('click', () => this.toggleLineJumps());
                 document.getElementById('btn-flow-clear-points').addEventListener('click', () => this.clearFlowBendPoints());
                 this.setupMinimap();
+                document.getElementById('btn-layer-add').addEventListener('click', () => this.addLayer());
                 this.formatPainter = null;
                 document.getElementById('btn-format-painter').addEventListener('click', (ev) => {
                     if (ev.detail >= 2) { this.armFormatPainter(true); return; }   // the second click of a double-click

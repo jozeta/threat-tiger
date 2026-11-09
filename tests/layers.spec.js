@@ -69,3 +69,40 @@ test('locked items cannot be selected, dragged or deleted from the canvas', asyn
   await page.keyboard.press('Delete');
   expect(await page.evaluate(() => app.state.elements.map((e) => e.id))).toEqual(['b']);
 });
+
+test('the Layers panel adds, renames, hides, locks, moves the selection and deletes, each one undo step', async ({ page }) => {
+  await setup(page, two.map((e) => ({ ...e, layerId: 'main' })));
+  await page.evaluate(() => document.getElementById('collapseLayers').classList.add('show'));
+  await page.click('#btn-layer-add');
+  const row = page.locator('.layer-row').nth(1);
+  await expect(row.locator('.layer-name')).toHaveText('Layer 2');
+  await row.locator('.layer-name').dblclick();
+  await row.locator('input').fill('Network'); await row.locator('input').press('Enter');
+  await expect(page.locator('.layer-row').nth(1).locator('.layer-name')).toHaveText('Network');
+  const netId = await page.locator('.layer-row').nth(1).getAttribute('data-layer-id');
+  await page.evaluate(() => { app.state.selectedElementIds = ['b']; app.refreshAppViewVisualWorkspace(); });
+  await page.locator('.layer-row').nth(1).locator('.layer-move-here').click();
+  expect(await page.evaluate(() => app.state.elements.find((e) => e.id === 'b').layerId)).toBe(netId);
+  await page.locator('.layer-row').nth(1).locator('.layer-visible').click();
+  await expect(page.locator('.layer-row').nth(1).locator('.layer-visible')).toHaveAttribute('aria-pressed', 'false');
+  await page.click('#btn-undo');
+  await expect(page.locator('.layer-row').nth(1).locator('.layer-visible')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('.layer-row').nth(1).locator('.layer-lock').click();
+  await expect(page.locator('.layer-row').nth(1).locator('.layer-lock')).toHaveAttribute('aria-pressed', 'true');
+  await page.locator('.layer-row').nth(1).locator('.layer-name').click();                // make it active
+  await expect(page.locator('.layer-row').nth(1)).toHaveAttribute('aria-current', 'true');
+  await page.locator('.layer-row').nth(1).locator('.layer-delete').click();
+  expect(await page.evaluate(() => [app.state.layers.length, app.state.activeLayerId, app.state.elements.find((e) => e.id === 'b').layerId])).toEqual([1, 'main', 'main']);
+  await page.click('#btn-undo');
+  expect(await page.evaluate((n) => app.state.elements.find((e) => e.id === 'b').layerId === n, netId)).toBe(true);
+  await expect(page.locator('.layer-row').first().locator('.layer-delete')).toHaveCount(0);   // Main cannot be deleted
+});
+
+test('hiding or locking the active layer moves "active" to a visible, unlocked layer, so new shapes stay visible', async ({ page }) => {
+  await setup(page, [two[0]], { layers: [{ id: 'main', name: 'Main' }, { id: 'net', name: 'Network' }], activeLayerId: 'net' });
+  expect(await page.evaluate(() => app.state.activeLayerId)).toBe('net');
+  await page.evaluate(() => app.setLayerVisible('net', false));
+  expect(await page.evaluate(() => app.state.activeLayerId)).toBe('main');
+  await page.evaluate(() => { app.setLayerVisible('net', true); app.setActiveLayer('net'); app.setLayerLocked('net', true); });
+  expect(await page.evaluate(() => app.state.activeLayerId)).toBe('main');
+});
