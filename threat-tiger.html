@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-FBJYmNNV/Ix7Qr7FSj21XzzPPwNzW943k5JPcJOgY/4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ttWWnuibgDv/Y5FcG1stxp89bztYeXAUmGz/zwVaATo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4741,6 +4741,28 @@
         }
 
         /** Turns any parsed JSON into a safe, complete session object. Throws only for non-objects. */
+        // ── Layers ───────────────────────────────────────────────────────────────────
+        const DEFAULT_LAYER = Object.freeze({ id: 'main', name: 'Main', visible: true, locked: false });
+        const MAX_LAYERS = 50;
+        const LAYER_ID = /^[\w-]{1,40}$/;
+        // Imported layers are untrusted: valid unique ids, text names, at most MAX_LAYERS, Main always first.
+        function normalizeLayers(raw, ctx) {
+            const out = [], seen = new Set();
+            (Array.isArray(raw) ? raw : []).forEach(l => {
+                if (!isPlainObject(l)) { ctx.warn('Skipped a layer entry that was not an object.'); return; }
+                const id = toText(l.id).trim();
+                if (!LAYER_ID.test(id) || seen.has(id)) { ctx.warn(`Skipped a layer with a missing, invalid or duplicate id ("${id}").`); return; }
+                seen.add(id);
+                out.push({ id, name: toText(l.name).trim().slice(0, 60), visible: l.visible !== false, locked: l.locked === true });
+            });
+            const mainIdx = out.findIndex(l => l.id === 'main');
+            const main = mainIdx >= 0 ? out.splice(mainIdx, 1)[0] : { ...DEFAULT_LAYER };
+            const layers = [main, ...out];
+            if (layers.length > MAX_LAYERS) { ctx.warn(`Kept the first ${MAX_LAYERS} layers.`); layers.length = MAX_LAYERS; }
+            layers.forEach((l, i) => { if (!l.name) l.name = l.id === 'main' ? 'Main' : `Layer ${i + 1}`; });
+            return layers;
+        }
+
         function normalizeSession(raw) {
             if (!isPlainObject(raw)) throw new Error('The file does not contain a Threat Tiger model.');
             const warnings = [];
@@ -4790,6 +4812,12 @@
                 threatIds.add(t.id);
             });
 
+            if (raw.layers !== undefined && raw.layers !== null && !Array.isArray(raw.layers)) warnings.push('Ignored "layers" because it is not a list.');
+            const layers = normalizeLayers(raw.layers, ctx);
+            const layerIds = new Set(layers.map(l => l.id));
+            [...elements, ...flows].forEach(item => { const id = toText(item.layerId); item.layerId = layerIds.has(id) ? id : 'main'; });
+            const activeLayerId = layerIds.has(toText(raw.activeLayerId)) ? toText(raw.activeLayerId) : 'main';
+
             const activityLog = listOf('activityLog').filter(isPlainObject).map(l => ({
                 timestamp: toText(l.timestamp), operator: toText(l.operator), type: toText(l.type), message: toText(l.message)
             }));
@@ -4799,7 +4827,7 @@
                 scopeDefinition: toText(raw.scopeDefinition) || 'Not Defined',
                 participants: toText(raw.participants),
                 activeUser: toText(raw.activeUser),
-                activityLog, elements, flows, threats, mitigations,
+                activityLog, elements, flows, threats, mitigations, layers, activeLayerId,
                 selectedElementIds: [], selectedFlowId: null
             };
             return { session, warnings };
@@ -4844,6 +4872,7 @@
                 this.activeUser = "";
                 this.activityLog = [];
                 this.elements = []; this.flows = []; this.threats = []; this.mitigations = [];
+                this.layers = [{ ...DEFAULT_LAYER }]; this.activeLayerId = 'main';
                 this.selectedElementIds = []; this.selectedFlowId = null;
             }
 
@@ -5447,6 +5476,7 @@
             }
 
                         logEvent(actionType, messageDescription, { undoable = true } = {}) {
+                this.stampLayers();
                 if (!Array.isArray(this.state.activityLog)) this.state.activityLog = [];
                 if (undoable) this.recordUndoPoint();
                 const entry = {
@@ -5465,7 +5495,16 @@
             // Every logged model change is one undo step. The activity log itself is not rewound.
             serializeModel() {
                 const s = this.state;
-                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [] });
+                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [], layers: s.layers || [{ ...DEFAULT_LAYER }] });
+            }
+
+            // New elements and flows go to the active layer (runs before every undo point and render).
+            stampLayers() {
+                const s = this.state;
+                if (!Array.isArray(s.layers) || s.layers.length === 0) s.layers = [{ ...DEFAULT_LAYER }];
+                const ids = new Set(s.layers.map(l => l.id));
+                if (!ids.has(s.activeLayerId)) s.activeLayerId = 'main';
+                [...s.elements, ...s.flows].forEach(item => { if (!item.layerId || !ids.has(item.layerId)) item.layerId = s.activeLayerId; });
             }
 
             resetUndoHistory() {
@@ -9047,6 +9086,7 @@
 
             renderSvgDiagramElements() {
                 if (this.deferRenders) { this.scheduleDiagramRender(); return; }
+                this.stampLayers();
                 if (this.pendingDiagramFrame) { cancelAnimationFrame(this.pendingDiagramFrame); this.pendingDiagramFrame = null; }
                 // UI-003: remember which canvas item had keyboard focus; the render replaces every element.
                 const active = document.activeElement;
@@ -11751,7 +11791,8 @@
                 const payload = {
                     appVersion: APP_VERSION, schemaVersion: SCHEMA_VERSION,
                     projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, activeUser: s.activeUser,
-                    elements: canon(s.elements), flows: canon(s.flows), threats: canon(s.threats), mitigations: canon(s.mitigations || [])
+                    elements: canon(s.elements), flows: canon(s.flows), threats: canon(s.threats), mitigations: canon(s.mitigations || []),
+                    layers: canon(s.layers || [{ ...DEFAULT_LAYER }]), activeLayerId: s.activeLayerId || 'main'
                 };
                 if (includeLog) payload.activityLog = s.activityLog;
                 const name = includeLog ? 'STRIDE-Threat-Model-Export.json' : `${(toText(s.projectTitle).trim() || 'threat-model').replace(/[^\w.-]+/g, '-').slice(0, 60)}.threat-model.json`;

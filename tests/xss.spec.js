@@ -39,6 +39,8 @@ function poisonedModel() {
     s.threats[0].desc = P('threatDesc')[0];
     s.threats[0].id = P('threatId')[0];
     s.elements.push({ id: 'el-img', type: 'custom_image', name: P('imgname')[0], x: 0, y: 0, width: 80, height: 80, imageUrl: 'javascript:__xss.push("imageUrl")' });
+    s.layers = [{ id: 'main', name: 'Main' }, { id: 'evil', name: P('layer')[0] }];
+    s.elements.push({ id: 'el-layer', type: 'process', name: 'On evil layer', x: 3000, y: 0, width: 240, height: 80, secProps: {}, layerId: 'evil' });
     s.elements.push({ id: 'el-swim', type: 'swimlane', name: P('swim')[0], x: 2000, y: 2000, width: 700, height: 500, columns: [P('col')[0], 'b'], rows: [P('row')[0], 'd'] });
   });
 }
