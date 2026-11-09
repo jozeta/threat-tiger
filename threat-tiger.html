@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bqDTJVG+YRcclT05N41mGqDukW0scA4+B6K76KRFg7k='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-K2I3EvA6WrQE90Ulq8XRA+o0ncGsP0gQRRS2oBDmDBM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1317,6 +1317,8 @@
         }
 
         /* Dark Theme Overrides for Canvas */
+        #canvas-svg.painting, #canvas-svg.painting .node-element { cursor: copy !important; }
+        #btn-format-painter[aria-pressed="true"] { background: #dbeafe; color: #1d4ed8; }
         #minimap { position: absolute; right: 1rem; bottom: 1rem; width: 200px; height: 140px; z-index: 10;
             background: #ffffff; border: 1px solid #dee2e6; border-radius: 6px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); cursor: pointer; }
         #minimap .minimap-item { fill: #cbd5e1; stroke: #94a3b8; vector-effect: non-scaling-stroke; stroke-width: 1px; }
@@ -2302,6 +2304,9 @@
                         class="bi bi-fullscreen"></i></button>
                 <button class="btn btn-sm btn-light border-0" id="btn-canvas-minimap" title="Show or hide the minimap"
                     aria-label="Minimap" aria-pressed="true"><i class="bi bi-map"></i></button>
+                <button class="btn btn-sm btn-light border-0" id="btn-format-painter" disabled aria-pressed="false"
+                    title="Format painter: copy this shape's look to another shape (double-click to paint several, Esc stops)"
+                    aria-label="Format painter"><i class="bi bi-brush"></i></button>
                 <button class="btn btn-sm btn-light border-0 text-primary" id="btn-canvas-save-png"
                     title="Save as PNG"><i class="bi bi-filetype-png"></i></button>
                 <div class="dropdown d-inline-block">
@@ -3345,6 +3350,7 @@
                         <li><strong>Swimlanes:</strong> drop a node into a cell (it is highlighted while you drag); cells grow to fit their nodes. Drag a column or row border to resize it, double-click it for the automatic size, and pick a colour in Properties.</li>
                         <li><strong>Align and distribute:</strong> select two or more shapes to line them up or space them evenly from the small toolbar above the canvas controls.</li>
                         <li><strong>Minimap:</strong> the map in the bottom-right corner shows the whole diagram; click or drag in it to move the view. Turn it on or off with the map button.</li>
+                        <li><strong>Format painter:</strong> select a shape, click the brush, then click another shape of the same kind to copy its colours (not its name, type or security settings). Double-click the brush to paint several; Esc stops.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
 
@@ -3670,6 +3676,24 @@
             const w = e.width || ({ custom_image: 120, infrastructure: 80, step_activity: 260 }[e.type] || 240);
             const h = e.height || ({ custom_image: 120, infrastructure: 70, step_activity: 50 }[e.type] || 80);
             return { id: e.id, x: e.x || 0, y: e.y || 0, w, h };
+        }
+        // ── Format painter ───────────────────────────────────────────────────────────
+        // Look-only properties per kind of shape; the painter copies them between shapes of the same kind.
+        const STYLE_FAMILIES = { flowchart: ['fcFillColor', 'fcStrokeColor', 'fcStrokeWidth'], component: ['iconColor', 'circleColor'], text: ['fontSize'] };
+        function styleFamily(e) {
+            const t = e && toText(e.type);
+            if (!t) return null;
+            if (t.startsWith('fc_')) return 'flowchart';
+            if (['process', 'datastore', 'interactor', 'infrastructure', 'custom_image', 'step_activity'].includes(t)) return 'component';
+            if (t === 'textbox' || t === 'headline') return 'text';
+            return null;
+        }
+        function paintableStyle(src, dst) {
+            const fam = styleFamily(src);
+            if (!fam || styleFamily(dst) !== fam) return {};
+            const out = {};
+            STYLE_FAMILIES[fam].forEach(k => { if (src[k] !== undefined) out[k] = src[k]; });
+            return out;
         }
         // New positions for boxes that move. Modes: left, center, right, top, middle, bottom (2+ boxes);
         // hspace, vspace (3+): the outermost boxes stay put and the gaps between boxes become equal.
@@ -6109,6 +6133,11 @@
                 document.getElementById('btn-canvas-zoom-reset').addEventListener('click', () => this.zoomToFit());
                 document.getElementById('btn-canvas-minimap').addEventListener('click', () => this.toggleMinimap());
                 this.setupMinimap();
+                this.formatPainter = null;
+                document.getElementById('btn-format-painter').addEventListener('click', (ev) => {
+                    if (ev.detail >= 2) { this.armFormatPainter(true); return; }   // the second click of a double-click
+                    if (this.formatPainter) this.disarmFormatPainter(); else this.armFormatPainter(false);
+                });
                 document.querySelectorAll('#align-toolbar [data-align]').forEach(btn =>
                     btn.addEventListener('click', () => this.alignSelection(btn.dataset.align)));
                 document.getElementById('btn-canvas-save-png').addEventListener('click', () => this.exportCanvasAsPng());
@@ -7167,6 +7196,7 @@
                 if (!onCanvasItem && t && t.getAttribute && t.getAttribute('role') === 'button' && t.tagName !== 'BUTTON' && (ev.key === 'Enter' || ev.key === ' ')) {
                     ev.preventDefault(); t.click(); return true;
                 }
+                if (ev.key === 'Escape' && this.formatPainter) { this.disarmFormatPainter(); return true; }
                 if (ev.key === 'Escape' && (this.state.selectedElementIds.length || this.state.selectedFlowId)) {
                     this.clearActiveSelectionPointers(); return true;
                 }
@@ -7601,6 +7631,13 @@
             }
 
             handleElementSelectionEvent(id) {
+                if (this.formatPainter) {
+                    if (id !== this.formatPainter.sourceId) {
+                        this.paintFormatOnto(id);
+                        if (!this.formatPainter.sticky) this.disarmFormatPainter();
+                    }
+                    return;
+                }
                 this.state.selectedFlowId = null;
                 if (!this.state.selectedElementIds.includes(id)) this.state.selectedElementIds = [id];
                 this.refreshAppViewVisualWorkspace();
@@ -9786,6 +9823,8 @@
                 gElement.addEventListener('mousedown', (ev) => {
                     if (this.isDrawingPhantomWire || this.resizingElementId || ev.button !== 0 || this.activeFlowDragMode) return;
                     ev.stopPropagation();
+                    // Format painter: paint on press; no selection change and no drag (the re-render would eat the click).
+                    if (this.formatPainter) { ev.preventDefault(); this.painterPressId = elementObj.id; this.handleElementSelectionEvent(elementObj.id); return; }
                     if (!this.state.selectedElementIds.includes(elementObj.id)) {
                         this.state.selectedFlowId = null;
                         this.state.selectedElementIds = [elementObj.id];
@@ -9811,6 +9850,7 @@
                     });
                 });
                 gElement.addEventListener('click', (ev) => {
+                    if (this.painterPressId === elementObj.id) { this.painterPressId = null; ev.stopPropagation(); return; }   // handled on press
                     ev.stopPropagation(); if (ev.button === 0 && !this.isDrawingPhantomWire && !this.activeFlowDragMode) this.handleElementSelectionEvent(elementObj.id);
                 });
             }
@@ -10097,6 +10137,45 @@
                 return moves.size;
             }
 
+            // Format painter: armed from the one selected shape; sticky stays on until Esc or the button.
+            armFormatPainter(sticky) {
+                const ids = this.state.selectedElementIds || [];
+                const src = ids.length === 1 ? this.state.elements.find(e => e.id === ids[0]) : null;
+                if (!src || !styleFamily(src)) return;
+                this.formatPainter = { sourceId: src.id, sticky: !!sticky };
+                this.dom.svg.classList.add('painting');
+                this.updateFormatPainterButton();
+            }
+
+            disarmFormatPainter() {
+                this.formatPainter = null;
+                this.dom.svg.classList.remove('painting');
+                this.updateFormatPainterButton();
+            }
+
+            // Copies the source's look onto one element; one undo step, none when nothing changes.
+            paintFormatOnto(id) {
+                const src = this.formatPainter && this.state.elements.find(e => e.id === this.formatPainter.sourceId);
+                const dst = this.state.elements.find(e => e.id === id);
+                if (!src || !dst) return false;
+                const style = paintableStyle(src, dst);
+                const changed = Object.keys(style).filter(k => dst[k] !== style[k]);
+                if (changed.length === 0) return false;
+                changed.forEach(k => { dst[k] = style[k]; });
+                this.logEvent('CHANGE', `Copied the look of "${src.name}" to "${dst.name}"`);
+                this.refreshAppViewVisualWorkspace();
+                return true;
+            }
+
+            updateFormatPainterButton() {
+                const btn = document.getElementById('btn-format-painter');
+                if (!btn) return;
+                const ids = this.state.selectedElementIds || [];
+                const one = ids.length === 1 ? this.state.elements.find(e => e.id === ids[0]) : null;
+                btn.setAttribute('aria-pressed', String(!!this.formatPainter));
+                btn.disabled = !this.formatPainter && !(one && styleFamily(one));
+            }
+
             // Shows the align toolbar for 2+ alignable selected elements; distributing needs 3+.
             updateAlignToolbar() {
                 const bar = document.getElementById('align-toolbar');
@@ -10108,6 +10187,7 @@
 
             updatePropertiesInspectorView() {
                 this.updateAlignToolbar();
+                this.updateFormatPainterButton();
                 const boxIds = ['box-props-node-type', 'box-props-standard-name', 'box-props-status-state', 'box-props-icon-customization', 'box-props-flow-routing', 'box-props-step-activity', 'box-props-text-offset', 'box-props-textbox-textarea', 'box-props-headline-customization', 'box-props-security', 'box-props-zdepth', 'box-props-custom-image', 'box-props-isometric-toggle', 'box-props-swimlane', 'box-props-flowchart'];
                 boxIds.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('d-none'); });
 
