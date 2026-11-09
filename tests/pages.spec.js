@@ -92,13 +92,18 @@ test('deleting a page asks first, deletes its shapes, flows and threats, and und
     ...TWO, flows: [{ ...flowAB, id: 'g', sourceId: 'b', targetId: 'c' }], threats: [{ id: 'th-001', title: 'T', category: 'Spoofing', status: 'Open / Unmitigated', likelihood: 3, impact: 3, elementId: 'b' }],
   });
   await page.evaluate(() => app.setActivePage('p2'));
-  await page.click('#btn-page-delete');
+  await expect(page.locator('#btn-page-delete')).toHaveCount(0);                     // no separate delete button
+  await page.locator('#page-tabs [role="tab"]', { hasText: 'Payments' }).dblclick();
+  const x = await page.locator('#page-tabs .page-tab-delete').boundingBox();
+  await page.mouse.click(x.x + x.width / 2, x.y + x.height / 2);   // a real click at the × (it pokes out of the tab's corner)
   await expect(page.locator('#modal-confirm-delete')).toBeVisible();
   await page.click('#btn-confirm-delete');
   await expect(page.locator('#modal-confirm-delete')).toBeHidden();
   const r = await page.evaluate(() => ({ pages: app.state.pages.map((p) => p.id), active: app.state.activePageId, els: app.state.elements.map((e) => e.id), flows: app.state.flows.length, threats: app.state.threats.length, link: app.state.elements.find((e) => e.id === 'l').linkedPageId }));
   expect(r).toEqual({ pages: ['p1'], active: 'p1', els: ['a', 'l'], flows: 0, threats: 0, link: undefined });
-  await expect(page.locator('#btn-page-delete')).toHaveCount(0);
+  await page.locator('#page-tabs [role="tab"]').first().dblclick();
+  await expect(page.locator('#page-tabs .page-tab-delete')).toHaveCount(0);        // the only page cannot be deleted
+  await page.keyboard.press('Escape');
   await page.click('#btn-undo');
   expect(await page.evaluate(() => [app.state.pages.length, app.state.elements.length, app.state.threats.length, app.state.elements.find((e) => e.id === 'l').linkedPageId])).toEqual([2, 4, 1, 'p2']);
 });
@@ -138,4 +143,41 @@ test('the register names the page; the Markdown report has one diagram per page;
   const mer = await page.evaluate(() => app.buildMermaidDiagram());
   expect(mer).toContain('"A"');
   expect(mer).not.toContain('"B"');
+});
+
+// ── Review fixes ──
+const onScreen = (page, id) => page.evaluate((i) => { const n = document.querySelector(`#layers-nodes-group [data-id="${i}"]`); if (!n || getComputedStyle(n).display === 'none') return false; const r = n.getBoundingClientRect(), c = document.getElementById('canvas-svg').getBoundingClientRect(); return r.right > c.left && r.left < c.right && r.bottom > c.top && r.top < c.bottom; }, id);
+
+test('undoing "add page" returns to a page that is actually shown', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' })]);
+  await page.evaluate(() => app.zoomToFit());
+  await page.click('#btn-page-add');
+  expect(await page.evaluate(() => app.state.activePageId)).not.toBe('p1');
+  await page.click('#btn-undo');
+  expect(await page.evaluate(() => [app.state.pages.length, app.state.activePageId])).toEqual([1, 'p1']);
+  expect(await onScreen(page, 'a')).toBe(true);
+});
+
+test('Mermaid "add" on page 1 places shapes beside page 1\'s content, not over it', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' }), node('a2', 4000, { pageId: 'p1' }), node('b', 100000, { pageId: 'p2' })], TWO);
+  await page.evaluate(() => app.importMermaidFlowchart('flowchart LR\n  X --> Y', 'add'));
+  const xs = await page.evaluate(() => app.state.elements.filter((e) => ['X', 'Y'].includes(e.name)).map((e) => [e.pageId, e.x]));
+  expect(xs.map((x) => x[0])).toEqual(['p1', 'p1']);
+  xs.forEach(([, x]) => { expect(x).toBeGreaterThan(4240); expect(x).toBeLessThan(50000); });
+});
+
+test('clicking an attack path on another page switches to that page', async ({ page }) => {
+  await setup(page, [node('u', 100000, { pageId: 'p2', type: 'interactor' }), node('d', 100400, { pageId: 'p2', type: 'datastore', secProps: { isCrownJewel: 'true' } }), node('a', 0, { pageId: 'p1' })],
+    { ...TWO, flows: [{ ...flowAB, id: 'ud', sourceId: 'u', targetId: 'd' }] });
+  await page.click('#tab-insights-trigger');
+  await page.locator('#insights-attack-paths .attack-path-row').first().click();
+  expect(await page.evaluate(() => app.state.activePageId)).toBe('p2');
+  expect(await onScreen(page, 'd')).toBe(true);
+});
+
+test('the selected page tab stands out on the dark canvas', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' })], TWO);
+  await page.evaluate(() => { app.canvasTheme = 'dark'; app.applyCanvasTheme(); });
+  const [sel, other] = await page.evaluate(() => [...document.querySelectorAll('#page-tabs [role="tab"]')].map((t) => getComputedStyle(t).backgroundColor));
+  expect(sel).not.toBe(other);
 });

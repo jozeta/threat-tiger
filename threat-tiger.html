@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-RRTCG1X3is6X7eEfKgBY4u9+GXzj6M1cPvwUAMjWfrw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/o4PooMFnAdUxm3Z3gWOmKMnnVkZPQZ3/uis2aW/ktQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1320,10 +1320,16 @@
         #canvas-svg .layer-hidden { display: none !important; }
         .page-link-badge { cursor: pointer; }
         #page-tabs { position: absolute; top: .75rem; left: 1rem; z-index: 10; max-width: calc(100% - 260px); }
-        #page-tabs .page-tab { font-size: 12px; padding: 2px 10px; border: 1px solid #dee2e6; background: #fff; border-radius: 6px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); }
+        #page-tabs .page-tab { font-size: 12px; padding: 3px 18px; min-width: 96px; border: 1px solid #dee2e6; background: #fff; border-radius: 6px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); }
         #page-tabs .page-tab[aria-selected="true"] { border-color: #0d6efd; color: #0d6efd; font-weight: 600; background: #eef4ff; }
         #page-tabs input, #page-tabs select { font-size: 12px; width: auto; max-width: 160px; }
         .dark-theme-canvas #page-tabs .page-tab { background: #1e1e2a; color: #cbd5e1; border-color: #475569; }
+        .dark-theme-canvas #page-tabs .page-tab[aria-selected="true"] { background: #1e3a5f; color: #bfdbfe; border-color: #60a5fa; }
+        #page-tabs #btn-page-add { min-width: 0; padding: 3px 10px; }
+        #page-tabs .page-rename { position: relative; display: inline-flex; }
+        #page-tabs .page-rename input { width: 150px; padding-right: 18px; }
+        #page-tabs .page-tab-delete { position: absolute; top: -7px; right: -7px; width: 18px; height: 18px; border-radius: 50%; border: 1px solid #dc3545; background: #fff; color: #dc3545; font-size: 12px; line-height: 14px; padding: 0; z-index: 1; }
+        #page-tabs .page-tab-delete:hover, #page-tabs .page-tab-delete:focus-visible { background: #dc3545; color: #fff; }
         #canvas-svg .ap-dim { opacity: .18; }
         #canvas-svg .ap-on .flow-line { stroke: #dc3545 !important; stroke-width: 4px !important; }
         #canvas-svg .node-element.ap-on { filter: drop-shadow(0 0 6px rgba(220, 53, 69, .8)); }
@@ -3429,7 +3435,7 @@
                         <li><strong>View:</strong> ☰ menu → <strong>View</strong> shows or hides the minimap, line jumps, each panel (left, right, bottom) and each panel tab.</li>
                         <li><strong>Icon sets:</strong> devices and security symbols, security and DevOps brands (pentest, incident response, threat intel, DevSecOps, identity), tech and OS logos (Linux, Windows, Apple, languages, tools), and official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons in the palette under <strong>Data Nodes &amp; Icons</strong> (each set loads when you open it; search by name). A placed icon shows as the icon with its name underneath and is a normal component (data store, process, …), so threat suggestions work. Hide sets you don't use in ☰ → <strong>View</strong>.</li>
                         <li><strong>Attack paths:</strong> Insights → <strong>Attack paths</strong> lists routes from entry points (external entities, and components outside every trust zone) to crown jewels, ranked by risk: unencrypted or unauthenticated hops, open threats on the way, and shorter routes score higher. Pick a start or target, and click a path to highlight it on the canvas.</li>
-                        <li><strong>Pages:</strong> the tabs at the top-left of the canvas split a big model over pages (one threat register and one set of insights for all of them). <strong>+</strong> adds a page, double-click renames, <strong>×</strong> deletes the current page with its shapes (after asking; undo brings it back), and <strong>Move selection to…</strong> moves shapes to another page. Give a shape a <strong>Detail page</strong> in Properties to get a ↗ badge that opens it; <strong>◀</strong> goes back.</li>
+                        <li><strong>Pages:</strong> the tabs at the top-left of the canvas split a big model over pages (one threat register and one set of insights for all of them). <strong>+</strong> adds a page, double-click renames; while renaming, the <strong>×</strong> in the tab's corner deletes the page with its shapes (after asking; undo brings it back), and <strong>Move selection to…</strong> moves shapes to another page. Give a shape a <strong>Detail page</strong> in Properties to get a ↗ badge that opens it; <strong>◀</strong> goes back.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
 
@@ -5243,6 +5249,8 @@
                 if (!el || el === document.body) return;
                 // Picking a name from the suggestion list must not first commit the half-typed text.
                 if (exceptTarget && exceptTarget.closest && exceptTarget.closest('#name-suggest-menu')) return;
+                // The × on a page tab being renamed belongs to the rename box (it deletes the page).
+                if (exceptTarget && exceptTarget.closest && exceptTarget.closest('.page-rename')) return;
                 const editable = el.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(el.tagName);
                 if (!editable || (exceptTarget && el.contains(exceptTarget))) return;
                 // When committing because of a click, the click's target must survive: re-rendering now would
@@ -5710,6 +5718,7 @@
                 this.pageViews = this.pageViews || {};
                 if (s.activePageId) this.pageViews[s.activePageId] = { panX: this.panX, panY: this.panY, zoom: this.zoomScale };
                 const changed = s.activePageId !== id;
+                if (!changed) return;   // already shown: nothing to redraw (keeps a double-click on the tab intact)
                 s.activePageId = id;
                 if (changed) { s.selectedElementIds = []; s.selectedFlowId = null; }
                 this.refreshAppViewVisualWorkspace();
@@ -5722,6 +5731,7 @@
             renderPageTabs() {
                 const strip = document.getElementById('page-tabs');
                 if (!strip) return;
+                if (strip.querySelector('.page-rename input') === document.activeElement) return;   // don't throw away a rename in progress
                 const s = this.state, pages = s.pages || [];
                 const tabs = pages.map(p => {
                     const b = document.createElement('button');
@@ -5753,11 +5763,6 @@
                     out.push(back);
                 }
                 if (where === 'after' && s.pages.length > 1) {
-                    const del = document.createElement('button');
-                    del.type = 'button'; del.id = 'btn-page-delete'; del.className = 'page-tab text-danger';
-                    del.textContent = '×'; del.title = 'Delete this page and its shapes'; del.setAttribute('aria-label', 'Delete this page and its shapes');
-                    del.addEventListener('click', () => this.deletePage(s.activePageId));
-                    out.push(del);
                     if ((s.selectedElementIds || []).length) {
                         const sel = document.createElement('select');
                         sel.id = 'page-move-select'; sel.className = 'form-select form-select-sm'; sel.setAttribute('aria-label', 'Move the selection to another page');
@@ -5845,15 +5850,26 @@
                 });
             }
 
+            // Rename in place; while renaming, a small × in the tab's corner deletes the page (after a confirmation).
             startPageRename(btn, page) {
+                const wrap = document.createElement('span'); wrap.className = 'page-rename';
                 const input = document.createElement('input');
                 input.type = 'text'; input.className = 'form-control form-control-sm'; input.value = page.name; input.maxLength = 60;
                 input.setAttribute('aria-label', 'Page name');
                 let done = false;
                 const finish = (save) => { if (done) return; done = true; if (save) this.renamePage(page.id, input.value); else this.renderPageTabs(); };
                 input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); finish(true); } if (ev.key === 'Escape') { ev.preventDefault(); finish(false); } });
-                input.addEventListener('blur', () => finish(true));
-                btn.replaceWith(input); input.focus(); input.select();
+                input.addEventListener('blur', (ev) => { if (ev.relatedTarget && ev.relatedTarget.classList.contains('page-tab-delete')) return; finish(true); });
+                wrap.appendChild(input);
+                if ((this.state.pages || []).length > 1) {
+                    const del = document.createElement('button');
+                    del.type = 'button'; del.className = 'page-tab-delete'; del.textContent = '×';
+                    del.title = `Delete page "${page.name}" and its shapes`; del.setAttribute('aria-label', `Delete page ${page.name} and its shapes`);
+                    del.addEventListener('mousedown', (ev) => ev.preventDefault());   // keep the input from saving first
+                    del.addEventListener('click', () => { done = true; this.renderPageTabs(); this.deletePage(page.id); });
+                    wrap.appendChild(del);
+                }
+                btn.replaceWith(wrap); input.focus(); input.select();
             }
 
             addPage() {
@@ -6134,6 +6150,7 @@
             }
 
             applyModelSnapshot(json) {
+                const shownPage = this.state.activePageId;
                 const m = JSON.parse(json);
                 Object.assign(this.state, m);
                 // Keep the selection when the selected items still exist, so the side panels stay put.
@@ -6142,6 +6159,7 @@
                 if (this.state.selectedFlowId && !this.state.flows.some(f => f.id === this.state.selectedFlowId)) this.state.selectedFlowId = null;
                 this.undoBaseline = json;
                 this.refreshAppViewVisualWorkspace();
+                if (shownPage && !this.pageById(shownPage)) this.zoomToFit();   // the page on screen is gone: show the one now active
                 this.updateUndoButtons();
             }
 
@@ -9691,6 +9709,8 @@
 
             // View state only (never saved, no undo step).
             highlightAttackPath(path) {
+                const first = path && this.state.elements.find(e => e.id === path.nodes[0]);
+                if (first && first.pageId && first.pageId !== this.state.activePageId) this.setActivePage(first.pageId);   // a path is always on one page
                 this.attackPathHighlight = path ? { key: path.nodes.join('>') + '|' + path.flows.join('>'), nodes: new Set(path.nodes), flows: new Set(path.flows) } : null;
                 this.renderSvgDiagramElements();
                 this.renderInsights();
@@ -12395,8 +12415,8 @@
                 let ox = 0, oy = 0;
                 if (mode === 'replace') {
                     s.elements = []; s.flows = []; s.threats = []; s.mitigations = []; s.selectedElementIds = []; s.selectedFlowId = null;
-                } else if (s.elements.length) {
-                    const boxes = s.elements.map(e => e.type === 'boundary_line'
+                } else if (s.elements.some(e => this.onActivePage(e))) {
+                    const boxes = s.elements.filter(e => this.onActivePage(e)).map(e => e.type === 'boundary_line'
                         ? { x1: Math.min(e.x, e.x2), y1: Math.min(e.y, e.y2), x2: Math.max(e.x, e.x2), y2: Math.max(e.y, e.y2) }
                         : { x1: e.x, y1: e.y, x2: e.x + (e.width || 240), y2: e.y + (e.height || 80) });
                     ox = Math.max(...boxes.map(b => b.x2)) + 200; oy = Math.min(...boxes.map(b => b.y1));
