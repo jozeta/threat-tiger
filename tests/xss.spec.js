@@ -40,6 +40,7 @@ function poisonedModel() {
     s.threats[0].id = P('threatId')[0];
     s.elements.push({ id: 'el-img', type: 'custom_image', name: P('imgname')[0], x: 0, y: 0, width: 80, height: 80, imageUrl: 'javascript:__xss.push("imageUrl")' });
     s.layers = [{ id: 'main', name: 'Main' }, { id: 'evil', name: P('layer')[0] }];
+    s.pages = [{ id: 'p1', name: P('page')[0], offset: 0 }, { id: 'p2', name: P('page2')[1], offset: 100000 }];
     s.elements.push({ id: 'el-layer', type: 'process', name: 'On evil layer', x: 3000, y: 0, width: 240, height: 80, secProps: {}, layerId: 'evil' });
     s.elements.push({ id: 'el-stencil', type: 'process', name: 'Stencil', x: 3400, y: 0, width: 240, height: 80, secProps: {}, stencil: P('stencil')[1], stencilIcon: `data:image/svg+xml;base64," onerror="__xss.push('stencilIcon')`, stencilTags: [P('tag')[0]] });
     s.elements.push({ id: 'el-swim', type: 'swimlane', name: P('swim')[0], x: 2000, y: 2000, width: 700, height: 500, columns: [P('col')[0], 'b'], rows: [P('row')[0], 'd'] });

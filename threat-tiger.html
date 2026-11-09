@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-PNrEaDP02AZ1WkLy9UW+7J8/RGHMdQqC0taxNzMGo/0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-6kVWFqMCwC37EI6CNk6B2csBdqb2Lrdk1UK3UVwCeII='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4903,6 +4903,31 @@
             return layers;
         }
 
+        // ── Pages ────────────────────────────────────────────────────────────────────
+        // Each page lives in its own horizontal area of the canvas (offset = a multiple of PAGE_STRIDE), so older
+        // versions show pages side by side and geometric trust-zone analysis never mixes pages.
+        const PAGE_STRIDE = 100000;
+        const MAX_PAGES = 50;
+        const DEFAULT_PAGE = Object.freeze({ id: 'p1', name: 'Page 1', offset: 0 });
+        function normalizePages(raw, ctx) {
+            const out = [], seen = new Set();
+            (Array.isArray(raw) ? raw : []).forEach(p => {
+                if (!isPlainObject(p)) { ctx.warn('Skipped a page entry that was not an object.'); return; }
+                const id = toText(p.id).trim();
+                if (!LAYER_ID.test(id) || seen.has(id)) { ctx.warn(`Skipped a page with a missing, invalid or duplicate id ("${id}").`); return; }
+                seen.add(id);
+                const off = Number(p.offset);
+                out.push({ id, name: toText(p.name).trim().slice(0, 60), offset: Number.isFinite(off) ? Math.round(off / PAGE_STRIDE) * PAGE_STRIDE : null });
+            });
+            if (out.length > MAX_PAGES) { ctx.warn(`Kept the first ${MAX_PAGES} pages.`); out.length = MAX_PAGES; }
+            if (!out.length) out.push({ ...DEFAULT_PAGE });
+            const taken = new Set();
+            out.forEach(p => { if (p.offset !== null && !taken.has(p.offset)) taken.add(p.offset); else p.offset = null; });
+            out.forEach(p => { if (p.offset === null) { let o = 0; while (taken.has(o)) o += PAGE_STRIDE; p.offset = o; taken.add(o); } });
+            out.forEach((p, i) => { if (!p.name) p.name = `Page ${i + 1}`; });
+            return out;
+        }
+
         function normalizeSession(raw) {
             if (!isPlainObject(raw)) throw new Error('The file does not contain a Threat Tiger model.');
             const warnings = [];
@@ -4957,6 +4982,15 @@
             const layerIds = new Set(layers.map(l => l.id));
             [...elements, ...flows].forEach(item => { const id = toText(item.layerId); item.layerId = layerIds.has(id) ? id : 'main'; });
             const activeLayerId = layerIds.has(toText(raw.activeLayerId)) ? toText(raw.activeLayerId) : 'main';
+            if (raw.pages !== undefined && raw.pages !== null && !Array.isArray(raw.pages)) warnings.push('Ignored "pages" because it is not a list.');
+            const pages = normalizePages(raw.pages, ctx);
+            const pageIds = new Set(pages.map(p => p.id));
+            elements.forEach(e => {
+                const pid = toText(e.pageId); e.pageId = pageIds.has(pid) ? pid : pages[0].id;
+                if ('linkedPageId' in e) { const l = toText(e.linkedPageId); if (pageIds.has(l)) e.linkedPageId = l; else delete e.linkedPageId; }
+            });
+            flows.forEach(f => { delete f.pageId; });   // a flow is on its source's page
+            const activePageId = pageIds.has(toText(raw.activePageId)) ? toText(raw.activePageId) : pages[0].id;
 
             const activityLog = listOf('activityLog').filter(isPlainObject).map(l => ({
                 timestamp: toText(l.timestamp), operator: toText(l.operator), type: toText(l.type), message: toText(l.message)
@@ -4967,7 +5001,7 @@
                 scopeDefinition: toText(raw.scopeDefinition) || 'Not Defined',
                 participants: toText(raw.participants),
                 activeUser: toText(raw.activeUser),
-                activityLog, elements, flows, threats, mitigations, layers, activeLayerId,
+                activityLog, elements, flows, threats, mitigations, layers, activeLayerId, pages, activePageId,
                 selectedElementIds: [], selectedFlowId: null
             };
             return { session, warnings };
@@ -5013,6 +5047,7 @@
                 this.activityLog = [];
                 this.elements = []; this.flows = []; this.threats = []; this.mitigations = [];
                 this.layers = [{ ...DEFAULT_LAYER }]; this.activeLayerId = 'main';
+                this.pages = [{ ...DEFAULT_PAGE }]; this.activePageId = 'p1';
                 this.selectedElementIds = []; this.selectedFlowId = null;
             }
 
@@ -5635,7 +5670,7 @@
             // Every logged model change is one undo step. The activity log itself is not rewound.
             serializeModel() {
                 const s = this.state;
-                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [], layers: s.layers || [{ ...DEFAULT_LAYER }] });
+                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [], layers: s.layers || [{ ...DEFAULT_LAYER }], pages: s.pages || [{ ...DEFAULT_PAGE }] });
             }
 
             // New elements and flows go to the active layer (runs before every undo point and render).
@@ -5646,7 +5681,34 @@
                 if (!ids.has(s.activeLayerId)) s.activeLayerId = 'main';
                 this.keepActiveLayerUsable();
                 [...s.elements, ...s.flows].forEach(item => { if (!item.layerId || !ids.has(item.layerId)) item.layerId = s.activeLayerId; });
+                this.stampPages();
                 this.indexLayers();
+            }
+
+            // New shapes go to the active page; shapes placed in another page's area (paste, import) move into it.
+            stampPages() {
+                const s = this.state;
+                if (!Array.isArray(s.pages) || s.pages.length === 0) s.pages = [{ ...DEFAULT_PAGE }];
+                const byId = new Map(s.pages.map(p => [p.id, p]));
+                if (!byId.has(s.activePageId)) s.activePageId = s.pages[0].id;
+                const active = byId.get(s.activePageId);
+                const shifted = new Map();
+                s.elements.forEach(e => {
+                    if (e.pageId && byId.has(e.pageId)) return;
+                    e.pageId = active.id;
+                    const band = Math.round((e.x || 0) / PAGE_STRIDE) * PAGE_STRIDE;
+                    const dx = active.offset - band;
+                    if (dx) {
+                        e.x = (e.x || 0) + dx;
+                        if (typeof e.x2 === 'number') e.x2 += dx;
+                        shifted.set(e.id, dx);
+                    }
+                });
+                if (shifted.size) s.flows.forEach(f => {
+                    const dx = shifted.get(f.sourceId);
+                    if (dx && Array.isArray(f.points)) f.points = f.points.map(p => ({ x: p.x + dx, y: p.y }));
+                });
+                s.elements.forEach(e => { if (e.linkedPageId && !byId.has(e.linkedPageId)) delete e.linkedPageId; });
             }
 
             // Per-render lookup: which layers are visible or locked, and which elements are visible.
@@ -12428,7 +12490,8 @@
                     appVersion: APP_VERSION, schemaVersion: SCHEMA_VERSION,
                     projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, activeUser: s.activeUser,
                     elements: canon(s.elements), flows: canon(s.flows), threats: canon(s.threats), mitigations: canon(s.mitigations || []),
-                    layers: canon(s.layers || [{ ...DEFAULT_LAYER }]), activeLayerId: s.activeLayerId || 'main'
+                    layers: canon(s.layers || [{ ...DEFAULT_LAYER }]), activeLayerId: s.activeLayerId || 'main',
+                    pages: canon(s.pages || [{ ...DEFAULT_PAGE }]), activePageId: s.activePageId || 'p1'
                 };
                 if (includeLog) payload.activityLog = s.activityLog;
                 const name = includeLog ? 'STRIDE-Threat-Model-Export.json' : `${(toText(s.projectTitle).trim() || 'threat-model').replace(/[^\w.-]+/g, '-').slice(0, 60)}.threat-model.json`;
