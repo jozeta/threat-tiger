@@ -34,6 +34,7 @@ test('keyboard: data flows can be focused and selected', async ({ page }) => {
 
 test('keyboard: palette items and template cards work with Enter', async ({ page }) => {
   await openApp(page, { session: demoSession() });
+  await page.waitForFunction(() => app.threatSuggestions.process.length);   // the threat library loads asynchronously
   const n0 = await page.evaluate(() => app.state.elements.length);
   await page.locator('#pal-process').focus();
   await page.keyboard.press('Enter');

@@ -42,3 +42,44 @@ test('pages round-trip through JSON export and undo', async ({ page }) => {
   await page.evaluate(() => { app.state.pages[1].name = 'Changed'; app.logEvent('CHANGE', 'rename'); app.undo(); });
   expect(await page.evaluate(() => app.state.pages[1].name)).toBe('Payments');
 });
+
+// ── Task 2: showing a page, tabs, switching ──
+const nodeVisible = (page, id) => page.evaluate((i) => { const n = document.querySelector(`#layers-nodes-group [data-id="${i}"]`); return !!n && getComputedStyle(n).display !== 'none'; }, id);
+
+test('only the current page is shown; switching moves the view; zoom-to-fit uses the current page', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' }), node('b', 100000, { pageId: 'p2' })], TWO);
+  await expect(page.locator('#page-tabs [role="tab"]')).toHaveCount(2);
+  expect(await nodeVisible(page, 'a')).toBe(true);
+  expect(await nodeVisible(page, 'b')).toBe(false);
+  await page.locator('#page-tabs [role="tab"]', { hasText: 'Payments' }).click();
+  await expect(page.locator('#page-tabs [role="tab"]', { hasText: 'Payments' })).toHaveAttribute('aria-selected', 'true');
+  expect(await nodeVisible(page, 'b')).toBe(true);
+  expect(await nodeVisible(page, 'a')).toBe(false);
+  const bb = await page.evaluate(() => app.getIsometricBoundingBox());
+  expect(bb.minX).toBeGreaterThan(90000);
+  const onScreen = await page.evaluate(() => { const r = document.querySelector('#layers-nodes-group [data-id="b"]').getBoundingClientRect(); const c = document.getElementById('canvas-svg').getBoundingClientRect(); return r.left >= c.left && r.right <= c.right && r.top >= c.top && r.bottom <= c.bottom; });
+  expect(onScreen).toBe(true);
+  expect(await page.evaluate(() => app.undoStack.length)).toBe(0);
+});
+
+test('new, pasted and imported shapes on page 2 land in page 2\'s area', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' }), node('b', 100000, { pageId: 'p2' })], TWO);
+  await page.evaluate(() => { app.state.selectedElementIds = ['a']; app.refreshAppViewVisualWorkspace(); app.copySelection(); app.setActivePage('p2'); app.pasteSelection(); });
+  const pasted = await page.evaluate(() => app.state.elements.filter((e) => !['a', 'b'].includes(e.id)).map((e) => [e.pageId, e.x]));
+  expect(pasted.length).toBe(1);
+  expect(pasted[0][0]).toBe('p2');
+  expect(pasted[0][1]).toBeGreaterThan(90000);
+  const added = await page.evaluate(() => { const id = app.instantiateNewCanvasElementNode('process'); const e = app.state.elements.find((x) => x.id === id); return [e.pageId, e.x]; });
+  expect(added[0]).toBe('p2');
+  expect(added[1]).toBeGreaterThan(90000);
+  await page.evaluate(() => app.importMermaidFlowchart('flowchart LR\n  X --> Y', 'add'));
+  const imported = await page.evaluate(() => app.state.elements.filter((e) => ['X', 'Y'].includes(e.name)).map((e) => [e.pageId, e.x > 90000]));
+  expect(imported).toEqual([['p2', true], ['p2', true]]);
+});
+
+test('jumping to a component on another page switches to that page', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' }), node('b', 100000, { pageId: 'p2' })], TWO);
+  await page.evaluate(() => app.focusCanvasItem('b'));
+  expect(await page.evaluate(() => app.state.activePageId)).toBe('p2');
+  expect(await nodeVisible(page, 'b')).toBe(true);
+});

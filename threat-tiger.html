@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-6kVWFqMCwC37EI6CNk6B2csBdqb2Lrdk1UK3UVwCeII='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-NWpnSIX7IgMDOF6+sg+aVbhUe6DTD37PR9O1ibH1W/k='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1318,6 +1318,11 @@
 
         /* Dark Theme Overrides for Canvas */
         #canvas-svg .layer-hidden { display: none !important; }
+        #page-tabs { position: absolute; top: .75rem; left: 1rem; z-index: 10; max-width: calc(100% - 260px); }
+        #page-tabs .page-tab { font-size: 12px; padding: 2px 10px; border: 1px solid #dee2e6; background: #fff; border-radius: 6px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); }
+        #page-tabs .page-tab[aria-selected="true"] { border-color: #0d6efd; color: #0d6efd; font-weight: 600; background: #eef4ff; }
+        #page-tabs input, #page-tabs select { font-size: 12px; width: auto; max-width: 160px; }
+        .dark-theme-canvas #page-tabs .page-tab { background: #1e1e2a; color: #cbd5e1; border-color: #475569; }
         #canvas-svg .ap-dim { opacity: .18; }
         #canvas-svg .ap-on .flow-line { stroke: #dc3545 !important; stroke-width: 4px !important; }
         #canvas-svg .node-element.ap-on { filter: drop-shadow(0 0 6px rgba(220, 53, 69, .8)); }
@@ -2324,6 +2329,7 @@
                 style="position: fixed; display: none; z-index: 9999; pointer-events: none; width: 350px; background: #212529; padding: 10px; border-radius: 6px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
             </div>
 
+            <div id="page-tabs" class="d-flex align-items-center gap-1 flex-wrap" role="tablist" aria-label="Pages"></div>
             <svg id="minimap" class="d-none" role="img" aria-label="Diagram overview: click or drag to move the view"
                 xmlns="http://www.w3.org/2000/svg"></svg>
             <div id="align-toolbar" role="toolbar" aria-label="Align and distribute"
@@ -5376,8 +5382,11 @@
             }
 
             getIsometricBoundingBox() {
-                if (!this.state.elements || this.state.elements.length === 0) {
-                    return { minX: 0, minY: 0, maxX: 100, maxY: 100 };
+                const pageEls = (this.state.elements || []).filter(e => this.onActivePage(e));
+                if (pageEls.length === 0) {
+                    const off = ((this.state.pages || []).find(p => p.id === this.state.activePageId) || { offset: 0 }).offset;
+                    const o = this.projectCoordinates(off, 0);
+                    return { minX: o.x, minY: o.y, maxX: o.x + 100, maxY: o.y + 100 };
                 }
                 let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
 
@@ -5393,7 +5402,7 @@
                     if (pt.y > maxY) maxY = pt.y;
                 };
 
-                this.state.elements.forEach(el => {
+                pageEls.forEach(el => {
                     if (el.type === 'boundary_line') {
                         addPoint(el.x, el.y);
                         addPoint(el.x2, el.y2);
@@ -5422,7 +5431,7 @@
                     }
                 });
 
-                this.state.flows.forEach(f => {
+                this.state.flows.filter(f => this.onActivePage(f)).forEach(f => {
                     const srcNode = this.state.elements.find(e => e.id === f.sourceId);
                     const dstNode = this.state.elements.find(e => e.id === f.targetId);
                     if (!srcNode || !dstNode) return;
@@ -5685,6 +5694,83 @@
                 this.indexLayers();
             }
 
+            // ── Pages: tabs and switching (view state, no undo step) ─────────────────
+            pageById(id) { return (this.state.pages || []).find(p => p.id === id); }
+
+            setActivePage(id, { fit = true } = {}) {
+                const s = this.state, target = this.pageById(id);
+                if (!target) return;
+                this.pageViews = this.pageViews || {};
+                if (s.activePageId) this.pageViews[s.activePageId] = { panX: this.panX, panY: this.panY, zoom: this.zoomScale };
+                const changed = s.activePageId !== id;
+                s.activePageId = id;
+                if (changed) { s.selectedElementIds = []; s.selectedFlowId = null; }
+                this.refreshAppViewVisualWorkspace();
+                const v = this.pageViews[id];
+                if (v && changed) { this.zoomScale = v.zoom; this.panX = v.panX; this.panY = v.panY; this.applySvgViewportTransformations(); }
+                else if (fit && changed) this.zoomToFit();
+                this.saveSessionToLocalStorage();
+            }
+
+            renderPageTabs() {
+                const strip = document.getElementById('page-tabs');
+                if (!strip) return;
+                const s = this.state, pages = s.pages || [];
+                const tabs = pages.map(p => {
+                    const b = document.createElement('button');
+                    b.type = 'button'; b.className = 'page-tab'; b.setAttribute('role', 'tab');
+                    b.dataset.pageId = p.id;
+                    b.setAttribute('aria-selected', String(p.id === s.activePageId));
+                    b.textContent = p.name;
+                    b.title = 'Click to open; double-click to rename';
+                    b.addEventListener('click', (ev) => { if (ev.detail < 2) this.setActivePage(p.id); });
+                    b.addEventListener('dblclick', () => this.startPageRename(b, p));
+                    return b;
+                });
+                const add = document.createElement('button');
+                add.type = 'button'; add.id = 'btn-page-add'; add.className = 'page-tab'; add.title = 'Add a page'; add.setAttribute('aria-label', 'Add a page');
+                add.textContent = '+'; add.disabled = pages.length >= MAX_PAGES;
+                add.addEventListener('click', () => this.addPage());
+                strip.replaceChildren(...this.pageStripExtras('before'), ...tabs, add, ...this.pageStripExtras('after'));
+            }
+
+            // Extra controls in the strip (delete, back, move); filled in below.
+            pageStripExtras() { return []; }
+
+            startPageRename(btn, page) {
+                const input = document.createElement('input');
+                input.type = 'text'; input.className = 'form-control form-control-sm'; input.value = page.name; input.maxLength = 60;
+                input.setAttribute('aria-label', 'Page name');
+                let done = false;
+                const finish = (save) => { if (done) return; done = true; if (save) this.renamePage(page.id, input.value); else this.renderPageTabs(); };
+                input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); finish(true); } if (ev.key === 'Escape') { ev.preventDefault(); finish(false); } });
+                input.addEventListener('blur', () => finish(true));
+                btn.replaceWith(input); input.focus(); input.select();
+            }
+
+            addPage() {
+                const s = this.state;
+                if (s.pages.length >= MAX_PAGES) return null;
+                const offset = Math.max(...s.pages.map(p => p.offset)) + PAGE_STRIDE;
+                let n = s.pages.length + 1, id;
+                do { id = `p${n}`; n++; } while (this.pageById(id));
+                const name = `Page ${s.pages.length + 1}`;
+                s.pages.push({ id, name, offset });
+                this.logEvent('CHANGE', `Added page "${name}"`);
+                this.setActivePage(id, { fit: false });
+                const o = this.projectCoordinates(offset, 0);
+                this.panX = 80 - o.x * this.zoomScale; this.panY = 80 - o.y * this.zoomScale; this.applySvgViewportTransformations();
+                return id;
+            }
+
+            renamePage(id, name) {
+                const p = this.pageById(id), clean = toText(name).trim().slice(0, 60);
+                if (!p || !clean || clean === p.name) { this.renderPageTabs(); return; }
+                const old = p.name; p.name = clean;
+                this.logEvent('CHANGE', `Renamed page "${old}" to "${clean}"`);
+                this.refreshAppViewVisualWorkspace();
+            }
+
             // New shapes go to the active page; shapes placed in another page's area (paste, import) move into it.
             stampPages() {
                 const s = this.state;
@@ -5715,7 +5801,8 @@
             indexLayers() {
                 const s = this.state;
                 const byId = new Map((s.layers || []).map(l => [l.id, l]));
-                const elVisible = new Map(s.elements.map(e => [e.id, (byId.get(e.layerId) || DEFAULT_LAYER).visible !== false]));
+                const page = s.activePageId;
+                const elVisible = new Map(s.elements.map(e => [e.id, (byId.get(e.layerId) || DEFAULT_LAYER).visible !== false && (!page || !e.pageId || e.pageId === page)]));
                 this.layerIndex = { byId, elVisible };
             }
 
@@ -5727,11 +5814,20 @@
             // Elements need their layer visible; flows also need both ends visible.
             isItemVisible(item) {
                 if (!item || this.layerOf(item).visible === false) return false;
+                if (item.sourceId === undefined && !this.onActivePage(item)) return false;
                 if (item.sourceId !== undefined) {
                     const v = this.layerIndex.elVisible;
                     return v.get(item.sourceId) !== false && v.get(item.targetId) !== false;
                 }
                 return true;
+            }
+
+            // Elements belong to one page; a flow is on its source's page.
+            onActivePage(item) {
+                const s = this.state;
+                if (!item || !s.activePageId) return true;
+                const el = item.sourceId !== undefined ? s.elements.find(e => e.id === item.sourceId) : item;
+                return !el || !el.pageId || el.pageId === s.activePageId;
             }
 
             isItemLocked(item) { return !!item && this.layerOf(item).locked === true; }
@@ -6576,6 +6672,7 @@
                 this.filterSelectableSelection();
                 this.renderSvgDiagramElements(); this.renderThreatRegisterTableGrid();
                 this.renderLayersPanel();
+                this.renderPageTabs();
                 this.syncMetadataInputsAndLabels(); this.updatePropertiesInspectorView();
                 this.updateThreatSuggestionsWizardView(); this.renderActivityLedgerTable();
                 const insights = document.getElementById('tab-panel-insights');
@@ -7803,6 +7900,7 @@
                     }
                     if (pastedEl.name) pastedEl.name = pastedEl.name + " - copy";
                     delete pastedEl.layerId;   // stampLayers puts copies on the active layer
+                    delete pastedEl.pageId;    // ... and on the active page, moved into its area
                     this.state.elements.push(pastedEl);
                     newElementIds.push(pastedEl.id);
                 });
@@ -12012,6 +12110,8 @@
                 const node = this.state.elements.find(e => e.id === id);
                 const flow = node ? null : this.state.flows.find(f => f.id === id);
                 if (!node && !flow) { this.notify('This threat is not linked to a component on the canvas.', 'warning'); return; }
+                const host = node || this.state.elements.find(e => e.id === flow.sourceId);
+                if (host && host.pageId && host.pageId !== this.state.activePageId) this.setActivePage(host.pageId, { fit: false });
                 let cx, cy;
                 if (node) {
                     cx = node.x + (node.width || 0) / 2; cy = node.y + (node.height || 0) / 2;
