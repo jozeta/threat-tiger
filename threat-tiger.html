@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-/o4PooMFnAdUxm3Z3gWOmKMnnVkZPQZ3/uis2aW/ktQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-R7b1osE7Tuf11Le/dIKuo+ZCM7ELGJmu12hHiZ39CKs='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -5084,6 +5084,16 @@
             constructor() {
                 this.state = new ThreatModelSession();
                 this.zoomScale = 1.0; this.panX = 0; this.panY = 0;
+                // The canvas view (zoom, position, and each page's view) is remembered between reloads.
+                try {
+                    const v = JSON.parse(localStorage.getItem('canvas_view') || 'null');
+                    const ok = (n) => typeof n === 'number' && Number.isFinite(n);
+                    if (v && ok(v.zoom) && v.zoom > 0.01 && v.zoom < 20 && ok(v.panX) && ok(v.panY)) { this.zoomScale = v.zoom; this.panX = v.panX; this.panY = v.panY; }
+                    if (v && v.pageViews && typeof v.pageViews === 'object') {
+                        this.pageViews = {};
+                        Object.entries(v.pageViews).slice(0, 50).forEach(([k, pv]) => { if (pv && ok(pv.zoom) && pv.zoom > 0.01 && pv.zoom < 20 && ok(pv.panX) && ok(pv.panY)) this.pageViews[k] = { zoom: pv.zoom, panX: pv.panX, panY: pv.panY }; });
+                    }
+                } catch { /* a broken saved view is ignored */ }
                 this.isPanning = false; this.panStart = { x: 0, y: 0 };
 
                 this.isDrawingPhantomWire = false; this.phantomWireSourceId = null;
@@ -6903,6 +6913,7 @@
                 document.getElementById('btn-menu-line-jumps').addEventListener('click', () => this.toggleLineJumps());
                 document.getElementById('btn-flow-clear-points').addEventListener('click', () => this.clearFlowBendPoints());
                 this.setupMinimap();
+                this.applySvgViewportTransformations();   // show the remembered view straight away
                 document.getElementById('btn-layer-add').addEventListener('click', () => this.addLayer());
                 document.getElementById('props-linked-page').addEventListener('change', (ev) => {
                     const el = this.state.elements.find(x => x.id === ev.target.dataset.elementId);
@@ -8073,6 +8084,10 @@
                 this.dom.transformGroup.setAttribute('transform', `translate(${this.panX}, ${this.panY}) scale(${this.zoomScale})`);
                 this.dom.zoomLbl.innerText = `${Math.round(this.zoomScale * 100)}%`;
                 this.updateMinimapViewport();
+                clearTimeout(this.viewSaveTimer);
+                this.viewSaveTimer = setTimeout(() => {
+                    try { localStorage.setItem('canvas_view', JSON.stringify({ zoom: this.zoomScale, panX: this.panX, panY: this.panY, pageViews: this.pageViews || {} })); } catch { /* view setting only */ }
+                }, 250);
             }
 
             // ── Minimap ──────────────────────────────────────────────────────────────
