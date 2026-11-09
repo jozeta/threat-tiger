@@ -78,3 +78,13 @@ test('aligning already-aligned nodes adds no undo step; works the same in isomet
   expect(await page.evaluate(() => app.alignSelection('top'))).toBe(1);
   expect(await page.evaluate(() => app.undoStack.length)).toBe(before + 1);
 });
+
+test('distribute leaves out a box that encloses other selected boxes (a zone with its contents)', async ({ page }) => {
+  await setup(page);
+  const r = await page.evaluate(() => {
+    const boxes = [{ id: 'zone', x: 0, y: 0, w: 600, h: 300 }, { id: 'a', x: 50, y: 50, w: 100, h: 50 },
+      { id: 'b', x: 120, y: 50, w: 100, h: 50 }, { id: 'c', x: 450, y: 50, w: 100, h: 50 }];
+    return Object.fromEntries(computeAlignment(boxes, 'hspace'));
+  });
+  expect(r).toEqual({ b: { x: 250, y: 50 } });   // a and c fixed, gap (500 - 300) / 2 = 100; the zone does not move
+});

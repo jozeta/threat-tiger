@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Z7VyvtvUNq35PpUkXLtTVRORiAFqfXrmKOvu4LeJ2RA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-SH34LhnffMW4cu8bHN4Fyp2mDfLs1tFqdSLLbasybAA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3671,6 +3671,9 @@
                 if (v !== b[pos]) out.set(b.id, { x: horizontal ? v : b.x, y: horizontal ? b.y : v });
             };
             if (mode === 'hspace' || mode === 'vspace') {
+                // A box that encloses another selected box (a trust zone with its contents) stays put and is left out.
+                const encloses = (o, i) => o !== i && i.x >= o.x && i.y >= o.y && i.x + i.w <= o.x + o.w && i.y + i.h <= o.y + o.h;
+                boxes = boxes.filter(o => !boxes.some(i => encloses(o, i)));
                 if (boxes.length < 3) return out;
                 const sorted = [...boxes].sort((a, b) => a[pos] - b[pos]);
                 const first = sorted[0], last = sorted[sorted.length - 1];
