@@ -395,7 +395,7 @@ function collect(set, dir) {
     if (set === 'fluent') {
         const icons = path.join(dir, 'icons');
         return FLUENT_ICONS.map(([name, label, type, tags]) => {
-            const file = [`${name}_color.svg`, `${name}_32_regular.svg`, `${name}_28_regular.svg`, `${name}_24_regular.svg`, `${name}_20_regular.svg`]
+            const file = [`${name}_color.svg`, `${name}_32_regular.svg`, `${name}_28_regular.svg`, `${name}_24_regular.svg`, `${name}_20_regular.svg`, `${name}_16_regular.svg`, `${name}_12_regular.svg`]
                 .map(n => path.join(icons, n)).find(fs.existsSync);
             return file ? { name: label, category: 'Fluent', type, tags: [...tags], svgText: fs.readFileSync(file, 'utf8') } : null;
         }).filter(Boolean);

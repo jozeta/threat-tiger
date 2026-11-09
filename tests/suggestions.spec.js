@@ -73,6 +73,7 @@ const openTemplates = (page) => page.click('button[data-bs-target="#tab-panel-su
 
 test('subtypes from icon and name drive triggered and relevant suggestions, with readable reasons', async ({ page }) => {
   await openApp(page, { session: model() });
+  await page.waitForFunction(() => app.threatSuggestions.process.length);   // the threat library loads asynchronously
   const r = await page.evaluate(() => {
     const out = {};
     const by = (id) => app.evaluateRules(app.state.elements.find((e) => e.id === id) || app.state.flows.find((f) => f.id === id));
