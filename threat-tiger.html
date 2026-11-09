@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-cnZMterIMxFU4+6T+owfjsBHfATj2dLfWoT8zbCYz0E='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-wikBDoHqiF5qkBuHKN0zvMJ0pPNuZ/1UHuS7B83CF3s='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1662,6 +1662,14 @@
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-left" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar me-2"></i>Show left panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-right" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar-reverse me-2"></i>Show right panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-bottom" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-window-dock me-2"></i>Show bottom panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><h6 class="dropdown-header ps-2 pb-1">Panel tabs</h6></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-props-trigger" data-tab-trigger="tab-props-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Properties<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-suggest-trigger" data-tab-trigger="tab-suggest-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Threat Templates<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-layers-trigger" data-tab-trigger="tab-layers-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Layers<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-register-trigger" data-tab-trigger="tab-register-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Active Threat Register<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-mitigations-trigger" data-tab-trigger="tab-mitigations-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Mitigations<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-insights-trigger" data-tab-trigger="tab-insights-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Insights<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-notes-trigger" data-tab-trigger="tab-notes-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Activity Log<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                         </ul>
                     </li>
                     <li><hr class="dropdown-divider"></li>
@@ -3386,7 +3394,7 @@
                         <li><strong>Format painter:</strong> select a shape, click the brush, then click another shape of the same kind to copy its colours (not its name, type or security settings). Double-click the brush to paint several; Esc stops.</li>
                         <li><strong>Line jumps:</strong> where two flows cross, the later one hops over the other; switch it off in ☰ menu → <strong>View</strong>. <strong>Bend points:</strong> click a selected flow to add one, drag to move, click to remove, or use <strong>Clear bend points</strong> in Properties.</li>
                         <li><strong>Layers:</strong> in the <strong>Layers</strong> tab of the right panel, add layers, click one to make it active (new shapes go there), double-click to rename, hide or lock it, or move the selection to it. Hidden layers still count in the threat analysis.</li>
-                        <li><strong>View:</strong> ☰ menu → <strong>View</strong> shows or hides the minimap, line jumps and each panel (left, right, bottom).</li>
+                        <li><strong>View:</strong> ☰ menu → <strong>View</strong> shows or hides the minimap, line jumps, each panel (left, right, bottom) and each panel tab.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
 
@@ -7714,13 +7722,34 @@
                 list.querySelectorAll('.menu-view-item').forEach(item => item.addEventListener('click', (ev) => { ev.stopPropagation(); }));
                 const panels = { left: () => this.toggleLeftPanel(), right: () => this.toggleRightPanel(), bottom: () => this.toggleBottomPanel() };
                 Object.entries(panels).forEach(([side, toggle]) => document.getElementById(`btn-menu-panel-${side}`).addEventListener('click', () => { toggle(); this.syncViewMenu(); }));
+                try { this.hiddenTabs = new Set(JSON.parse(localStorage.getItem('hidden_tabs') || '[]').filter(x => typeof x === 'string')); } catch { this.hiddenTabs = new Set(); }
+                list.querySelectorAll('[data-tab-trigger]').forEach(item => item.addEventListener('click', () => {
+                    const id = item.dataset.tabTrigger; this.setTabVisible(id, this.hiddenTabs.has(id));
+                }));
+                [...this.hiddenTabs].forEach(id => this.setTabVisible(id, false, { save: false }));
                 const menuBtn = document.getElementById('btn-main-menu');
                 menuBtn.addEventListener('show.bs.dropdown', () => this.syncViewMenu());
                 menuBtn.addEventListener('hidden.bs.dropdown', () => setOpen(false));
             }
 
+            // Shows or hides one panel tab (☰ → View → Panel tabs). Hiding the shown tab moves to the next visible one.
+            setTabVisible(triggerId, visible, { save = true } = {}) {
+                const trigger = document.getElementById(triggerId);
+                if (!trigger) return;
+                const li = trigger.closest('li') || trigger;
+                li.classList.toggle('d-none', !visible);
+                if (visible) this.hiddenTabs.delete(triggerId); else this.hiddenTabs.add(triggerId);
+                if (!visible && trigger.classList.contains('active')) {
+                    const next = [...trigger.closest('.nav').querySelectorAll('[data-bs-toggle="tab"]')].find(t => !t.closest('li').classList.contains('d-none'));
+                    if (next && window.bootstrap) bootstrap.Tab.getOrCreateInstance(next).show();
+                }
+                if (save) { try { localStorage.setItem('hidden_tabs', JSON.stringify([...this.hiddenTabs])); } catch { /* view setting only */ } }
+                this.syncViewMenu();
+            }
+
             syncViewMenu() {
                 const set = (id, on) => { const el = document.getElementById(id); if (el) el.setAttribute('aria-checked', String(!!on)); };
+                document.querySelectorAll('#menu-view-items [data-tab-trigger]').forEach(item => item.setAttribute('aria-checked', String(!(this.hiddenTabs && this.hiddenTabs.has(item.dataset.tabTrigger)))));
                 set('btn-menu-minimap', this.minimapVisible);
                 set('btn-menu-line-jumps', this.lineJumps);
                 set('btn-menu-panel-left', !this.isLeftCollapsed);

@@ -37,3 +37,19 @@ for (const [side, sel] of [['left', '.sidebar-left'], ['right', '.sidebar-right'
     await expect(item).toHaveAttribute('aria-checked', 'false');
   });
 }
+
+test('View → panel tabs hides a tab; hiding the active one switches to the next; it is remembered', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await openApp(page, { session: demoSession() });
+  await openView(page);
+  const item = page.locator('#btn-menu-tab-tab-props-trigger');
+  await expect(item).toHaveAttribute('aria-checked', 'true');
+  await item.click();
+  await expect(page.locator('#tab-props-trigger')).toBeHidden();
+  await expect(page.locator('#tab-suggest-trigger')).toHaveClass(/active/);
+  await page.reload();
+  await expect(page.locator('#tab-props-trigger')).toBeHidden();
+  await openView(page);
+  await page.locator('#btn-menu-tab-tab-props-trigger').click();
+  await expect(page.locator('#tab-props-trigger')).toBeVisible();
+});

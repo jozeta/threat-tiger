@@ -7,7 +7,7 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ### Added
 
-- ☰ menu → View: expands in place to show or hide the minimap, line jumps and each panel (left, right, bottom), in step with the panels' own handles
+- ☰ menu → View: expands in place to show or hide the minimap, line jumps, each panel (left, right, bottom), in step with the panels' own handles, and each panel tab (remembered)
 - Layers: add, rename, hide, lock and delete layers; new shapes go to the active layer; move the selection to a layer; hidden layers still count in the analysis
 - Line jumps: where two flows cross, the later one hops over the other (☰ menu → View to switch off); flow Properties explain bend points and can clear them
 - Format painter: copy a shape's colours, line width or font size onto other shapes of the same kind; double-click to paint several
