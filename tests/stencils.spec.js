@@ -10,7 +10,7 @@ const anchorEl = { id: 'z', type: 'process', name: 'Z', x: 2000, y: 2000, width:
 
 test('opening a set loads it once, search filters, clicking adds a recognised component (one undo step)', async ({ page }) => {
   await setup(page, [anchorEl]);
-  await page.evaluate(() => document.getElementById('collapseStencils').classList.add('show'));
+  await page.evaluate(() => document.getElementById('collapseDataNodes').classList.add('show'));
   const set = page.locator('[data-stencil-set="aws"]');
   await set.locator('.stencil-set-toggle').click();
   await expect(set.locator('.stencil-item').first()).toBeVisible();
@@ -49,7 +49,7 @@ test('hostile stencil fields on import are dropped or rendered inert', async ({ 
 test('a set that fails to load says so, and View can hide a set from the palette', async ({ page }) => {
   await setup(page, [anchorEl]);
   await page.route('**/vendor/stencils/gcp.js', (r) => r.abort());
-  await page.evaluate(() => document.getElementById('collapseStencils').classList.add('show'));
+  await page.evaluate(() => document.getElementById('collapseDataNodes').classList.add('show'));
   await page.locator('[data-stencil-set="gcp"] .stencil-set-toggle').click();
   await expect(page.locator('[data-stencil-set="gcp"]')).toContainText('Could not load');
   await page.click('#btn-main-menu'); await page.click('#btn-menu-view');
@@ -64,4 +64,20 @@ test('picking an icon replaces the stencil image; changing the type drops the st
   await page.evaluate(() => { const sel = document.getElementById('props-input-icon'); sel.value = sel.options[1].value; sel.dispatchEvent(new Event('change')); });
   expect(await page.evaluate(() => app.state.elements[0].stencilIcon)).toBeUndefined();
   await expect(page.locator('#layers-nodes-group [data-id="s"] img.stencil-icon')).toHaveCount(0);
+});
+
+test('stencil sets live under Data Nodes & Icons; a placed stencil is just the icon with its label underneath', async ({ page }) => {
+  await setup(page, [anchorEl]);
+  await expect(page.locator('#collapseDataNodes #stencil-sets')).toHaveCount(1);
+  await expect(page.locator('#collapseStencils')).toHaveCount(0);
+  await page.evaluate(() => document.getElementById('collapseDataNodes').classList.add('show'));
+  await page.locator('[data-stencil-set="k8s"] .stencil-set-toggle').click();
+  await page.locator('[data-stencil-set="k8s"] .stencil-item').first().click();
+  const el = await page.evaluate(() => JSON.parse(JSON.stringify(app.state.elements.find((e) => e.id !== 'z'))));
+  expect([el.width, el.height]).toEqual([110, 96]);
+  const node = page.locator(`#layers-nodes-group [data-id="${el.id}"]`);
+  await expect(node.locator('.stencil-card img.stencil-icon')).toHaveCount(1);
+  await expect(node.locator('.card-icon-stripe')).toHaveCount(0);
+  const [img, label] = await Promise.all([node.locator('img.stencil-icon').boundingBox(), node.locator('.stencil-card .card-text-render-target').boundingBox()]);
+  expect(label.y).toBeGreaterThan(img.y + img.height - 1);   // the label sits under the icon
 });

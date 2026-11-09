@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-dgNl7PsDWCU7G0VBdPefy30kzD+AHjnkRUqcuo5tqsQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-i/wzmhSB0/0BmqFou/zHUMOPnDS/SBboyNULyrlL0Y0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1960,6 +1960,10 @@
                                             infrastructure layers.</div>
                                     </div>
                                 </div>
+                                <!-- Cloud stencils -->
+                                <div class="fw-semibold small text-uppercase text-muted mt-2" id="stencils-heading">Cloud stencils</div>
+                                <div class="extra-small text-muted">Official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons. A placed icon is a normal component, so threat suggestions work. Icons belong to their owners (see Help &amp; License).</div>
+                                <div id="stencil-sets" class="d-flex flex-column gap-1" aria-labelledby="stencils-heading"></div>
                             </div>
                         </div>
                     </div>
@@ -2230,21 +2234,6 @@
                                             Common in system/architecture diagrams.</div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Cloud stencils -->
-                    <div class="accordion-item">
-                        <h2 class="accordion-header" id="headingStencils">
-                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                data-bs-target="#collapseStencils" aria-expanded="false" aria-controls="collapseStencils">
-                                Cloud Stencils
-                            </button>
-                        </h2>
-                        <div id="collapseStencils" class="accordion-collapse collapse" aria-labelledby="headingStencils">
-                            <div class="accordion-body d-flex flex-column gap-2">
-                                <div class="extra-small text-muted">Official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons. A placed icon is a normal component, so threat suggestions work. Icons belong to their owners (see Help &amp; License).</div>
-                                <div id="stencil-sets" class="d-flex flex-column gap-1"></div>
                             </div>
                         </div>
                     </div>
@@ -3422,7 +3411,7 @@
                         <li><strong>Line jumps:</strong> where two flows cross, the later one hops over the other; switch it off in ☰ menu → <strong>View</strong>. <strong>Bend points:</strong> click a selected flow to add one, drag to move, click to remove, or use <strong>Clear bend points</strong> in Properties.</li>
                         <li><strong>Layers:</strong> in the <strong>Layers</strong> tab of the right panel, add layers, click one to make it active (new shapes go there), double-click to rename, hide or lock it, or move the selection to it. Hidden layers still count in the threat analysis.</li>
                         <li><strong>View:</strong> ☰ menu → <strong>View</strong> shows or hides the minimap, line jumps, each panel (left, right, bottom) and each panel tab.</li>
-                        <li><strong>Cloud stencils:</strong> official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons in the palette (each set loads when you open it; search by name). A placed icon is a normal component (data store, process, …), so threat suggestions work. Hide sets you don't use in ☰ → <strong>View</strong>.</li>
+                        <li><strong>Cloud stencils:</strong> official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons in the palette under <strong>Data Nodes &amp; Icons</strong> (each set loads when you open it; search by name). A placed icon shows as the icon with its name underneath and is a normal component (data store, process, …), so threat suggestions work. Hide sets you don't use in ☰ → <strong>View</strong>.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
 
@@ -7869,7 +7858,7 @@
                 const [iconId, name, , type, tags, b64] = icon;
                 const kind = MODEL_NODE_TYPES[type] ? type : 'process';
                 const url = safeStencilIcon('data:image/svg+xml;base64,' + toText(b64));
-                const extra = { name: toText(name).slice(0, 120) || 'Cloud service' };
+                const extra = { name: toText(name).slice(0, 120) || 'Cloud service', width: 110, height: 96 };
                 const sid = `${setId}:${toText(iconId)}`;
                 if (STENCIL_ID.test(sid)) extra.stencil = sid;
                 if (url) extra.stencilIcon = url;
@@ -10269,6 +10258,16 @@
                                         <div class="small text-dark text-wrap overflow-hidden card-text-render-target flex-grow-1 fw-medium" style="font-size: 11px; line-height: 1.25;">${esc(node.name)}</div>
                                     </div>`;
                             }
+                        } else if (safeStencilIcon(node.stencilIcon) && MODEL_NODE_TYPES[node.type]) {
+                            // Cloud stencil: just the icon, with the label underneath (no card box).
+                            const iconSize = Math.max(24, Math.min(w - 16, h - 30));
+                            const labelColor = node.isDisabled ? '#6c757d' : (this.canvasTheme === 'dark' ? '#e2e8f0' : '#212529');
+                            // eslint-disable-next-line no-unsanitized/property -- reviewed: name is esc()'d; image via safeStencilIcon()+esc(); sizes are numbers; colour is a constant
+                            foreignObj.innerHTML = `
+                                <div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card card-infrastructure-borderless stencil-card ${disabledClass}">
+                                    <img class="stencil-icon" src="${esc(safeStencilIcon(node.stencilIcon))}" alt="" style="width: ${iconSize}px; height: ${iconSize}px;${node.isDisabled ? ' filter: grayscale(1); opacity: .5;' : ''}">
+                                    <div class="fw-bold card-text-render-target text-center w-100 px-1 mt-1" style="font-size: 11px; color: ${labelColor}; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${esc(node.name)}</div>
+                                </div>`;
                         } else if (node.type === 'infrastructure') {
                             const colorMap = {
                                 blue: '#0d6efd', silver: '#cbd5e1', purple: '#6f42c1', pink: '#d63384',
