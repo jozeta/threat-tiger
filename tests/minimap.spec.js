@@ -2,10 +2,28 @@
 const { test } = require('@playwright/test');
 const { expect, openApp, demoSession } = require('./helpers');
 
-async function setup(page, elements = []) {
+async function setup(page, elements = [], { show = true } = {}) {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await openApp(page, { session: demoSession((s) => { s.elements = elements; s.flows = []; s.threats = []; }) });
+  if (show) await page.evaluate(() => { if (!app.minimapVisible) app.toggleMinimap(); });
 }
+
+test('the minimap is hidden by default; the ☰ menu shows and hides it, and the choice is remembered', async ({ page }) => {
+  await setup(page, [{ id: 'a', type: 'process', name: 'A', x: 0, y: 0, width: 240, height: 80, secProps: {} }], { show: false });
+  const map = page.locator('#minimap'), item = page.locator('#btn-menu-minimap');
+  await expect(map).toBeHidden();
+  await page.click('#btn-main-menu');
+  await expect(item).toHaveAttribute('aria-checked', 'false');
+  await item.click();
+  await expect(map).toBeVisible();
+  expect(await page.evaluate(() => localStorage.getItem('minimap_visible'))).toBe('true');
+  await page.reload();
+  await expect(map).toBeVisible();
+  await page.click('#btn-main-menu');
+  await expect(item).toHaveAttribute('aria-checked', 'true');
+  await item.click();
+  await expect(map).toBeHidden();
+});
 
 test('minimap shows one item per element and a viewport; hidden when empty; toggle persists', async ({ page }) => {
   await setup(page, [

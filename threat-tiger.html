@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-K2I3EvA6WrQE90Ulq8XRA+o0ncGsP0gQRRS2oBDmDBM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7jiQvFOB7uHlAK73Y/DTHgnueOHyopEIw0GsXJmmwPk='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1318,6 +1318,7 @@
 
         /* Dark Theme Overrides for Canvas */
         #canvas-svg.painting, #canvas-svg.painting .node-element { cursor: copy !important; }
+        #btn-menu-minimap[aria-checked="false"] .menu-check { visibility: hidden; }
         #btn-format-painter[aria-pressed="true"] { background: #dbeafe; color: #1d4ed8; }
         #minimap { position: absolute; right: 1rem; bottom: 1rem; width: 200px; height: 140px; z-index: 10;
             background: #ffffff; border: 1px solid #dee2e6; border-radius: 6px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); cursor: pointer; }
@@ -1644,6 +1645,9 @@
                     <li><button class="dropdown-item" type="button" id="btn-print-report"><i class="bi bi-printer me-2"></i>Print report…</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-export-markdown"><i class="bi bi-markdown me-2"></i>Export Markdown report</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-export-mermaid"><i class="bi bi-diagram-3 me-2"></i>Export Mermaid diagram</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><h6 class="dropdown-header">View</h6></li>
+                    <li><button class="dropdown-item d-flex align-items-center" type="button" id="btn-menu-minimap" role="menuitemcheckbox" aria-checked="false"><i class="bi bi-map me-2"></i>Show minimap<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><button class="dropdown-item" type="button" id="btn-help-trigger"><i class="bi bi-question-circle me-2"></i>Help &amp; License</button></li>
                     <li><button class="dropdown-item text-danger" type="button" id="btn-reset-session"><i class="bi bi-trash me-2"></i>Reset canvas…</button></li>
@@ -2303,7 +2307,7 @@
                 <button class="btn btn-sm btn-light border-0" id="btn-canvas-zoom-reset" title="Zoom to fit"><i
                         class="bi bi-fullscreen"></i></button>
                 <button class="btn btn-sm btn-light border-0" id="btn-canvas-minimap" title="Show or hide the minimap"
-                    aria-label="Minimap" aria-pressed="true"><i class="bi bi-map"></i></button>
+                    aria-label="Minimap" aria-pressed="false"><i class="bi bi-map"></i></button>
                 <button class="btn btn-sm btn-light border-0" id="btn-format-painter" disabled aria-pressed="false"
                     title="Format painter: copy this shape's look to another shape (double-click to paint several, Esc stops)"
                     aria-label="Format painter"><i class="bi bi-brush"></i></button>
@@ -3349,7 +3353,7 @@
                         <li><strong>Change type:</strong> use <strong>Type</strong> in Properties to turn any node into another kind (process, data store, decision, …). Name, flows and threats stay.</li>
                         <li><strong>Swimlanes:</strong> drop a node into a cell (it is highlighted while you drag); cells grow to fit their nodes. Drag a column or row border to resize it, double-click it for the automatic size, and pick a colour in Properties.</li>
                         <li><strong>Align and distribute:</strong> select two or more shapes to line them up or space them evenly from the small toolbar above the canvas controls.</li>
-                        <li><strong>Minimap:</strong> the map in the bottom-right corner shows the whole diagram; click or drag in it to move the view. Turn it on or off with the map button.</li>
+                        <li><strong>Minimap:</strong> turn it on from ☰ menu → <strong>Show minimap</strong> (or the map button below the canvas). It shows the whole diagram in the bottom-right corner; click or drag in it to move the view.</li>
                         <li><strong>Format painter:</strong> select a shape, click the brush, then click another shape of the same kind to copy its colours (not its name, type or security settings). Double-click the brush to paint several; Esc stops.</li>
                         <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
                     </ul>
@@ -6132,6 +6136,7 @@
                 document.getElementById('btn-canvas-zoom-out').addEventListener('click', () => { this.zoomScale = Math.max(this.zoomScale - 0.1, MIN_ZOOM); this.applySvgViewportTransformations(); });
                 document.getElementById('btn-canvas-zoom-reset').addEventListener('click', () => this.zoomToFit());
                 document.getElementById('btn-canvas-minimap').addEventListener('click', () => this.toggleMinimap());
+                document.getElementById('btn-menu-minimap').addEventListener('click', () => this.toggleMinimap());
                 this.setupMinimap();
                 this.formatPainter = null;
                 document.getElementById('btn-format-painter').addEventListener('click', (ev) => {
@@ -7294,7 +7299,8 @@
             // ── Minimap ──────────────────────────────────────────────────────────────
             // An overview of every element, drawn with the canvas's own projection (flat or isometric).
             setupMinimap() {
-                try { this.minimapVisible = localStorage.getItem('minimap_visible') !== 'false'; } catch { this.minimapVisible = true; }
+                // Hidden by default; shown only after the user turns it on (☰ menu or the map button).
+                try { this.minimapVisible = localStorage.getItem('minimap_visible') === 'true'; } catch { this.minimapVisible = false; }
                 const map = document.getElementById('minimap');
                 const toContent = (ev) => {
                     const ctm = map.getScreenCTM();
@@ -7312,6 +7318,8 @@
             syncMinimapButton() {
                 const btn = document.getElementById('btn-canvas-minimap');
                 if (btn) btn.setAttribute('aria-pressed', String(!!this.minimapVisible));
+                const item = document.getElementById('btn-menu-minimap');
+                if (item) item.setAttribute('aria-checked', String(!!this.minimapVisible));
             }
 
             toggleMinimap() {
