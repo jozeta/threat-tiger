@@ -181,3 +181,88 @@ test('the selected page tab stands out on the dark canvas', async ({ page }) => 
   const [sel, other] = await page.evaluate(() => [...document.querySelectorAll('#page-tabs [role="tab"]')].map((t) => getComputedStyle(t).backgroundColor));
   expect(sel).not.toBe(other);
 });
+
+// ── Deferred minors (1.15.1) ──
+test('a shape added far from the page origin stays on the current page', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' }), node('b', 100000, { pageId: 'p2' })], TWO);
+  const r = await page.evaluate(() => {
+    const id = app.instantiateNewCanvasElementNode('process', 70000, 300);   // nearer page 2's area than page 1's
+    const e = app.state.elements.find((x) => x.id === id); return [e.pageId, e.x];
+  });
+  expect(r[0]).toBe('p1');
+  expect(Math.abs(r[1] - 70000)).toBeLessThan(200);
+});
+
+test('pasting on the same page far from the origin does not jump to another page', async ({ page }) => {
+  await setup(page, [node('a', 60000, { pageId: 'p1' }), node('b', 100000, { pageId: 'p2' })], TWO);
+  const r = await page.evaluate(() => { app.state.selectedElementIds = ['a']; app.refreshAppViewVisualWorkspace(); app.copySelection(); app.pasteSelection(); const e = app.state.elements.find((x) => !['a', 'b'].includes(x.id)); return [e.pageId, e.x]; });
+  expect(r).toEqual(['p1', 60030]);
+});
+
+test('an imported file with page-less shapes in page 2\'s area puts them on page 2', async ({ page }) => {
+  await setup(page, [node('a', 0), node('b', 100200)], TWO);
+  expect(await page.evaluate(() => app.state.elements.map((e) => [e.id, e.pageId, e.x]))).toEqual([['a', 'p1', 0], ['b', 'p2', 100200]]);
+});
+
+test('Mermaid "add" on an empty page 2 lands on page 2; "replace" leaves a single page', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' })], TWO);
+  await page.evaluate(() => { app.setActivePage('p2'); app.importMermaidFlowchart('flowchart LR\n  X --> Y', 'add'); });
+  expect(await page.evaluate(() => app.state.elements.filter((e) => ['X', 'Y'].includes(e.name)).map((e) => [e.pageId, e.x >= 100000]))).toEqual([['p2', true], ['p2', true]]);
+  await page.evaluate(() => app.importMermaidFlowchart('flowchart LR\n  M --> N', 'replace'));
+  const r = await page.evaluate(() => ({ pages: app.state.pages.map((p) => p.id), active: app.state.activePageId, on: app.state.elements.map((e) => e.pageId), xs: app.state.elements.map((e) => e.x < 50000) }));
+  expect(r.pages).toHaveLength(1);
+  expect(r.on.every((p) => p === r.active)).toBe(true);
+  expect(r.xs.every(Boolean)).toBe(true);
+  await expect(page.locator('#page-tabs .page-tab[data-page-id]')).toHaveCount(1);
+});
+
+test('opening a different model forgets the remembered page views and the Back trail', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' }), node('b', 100000, { pageId: 'p2' })], TWO);
+  await page.evaluate(() => { app.setActivePage('p2'); app.setActivePage('p1'); app.pageTrail = ['p2']; });
+  expect(await page.evaluate(() => Object.keys(app.pageViews).length)).toBeGreaterThan(0);
+  await page.evaluate(() => app.importWorkspaceJsonText(JSON.stringify({ elements: [{ id: 'z', type: 'process', name: 'Z', x: 0, y: 0 }], flows: [], threats: [], pages: [{ id: 'p1', name: 'One', offset: 0 }, { id: 'p2', name: 'Two', offset: 100000 }] }), 'other.json'));
+  expect(await page.evaluate(() => [app.pageViews, app.pageTrail])).toEqual([{}, []]);
+});
+
+test('zoom-to-fit on an empty page keeps a normal zoom at the page origin', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' })], TWO);
+  await page.evaluate(() => { app.setActivePage('p2'); app.zoomToFit(); });
+  expect(await page.evaluate(() => app.zoomScale)).toBe(1);
+});
+
+test('the page tabs work from the keyboard: arrows move, F2 renames', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1' }), node('b', 100000, { pageId: 'p2' })], TWO);
+  await page.locator('#page-tabs .page-tab[data-page-id="p1"]').focus();
+  await page.keyboard.press('ArrowRight');
+  expect(await page.evaluate(() => [app.state.activePageId, document.activeElement.dataset.pageId])).toEqual(['p2', 'p2']);
+  await page.keyboard.press('ArrowLeft');
+  expect(await page.evaluate(() => app.state.activePageId)).toBe('p1');
+  await page.keyboard.press('F2');
+  await expect(page.locator('#page-tabs .page-rename input')).toBeFocused();
+  await page.keyboard.type('Home');
+  await page.keyboard.press('Enter');
+  expect(await page.evaluate(() => app.state.pages[0].name)).toBe('Home');
+  expect(await page.locator('#page-tabs .page-tab[data-page-id="p1"]').getAttribute('tabindex')).toBe('0');
+  expect(await page.locator('#page-tabs .page-tab[data-page-id="p2"]').getAttribute('tabindex')).toBe('-1');
+});
+
+test('a page name with line breaks is stored on one line', async ({ page }) => {
+  await setup(page, [node('a', 0)], { pages: [{ id: 'p1', name: 'Over\nview\r\n# Not a heading', offset: 0 }] });
+  expect(await page.evaluate(() => app.state.pages[0].name)).toBe('Over view # Not a heading');
+});
+
+test('drill-down badges stay out of the exported PNG', async ({ page }) => {
+  await setup(page, [node('a', 0, { pageId: 'p1', linkedPageId: 'p2' }), node('b', 100000, { pageId: 'p2' })], TWO);
+  await expect(page.locator('.page-link-badge')).toHaveCount(1);
+  const svg = await page.evaluate(async () => {
+    let captured = '';
+    const orig = XMLSerializer.prototype.serializeToString;
+    XMLSerializer.prototype.serializeToString = function (n) { const s = orig.call(this, n); if (n && n.id === 'canvas-svg') captured = s; return s; };
+    app.downloadBlob = () => {};
+    try { await app.exportCanvasAsPng(); } catch (e) { /* the canvas step may fail headless */ }
+    XMLSerializer.prototype.serializeToString = orig;
+    return captured;
+  });
+  expect(svg).toContain('data-id="a"');
+  expect(svg).not.toContain('class="page-link-badge"');
+});

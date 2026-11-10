@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-CidYLojFF1V9uwAFfMdUQMSTsmx8lxqJPsUXWYpT+WA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-DRKCdabfLWrKKmruGNKfjKFcEEbThI5TsEMYifRd/X0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4941,7 +4941,7 @@
                 if (!LAYER_ID.test(id) || seen.has(id)) { ctx.warn(`Skipped a page with a missing, invalid or duplicate id ("${id}").`); return; }
                 seen.add(id);
                 const off = Number(p.offset);
-                out.push({ id, name: toText(p.name).trim().slice(0, 60), offset: Number.isFinite(off) ? Math.round(off / PAGE_STRIDE) * PAGE_STRIDE : null });
+                out.push({ id, name: toText(p.name).replace(/\s+/g, ' ').trim().slice(0, 60), offset: Number.isFinite(off) ? Math.round(off / PAGE_STRIDE) * PAGE_STRIDE : null });
             });
             if (out.length > MAX_PAGES) { ctx.warn(`Kept the first ${MAX_PAGES} pages.`); out.length = MAX_PAGES; }
             if (!out.length) out.push({ ...DEFAULT_PAGE });
@@ -5008,9 +5008,11 @@
             const activeLayerId = layerIds.has(toText(raw.activeLayerId)) ? toText(raw.activeLayerId) : 'main';
             if (raw.pages !== undefined && raw.pages !== null && !Array.isArray(raw.pages)) warnings.push('Ignored "pages" because it is not a list.');
             const pages = normalizePages(raw.pages, ctx);
-            const pageIds = new Set(pages.map(p => p.id));
+            const pageIds = new Set(pages.map(p => p.id)), pageAt = new Map(pages.map(p => [p.offset, p.id]));
             elements.forEach(e => {
-                const pid = toText(e.pageId); e.pageId = pageIds.has(pid) ? pid : pages[0].id;
+                // No (valid) page: the page whose area the shape is in, else the first page.
+                const pid = toText(e.pageId), band = Math.round((Number(e.x) || 0) / PAGE_STRIDE) * PAGE_STRIDE;
+                e.pageId = pageIds.has(pid) ? pid : (pageAt.get(band) || pages[0].id);
                 if ('linkedPageId' in e) { const l = toText(e.linkedPageId); if (pageIds.has(l)) e.linkedPageId = l; else delete e.linkedPageId; }
             });
             flows.forEach(f => { delete f.pageId; });   // a flow is on its source's page
@@ -5412,7 +5414,7 @@
             }
 
             getIsometricBoundingBox() {
-                const pageEls = (this.state.elements || []).filter(e => this.onActivePage(e));
+                const pageEls = (this.state.elements || []).filter(e => this.isItemVisible(e));   // the current page, hidden layers left out
                 if (pageEls.length === 0) {
                     const off = ((this.state.pages || []).find(p => p.id === this.state.activePageId) || { offset: 0 }).offset;
                     const o = this.projectCoordinates(off, 0);
@@ -5727,6 +5729,9 @@
             // ── Pages: tabs and switching (view state, no undo step) ─────────────────
             pageById(id) { return (this.state.pages || []).find(p => p.id === id); }
 
+            // Another model is opened: its pages share ids with the old ones, so the remembered views no longer apply.
+            forgetPageViews() { this.pageViews = {}; this.pageTrail = []; }
+
             setActivePage(id, { fit = true } = {}) {
                 const s = this.state, target = this.pageById(id);
                 if (!target) return;
@@ -5753,10 +5758,21 @@
                     b.type = 'button'; b.className = 'page-tab'; b.setAttribute('role', 'tab');
                     b.dataset.pageId = p.id;
                     b.setAttribute('aria-selected', String(p.id === s.activePageId));
+                    b.tabIndex = p.id === s.activePageId ? 0 : -1;   // one tab stop; arrow keys move between pages
                     b.textContent = p.name;
-                    b.title = 'Click to open; double-click to rename';
+                    b.title = 'Click to open; double-click or F2 to rename';
                     b.addEventListener('click', (ev) => { if (ev.detail < 2) this.setActivePage(p.id); });
                     b.addEventListener('dblclick', () => this.startPageRename(b, p));
+                    b.addEventListener('keydown', (ev) => {
+                        const i = pages.findIndex(x => x.id === p.id);
+                        const to = { ArrowRight: i + 1, ArrowLeft: i - 1, Home: 0, End: pages.length - 1 }[ev.key];
+                        if (ev.key === 'F2') { ev.preventDefault(); this.startPageRename(b, p); return; }
+                        if (to === undefined || !pages[to]) return;
+                        ev.preventDefault();
+                        this.setActivePage(pages[to].id);
+                        const next = strip.querySelector(`.page-tab[data-page-id="${CSS.escape(pages[to].id)}"]`);
+                        if (next) next.focus();
+                    });
                     return b;
                 });
                 const add = document.createElement('button');
@@ -5872,7 +5888,15 @@
                 input.type = 'text'; input.className = 'form-control form-control-sm'; input.value = page.name; input.maxLength = 60;
                 input.setAttribute('aria-label', 'Page name');
                 let done = false;
-                const finish = (save) => { if (done) return; done = true; if (save) this.renamePage(page.id, input.value); else this.renderPageTabs(); };
+                const finish = (save) => {
+                    if (done) return;
+                    done = true;
+                    const hadFocus = document.activeElement === input;
+                    input.blur();   // renderPageTabs keeps a focused rename input on screen
+                    if (save) this.renamePage(page.id, input.value); else this.renderPageTabs();
+                    const tab = hadFocus && document.querySelector(`#page-tabs .page-tab[data-page-id="${CSS.escape(page.id)}"]`);
+                    if (tab) tab.focus();
+                };
                 input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); finish(true); } if (ev.key === 'Escape') { ev.preventDefault(); finish(false); } });
                 input.addEventListener('blur', (ev) => { if (ev.relatedTarget && ev.relatedTarget.classList.contains('page-tab-delete')) return; finish(true); });
                 wrap.appendChild(input);
@@ -5903,25 +5927,28 @@
             }
 
             renamePage(id, name) {
-                const p = this.pageById(id), clean = toText(name).trim().slice(0, 60);
+                const p = this.pageById(id), clean = toText(name).replace(/\s+/g, ' ').trim().slice(0, 60);
                 if (!p || !clean || clean === p.name) { this.renderPageTabs(); return; }
                 const old = p.name; p.name = clean;
                 this.logEvent('CHANGE', `Renamed page "${old}" to "${clean}"`);
                 this.refreshAppViewVisualWorkspace();
             }
 
-            // New shapes go to the active page; shapes placed in another page's area (paste, import) move into it.
+            // Shapes without a page join the page whose area they are in, or else the active page (moved into its area).
+            // Shapes the user adds or pastes get their page explicitly, so this never guesses for them.
             stampPages() {
                 const s = this.state;
                 if (!Array.isArray(s.pages) || s.pages.length === 0) s.pages = [{ ...DEFAULT_PAGE }];
                 const byId = new Map(s.pages.map(p => [p.id, p]));
                 if (!byId.has(s.activePageId)) s.activePageId = s.pages[0].id;
                 const active = byId.get(s.activePageId);
+                const byOffset = new Map(s.pages.map(p => [p.offset, p]));
                 const shifted = new Map();
                 s.elements.forEach(e => {
                     if (e.pageId && byId.has(e.pageId)) return;
-                    e.pageId = active.id;
                     const band = Math.round((e.x || 0) / PAGE_STRIDE) * PAGE_STRIDE;
+                    if (byOffset.has(band)) { e.pageId = byOffset.get(band).id; return; }   // already in a page's area (older files)
+                    e.pageId = active.id;
                     const dx = active.offset - band;
                     if (dx) {
                         e.x = (e.x || 0) + dx;
@@ -6424,6 +6451,7 @@
                     // The attack-path highlight is a view state: it never goes into an exported image.
                     clone.classList.remove('ap-active');
                     clone.querySelectorAll('.ap-dim, .ap-on').forEach(n => n.classList.remove('ap-dim', 'ap-on'));
+                    clone.querySelectorAll('.page-link-badge').forEach(n => n.remove());   // drill-down badges are controls, not content
 
                     // 5. Setup clone dimensions & viewbox
                     clone.setAttribute('width', width);
@@ -8041,19 +8069,23 @@
                 const idMap = {};
                 const newElementIds = [];
 
+                const active = this.pageById(this.state.activePageId), pageShift = new Map();
                 this.clipboard.elements.forEach((el, index) => {
                     const pastedEl = JSON.parse(JSON.stringify(el));
                     pastedEl.id = `el-${stamp}-${index}-${rand()}`;
                     idMap[el.id] = pastedEl.id;
-                    pastedEl.x = (pastedEl.x || 0) + offset;
+                    const from = this.pageById(el.pageId);   // copied from a page that still exists: move by the exact page distance
+                    const dx = from && active ? active.offset - from.offset : 0;
+                    pageShift.set(el.id, dx);
+                    pastedEl.x = (pastedEl.x || 0) + offset + dx;
                     pastedEl.y = (pastedEl.y || 0) + offset;
                     if (pastedEl.x2 !== undefined && pastedEl.y2 !== undefined) {
-                        pastedEl.x2 = (pastedEl.x2 || 0) + offset;
+                        pastedEl.x2 = (pastedEl.x2 || 0) + offset + dx;
                         pastedEl.y2 = (pastedEl.y2 || 0) + offset;
                     }
                     if (pastedEl.name) pastedEl.name = pastedEl.name + " - copy";
                     delete pastedEl.layerId;   // stampLayers puts copies on the active layer
-                    delete pastedEl.pageId;    // ... and on the active page, moved into its area
+                    if (from && active) pastedEl.pageId = active.id; else delete pastedEl.pageId;   // unknown page: stampPages places it
                     this.state.elements.push(pastedEl);
                     newElementIds.push(pastedEl.id);
                 });
@@ -8064,7 +8096,8 @@
                     idMap[f.id] = pastedFlow.id;
                     pastedFlow.sourceId = idMap[f.sourceId];
                     pastedFlow.targetId = idMap[f.targetId];
-                    if (Array.isArray(pastedFlow.points)) pastedFlow.points = pastedFlow.points.map(p => ({ x: p.x + offset, y: p.y + offset }));
+                    const fdx = pageShift.get(f.sourceId) || 0;
+                    if (Array.isArray(pastedFlow.points)) pastedFlow.points = pastedFlow.points.map(p => ({ x: p.x + offset + fdx, y: p.y + offset }));
                     delete pastedFlow.layerId;
                     this.state.flows.push(pastedFlow);
                 });
@@ -8339,10 +8372,11 @@
             }
 
             zoomToFit() {
-                if (!this.state.elements || this.state.elements.length === 0) {
+                if (!(this.state.elements || []).some(e => this.isItemVisible(e))) {   // nothing to fit: the page origin at 100%
+                    const o = this.projectCoordinates((this.pageById(this.state.activePageId) || DEFAULT_PAGE).offset, 0);
                     this.zoomScale = 1.0;
-                    this.panX = 0;
-                    this.panY = 0;
+                    this.panX = 80 - o.x;
+                    this.panY = 80 - o.y;
                     this.applySvgViewportTransformations();
                     return;
                 }
@@ -8477,7 +8511,7 @@
                 }
 
                 const elementObj = {
-                    id, type, name: defaultName, x: targetX, y: targetY, notes: '',
+                    id, type, name: defaultName, x: targetX, y: targetY, notes: '', pageId: this.state.activePageId,
                     ...def.props,
                     ...(type === 'boundary_line' && { x2: targetX + 150, y2: targetY, bendX: 0, bendY: 0, textOffset: 0.5 }),
                     ...(extra || {}),
@@ -8586,7 +8620,7 @@
                 const p = this.quickAddPlacement(src, anchorId);
                 const id = `el-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
                 const def = this.elementDefaults(src.type);
-                const node = { id, type: src.type, name: def.name, x: p.x, y: p.y, notes: '', ...def.props, width: p.w, height: p.h };
+                const node = { id, type: src.type, name: def.name, x: p.x, y: p.y, notes: '', ...def.props, width: p.w, height: p.h, pageId: src.pageId };
                 Object.keys(src).filter(k => /^fc[A-Z]/.test(k)).forEach(k => { node[k] = src[k]; });   // same colours and line style
                 this.state.elements.push(node);
                 this.state.flows.push({
@@ -12436,23 +12470,25 @@
                 let ox = 0, oy = 0;
                 if (mode === 'replace') {
                     s.elements = []; s.flows = []; s.threats = []; s.mitigations = []; s.selectedElementIds = []; s.selectedFlowId = null;
+                    s.pages = [{ ...DEFAULT_PAGE }]; s.activePageId = DEFAULT_PAGE.id; this.forgetPageViews();   // a new model: one page
                 } else if (s.elements.some(e => this.onActivePage(e))) {
                     const boxes = s.elements.filter(e => this.onActivePage(e)).map(e => e.type === 'boundary_line'
                         ? { x1: Math.min(e.x, e.x2), y1: Math.min(e.y, e.y2), x2: Math.max(e.x, e.x2), y2: Math.max(e.y, e.y2) }
                         : { x1: e.x, y1: e.y, x2: e.x + (e.width || 240), y2: e.y + (e.height || 80) });
                     ox = Math.max(...boxes.map(b => b.x2)) + 200; oy = Math.min(...boxes.map(b => b.y1));
                 }
+                else ox = (this.pageById(s.activePageId) || DEFAULT_PAGE).offset;   // an empty page: start at its origin
                 ox = this.snapValue(ox); oy = this.snapValue(oy);
                 const stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
                 const elementIds = new Map();
                 lay.zones.forEach((z, k) => {
-                    s.elements.push({ id: `el-mm${stamp}-z${k}`, type: 'boundary', name: g.subgraphs[z.index].label, x: ox + z.x, y: oy + z.y, width: z.w, height: z.h, notes: '' });
+                    s.elements.push({ id: `el-mm${stamp}-z${k}`, type: 'boundary', name: g.subgraphs[z.index].label, x: ox + z.x, y: oy + z.y, width: z.w, height: z.h, notes: '', pageId: s.activePageId });
                 });
                 let k = 0;
                 g.nodes.forEach((n, key) => {
                     const box = lay.nodes.get(key), def = this.elementDefaults(n.type), id = `el-mm${stamp}-${k++}`;
                     elementIds.set(key, id);
-                    s.elements.push({ id, type: n.type, name: n.label, x: ox + box.x, y: oy + box.y, notes: '', ...def.props, width: box.w, height: box.h });
+                    s.elements.push({ id, type: n.type, name: n.label, x: ox + box.x, y: oy + box.y, notes: '', ...def.props, width: box.w, height: box.h, pageId: s.activePageId });
                 });
                 const anchors = g.direction === 'LR' ? ['right', 'left'] : g.direction === 'RL' ? ['left', 'right'] : g.direction === 'BT' ? ['top', 'bottom'] : ['bottom', 'top'];
                 // Edges that point back against the direction (loops) leave and enter from the side, so they don't
@@ -12845,6 +12881,7 @@
                 try {
                     this.state = Object.assign(new ThreatModelSession(), result.session);
                     this.state.activeUser = previous.activeUser || this.state.activeUser;
+                    this.forgetPageViews();
                     this.refreshAppViewVisualWorkspace();
                 } catch (err) {
                     console.error('[ThreatTiger] Import render failed', err);
@@ -12874,6 +12911,7 @@
                     onConfirm: () => {
                         this.takeSnapshot('Before reset', true);
                         this.state = new ThreatModelSession();
+                        this.forgetPageViews();
                         this.state.activeUser = this.rememberedOperatorName();
                         this.addOperatorToParticipantsIfNeeded(this.state.activeUser);
                         this.setViewMode('flat');
@@ -13033,6 +13071,7 @@
                 const { session } = normalizeSession(JSON.parse(snap.data));
                 const operator = this.state.activeUser;
                 this.state = Object.assign(new ThreatModelSession(), session);
+                this.forgetPageViews();
                 this.state.activeUser = operator || this.state.activeUser;
                 this.snapshotsModal.hide();
                 this.logEvent("CONFIGURE", `Restored snapshot from ${new Date(snap.savedAt).toLocaleString()} (${snap.label}).`, { undoable: false });
