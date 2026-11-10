@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Lr81YOxPzui+OgK3oRUEOZ6VZlac7/LNzeRow1Uhlp4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Nzm7tkKTVZ0g1HZ3sSMtAa45cJqfxm3oJKctxmrtqFQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -8313,10 +8313,14 @@
                 const li = trigger.closest('li') || trigger;
                 li.classList.toggle('d-none', !visible);
                 if (visible) this.hiddenTabs.delete(triggerId); else this.hiddenTabs.add(triggerId);
-                if (!visible && trigger.classList.contains('active')) {
-                    const next = [...trigger.closest('.nav').querySelectorAll('[data-bs-toggle="tab"]')].find(t => !t.closest('li').classList.contains('d-none'));
-                    if (next && window.bootstrap) bootstrap.Tab.getOrCreateInstance(next).show();
-                }
+                const nav = trigger.closest('.nav');
+                const shown = nav ? [...nav.querySelectorAll('[data-bs-toggle="tab"]')].filter(t => !(t.closest('li') || t).classList.contains('d-none')) : [];
+                if (!visible && trigger.classList.contains('active') && shown[0] && window.bootstrap) bootstrap.Tab.getOrCreateInstance(shown[0]).show();
+                // Every tab hidden: hide the panes as well, so the last tab's content doesn't stay on screen.
+                const pane = document.querySelector(trigger.getAttribute('data-bs-target') || '#none');
+                const content = pane && pane.closest('.tab-content');
+                if (content) content.classList.toggle('d-none', shown.length === 0);
+                if (visible && shown.length === 1 && window.bootstrap) bootstrap.Tab.getOrCreateInstance(trigger).show();   // the first tab back
                 if (save) { try { localStorage.setItem('hidden_tabs', JSON.stringify([...this.hiddenTabs])); } catch { /* view setting only */ } }
                 this.syncViewMenu();
             }

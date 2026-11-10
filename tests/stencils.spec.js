@@ -94,3 +94,63 @@ test('Properties for a cloud icon hide Type, the graphic icon picker and Securit
   for (const b of boxes) await expect(page.locator(b)).toBeHidden();
   await expect(page.locator('#box-props-standard-name')).toBeVisible();
 });
+
+// ── Deferred minors (1.15.1) ──
+test('a disabled shape with a cloud icon is greyed in every card style', async ({ page }) => {
+  const icon = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#f90"/></svg>').toString('base64');
+  await setup(page, [
+    { id: 'i', type: 'infrastructure', name: 'Infra', x: 0, y: 0, width: 80, height: 70, isDisabled: true, stencilIcon: icon, secProps: {} },
+    { id: 'p', type: 'process', name: 'Proc', x: 300, y: 0, width: 240, height: 80, isDisabled: true, stencilIcon: icon, secProps: {} },
+    anchorEl,
+  ]);
+  for (const id of ['i', 'p']) {
+    const f = await page.locator(`#layers-nodes-group [data-id="${id}"] img.stencil-icon`).first().evaluate((n) => getComputedStyle(n).filter);
+    expect([id, f]).toEqual([id, 'grayscale(1)']);
+  }
+});
+
+test('the largest set (Azure) opens and filters quickly', async ({ page }) => {
+  await setup(page, [anchorEl]);
+  await page.evaluate(() => document.getElementById('collapseDataNodes').classList.add('show'));
+  const set = page.locator('[data-stencil-set="azure"]');
+  const t0 = Date.now();
+  await set.locator('.stencil-set-toggle').click();
+  await expect(set.locator('.stencil-item').first()).toBeVisible();
+  expect(Date.now() - t0).toBeLessThan(3000);
+  expect(await set.locator('.stencil-item').count()).toBeGreaterThan(500);
+  const t1 = Date.now();
+  await set.locator('input[type="search"]').fill('Key Vault');
+  await expect(set.locator('.stencil-item:visible').first()).toBeVisible();
+  expect(Date.now() - t1).toBeLessThan(1000);
+});
+
+test('a placed cloud database icon gets database threats in the suggestion list', async ({ page }) => {
+  await setup(page, [anchorEl]);
+  await page.waitForFunction(() => app.threatSuggestions.process.length);
+  await page.evaluate(() => document.getElementById('collapseDataNodes').classList.add('show'));
+  const set = page.locator('[data-stencil-set="aws"]');
+  await set.locator('.stencil-set-toggle').click();
+  await set.locator('input[type="search"]').fill('Amazon RDS');
+  await set.locator('.stencil-item:visible').first().click();
+  await page.click('button[data-bs-target="#tab-panel-suggest"]');
+  await expect(page.locator('#suggest-subtype-hint')).toContainText(/database/i);
+  await expect(page.locator('#tab-panel-suggest .template-card').first()).toBeVisible();
+  const reasons = await page.evaluate(() => app.evaluateRules(app.state.elements.find((e) => e.id !== 'z')).map((f) => f.reason).join(' | '));
+  expect(reasons).toMatch(/database/i);
+});
+
+test('a PNG export includes the cloud icon image', async ({ page }) => {
+  const icon = 'data:image/svg+xml;base64,' + Buffer.from('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10" fill="#f90"/></svg>').toString('base64');
+  await setup(page, [{ id: 'p', type: 'process', name: 'Proc', x: 0, y: 0, width: 240, height: 80, stencilIcon: icon, secProps: {} }, anchorEl]);
+  const svg = await page.evaluate(async () => {
+    let captured = '';
+    const orig = XMLSerializer.prototype.serializeToString;
+    XMLSerializer.prototype.serializeToString = function (n) { const s = orig.call(this, n); if (n && n.id === 'canvas-svg') captured = s; return s; };
+    app.downloadBlob = () => {};
+    try { await app.exportCanvasAsPng(); } catch (e) { /* the canvas step may fail headless */ }
+    XMLSerializer.prototype.serializeToString = orig;
+    return captured;
+  });
+  expect(svg).toContain('class="stencil-icon"');
+  expect(svg).toContain(icon.slice(0, 60));
+});

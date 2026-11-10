@@ -53,3 +53,14 @@ test('View → panel tabs hides a tab; hiding the active one switches to the nex
   await page.locator('#btn-menu-tab-tab-props-trigger').click();
   await expect(page.locator('#tab-props-trigger')).toBeVisible();
 });
+
+// ── Deferred minors (1.15.1) ──
+test('hiding every tab of a panel hides its content too; showing one tab brings it back', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await openApp(page, { session: demoSession() });
+  await page.evaluate(() => ['tab-props-trigger', 'tab-suggest-trigger', 'tab-layers-trigger'].forEach((id) => app.setTabVisible(id, false)));
+  for (const pane of ['#tab-panel-props', '#tab-panel-suggest', '#tab-panel-layers']) await expect(page.locator(pane)).toBeHidden();
+  await page.evaluate(() => app.setTabVisible('tab-layers-trigger', true));
+  await expect(page.locator('#tab-panel-layers')).toBeVisible();
+  await expect(page.locator('#tab-layers-trigger')).toHaveClass(/active/);
+});
