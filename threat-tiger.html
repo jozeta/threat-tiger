@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Iki3erhZ6UAPhD75DHY/OA1jg3gQCIHn5cEKQiXiSfU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Lr81YOxPzui+OgK3oRUEOZ6VZlac7/LNzeRow1Uhlp4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3910,7 +3910,10 @@
             for (let i = 1; i < poly.length; i++) {
                 while (k < at.length && at[k] - r < cum[i]) {
                     const a = pointAt(at[k] - r), b = pointAt(at[k] + r);
-                    d += ` L ${f(a[0])} ${f(a[1])} A ${r} ${r} 0 0 1 ${f(b[0])} ${f(b[1])}`;
+                    // Same side whichever way the flow runs: up on horizontal flows, right on vertical ones.
+                    const dx = b[0] - a[0], dy = b[1] - a[1];
+                    const sweep = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 1 : 0) : (dy > 0 ? 1 : 0);
+                    d += ` L ${f(a[0])} ${f(a[1])} A ${r} ${r} 0 0 ${sweep} ${f(b[0])} ${f(b[1])}`;
                     skipUntil = at[k] + r; k++;
                 }
                 if (cum[i] > skipUntil) d += ` L ${f(poly[i][0])} ${f(poly[i][1])}`;
@@ -8153,6 +8156,8 @@
                     return pt;
                 };
                 const pan = (ev) => { const pt = toContent(ev); if (pt) this.panMinimapTo(pt.x, pt.y); };
+                // The frame shows the canvas size: follow window and panel resizes, not only pans and zooms.
+                if (typeof ResizeObserver === 'function' && this.dom && this.dom.svg) new ResizeObserver(() => this.updateMinimapViewport()).observe(this.dom.svg);
                 map.addEventListener('mousedown', (ev) => { if (ev.button !== 0) return; ev.preventDefault(); ev.stopPropagation(); this.minimapDragging = true; pan(ev); });
                 window.addEventListener('mousemove', (ev) => { if (this.minimapDragging) pan(ev); });
                 window.addEventListener('mouseup', () => { this.minimapDragging = false; });

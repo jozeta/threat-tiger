@@ -122,3 +122,17 @@ test('line jumps stay fast on a dense model (300 long curved flows)', async ({ p
   // About 160 ms on an idle machine and about 330 ms under heavy load; the problem this guards against took 0.5–9 s.
   expect(ms).toBeLessThan(800);
 });
+
+// ── Deferred minors (1.15.1) ──
+test('hops bulge the same way whichever way a flow runs: up on horizontal flows, right on vertical ones', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await openApp(page, { session: demoSession() });
+  const sweeps = await page.evaluate(() => {
+    const sweep = (d) => (d.match(/A [\d.]+ [\d.]+ 0 0 (\d)/) || [])[1];
+    return [
+      sweep(jumpPathD([[0, 0], [100, 0]], [{ seg: 0, x: 50, y: 0 }])), sweep(jumpPathD([[100, 0], [0, 0]], [{ seg: 0, x: 50, y: 0 }])),
+      sweep(jumpPathD([[0, 0], [0, 100]], [{ seg: 0, x: 0, y: 50 }])), sweep(jumpPathD([[0, 100], [0, 0]], [{ seg: 0, x: 0, y: 50 }])),
+    ];
+  });
+  expect(sweeps).toEqual(['1', '0', '1', '0']);
+});

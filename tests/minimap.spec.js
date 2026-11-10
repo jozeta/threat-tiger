@@ -81,3 +81,15 @@ for (const width of [1280, 1366]) {
     expect(overlap).toBe(false);
   });
 }
+
+// ── Deferred minors (1.15.1) ──
+test('the minimap frame follows a canvas resize without a pan or zoom', async ({ page }) => {
+  await setup(page, [{ id: 'a', type: 'process', name: 'A', x: 0, y: 0, width: 240, height: 80, secProps: {} }]);
+  const w0 = await page.evaluate(() => Number(document.querySelector('#minimap .minimap-viewport').getAttribute('width')));
+  await page.setViewportSize({ width: 1100, height: 1000 });
+  await expect.poll(() => page.evaluate(() => {
+    const vp = Number(document.querySelector('#minimap .minimap-viewport').getAttribute('width'));
+    return Math.abs(vp - app.dom.svg.getBoundingClientRect().width / app.zoomScale) < 1;
+  })).toBe(true);
+  expect(await page.evaluate(() => Number(document.querySelector('#minimap .minimap-viewport').getAttribute('width')))).not.toBe(w0);
+});
