@@ -5,6 +5,47 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+Fixes for the small issues the 1.15.0 reviews left open.
+
+### Fixed
+- **Attack paths:**
+  - Parallel flows between the same two shapes no longer give duplicate rows. The path uses the weakest of the flows.
+  - "More paths exist" now appears only when another path really exists past the limit of 200.
+  - Disabling a flow on the highlighted path clears the highlight.
+- **Pages:**
+  - Shapes you add or paste stay on the page you are on, even far from the page's origin. Paste moves shapes by the exact distance between pages.
+  - Opening an older file whose page-less shapes sit in another page's area puts them on that page.
+  - Mermaid "Replace" leaves a single page. Mermaid "Add" on an empty page starts at that page's origin.
+  - Opening, restoring or starting a different model forgets the remembered page views and the Back trail.
+  - Zoom-to-fit on an empty page shows the page origin at 100% instead of zooming far in.
+  - The page tabs work from the keyboard: one tab stop, arrow keys, Home and End, and F2 to rename. Pressing Enter after a rename now redraws the tab.
+  - Drill-down ↗ badges are left out of PNG exports.
+  - Page names are kept on one line, so a name with a line break can't break the Markdown report.
+- **Layers:**
+  - A swimlane layout never moves shapes on a locked layer.
+  - Hidden shapes are left out of zoom-to-fit, PNG export and print.
+  - Undo brings back the active layer, for example after deleting it. Switching layers on its own is still not an undo step.
+  - Jumping from the threat register to a shape on a hidden layer says which layer is hidden.
+  - The hide and lock buttons no longer announce a pressed state that contradicts their label.
+  - A redraw while you rename a layer keeps the rename.
+- **Align:**
+  - When aligning moves shapes inside a swimlane, the lane's own adjustment is part of the same undo step.
+  - A trust zone without a size aligns as 320 × 240, like the rest of the app.
+  - The toolbar has one tab stop and works with the arrow keys, Home and End.
+  - The toolbar stays above the canvas controls when they wrap onto more lines.
+- **Format painter:**
+  - Painting from a shape with the default look gives the target the default look.
+  - Numbered steps are their own kind, so painting between a process and a step no longer records an empty undo step.
+- **Line jumps:** hops bulge the same way whichever way a flow runs: up on horizontal flows, right on vertical ones.
+- **Minimap:** the frame follows window and panel resizes.
+- **View menu:** hiding every tab of a panel hides its content too, and showing a tab again brings it back.
+- **Tests:** new tests cover:
+  - the time to open and filter the Azure icon set;
+  - the suggestion list for a placed cloud icon;
+  - a PNG export with a cloud icon;
+  - greyed disabled icons in every card style;
+  - trust zones and swimlanes not being dragged while the painter is on.
+
 ## 1.15.0
 
 Diagramming and attack-path release: pages, layers, attack paths, about 2,000 icons, and Visio-style editing tools.
