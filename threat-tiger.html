@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-t/o+j5rP5KRmXfUsb1KT2OAggIzsk6ZGKRIZKbpwqMk='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-CidYLojFF1V9uwAFfMdUQMSTsmx8lxqJPsUXWYpT+WA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3782,11 +3782,16 @@
             const targetSet = new Set(targets);
             const adj = new Map();
             const link = (from, to, flow) => { if (!adj.has(from)) adj.set(from, []); adj.get(from).push({ to, flow }); };
+            // Parallel flows between the same two shapes are one step for an attacker: keep the weakest of them.
+            const weakness = (f) => (f.secProps && f.secProps.encrypted === 'true' ? 0 : 1) + (f.secProps && f.secProps.authenticated === 'true' ? 0 : 1);
+            const best = new Map();
+            const offer = (from, to, f) => { const k = from + '\u0000' + to, cur = best.get(k); if (!cur || weakness(f) > weakness(cur.flow)) best.set(k, { from, to, flow: f }); };
             model.flows.forEach(f => {
                 if (f.isDisabled || !ids.has(f.sourceId) || !ids.has(f.targetId) || f.sourceId === f.targetId) return;
-                link(f.sourceId, f.targetId, f);
-                if (f.isBidirectional) link(f.targetId, f.sourceId, f);
+                offer(f.sourceId, f.targetId, f);
+                if (f.isBidirectional) offer(f.targetId, f.sourceId, f);
             });
+            best.forEach(({ from, to, flow }) => link(from, to, flow));
             const threatBy = new Map();
             (model.threats || []).forEach(t => {
                 const w = THREAT_WEIGHT[t.status];
@@ -3806,8 +3811,8 @@
             for (let qi = 0; qi < queue.length; qi++) {
                 const cur = queue[qi];
                 if (cur.flows.length > 0 && targetSet.has(cur.at)) {
+                    if (paths.length >= ATTACK_PATH_LIMITS.paths) { truncated = true; break; }   // a real path past the limit
                     paths.push(cur);
-                    if (paths.length >= ATTACK_PATH_LIMITS.paths) { truncated = qi < queue.length - 1; break; }
                     continue;   // a path ends at the first crown jewel it reaches
                 }
                 if (cur.flows.length >= ATTACK_PATH_LIMITS.hops) continue;
@@ -9735,7 +9740,8 @@
                 const h = this.attackPathHighlight;
                 if (h) {
                     const ids = new Set([...this.state.elements.map(e => e.id), ...this.state.flows.map(f => f.id)]);
-                    if ([...h.nodes, ...h.flows].some(id => !ids.has(id))) this.attackPathHighlight = null;   // a path item was deleted
+                    const off = new Set(this.state.flows.filter(f => f.isDisabled).map(f => f.id));
+                    if ([...h.nodes, ...h.flows].some(id => !ids.has(id) || off.has(id))) this.attackPathHighlight = null;   // a path item was deleted or disabled
                 }
                 const hl = this.attackPathHighlight;
                 this.dom.svg.classList.toggle('ap-active', !!hl);

@@ -151,3 +151,55 @@ test('keyboard focus stays on the picker after it changes the list; a highlighte
   expect(svgText.length).toBeGreaterThan(100);
   expect(svgText).not.toMatch(/class="[^"]*\bap-(dim|on)\b/);   // the stylesheet text may mention the classes; no element may carry them
 });
+
+// ── Deferred minors (1.15.1) ──
+test('parallel flows between the same two shapes give one path, through the weakest flow', async ({ page }) => {
+  await setup(page);
+  const r = await page.evaluate((m) => {
+    m.flows.push({ id: 'f4b', sourceId: 'w', targetId: 'd', secProps: {} });   // a second, weaker w -> d flow
+    m.flows.push({ id: 'f4c', sourceId: 'w', targetId: 'd', secProps: { encrypted: 'true', authenticated: 'true' } });
+    return computeAttackPaths({ ...m, nodeZones: new Map() });
+  }, M({ zoneCount: 0 }));
+  const keys = r.paths.map((p) => p.nodes.join('>'));
+  expect(keys).toEqual([...new Set(keys)]);
+  expect(r.paths.find((p) => p.nodes.join('>') === 'u>w>d').flows).toEqual(['f1', 'f4b']);
+});
+
+test('"more paths" is reported only when another path really exists past the limit', async ({ page }) => {
+  await setup(page);
+  const r = await page.evaluate(() => {
+    const build = (n) => {   // exactly n two-hop paths u -> mi -> j
+      const elements = [{ id: 'u', type: 'interactor', name: 'U' }, { id: 'j', type: 'datastore', name: 'J', secProps: { isCrownJewel: 'true' } }];
+      const flows = [];
+      for (let i = 0; i < n; i++) { elements.push({ id: 'm' + i, type: 'process', name: 'M' + i }); flows.push({ id: 'a' + i, sourceId: 'u', targetId: 'm' + i, secProps: {} }, { id: 'b' + i, sourceId: 'm' + i, targetId: 'j', secProps: {} }); }
+      elements.push({ id: 'x', type: 'process', name: 'X' }); flows.push({ id: 'ux', sourceId: 'u', targetId: 'x', secProps: {} }, { id: 'xm', sourceId: 'x', targetId: 'm0', secProps: {} });   // x -> m0 -> j would be path 201 only if n < 200
+      return computeAttackPaths({ elements, flows, threats: [], nodeZones: new Map(), zoneCount: 0 });
+    };
+    const exact = build(200);   // 200 two-hop paths plus u>x>m0>j: 201 paths, so truncated
+    const elements = [{ id: 'u', type: 'interactor', name: 'U' }, { id: 'j', type: 'datastore', name: 'J', secProps: { isCrownJewel: 'true' } }];
+    const flows = [];
+    for (let i = 0; i < 200; i++) { elements.push({ id: 'm' + i, type: 'process', name: 'M' + i }); flows.push({ id: 'a' + i, sourceId: 'u', targetId: 'm' + i, secProps: {} }, { id: 'b' + i, sourceId: 'm' + i, targetId: 'j', secProps: {} }); }
+    for (let i = 195; i < 200; i++) { elements.push({ id: 'y' + i, type: 'process', name: 'Y' }); flows.push({ id: 'y' + i, sourceId: 'm' + i, targetId: 'y' + i, secProps: {} }, { id: 'yb' + i, sourceId: 'y' + i, targetId: 'm' + i, secProps: {} }); }   // queued after the last path; y only leads back into its own path
+    const full = computeAttackPaths({ elements, flows, threats: [], nodeZones: new Map(), zoneCount: 0 });
+    return { exactN: exact.paths.length, exactT: exact.truncated, fullN: full.paths.length, fullT: full.truncated };
+  });
+  expect(r).toEqual({ exactN: 200, exactT: true, fullN: 200, fullT: false });
+});
+
+test('disabling a flow on the highlighted path clears the highlight', async ({ page }) => {
+  await page.setViewportSize({ width: 1600, height: 1000 });
+  await openApp(page, { session: demoSession((s) => {
+    s.elements = [
+      { id: 'u', type: 'interactor', name: 'User', x: 0, y: 0, width: 240, height: 80, secProps: {} },
+      { id: 'd', type: 'datastore', name: 'DB', x: 800, y: 0, width: 240, height: 80, secProps: { isCrownJewel: 'true' } },
+    ];
+    s.flows = [{ id: 'f1', name: 'req', sourceId: 'u', targetId: 'd', sourceAnchor: 'right-2', targetAnchor: 'left-2', points: [], secProps: {} }];
+    s.threats = [];
+  }) });
+  await page.click('#tab-insights-trigger');
+  await page.locator('#insights-attack-paths .attack-path-row').first().click();
+  expect(await page.evaluate(() => !!app.attackPathHighlight)).toBe(true);
+  await page.evaluate(() => { app.state.flows[0].isDisabled = true; app.refreshAppViewVisualWorkspace(); });
+  expect(await page.evaluate(() => app.attackPathHighlight)).toBeNull();
+  await expect(page.locator('[data-flow-id="f1"]').first()).not.toHaveClass(/ap-/);
+});
