@@ -85,11 +85,11 @@ test('the Layers panel adds, renames, hides, locks, moves the selection and dele
   await page.locator('.layer-row').nth(1).locator('.layer-move-here').click();
   expect(await page.evaluate(() => app.state.elements.find((e) => e.id === 'b').layerId)).toBe(netId);
   await page.locator('.layer-row').nth(1).locator('.layer-visible').click();
-  await expect(page.locator('.layer-row').nth(1).locator('.layer-visible')).toHaveAttribute('aria-pressed', 'false');
+  await expect(page.locator('.layer-row').nth(1).locator('.layer-visible')).toHaveAttribute('aria-label', /^Show layer/);
   await page.click('#btn-undo');
-  await expect(page.locator('.layer-row').nth(1).locator('.layer-visible')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.layer-row').nth(1).locator('.layer-visible')).toHaveAttribute('aria-label', /^Hide layer/);
   await page.locator('.layer-row').nth(1).locator('.layer-lock').click();
-  await expect(page.locator('.layer-row').nth(1).locator('.layer-lock')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('.layer-row').nth(1).locator('.layer-lock')).toHaveAttribute('aria-label', /^Unlock layer/);
   await page.locator('.layer-row').nth(1).locator('.layer-name').click();                // make it active
   await expect(page.locator('.layer-row').nth(1)).toHaveAttribute('aria-current', 'true');
   await page.locator('.layer-row').nth(1).locator('.layer-delete').click();
@@ -162,4 +162,61 @@ test('keyboard: F2 renames a layer, and focus stays on the layer after panel act
 test('a hidden Main layer is never left active (new shapes would vanish)', async ({ page }) => {
   await setup(page, [fc('s', 0, 'net')], { layers: [{ id: 'main', name: 'Main', visible: false }, { id: 'net', name: 'Network' }], activeLayerId: 'main' });
   expect(await page.evaluate(() => app.state.activeLayerId)).toBe('net');
+});
+
+// ── Deferred minors (1.15.1) ──
+const LOCKED = { layers: [{ id: 'main', name: 'Main', visible: true, locked: false }, { id: 'fix', name: 'Fixed', visible: true, locked: true }] };
+
+test('a swimlane layout never moves a shape on a locked layer', async ({ page }) => {
+  await setup(page, [
+    { id: 's', type: 'swimlane', name: 'S', x: 0, y: 0, columns: ['A'], rows: ['R'], layerId: 'main' },
+    { id: 'k', type: 'process', name: 'K', x: 5, y: 90, width: 240, height: 80, secProps: {}, layerId: 'fix' },   // closer to the border than the padding
+  ], LOCKED);
+  await page.evaluate(() => { app.layoutSwimlanes(); app.refreshAppViewVisualWorkspace(); });
+  expect(await page.evaluate(() => { const k = app.state.elements.find((e) => e.id === 'k'); return [k.x, k.y]; })).toEqual([5, 90]);
+});
+
+test('hidden shapes are left out of zoom-to-fit', async ({ page }) => {
+  await setup(page, [
+    { id: 'a', type: 'process', name: 'A', x: 0, y: 0, width: 240, height: 80, secProps: {}, layerId: 'main' },
+    { id: 'far', type: 'process', name: 'Far', x: 20000, y: 20000, width: 240, height: 80, secProps: {}, layerId: 'hid' },
+  ], { layers: [{ id: 'main', name: 'Main', visible: true, locked: false }, { id: 'hid', name: 'Hidden', visible: false, locked: false }] });
+  const bb = await page.evaluate(() => app.getIsometricBoundingBox());
+  expect(bb.maxX).toBeLessThan(1000);
+});
+
+test('undo brings back the active layer together with a deleted layer', async ({ page }) => {
+  await setup(page, [{ id: 'a', type: 'process', name: 'A', x: 0, y: 0, width: 240, height: 80, secProps: {}, layerId: 'main' }],
+    { layers: [{ id: 'main', name: 'Main', visible: true, locked: false }, { id: 'net', name: 'Network', visible: true, locked: false }] });
+  await page.evaluate(() => { app.setActiveLayer('net'); app.deleteLayer('net'); });
+  expect(await page.evaluate(() => app.state.activeLayerId)).toBe('main');
+  await page.evaluate(() => app.undo());
+  expect(await page.evaluate(() => [app.state.layers.length, app.state.activeLayerId])).toEqual([2, 'net']);
+  expect(await page.evaluate(() => app.undoStack.length)).toBe(0);   // switching layers alone was no undo step
+});
+
+test('jumping to a shape on a hidden layer says why nothing is selected', async ({ page }) => {
+  await setup(page, [{ id: 'a', type: 'process', name: 'Secret', x: 0, y: 0, width: 240, height: 80, secProps: {}, layerId: 'hid' }],
+    { layers: [{ id: 'main', name: 'Main', visible: true, locked: false }, { id: 'hid', name: 'Hidden', visible: false, locked: false }] });
+  const msgs = await page.evaluate(() => { const out = []; app.notify = (m) => out.push(m); app.focusCanvasItem('a'); return out; });
+  expect(msgs.join(' ')).toContain('hidden layer "Hidden"');
+});
+
+test('layer buttons say what they do without a conflicting pressed state', async ({ page }) => {
+  await setup(page, []);
+  const b = page.locator('#layers-panel .layer-visible').first();
+  expect(await b.getAttribute('aria-label')).toBe('Hide layer Main');
+  expect(await b.getAttribute('aria-pressed')).toBeNull();
+  expect(await page.locator('#layers-panel .layer-lock').first().getAttribute('aria-pressed')).toBeNull();
+});
+
+test('a redraw in the middle of renaming a layer keeps the rename', async ({ page }) => {
+  await setup(page, []);
+  await page.click('#tab-layers-trigger');
+  await page.evaluate(() => { const row = document.querySelector('#layers-panel .layer-row'); app.startLayerRename(row, app.state.layers[0]); });
+  await page.locator('#layers-panel input').fill('Base');
+  await page.evaluate(() => app.refreshAppViewVisualWorkspace());
+  await expect(page.locator('#layers-panel input')).toHaveValue('Base');
+  await page.locator('#layers-panel input').press('Enter');
+  expect(await page.evaluate(() => app.state.layers[0].name)).toBe('Base');
 });

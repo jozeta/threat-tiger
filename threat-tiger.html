@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-DRKCdabfLWrKKmruGNKfjKFcEEbThI5TsEMYifRd/X0='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7wg64QLH5+l2bzP34zqhMglYNQ5IXA1EBK1PjIjKSdI='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -5711,7 +5711,7 @@
             // Every logged model change is one undo step. The activity log itself is not rewound.
             serializeModel() {
                 const s = this.state;
-                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [], layers: s.layers || [{ ...DEFAULT_LAYER }], pages: s.pages || [{ ...DEFAULT_PAGE }] });
+                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [], layers: s.layers || [{ ...DEFAULT_LAYER }], activeLayerId: s.activeLayerId, pages: s.pages || [{ ...DEFAULT_PAGE }] });
             }
 
             // New elements and flows go to the active layer (runs before every undo point and render).
@@ -6017,6 +6017,8 @@
             renderLayersPanel() {
                 const panel = document.getElementById('layers-panel');
                 if (!panel) return;
+                const renaming = panel.querySelector('input');
+                if (renaming && renaming === document.activeElement) return;   // don't throw away a rename in progress
                 const s = this.state, hasSel = (s.selectedElementIds || []).length > 0 || !!s.selectedFlowId;
                 // Keep keyboard focus on the same control of the same layer across the rebuild.
                 const act = document.activeElement;
@@ -6043,9 +6045,10 @@
                     name.addEventListener('click', (ev) => { if (ev.detail < 2) this.setActiveLayer(l.id); });
                     name.addEventListener('dblclick', () => this.startLayerRename(row, l));
                     name.addEventListener('keydown', (ev) => { if (ev.key === 'F2') { ev.preventDefault(); this.startLayerRename(row, l); } });
-                    const vis = btn('layer-visible', l.visible ? 'bi-eye' : 'bi-eye-slash', `${l.visible ? 'Hide' : 'Show'} layer ${l.name}`, l.visible);
+                    // The label names the action, so these carry no pressed state (it would contradict the label).
+                    const vis = btn('layer-visible', l.visible ? 'bi-eye' : 'bi-eye-slash', `${l.visible ? 'Hide' : 'Show'} layer ${l.name}`);
                     vis.addEventListener('click', () => this.setLayerVisible(l.id, !l.visible));
-                    const lock = btn('layer-lock', l.locked ? 'bi-lock' : 'bi-unlock', `${l.locked ? 'Unlock' : 'Lock'} layer ${l.name}`, l.locked);
+                    const lock = btn('layer-lock', l.locked ? 'bi-lock' : 'bi-unlock', `${l.locked ? 'Unlock' : 'Lock'} layer ${l.name}`);
                     lock.addEventListener('click', () => this.setLayerLocked(l.id, !l.locked));
                     const move = btn('layer-move-here', 'bi-box-arrow-in-down', `Move the selection to ${l.name}`);
                     move.disabled = !hasSel;
@@ -6076,6 +6079,7 @@
                 const finish = (save) => {
                     if (done) return; done = true;
                     this.layerFocusAfterRender = [layer.id, 'layer-name'];
+                    input.blur();   // renderLayersPanel keeps a focused rename input on screen
                     if (save) this.renameLayer(layer.id, input.value); else this.renderLayersPanel();
                 };
                 input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); finish(true); } if (ev.key === 'Escape') { ev.preventDefault(); finish(false); } });
@@ -6148,6 +6152,8 @@
             setActiveLayer(id) {
                 if (!this.layerById(id) || this.state.activeLayerId === id) return;
                 this.state.activeLayerId = id;
+                // Undo restores the active layer with the model, but switching it alone is not an undo step.
+                if (this.undoBaseline !== undefined) { const b = JSON.parse(this.undoBaseline); b.activeLayerId = id; this.undoBaseline = JSON.stringify(b); }
                 this.saveSessionToLocalStorage();
                 this.renderLayersPanel();
             }
@@ -8968,6 +8974,7 @@
                     const newRowStarts = rowHeights.reduce((acc, h, i) => { acc.push(i ? acc[i - 1] + rowHeights[i - 1] : g.rowStarts[0]); return acc; }, []);
                     // Keep each node at its offset inside its cell (moving along with the cell), at least `pad` from the borders.
                     assigned.forEach(a => {
+                        if (this.isItemLocked(a.el)) return;   // a locked layer's shapes stay exactly where they are
                         a.el.x = newColStarts[a.c] + Math.max(pad, a.el.x - g.colStarts[a.c]);
                         a.el.y = newRowStarts[a.r] + Math.max(pad, a.el.y - g.rowStarts[a.r]);
                     });
@@ -12340,6 +12347,12 @@
                 this.panY = rect.height / 2 - cy * this.zoomScale;
                 this.applySvgViewportTransformations();
                 this.refreshAppViewVisualWorkspace();
+                const item = node || flow;
+                if (!this.isItemVisible(item)) {
+                    const ends = flow ? this.state.elements.filter(e => e.id === flow.sourceId || e.id === flow.targetId) : [];
+                    const hiddenLayer = [item, ...ends].map(x => this.layerOf(x)).find(l => l && l.visible === false);
+                    this.notify(`"${toText(item.name) || 'This item'}" is on the hidden layer "${hiddenLayer ? hiddenLayer.name : ''}". Show that layer in Layers to select it.`, 'info');
+                }
                 this.dom.svg.querySelectorAll(`[data-id="${CSS.escape(id)}"]`).forEach(el => {
                     el.classList.remove('focus-pulse'); void el.getBoundingClientRect(); el.classList.add('focus-pulse');
                     setTimeout(() => el.classList.remove('focus-pulse'), 1600);
