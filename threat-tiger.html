@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-7wg64QLH5+l2bzP34zqhMglYNQ5IXA1EBK1PjIjKSdI='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Iki3erhZ6UAPhD75DHY/OA1jg3gQCIHn5cEKQiXiSfU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3760,8 +3760,8 @@
         // An element's box in model coordinates; missing sizes use the renderer's per-type defaults.
         function alignableBox(e) {
             if (!e || !ALIGNABLE_TYPES.has(e.type)) return null;
-            const w = e.width || ({ custom_image: 120, infrastructure: 80, step_activity: 260 }[e.type] || 240);
-            const h = e.height || ({ custom_image: 120, infrastructure: 70, step_activity: 50 }[e.type] || 80);
+            const w = e.width || ({ custom_image: 120, infrastructure: 80, step_activity: 260, boundary: 320 }[e.type] || 240);
+            const h = e.height || ({ custom_image: 120, infrastructure: 70, step_activity: 50, boundary: 240 }[e.type] || 80);
             return { id: e.id, x: e.x || 0, y: e.y || 0, w, h };
         }
         // ── Attack paths ─────────────────────────────────────────────────────────────
@@ -3919,20 +3919,25 @@
         }
         // ── Format painter ───────────────────────────────────────────────────────────
         // Look-only properties per kind of shape; the painter copies them between shapes of the same kind.
-        const STYLE_FAMILIES = { flowchart: ['fcFillColor', 'fcStrokeColor', 'fcStrokeWidth'], component: ['iconColor', 'circleColor'], text: ['fontSize'] };
+        // Numbered steps store their colour differently from components, so they are their own kind.
+        const STYLE_FAMILIES = { flowchart: ['fcFillColor', 'fcStrokeColor', 'fcStrokeWidth'], component: ['iconColor'], step: ['circleColor'], text: ['fontSize'] };
         function styleFamily(e) {
             const t = e && toText(e.type);
             if (!t) return null;
             if (t.startsWith('fc_')) return 'flowchart';
-            if (['process', 'datastore', 'interactor', 'infrastructure', 'custom_image', 'step_activity'].includes(t)) return 'component';
+            if (t === 'step_activity') return 'step';
+            if (['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(t)) return 'component';
             if (t === 'textbox' || t === 'headline') return 'text';
             return null;
         }
         function paintableStyle(src, dst) {
             const fam = styleFamily(src);
             if (!fam || styleFamily(dst) !== fam) return {};
+            // A key the source leaves at its default gives the target the default too: the source type's own
+            // default for flowchart shapes (types differ in colour), otherwise undefined (the key is removed).
+            const def = fam === 'flowchart' ? { fcFillColor: FLOWCHART_DEFAULTS[src.type].fill, fcStrokeColor: FLOWCHART_DEFAULTS[src.type].stroke, fcStrokeWidth: 2 } : {};
             const out = {};
-            STYLE_FAMILIES[fam].forEach(k => { if (src[k] !== undefined) out[k] = src[k]; });
+            STYLE_FAMILIES[fam].forEach(k => { out[k] = src[k] !== undefined ? src[k] : def[k]; });
             return out;
         }
         // New positions for boxes that move. Modes: left, center, right, top, middle, bottom (2+ boxes);
@@ -6968,6 +6973,7 @@
                     if (ev.detail >= 2) { this.armFormatPainter(true); return; }   // the second click of a double-click
                     if (this.formatPainter) this.disarmFormatPainter(); else this.armFormatPainter(false);
                 });
+                document.getElementById('align-toolbar').addEventListener('keydown', (ev) => this.moveAlignToolbarFocus(ev));
                 document.querySelectorAll('#align-toolbar [data-align]').forEach(btn =>
                     btn.addEventListener('click', () => this.alignSelection(btn.dataset.align)));
                 document.getElementById('btn-canvas-save-png').addEventListener('click', () => this.exportCanvasAsPng());
@@ -11276,6 +11282,7 @@
                 const moves = computeAlignment(this.alignableSelection(), mode);
                 if (moves.size === 0) return 0;
                 this.state.elements.forEach(e => { const m = moves.get(e.id); if (m) { e.x = m.x; e.y = m.y; } });
+                this.layoutSwimlanes();   // the lanes' own adjustment belongs to the same undo step
                 const label = { left: 'left', center: 'centres', right: 'right', top: 'top', middle: 'middles', bottom: 'bottom', hspace: 'spaced across', vspace: 'spaced down' }[mode];
                 this.logEvent('CHANGE', `Aligned ${moves.size} element${moves.size === 1 ? '' : 's'} (${label})`);
                 this.refreshAppViewVisualWorkspace();
@@ -11306,7 +11313,7 @@
                 const style = paintableStyle(src, dst);
                 const changed = Object.keys(style).filter(k => dst[k] !== style[k]);
                 if (changed.length === 0) return false;
-                changed.forEach(k => { dst[k] = style[k]; });
+                changed.forEach(k => { if (style[k] === undefined) delete dst[k]; else dst[k] = style[k]; });
                 this.logEvent('CHANGE', `Copied the look of "${src.name}" to "${dst.name}"`);
                 this.refreshAppViewVisualWorkspace();
                 return true;
@@ -11332,6 +11339,28 @@
                 const n = this.alignableSelection().length;
                 bar.classList.toggle('d-none', n < 2);
                 bar.querySelectorAll('[data-align="hspace"], [data-align="vspace"]').forEach(b => { b.disabled = n < 3; });
+                if (n < 2) return;
+                // Keep it above the canvas controls, which wrap onto more lines on narrow screens.
+                const controls = document.getElementById('btn-undo') && document.getElementById('btn-undo').parentElement;
+                if (controls) bar.style.bottom = `${controls.offsetHeight + 24}px`;
+                // One tab stop: the focused button (or the first enabled one); arrow keys move between them.
+                const btns = [...bar.querySelectorAll('button')], usable = btns.filter(b => !b.disabled);
+                const current = usable.find(b => b.tabIndex === 0) || usable[0];
+                btns.forEach(b => { b.tabIndex = b === current ? 0 : -1; });
+            }
+
+            // Arrow keys, Home and End move focus inside the align toolbar (the ARIA toolbar pattern).
+            moveAlignToolbarFocus(ev) {
+                const bar = document.getElementById('align-toolbar');
+                const usable = [...bar.querySelectorAll('button')].filter(b => !b.disabled);
+                const i = usable.indexOf(document.activeElement);
+                if (i < 0 || !usable.length) return;
+                const to = { ArrowRight: i + 1, ArrowDown: i + 1, ArrowLeft: i - 1, ArrowUp: i - 1, Home: 0, End: usable.length - 1 }[ev.key];
+                if (to === undefined) return;
+                ev.preventDefault(); ev.stopPropagation();
+                const next = usable[(to + usable.length) % usable.length];
+                usable.forEach(b => { b.tabIndex = b === next ? 0 : -1; });
+                next.focus();
             }
 
             updatePropertiesInspectorView() {

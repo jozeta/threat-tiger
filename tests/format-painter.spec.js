@@ -89,3 +89,51 @@ test('the painter turns off when its source shape disappears (delete, undo)', as
   await clickNode(page, 'f2');
   expect(await page.evaluate(() => app.state.selectedElementIds)).toEqual(['f2']);   // clicks select again
 });
+
+// ── Deferred minors (1.15.1) ──
+test('painting from a shape with the default look gives the target the default look too', async ({ page }) => {
+  await setup(page, [
+    { id: 'd', type: 'fc_process', name: 'Default', x: 0, y: 0, width: 160, height: 80 },
+    { id: 't', type: 'fc_process', name: 'Target', x: 300, y: 0, width: 160, height: 80, fcFillColor: '#000000', fcStrokeColor: '#ff0000', fcStrokeWidth: 6 },
+    { id: 'c1', type: 'process', name: 'Plain', x: 0, y: 300, width: 240, height: 80, secProps: {} },
+    { id: 'c2', type: 'process', name: 'Red', x: 300, y: 300, width: 240, height: 80, iconColor: '#ff0000', secProps: {} },
+  ]);
+  await page.evaluate(() => { app.state.selectedElementIds = ['d']; app.armFormatPainter(false); app.paintFormatOnto('t'); app.state.selectedElementIds = ['c1']; app.armFormatPainter(false); app.paintFormatOnto('c2'); });
+  const t = await get(page, 't'), c2 = await get(page, 'c2');
+  expect([t.fcFillColor, t.fcStrokeColor, t.fcStrokeWidth]).toEqual(['#f5f3ff', '#2563eb', 2]);   // fc_process defaults
+  expect(c2.iconColor).toBeUndefined();
+});
+
+test('a process and a numbered step are different kinds for the painter', async ({ page }) => {
+  await setup(page, [
+    { id: 'p', type: 'process', name: 'P', x: 0, y: 0, width: 240, height: 80, iconColor: '#2563eb', secProps: {} },
+    { id: 's', type: 'step_activity', name: 'S', x: 0, y: 300, width: 260, height: 50, circleColor: 'red', stepNumber: 1 },
+  ]);
+  const r = await page.evaluate(() => { const before = app.undoStack.length; app.state.selectedElementIds = ['p']; app.armFormatPainter(false); const done = app.paintFormatOnto('s'); return [done, app.undoStack.length - before]; });
+  expect(r).toEqual([false, 0]);
+});
+
+test('while painting, trust zones and swimlanes are not dragged', async ({ page }) => {
+  await setup(page, [
+    { id: 'f1', type: 'fc_process', name: 'Styled', x: 0, y: 0, width: 160, height: 80, fcFillColor: '#fee2e2' },
+    { id: 'z', type: 'boundary', name: 'Zone', x: 0, y: 300, width: 400, height: 300 },
+    { id: 'l', type: 'swimlane', name: 'Lane', x: 600, y: 300, columns: ['A'], rows: ['R'] },
+  ]);
+  await select(page, ['f1']);
+  await page.click('#btn-format-painter');
+  for (const [id, gx, gy] of [['z', 40, 18], ['l', 80, 12]]) {   // the zone's name label; the lane's title bar
+    const pt = await page.evaluate(([i, dx, dy]) => { const e = app.state.elements.find((x) => x.id === i), r = app.dom.svg.getBoundingClientRect(); return { x: r.left + app.panX + (e.x + dx) * app.zoomScale, y: r.top + app.panY + (e.y + dy) * app.zoomScale }; }, [id, gx, gy]);
+    await page.mouse.move(pt.x, pt.y); await page.mouse.down();
+    for (let i = 1; i <= 6; i++) await page.mouse.move(pt.x + i * 15, pt.y + i * 10);
+    await page.mouse.up();
+    const e = await get(page, id);
+    expect([id, e.x, e.y]).toEqual([id, id === 'z' ? 0 : 600, 300]);
+    await select(page, ['f1']); await page.evaluate(() => { if (!app.formatPainter) app.armFormatPainter(false); });
+  }
+  await page.evaluate(() => app.disarmFormatPainter());   // control: the same drag without the painter does move the zone
+  const pt = await page.evaluate(() => { const r = app.dom.svg.getBoundingClientRect(); return { x: r.left + app.panX + 40 * app.zoomScale, y: r.top + app.panY + 318 * app.zoomScale }; });
+  await page.mouse.move(pt.x, pt.y); await page.mouse.down();
+  for (let i = 1; i <= 6; i++) await page.mouse.move(pt.x + i * 15, pt.y + i * 10);
+  await page.mouse.up();
+  expect((await get(page, 'z')).x).toBeGreaterThan(20);
+});

@@ -88,3 +88,54 @@ test('distribute leaves out a box that encloses other selected boxes (a zone wit
   });
   expect(r).toEqual({ b: { x: 250, y: 50 } });   // a and c fixed, gap (500 - 300) / 2 = 100; the zone does not move
 });
+
+// ── Deferred minors (1.15.1) ──
+test('a trust zone without a size aligns as 320 x 240, like the rest of the app', async ({ page }) => {
+  await setup(page);
+  expect(await page.evaluate(() => alignableBox({ id: 'z', type: 'boundary', x: 0, y: 0 }))).toEqual({ id: 'z', x: 0, y: 0, w: 320, h: 240 });
+});
+
+test('aligning shapes in a swimlane is one undo step, including the lane\'s own adjustment', async ({ page }) => {
+  await setup(page, [
+    { id: 'l', type: 'swimlane', name: 'Lane', x: 0, y: 0, columns: ['A', 'B'], rows: ['R'] },
+    { id: 'a', type: 'process', name: 'A', x: 40, y: 100, width: 240, height: 80, secProps: {} },
+    { id: 'b', type: 'process', name: 'B', x: 360, y: 160, width: 240, height: 80, secProps: {} },
+  ]);
+  await page.evaluate(() => { app.layoutSwimlanes(); app.refreshAppViewVisualWorkspace(); app.resetUndoHistory(); });
+  const before = await page.evaluate(() => JSON.stringify(app.state.elements.map((e) => [e.id, e.x, e.y])));
+  await select(page, ['a', 'b']);
+  await page.evaluate(() => app.alignSelection('left'));   // b moves left, into column A, where the lane re-pads it
+  await page.evaluate(() => app.undo());
+  expect(await page.evaluate(() => JSON.stringify(app.state.elements.map((e) => [e.id, e.x, e.y])))).toBe(before);
+});
+
+test('the align toolbar works with arrow keys and has one tab stop', async ({ page }) => {
+  await setup(page, [
+    { id: 'a', type: 'process', name: 'A', x: 0, y: 0, width: 240, height: 80, secProps: {} },
+    { id: 'b', type: 'process', name: 'B', x: 300, y: 100, width: 240, height: 80, secProps: {} },
+  ]);
+  await select(page, ['a', 'b']);
+  const bar = page.locator('#align-toolbar');
+  expect(await bar.locator('button[tabindex="0"]').count()).toBe(1);
+  await bar.locator('[data-align="left"]').focus();
+  await page.keyboard.press('ArrowRight');
+  await expect(bar.locator('[data-align="center"]')).toBeFocused();
+  await page.keyboard.press('End');
+  await expect(bar.locator('[data-align="bottom"]')).toBeFocused();   // distribute buttons are disabled with 2 shapes
+  await page.keyboard.press('Home');
+  await expect(bar.locator('[data-align="left"]')).toBeFocused();
+  await page.keyboard.press('ArrowLeft');
+  await expect(bar.locator('[data-align="bottom"]')).toBeFocused();   // wraps
+});
+
+test('on a narrow screen the align toolbar sits above the canvas controls', async ({ page }) => {
+  await setup(page, [
+    { id: 'a', type: 'process', name: 'A', x: 0, y: 0, width: 240, height: 80, secProps: {} },
+    { id: 'b', type: 'process', name: 'B', x: 300, y: 100, width: 240, height: 80, secProps: {} },
+  ]);
+  await page.setViewportSize({ width: 420, height: 900 });
+  await select(page, ['a', 'b']);
+  const bar = await page.locator('#align-toolbar').boundingBox();
+  const controls = await page.locator('#btn-undo').locator('xpath=..').boundingBox();
+  expect(bar.y + bar.height).toBeLessThanOrEqual(controls.y + 1);
+});
