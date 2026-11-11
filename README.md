@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.15.1** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.15.2** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -41,7 +41,9 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 ## What's new 🆕
 
-**1.15.1** is a bug-fix release. The main fixes:
+**1.15.2** fixes a double-click in the palette adding two shapes stacked on top of each other.
+
+**1.15.1** was a bug-fix release. Its main fixes:
 
 - **Icons** from the icon sets drag like any other shape (press, move, release), and can be dragged from the palette onto the canvas.
 - **Zoom** buttons and the mouse wheel zoom around the centre of the view.
