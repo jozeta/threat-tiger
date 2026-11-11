@@ -5,6 +5,16 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+### Tests
+- 68 new end-to-end tests (`tests/cov-*.spec.js`) for parts no test covered before:
+  - whole workflows built through the UI, with exports and re-imports and undo/redo of a whole session;
+  - every toolbar, Properties and menu action;
+  - keyboard shortcuts;
+  - a no-errors pass and focus and naming checks on every dialog;
+  - performance budgets on a large model;
+  - lint, including the inline script, and version consistency.
+- The 10 tests that show known bugs are marked as expected to fail (`test.fail`, with a `// BUG:` note) until those bugs are fixed.
+
 ## 1.15.2
 
 ### Fixed
