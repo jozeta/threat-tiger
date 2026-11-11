@@ -379,3 +379,18 @@ test('26: grid snapping still toggles when browser storage refuses writes', asyn
   expect(r.shown).toBe(r.after);   // the menu shows the new state
   expect(r.err).toBeNull();
 });
+
+test('a double-click on a palette item or an icon adds one shape, not two', async ({ page }) => {
+  await setup(page, [{ id: 'z', type: 'process', name: 'Z', x: 2000, y: 2000, ...box(240, 80) }]);
+  await page.evaluate(() => document.getElementById('collapseDataNodes').classList.add('show'));
+  const set = page.locator('[data-stencil-set="aws"]');
+  await set.locator('.stencil-set-toggle').click();
+  await expect(set.locator('.stencil-item').first()).toBeVisible();
+  await set.locator('.stencil-item').first().dblclick();
+  expect(await page.evaluate(() => app.state.elements.length)).toBe(2);
+  await page.locator('#pal-process').dblclick();
+  expect(await page.evaluate(() => app.state.elements.length)).toBe(3);
+  // Two separate single clicks still add two.
+  await page.locator('#pal-process').click(); await page.waitForTimeout(600); await page.locator('#pal-process').click();
+  expect(await page.evaluate(() => app.state.elements.length)).toBe(5);
+});

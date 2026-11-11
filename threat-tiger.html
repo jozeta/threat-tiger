@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-oBzuzpQBsHgQudWL7LFEDBYJsbN7QU1NghdZp5q5Djo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ysxhCeXbTFGJyONGvho2/uQeeKVugwjOjt4o102NO2g='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -7082,7 +7082,7 @@
                     const el = document.getElementById(id);
                     if (el) {
                         el.setAttribute('draggable', 'true');
-                        el.addEventListener('click', (ev) => this.instantiateNewCanvasElementNode(ev.currentTarget.getAttribute('data-type')));
+                        el.addEventListener('click', (ev) => { if (ev.detail > 1) return; this.instantiateNewCanvasElementNode(ev.currentTarget.getAttribute('data-type')); });   // the 2nd click of a double-click adds nothing
                         el.addEventListener('dragstart', (ev) => {
                             ev.dataTransfer.setData('text/plain', ev.currentTarget.getAttribute('data-type'));
                             ev.dataTransfer.effectAllowed = 'copy';
@@ -8322,7 +8322,7 @@
                         img.src = 'data:image/svg+xml;base64,' + toText(icon[5]);
                         const span = document.createElement('span'); span.textContent = toText(name);
                         b.append(img, span);
-                        b.addEventListener('click', () => this.addStencilNode(id, icon));
+                        b.addEventListener('click', (ev) => { if (ev.detail > 1) return; this.addStencilNode(id, icon); });   // the 2nd click of a double-click adds nothing
                         b.draggable = true;   // drag onto the canvas like the other palette items
                         b.addEventListener('dragstart', (ev) => {
                             ev.dataTransfer.setData(STENCIL_DRAG_TYPE, b.dataset.stencil);

@@ -5,6 +5,9 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+### Fixed
+- **Palette:** double-clicking a shape or an icon in the palette adds one shape instead of two stacked on top of each other.
+
 ## 1.15.1
 
 Fixes from the November 2026 bug check, and the small issues the 1.15.0 reviews left open.
