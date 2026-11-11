@@ -153,3 +153,130 @@ test('16: the threat pop-up closes when the canvas is redrawn', async ({ page })
   await expect(page.locator('#threat-bug-popover')).toBeHidden();
 });
 
+
+test('2: protocol-relative and absolute image paths are rejected on import; relative file names stay', async ({ page }) => {
+  const hits = [];
+  await page.route('**/*', (route) => { if (route.request().url().includes('tracker.example')) { hits.push(route.request().url()); return route.fulfill({ status: 200, contentType: 'image/png', body: '' }); } return route.continue(); });
+  await openApp(page, { session: demoSession() });
+  await importJson(page, base({ elements: [
+    { id: 'i1', type: 'custom_image', name: 'One', x: 10, y: 10, width: 120, height: 120, imageUrl: '//tracker.example/pixel.png' },
+    { id: 'i2', type: 'custom_image', name: 'Two', x: 200, y: 10, width: 120, height: 120, imageUrl: '/abs/pixel.png' },
+    { id: 'i3', type: 'custom_image', name: 'Three', x: 400, y: 10, width: 120, height: 120, imageUrl: 'images/pixel.png' }] }));
+  await page.waitForTimeout(300);
+  const urls = await page.evaluate(() => app.state.elements.map(e => e.imageUrl));
+  expect(urls).toEqual(['', '', 'images/pixel.png']);
+  expect(hits).toEqual([]);
+});
+
+test('5: the template backup keeps every field and the deleted built-ins, and restoring it brings both back', async ({ page }) => {
+  await openApp(page, { session: demoSession() });
+  await page.waitForFunction(() => (window.app.threatSuggestions.process || []).length > 10);
+  const gone = await page.evaluate(() => {
+    const a = window.app, t = a.threatSuggestions.process[1];
+    a.addTemplateTombstone(a.templateKey('process', t));
+    a.threatSuggestions.process[0].controls = ['Edited control']; a.threatSuggestions.process[0].userEdited = true;
+    return a.templateKey('process', t);
+  });
+  const [dl] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => window.app.exportThreatTemplatesBackup())]);
+  const data = JSON.parse(fs.readFileSync(await dl.path(), 'utf8'));
+  expect(data.process[0].id).toBeTruthy();
+  expect(data.process[0].controls).toEqual(['Edited control']);
+  expect(data.process[0].userEdited).toBe(true);
+  expect(data.process.filter(t => t.when).length + data.flow.filter(t => t.when).length).toBeGreaterThan(0);
+  expect(data.process.some(t => 'isUnsaved' in t)).toBe(false);
+  expect(data.deletedBuiltins).toContain(gone);
+  // Restore in a fresh browser: the edit and the deletion come back.
+  await page.evaluate(() => localStorage.clear());
+  await openApp(page, { session: demoSession() });
+  await page.waitForFunction(() => (window.app.threatSuggestions.process || []).length > 10);
+  await page.evaluate((d) => { window.app.mergeThreatSuggestions(d, false); window.app.applyDeletedBuiltins(d.deletedBuiltins); }, data);
+  const r = await page.evaluate((key) => { const a = window.app; return { edited: a.threatSuggestions.process.find(t => t.userEdited)?.controls, gone: a.threatSuggestions.process.some(t => a.templateKey('process', t) === key), tomb: a.getTemplateTombstones().has(key) }; }, gone);
+  expect(r).toEqual({ edited: ['Edited control'], gone: false, tomb: true });
+});
+
+test('6: shapes on an imported page without a position move into that page\'s area', async ({ page }) => {
+  await openApp(page, { session: demoSession() });
+  await importJson(page, base({
+    pages: [{ id: 'p1', name: 'One' }, { id: 'p2', name: 'Two' }],
+    elements: [
+      { id: 'z', type: 'boundary', name: 'Zone on page 1', x: 0, y: 0, width: 600, height: 400, pageId: 'p1' },
+      { id: 'a', type: 'process', name: 'A', x: 50, y: 50, width: 240, height: 80, pageId: 'p1' },
+      { id: 'b', type: 'process', name: 'B', x: 100, y: 100, width: 240, height: 80, pageId: 'p2' }],
+    flows: [{ id: 'f', name: 'f', sourceId: 'b', targetId: 'a', points: [{ x: 120, y: 300 }] }],
+  }));
+  const r = await page.evaluate(() => {
+    const a = window.app, p2 = a.state.pages.find(p => p.id === 'p2');
+    return { off: p2.offset, bx: a.state.elements.find(e => e.id === 'b').x, pt: a.state.flows[0].points[0].x, inZone: a.computeTrustAnalysis().nodeZones.get('b')?.length || 0 };
+  });
+  expect(r.off).toBeGreaterThan(0);
+  expect(r.bx).toBe(r.off + 100);
+  expect(r.pt).toBe(r.off + 120);
+  expect(r.inZone).toBe(0);
+});
+
+test('11 and 12: bad flowchart colours and unknown flowchart types are cleaned up on import', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await openApp(page, { session: demoSession() });
+  await importJson(page, base({ elements: [
+    { id: 'a', type: 'fc_process', name: 'A', x: 10, y: 10, width: 160, height: 80, fcFillColor: 5, fcStrokeColor: 'url(#x)', fcStrokeWidth: 'wide' },
+    { id: 'b', type: 'fc_bogus', name: 'B', x: 300, y: 10, width: 160, height: 80, fcFillColor: '#ff0000' }] }));
+  const r = await page.evaluate(() => app.state.elements.map(e => ({ id: e.id, type: e.type, fill: e.fcFillColor, stroke: e.fcStrokeColor, w: e.fcStrokeWidth })));
+  expect(r).toEqual([{ id: 'a', type: 'fc_process' }, { id: 'b', type: 'fc_process', fill: '#ff0000' }]);
+  await page.evaluate(() => { app.state.selectedElementIds = ['b']; app.armFormatPainter(false); app.paintFormatOnto('a'); });
+  expect(await page.evaluate(() => app.state.elements.find(e => e.id === 'a').fcFillColor)).toBe('#ff0000');
+  expect(errors).toEqual([]);
+});
+
+test('13: a "$" in a component name stays literal in threat titles', async ({ page }) => {
+  await openApp(page, { session: demoSession() });
+  const r = await page.evaluate(() => {
+    const a = window.app, item = a.state.elements.find(e => e.type === 'process'); item.name = "Pay $& $' Co";
+    return a.describeTemplate({ title: 'Spoofing of [name] now', category: 'Spoofing' }, 'process', item, a.ruleHelpers(a.computeTrustAnalysis())).title;
+  });
+  expect(r).toBe("Spoofing of Pay $& $' Co now");
+});
+
+test('14 (and 10, not a bug): renaming updates the canvas label for ids with quote marks and for flowchart shapes', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await setup(page, [
+    { id: 'el"q', type: 'process', name: 'Quoted', x: 100, y: 100, ...box(240, 80) },
+    { id: 'fc', type: 'fc_process', name: 'Process', x: 500, y: 100, ...box(160, 80) }]);
+  const rename = async (id, field, name) => {
+    await page.evaluate((id) => window.app.handleElementSelectionEvent(id), id);
+    await page.fill(field, name);
+    await page.locator(field).dispatchEvent('change');
+  };
+  await rename('el"q', '#props-input-name', 'Renamed');
+  await rename('fc', '#props-fc-label', 'NewLabel');   // flowchart shapes have their own label field, which redraws
+  const labels = await page.evaluate(() => [...document.querySelectorAll('#layers-nodes-group g[data-id]')].map(g => [g.getAttribute('data-id'), g.textContent.replace(/\s+/g, ' ').trim()]));
+  expect(labels.find(l => l[0] === 'el"q')[1]).toContain('Renamed');
+  expect(labels.find(l => l[0] === 'fc')[1]).toContain('NewLabel');
+  expect(errors).toEqual([]);
+});
+
+test('15: a flow with only one bend value still draws', async ({ page }) => {
+  const s = demoSession(d => { delete d.flows[0].bendX; d.flows[0].bendY = 40; d.flows[0].points = []; });
+  await openApp(page, { session: s });
+  const d = await page.evaluate((fid) => document.querySelector(`[data-flow-id="${fid}"] .flow-line`).getAttribute('d'), s.flows[0].id);
+  expect(d).not.toContain('NaN');
+  expect(await page.evaluate((fid) => app.state.flows.find(f => f.id === fid).bendX, s.flows[0].id)).toBe(0);
+});
+
+test('17: an imported swimlane without columns gets the default columns, drawn with headers', async ({ page }) => {
+  const s = demoSession(d => { d.elements.push({ id: 'sw1', type: 'swimlane', name: 'Lane', x: 2000, y: 2000, width: 680, height: 480, columns: [], rows: ['A'] }); });
+  await openApp(page, { session: s });
+  const info = await page.evaluate(() => { const sw = window.app.state.elements.find(e => e.id === 'sw1'); return { cols: sw.columns, headers: document.querySelectorAll('g[data-id="sw1"] .swimlane-col-text').length }; });
+  expect(info.cols).toEqual(['Column 1', 'Column 2']);
+  expect(info.headers).toBe(2);
+});
+
+test('25: flowchart shapes get all six STRIDE suggestions and list their threats in Properties', async ({ page }) => {
+  await setup(page, [{ id: 'fc', type: 'fc_process', name: 'Login', x: 500, y: 100, ...box(160, 80) }]);
+  await page.evaluate(() => { app.state.threats = [{ id: 'T-1', elementId: 'fc', title: 'Something', category: 'Spoofing', status: 'Open', likelihood: 3, impact: 3 }]; app.handleElementSelectionEvent('fc'); });
+  await expect(page.locator('#box-props-threats')).toBeVisible();
+  await expect(page.locator('#box-props-threats')).toContainText('Something');
+  const cats = await page.evaluate(() => [...new Set(app.threatSuggestions.process.filter(t => ['Spoofing', 'Elevation of Privilege'].includes(t.category)).map(t => t.category))]);
+  expect(cats.length).toBe(2);
+  const shown = await page.locator('#box-stride-applicable-badges').allTextContents().catch(() => []);
+  expect(shown.join(' ')).toMatch(/Spoofing|Elevation/);
+});

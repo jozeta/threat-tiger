@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-r7Y2Vie+kMyEEhWAF2iWU3zk0o3EbfhQNdlff/LuCR8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-tLxPtwnvS1l4fVDlwF8TqRIM4p5fH27e+0POhIjAqH4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3719,7 +3719,8 @@
             if (!v) return '';
             if (/^data:image\/(png|jpe?g|gif|webp|svg\+xml|bmp);/i.test(v)) return v;
             if (/^https?:\/\//i.test(v)) return v;
-            if (/^[\w.\/-]+\.(png|jpe?g|gif|webp|svg)$/i.test(v) && !v.includes('..')) return v;
+            // A relative file name, never "//host/…" or "/…" (a protocol-relative URL would load from another site without asking).
+            if (/^[\w.-][\w.\/-]*\.(png|jpe?g|gif|webp|svg)$/i.test(v) && !v.includes('..') && !v.includes('//')) return v;
             return '';
         }
         function isExternalUrl(value) {
@@ -4801,6 +4802,10 @@
             const el = copyPlain(raw);
             el.id = id;
             el.type = toText(raw.type) || 'process';
+            if (el.type.startsWith('fc_') && !FLOWCHART_DEFAULTS[el.type]) el.type = 'fc_process';   // unknown flowchart shape
+            // Flowchart styling: colours as safe colour tokens, the line width as a number; anything else falls back to the shape's defaults.
+            ['fcFillColor', 'fcStrokeColor'].forEach(k => { if (k in raw) { const c = safeColor(raw[k], ''); if (c) el[k] = c; else delete el[k]; } });
+            if ('fcStrokeWidth' in raw) { const w = toNumber(raw.fcStrokeWidth, undefined); if (w > 0) el.fcStrokeWidth = Math.min(20, w); else delete el.fcStrokeWidth; }
             el.name = toText(raw.name);
             el.x = toNumber(raw.x, 0); el.y = toNumber(raw.y, 0);
             ['width', 'height', 'x2', 'y2', 'bendX', 'bendY', 'textOffset', 'fontSize', 'stepNumber', 'zIndex'].forEach(k => {
@@ -4816,6 +4821,11 @@
                 if (toText(raw.imageUrl) && !el.imageUrl) ctx.warn(`Removed an unsupported image address from "${el.name || id}".`);
             }
             ['columns', 'rows'].forEach(k => { if (k in raw) el[k] = Array.isArray(raw[k]) ? raw[k].map(toText) : []; });
+            // A swimlane always has at least one column and row, the same defaults its layout uses.
+            if (el.type === 'swimlane') {
+                if (!Array.isArray(el.columns) || !el.columns.length) el.columns = ['Column 1', 'Column 2'];
+                if (!Array.isArray(el.rows) || !el.rows.length) el.rows = ['Row 1', 'Row 2'];
+            }
             ['colWidths', 'rowHeights'].forEach(k => { if (k in raw) el[k] = Array.isArray(raw[k]) ? raw[k].map(v => toNumber(v, 200)) : undefined; });
             if ('theme' in raw) { const t = toText(raw.theme); el.theme = SWIMLANE_THEME_IDS.has(t) ? t : ''; }
             // Manual minimum sizes from the resize handles: 0 (auto) or a size within the allowed range.
@@ -4847,6 +4857,7 @@
             f.notes = toText(raw.notes);
             f.secProps = normalizeSecProps(raw.secProps);
             ['bendX', 'bendY', 'textOffset', 'thickness'].forEach(k => { if (k in raw) f[k] = toNumber(raw[k], undefined); });
+            if ('bendX' in f || 'bendY' in f) { f.bendX = f.bendX || 0; f.bendY = f.bendY || 0; }   // a bend needs both values
             f.points = Array.isArray(raw.points)
                 ? raw.points.filter(isPlainObject).map(p => ({ x: toNumber(p.x, 0), y: toNumber(p.y, 0) }))
                 : [];
@@ -4957,7 +4968,9 @@
             if (out.length > MAX_PAGES) { ctx.warn(`Kept the first ${MAX_PAGES} pages.`); out.length = MAX_PAGES; }
             if (!out.length) out.push({ ...DEFAULT_PAGE });
             const taken = new Set();
-            out.forEach(p => { if (p.offset !== null && !taken.has(p.offset)) taken.add(p.offset); else p.offset = null; });
+            // Pages given a new area are reported in ctx.movedPages (id → the offset they had, or null), so their shapes can follow.
+            ctx.movedPages = new Map();
+            out.forEach(p => { if (p.offset !== null && !taken.has(p.offset)) taken.add(p.offset); else { ctx.movedPages.set(p.id, p.offset); p.offset = null; } });
             out.forEach(p => { if (p.offset === null) { let o = 0; while (taken.has(o)) o += PAGE_STRIDE; p.offset = o; taken.add(o); } });
             out.forEach((p, i) => { if (!p.name) p.name = `Page ${i + 1}`; });
             return out;
@@ -5025,6 +5038,22 @@
                 const pid = toText(e.pageId), band = Math.round((Number(e.x) || 0) / PAGE_STRIDE) * PAGE_STRIDE;
                 e.pageId = pageIds.has(pid) ? pid : (pageAt.get(band) || pages[0].id);
                 if ('linkedPageId' in e) { const l = toText(e.linkedPageId); if (pageIds.has(l)) e.linkedPageId = l; else delete e.linkedPageId; }
+            });
+            // A shape whose page got a new area (missing or clashing offset) moves into that page's area, with its flows' bend points,
+            // so trust zones on one page never contain shapes from another.
+            const offsetOf = new Map(pages.map(p => [p.id, p.offset])), shiftOf = new Map();
+            elements.forEach(e => {
+                if (!ctx.movedPages.has(e.pageId)) return;
+                const from = ctx.movedPages.get(e.pageId);
+                const band = from !== null ? from : Math.round((Number(e.x) || 0) / PAGE_STRIDE) * PAGE_STRIDE;
+                const shift = offsetOf.get(e.pageId) - band;
+                if (!shift) return;
+                e.x += shift; if (Number.isFinite(e.x2)) e.x2 += shift;
+                shiftOf.set(e.id, shift);
+            });
+            flows.forEach(f => {
+                const shift = shiftOf.get(f.sourceId);
+                if (shift && Array.isArray(f.points)) f.points.forEach(pt => { if (pt && Number.isFinite(pt.x)) pt.x += shift; });
             });
             flows.forEach(f => { delete f.pageId; });   // a flow is on its source's page
             const activePageId = pageIds.has(toText(raw.activePageId)) ? toText(raw.activePageId) : pages[0].id;
@@ -5489,7 +5518,7 @@
                     } else if ((f.bendX || 0) !== 0 || (f.bendY || 0) !== 0) {
                         const midX = (p1.x + p2.x) / 2;
                         const midY = (p1.y + p2.y) / 2;
-                        addPoint(midX + f.bendX, midY + f.bendY);
+                        addPoint(midX + (f.bendX || 0), midY + (f.bendY || 0));
                     }
                 });
 
@@ -8842,7 +8871,7 @@
                     this.refreshAppViewVisualWorkspace();
                 }
             } syncDirectDOMElementContent(item) {
-                const textContainer = this.dom.svg.querySelector(`.node-element[data-id="${item.id}"] .card-text-render-target`);
+                const textContainer = this.dom.svg.querySelector(`.node-element[data-id="${CSS.escape(item.id)}"] .card-text-render-target`);
                 if (textContainer) {
                     if (textContainer.tagName.toLowerCase() === 'text') {
                         textContainer.textContent = item.name;
@@ -9376,7 +9405,7 @@
              */
             describeTemplate(tpl, libraryKey, item, m) {
                 const id = this.templateIdOf(libraryKey, tpl);
-                const title = toText(tpl.title).replace('[name]', toText(item.name) || 'unnamed');
+                const title = toText(tpl.title).replace('[name]', () => toText(item.name) || 'unnamed');   // a function, so "$&" in a name stays literal
                 let reason = null;
                 if (tpl.when) { try { const r = this.evaluateCondition(tpl.when, item, m); if (r.ok) reason = r.reasons.join('; ') || 'matches your model'; } catch (err) { console.warn('[ThreatTiger] Condition failed', id, err); } }
                 const mine = m.subtypes(item);
@@ -10441,7 +10470,7 @@
                     } else if ((f.bendX || 0) !== 0 || (f.bendY || 0) !== 0) {
                         const midX = (p1.x + p2.x) / 2;
                         const midY = (p1.y + p2.y) / 2;
-                        controlPoints = [[midX + f.bendX, midY + f.bendY]];
+                        controlPoints = [[midX + (f.bendX || 0), midY + (f.bendY || 0)]];
                     }
 
                     // Shorten endPt by arrW to attach to arrowhead base
@@ -10608,7 +10637,7 @@
                             if (cPoints.length === 0 && ((f.bendX || 0) !== 0 || (f.bendY || 0) !== 0)) {
                                 const midX = (p1.x + p2.x) / 2;
                                 const midY = (p1.y + p2.y) / 2;
-                                cPoints = [[midX + f.bendX, midY + f.bendY]];
+                                cPoints = [[midX + (f.bendX || 0), midY + (f.bendY || 0)]];
                             }
 
                             const pts = [sPt, ...cPoints, ePt];
@@ -10626,7 +10655,7 @@
                             if (f.points.length === 0 && ((f.bendX || 0) !== 0 || (f.bendY || 0) !== 0)) {
                                 const midX = (p1.x + p2.x) / 2;
                                 const midY = (p1.y + p2.y) / 2;
-                                f.points = [{ x: this.snapValue(midX + f.bendX), y: this.snapValue(midY + f.bendY) }];
+                                f.points = [{ x: this.snapValue(midX + (f.bendX || 0)), y: this.snapValue(midY + (f.bendY || 0)) }];
                                 const pts2 = [sPt, [f.points[0].x, f.points[0].y], ePt];
                                 minDistance = Infinity;
                                 for (let i = 0; i < pts2.length - 1; i++) {
@@ -11865,7 +11894,7 @@
 
                 boxThreats.classList.add('d-none');
 
-                const canHaveThreats = ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(targetItem.type) || !targetItem.type;
+                const canHaveThreats = ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(targetItem.type) || toText(targetItem.type).startsWith('fc_') || !targetItem.type;
                 if (!canHaveThreats) return;
 
                 const associatedThreats = (this.state.threats || []).filter(t => t.elementId === targetItem.id);
@@ -11931,7 +11960,7 @@
 
                 const typeKey = item.type || 'flow';
                 let categories = [];
-                if (typeKey === 'process' || typeKey === 'custom_image') {
+                if (typeKey === 'process' || typeKey === 'custom_image' || typeKey.startsWith('fc_')) {   // flowchart shapes use the process library
                     categories = ['Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'];
                 } else if (typeKey === 'datastore') {
                     categories = ['Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service'];
@@ -11951,16 +11980,6 @@
                 // Filter pooled templates to only display those that match a category supported by the selected element
                 const matchingScenarios = allTemplatesInLibrary.filter(sc => categories.includes(sc.category));
 
-                const allScenarios = matchingScenarios.map(sc => {
-                    const interpolatedTitle = (sc.title || '').replace('[name]', `[${item.name || ''}]`);
-                    return {
-                        category: sc.category,
-                        title: interpolatedTitle,
-                        originalTitle: sc.title,
-                        desc: sc.desc,
-                        originalObj: sc
-                    };
-                });
 
                 this.dom.applicableBadgesContainer.innerHTML = '';
                 categories.forEach(cat => {
@@ -13317,6 +13336,19 @@
                 return [type, toText(t && t.category).trim().toLowerCase(), toText(t && t.title).trim().toLowerCase()].join('|');
             }
 
+            // A restored backup's deleted built-ins: remember them and remove them from the library.
+            applyDeletedBuiltins(keys) {
+                if (!Array.isArray(keys)) return;
+                const wanted = new Set(keys.map(toText).filter(k => k && k.length < 1000).slice(0, 5000));
+                if (!wanted.size) return;
+                const set = this.getTemplateTombstones();
+                wanted.forEach(k => set.add(k));
+                this.safeSetItem('threat_tiger_template_tombstones', JSON.stringify([...set]));
+                Object.keys(this.threatSuggestions).forEach(type => {
+                    if (Array.isArray(this.threatSuggestions[type])) this.threatSuggestions[type] = this.threatSuggestions[type].filter(t => !wanted.has(this.templateKey(type, t)));
+                });
+            }
+
             getTemplateTombstones() {
                 try { return new Set(JSON.parse(localStorage.getItem('threat_tiger_template_tombstones') || '[]')); }
                 catch (_) { return new Set(); }
@@ -13455,35 +13487,22 @@
             }
 
             exportThreatTemplatesBackup() {
-                // Clear in-memory unsaved state
+                // The whole library (ids, controls, references, ratings, conditions, edits), plus the built-ins the user deleted,
+                // so restoring it in another browser gives back exactly this library.
+                const backup = {};
                 Object.keys(this.threatSuggestions).forEach(type => {
-                    if (Array.isArray(this.threatSuggestions[type])) {
-                        this.threatSuggestions[type].forEach(t => {
-                            delete t.isUnsaved;
-                        });
-                    }
+                    if (!Array.isArray(this.threatSuggestions[type])) return;
+                    backup[type] = this.threatSuggestions[type].filter(isPlainObject).map(t => { const c = sanitizeTemplate(t, false); delete c.isUnsaved; return c; });
                 });
+                const deleted = [...this.getTemplateTombstones()];
+                if (deleted.length) backup.deletedBuiltins = deleted;
+                this.downloadBlob(new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' }), 'threat_templates.json');
 
-                // Clear local storage delete state
+                // The backup holds every change, so nothing is unsaved any more.
+                Object.values(this.threatSuggestions).forEach(list => { if (Array.isArray(list)) list.forEach(t => { delete t.isUnsaved; }); });
                 localStorage.removeItem('stride_workbench_templates_deleted_unsaved');
                 this.saveThreatTemplatesToLocalStorage();
-
-                // Export clean copy without isUnsaved flags
-                const cleanExport = {};
-                Object.keys(this.threatSuggestions).forEach(type => {
-                    cleanExport[type] = this.threatSuggestions[type].map(t => ({
-                        category: t.category,
-                        title: t.title,
-                        desc: t.desc
-                    }));
-                });
-
-                const blob = new Blob([JSON.stringify(cleanExport, null, 2)], { type: 'application/json' });
-                const a = document.createElement('a');
-                a.href = URL.createObjectURL(blob);
-                a.download = 'threat_templates.json';
-                a.click();
-                this.logEvent("CONFIGURE", `Exported threat templates backup file.`);
+                this.logEvent("CONFIGURE", `Exported threat templates backup file.`, { undoable: false });
                 this.updateThreatSuggestionsWizardView();
             }
 
@@ -13500,6 +13519,7 @@
                             const data = JSON.parse(evt.target.result);
                             if (data && typeof data === 'object') {
                                 this.mergeThreatSuggestions(data, false);
+                                this.applyDeletedBuiltins(data.deletedBuiltins);
                                 this.templatesFileMissing = false;
                                 this.saveThreatTemplatesToLocalStorage();
                                 this.logEvent("CONFIGURE", `Successfully loaded and merged external templates backup file.`);
