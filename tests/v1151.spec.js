@@ -280,3 +280,102 @@ test('25: flowchart shapes get all six STRIDE suggestions and list their threats
   const shown = await page.locator('#box-stride-applicable-badges').allTextContents().catch(() => []);
   expect(shown.join(' ')).toMatch(/Spoofing|Elevation/);
 });
+
+test('8: dragging a swimlane leaves shapes on locked layers where they are', async ({ page }) => {
+  await setup(page, [
+    { id: 'S', type: 'swimlane', name: 'Lane', x: 100, y: 100, ...box(680, 480), columns: ['C1', 'C2'], rows: ['R1', 'R2'] },
+    { id: 'P', type: 'process', name: 'P', x: 200, y: 200, ...box(240, 80) },
+    { id: 'Q', type: 'process', name: 'Q', x: 480, y: 400, ...box(240, 80) }]);
+  const p0 = await page.evaluate(() => { const a = window.app; const id = a.addLayer(); a.state.elements.find(e => e.id === 'P').layerId = id; a.setLayerLocked(id, true); a.refreshAppViewVisualWorkspace(); return a.state.elements.find(e => e.id === 'P').x; });
+  const q0 = await page.evaluate(() => app.state.elements.find(e => e.id === 'Q').x);
+  const p = await toClient(page, 700, 115);
+  await page.mouse.move(p.x, p.y); await page.mouse.down();
+  await page.mouse.move(p.x + 100, p.y + 100, { steps: 5 }); await page.mouse.up();
+  const r = await page.evaluate(() => Object.fromEntries(app.state.elements.map(e => [e.id, e.x])));
+  expect(r.S).toBeGreaterThan(150);
+  expect(r.P).toBe(p0);
+  expect(r.Q).toBeGreaterThan(q0 + 50);   // unlocked contents still move with the lane
+});
+
+test('18: cancelling a page delete from the rename box leaves no stuck rename box', async ({ page }) => {
+  await openApp(page, { session: demoSession() });
+  await page.evaluate(() => app.addPage());
+  await page.dblclick('#page-tabs .page-tab[data-page-id="p1"]');
+  await page.waitForSelector('.page-rename input');
+  await page.click('.page-tab-delete');
+  await page.waitForSelector('#modal-confirm-delete.show');
+  await page.click('#btn-confirm-cancel');
+  await expect(page.locator('#modal-confirm-delete.show')).toHaveCount(0);
+  await expect(page.locator('#page-tabs .page-rename')).toHaveCount(0);
+  await expect(page.locator('#page-tabs .page-tab[data-page-id="p1"]')).toBeVisible();
+  expect(await page.evaluate(() => app.state.pages.length)).toBe(2);
+});
+
+test('19: "Clear all data" removes every preference', async ({ page }) => {
+  await openApp(page, { session: demoSession() });
+  await page.evaluate(() => { ['hidden_tabs', 'minimap_visible', 'line_jumps', 'hidden_stencil_sets'].forEach(k => localStorage.setItem(k, '"zz"')); });
+  await Promise.all([page.waitForEvent('load'), page.evaluate(() => { app.zoomScale = 1.3; app.applySvgViewportTransformations(); return app.clearLocalData(); })]);
+  await page.waitForTimeout(600);
+  const left = await page.evaluate(() => ['hidden_tabs', 'minimap_visible', 'line_jumps', 'hidden_stencil_sets', 'canvas_view'].filter(k => { const v = localStorage.getItem(k); return v && v.includes('zz') || (k === 'canvas_view' && v && JSON.parse(v).zoom === 1.3); }));
+  expect(left).toEqual([]);
+});
+
+test('20: the dev server refuses .git and node_modules at the top level', async () => {
+  const { spawn } = require('node:child_process');
+  const path = require('node:path');
+  const port = 4300 + Math.floor(Math.random() * 500);
+  const srv = spawn(process.execPath, [path.join(__dirname, '..', 'scripts', 'serve.mjs')], { env: { ...process.env, PORT: String(port) }, stdio: 'ignore' });
+  try {
+    const get = async (p) => { for (let i = 0; i < 50; i++) { try { return (await fetch(`http://127.0.0.1:${port}${p}`)).status; } catch { await new Promise(r => setTimeout(r, 100)); } } return -1; };
+    expect(await get('/threat-tiger.html')).toBe(200);
+    expect(await get('/.git/config')).toBe(404);
+    expect(await get('/node_modules/@playwright/test/package.json')).toBe(404);
+  } finally { srv.kill(); }
+});
+
+test('22: a failed PNG export brings back the grid and the selection, and says why', async ({ page }) => {
+  await setup(page, [{ id: 'A', type: 'process', name: 'A', x: 100, y: 100, ...box(240, 80) }]);
+  await page.evaluate(() => { app.state.selectedElementIds = ['A']; app.refreshAppViewVisualWorkspace(); HTMLCanvasElement.prototype.toDataURL = () => 'data:,'; });
+  await page.evaluate(() => app.exportCanvasAsPng());
+  await expect(page.locator('#app-toast-container')).toContainText('PNG export failed');
+  const r = await page.evaluate(() => ({ sel: app.state.selectedElementIds, grid: document.getElementById('canvas-grid-rect')?.style.visibility || '' }));
+  expect(r).toEqual({ sel: ['A'], grid: '' });
+});
+
+test('23: restoring a damaged History snapshot shows a message and keeps the model', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await openApp(page, { session: demoSession() });
+  const before = await page.evaluate(() => app.state.elements.length);
+  await page.evaluate(async () => {
+    await SnapshotStore.add({ savedAt: Date.now(), label: 'broken', data: '{not json' });
+    const all = await SnapshotStore.list();
+    await app.restoreSnapshot(all.find(s => s.label === 'broken').id);
+  });
+  await expect(page.locator('#app-toast-container')).toContainText('damaged');
+  expect(await page.evaluate(() => app.state.elements.length)).toBe(before);
+  expect(errors).toEqual([]);
+});
+
+test('24: Undo on the deleted-threat message restores that threat, not a later change', async ({ page }) => {
+  await openApp(page, { session: demoSession() });
+  const t = await page.evaluate(() => app.state.threats[0].id);
+  await page.evaluate((id) => app.deleteThreatWithUndo(id), t);
+  const n = await page.evaluate(() => { app.instantiateNewCanvasElementNode('process'); return app.state.elements.length; });
+  await page.locator('#app-toast-container button', { hasText: 'Undo' }).last().click();
+  const r = await page.evaluate((id) => ({ back: app.state.threats.some(x => x.id === id), els: app.state.elements.length }), t);
+  expect(r).toEqual({ back: true, els: n });
+});
+
+test('26: grid snapping still toggles when browser storage refuses writes', async ({ page }) => {
+  await openApp(page, { session: demoSession() });
+  const r = await page.evaluate(() => {
+    const before = app.isSnappingActive;
+    Storage.prototype.setItem = () => { throw new DOMException('blocked', 'SecurityError'); };
+    let err = null;
+    try { document.getElementById('opt-grid-snap-toggle').click(); } catch (e) { err = String(e); }
+    return { before, after: app.isSnappingActive, shown: document.getElementById('opt-grid-snap-toggle').classList.contains('active'), err };
+  });
+  expect(r.after).toBe(!r.before);
+  expect(r.shown).toBe(r.after);   // the menu shows the new state
+  expect(r.err).toBeNull();
+});

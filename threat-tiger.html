@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-tLxPtwnvS1l4fVDlwF8TqRIM4p5fH27e+0POhIjAqH4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-avlJMZCganjAhG8eV80oTB4N0TCh378q/icWHIYhq2A='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -5553,8 +5553,7 @@
                 if (this.viewMode === mode) return;
                 this.viewMode = mode;
                 this.isIsometric = mode !== 'flat';
-                localStorage.setItem('canvas_view_mode', mode);
-                localStorage.setItem('canvas_is_isometric', this.isIsometric);
+                try { localStorage.setItem('canvas_view_mode', mode); localStorage.setItem('canvas_is_isometric', this.isIsometric); } catch { /* view setting only */ }
                 this.applyViewMode();
                 this.zoomToFit();
                 this.refreshAppViewVisualWorkspace();
@@ -5613,7 +5612,7 @@
 
             toggleCanvasTheme() {
                 this.canvasTheme = this.canvasTheme === 'dark' ? 'light' : 'dark';
-                localStorage.setItem('canvas_theme', this.canvasTheme);
+                try { localStorage.setItem('canvas_theme', this.canvasTheme); } catch { /* view setting only */ }
                 this.applyCanvasTheme();
                 this.refreshAppViewVisualWorkspace();
             }
@@ -5945,7 +5944,7 @@
                     del.type = 'button'; del.className = 'page-tab-delete'; del.textContent = '×';
                     del.title = `Delete page "${page.name}" and its shapes`; del.setAttribute('aria-label', `Delete page ${page.name} and its shapes`);
                     del.addEventListener('mousedown', (ev) => ev.preventDefault());   // keep the input from saving first
-                    del.addEventListener('click', () => { done = true; this.renderPageTabs(); this.deletePage(page.id); });
+                    del.addEventListener('click', () => { done = true; input.blur(); this.renderPageTabs(); this.deletePage(page.id); });   // blur first: a focused rename box survives a redraw, and Cancel would leave it stuck
                     wrap.appendChild(del);
                 }
                 btn.replaceWith(wrap); input.focus(); input.select();
@@ -6467,15 +6466,16 @@
                 btn.innerHTML = '<span class="spinner-border spinner-border-sm text-primary" role="status" aria-hidden="true"></span>';
                 btn.disabled = true;
 
+                // Saved outside the try, so the grid and selection come back even when the export fails.
+                const savedSelectedIds = [...this.state.selectedElementIds];
+                const savedSelectedFlowId = this.state.selectedFlowId;
+                const gridRect = document.getElementById('canvas-grid-rect');
+                let originalGridVisibility = '';
                 try {
                     // 1. Temporarily clear selections and active state
-                    const savedSelectedIds = [...this.state.selectedElementIds];
-                    const savedSelectedFlowId = this.state.selectedFlowId;
                     this.clearActiveSelectionPointers();
 
                     // 2. Hide the grid pattern
-                    const gridRect = document.getElementById('canvas-grid-rect');
-                    let originalGridVisibility = '';
                     if (gridRect) {
                         originalGridVisibility = gridRect.style.visibility;
                         gridRect.style.visibility = 'hidden';
@@ -6551,6 +6551,8 @@
 
                     // 10. Generate PNG and trigger download
                     const pngUrl = canvas.toDataURL('image/png');
+                    // Past the browser's canvas size limit toDataURL returns an empty "data:," instead of throwing.
+                    if (!/^data:image\/png;base64,./.test(pngUrl)) throw new Error('the diagram is too large for one image. Split it across pages, or use Print / PDF.');
                     const downloadLink = document.createElement('a');
                     downloadLink.href = pngUrl;
                     const projectName = (this.state.projectTitle || 'threat-tiger')
@@ -6561,23 +6563,15 @@
                     document.body.appendChild(downloadLink);
                     downloadLink.click();
                     document.body.removeChild(downloadLink);
-
-                    // 11. Restore grid and selection
-                    if (gridRect) {
-                        gridRect.style.visibility = originalGridVisibility;
-                    }
-                    if (savedSelectedIds.length > 0) {
-                        this.state.selectedElementIds = savedSelectedIds;
-                    }
-                    if (savedSelectedFlowId) {
-                        this.state.selectedFlowId = savedSelectedFlowId;
-                    }
-                    this.refreshAppViewVisualWorkspace();
-
                 } catch (err) {
                     console.error("[ThreatTiger] Export canvas as PNG failed:", err);
                     this.notify("PNG export failed: " + err.message);
                 } finally {
+                    // 11. Restore grid and selection
+                    if (gridRect) gridRect.style.visibility = originalGridVisibility;
+                    this.state.selectedElementIds = savedSelectedIds;
+                    this.state.selectedFlowId = savedSelectedFlowId;
+                    this.refreshAppViewVisualWorkspace();
                     // eslint-disable-next-line no-unsanitized/property -- reviewed: restores the button's own static markup saved at the start of this function
                     btn.innerHTML = originalHtml;
                     btn.disabled = false;
@@ -7034,7 +7028,7 @@
                         opt.addEventListener('click', (e) => {
                             e.preventDefault();
                             this.gridSize = size;
-                            localStorage.setItem('canvas_grid_size', size);
+                            try { localStorage.setItem('canvas_grid_size', size); } catch { /* view setting only */ }
                             this.updateGridSettingsUiAndPattern();
                         });
                     }
@@ -7045,7 +7039,7 @@
                     optSnap.addEventListener('click', (e) => {
                         e.preventDefault();
                         this.isSnappingActive = !this.isSnappingActive;
-                        localStorage.setItem('canvas_grid_snapping', this.isSnappingActive);
+                        try { localStorage.setItem('canvas_grid_snapping', this.isSnappingActive); } catch { /* view setting only */ }
                         this.updateGridSettingsUiAndPattern();
                     });
                 }
@@ -11065,7 +11059,9 @@
                         const matched = this.state.elements.find(el => el.id === id);
                         if (matched && matched.type === 'swimlane' && matched.cellAssignments) {
                             matched.cellAssignments.forEach(assign => {
-                                dragIds.add(assign.id);
+                                // A lane carries its contents, except shapes on locked or hidden layers, which stay put.
+                                const inner = this.state.elements.find(el => el.id === assign.id);
+                                if (inner && !this.isItemLocked(inner) && this.isItemVisible(inner)) dragIds.add(assign.id);
                             });
                         }
                     });
@@ -12414,10 +12410,22 @@
             deleteThreatWithUndo(threatId) {
                 const t = this.state.threats.find(item => item.id === threatId);
                 if (!t) return;
+                const index = this.state.threats.indexOf(t);
                 this.state.threats = this.state.threats.filter(item => item.id !== threatId);
                 this.logEvent("REMOVE", `Deleted threat ${t.id} "${t.title}"`);
                 this.refreshAppViewVisualWorkspace();
-                this.notify(`Deleted threat ${t.id}.`, 'secondary', { label: 'Undo', onClick: () => this.undo() });
+                // Undo puts back this threat, not whatever was changed last (the toast stays up for a few seconds).
+                this.notify(`Deleted threat ${t.id}.`, 'secondary', { label: 'Undo', onClick: () => this.restoreDeletedThreat(t, index) });
+            }
+
+            restoreDeletedThreat(t, index) {
+                if (this.state.threats.some(item => item.id === t.id)) return;   // already back (an undo got there first)
+                if (t.elementId && !this.state.elements.some(e => e.id === t.elementId) && !this.state.flows.some(f => f.id === t.elementId)) {
+                    this.notify(`Can't restore threat ${t.id}: its component was deleted.`, 'warning'); return;
+                }
+                this.state.threats.splice(Math.min(index, this.state.threats.length), 0, t);
+                this.logEvent("ADD", `Restored deleted threat ${t.id} "${t.title}"`);
+                this.refreshAppViewVisualWorkspace();
             }
 
             /** Selects a component or flow and centres the canvas on it (FEAT-016). */
@@ -12637,8 +12645,10 @@
             async clearLocalData() {
                 this.clearingData = true;   // stop pending/unload saves from writing the data back
                 clearTimeout(this.saveTimer); this.saveTimer = null;
+                clearTimeout(this.viewSaveTimer); this.viewSaveTimer = null;   // a pending view save would write canvas_view back
                 const prefixes = ['stride_workbench_', 'threat_tiger_', 'canvas_'];
-                Object.keys(localStorage).filter(k => prefixes.some(p => k.startsWith(p)) || k === 'license_accepted').forEach(k => localStorage.removeItem(k));
+                const prefs = ['license_accepted', 'hidden_tabs', 'hidden_stencil_sets', 'line_jumps', 'minimap_visible'];
+                Object.keys(localStorage).filter(k => prefixes.some(p => k.startsWith(p)) || prefs.includes(k)).forEach(k => localStorage.removeItem(k));
                 if (SnapshotStore.db) { SnapshotStore.db.close(); SnapshotStore.db = null; }
                 await new Promise(resolve => { try { const r = indexedDB.deleteDatabase('threat-tiger'); r.onsuccess = r.onerror = r.onblocked = () => resolve(); } catch (_) { resolve(); } });
                 this.isCanvasUnsaved = false;
@@ -13025,7 +13035,7 @@
                         this.addOperatorToParticipantsIfNeeded(this.state.activeUser);
                         this.setViewMode('flat');
                         this.canvasTheme = 'light';
-                        localStorage.setItem('canvas_theme', 'light');
+                        try { localStorage.setItem('canvas_theme', 'light'); } catch { /* view setting only */ }
                         this.applyCanvasTheme();
                         this.clearActiveSelectionPointers();
                         this.logEvent("CONFIGURE", "Started a new, empty model.", { undoable: false });
@@ -13174,10 +13184,14 @@
             }
 
             async restoreSnapshot(id) {
-                const snap = await SnapshotStore.get(id);
+                let snap;
+                try { snap = await SnapshotStore.get(id); } catch (err) { this.notify(`Could not read History: ${err.message}`); return; }
                 if (!snap) { this.notify('That snapshot no longer exists.'); return; }
+                let session;
+                try { ({ session } = normalizeSession(JSON.parse(snap.data))); }
+                catch (err) { this.notify(`That snapshot is damaged and can't be restored (${err.message}). Your current model is unchanged.`); return; }
+                if (this.formatPainter) this.disarmFormatPainter();   // ids in the restored model may be reused by other shapes
                 this.takeSnapshot('Before restoring a snapshot', true);
-                const { session } = normalizeSession(JSON.parse(snap.data));
                 const operator = this.state.activeUser;
                 this.state = Object.assign(new ThreatModelSession(), session);
                 this.forgetPageViews();

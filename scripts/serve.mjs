@@ -21,7 +21,7 @@ createServer((req, res) => {
   if (rel === '/') rel = '/threat-tiger.html';
   const file = path.join(root, path.normalize(rel));
   // Stay inside the project and never serve dot-folders (.git, .remember) or dependencies.
-  if (!file.startsWith(root + path.sep) || /[\\/](\.|node_modules)/.test(path.relative(root, file))) { res.writeHead(404).end(); return; }
+  if (!file.startsWith(root + path.sep) || /(^|[\\/])(\.|node_modules([\\/]|$))/.test(path.relative(root, file))) { res.writeHead(404).end(); return; }
   let stat;
   try { stat = statSync(file); } catch { res.writeHead(404).end('Not found'); return; }
   if (!stat.isFile()) { res.writeHead(404).end('Not found'); return; }
