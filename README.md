@@ -4,9 +4,11 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
+**Current version: 1.15.1** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
-![Threat Tiger Screenshot](Screenshot.png)
+![Threat Tiger: the architecture canvas with the palette on the left and Properties on the right](Screenshot.png)
 
 ---
 
@@ -22,13 +24,34 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 *   **Import / export**: JSON (full, or a git-friendly variant that diffs cleanly), Mermaid flowcharts (import: nodes become flowchart shapes, subgraphs trust zones, laid out automatically), CSV, Markdown report (with an embedded Mermaid diagram), Mermaid diagram, PNG and a print-ready report.
 *   **Keyboard and screen-reader friendly**, works on narrow screens, light and dark canvas themes, isometric views.
 
-![Flowchart in a swimlane: hovering a connection point previews the next step; the Type dropdown switches shapes](docs/images/flowchart-swimlanes.png)
+### Screenshots
 
-![Attack paths in Insights: routes from entry points to a crown jewel, ranked by risk, with the top path highlighted on the canvas](docs/images/attack-paths.png)
+<table>
+  <tr>
+    <td width="50%"><img src="docs/images/flowchart-swimlanes.png" alt="A flowchart in a swimlane, with the next-step preview and the Type dropdown"><br><sub><b>Flowcharts and swimlanes:</b> hover a connection point to preview the next step; the Type dropdown switches shapes.</sub></td>
+    <td width="50%"><img src="docs/images/attack-paths.png" alt="Attack paths in Insights with the top path highlighted on the canvas"><br><sub><b>Attack paths:</b> routes from entry points to a crown jewel, ranked by risk, with the top path highlighted on the canvas.</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/icon-sets.png" alt="A small Azure architecture drawn with icons from the icon sets"><br><sub><b>Icon sets:</b> a small Azure architecture (laptop, Front Door, App Services, Key Vault, SQL Database, Okta), with the icon sets in the palette.</sub></td>
+    <td width="50%"><img src="docs/images/pages-layers.png" alt="Page tabs, a drill-down badge, the minimap and the Layers tab"><br><sub><b>Pages and layers:</b> page tabs at the top left, a drill-down badge on Webfront, the minimap, and the Layers tab with a hidden or locked layer.</sub></td>
+  </tr>
+</table>
 
-![Icon sets: a small Azure architecture drawn with stencils (laptop, Front Door, App Services, Key Vault, SQL Database, Okta), with the icon sets in the palette](docs/images/icon-sets.png)
+---
 
-![Pages and layers: page tabs at the top-left of the canvas, a drill-down badge on Webfront, the minimap, and the Layers tab with a hidden-or-locked layer](docs/images/pages-layers.png)
+## What's new 🆕
+
+**1.15.1** is a bug-fix release. The main fixes:
+
+- **Icons** from the icon sets drag like any other shape (press, move, release), and can be dragged from the palette onto the canvas.
+- **Zoom** buttons and the mouse wheel zoom around the centre of the view.
+- **Privacy:** an imported image path such as `//host/image.png` is removed instead of loading from another website without asking.
+- **Threat templates backup** keeps every field and the built-ins you deleted, so a restore gives back the same library.
+- **Copy and paste** keys work for text again outside the canvas.
+- **Data flows, swimlanes, pages and flowchart shapes:** flow ends no longer attach to hidden shapes or loop back, lane drags leave locked shapes alone, imported pages without a position keep their trust zones apart, and flowchart shapes get all six STRIDE categories.
+- Smaller fixes to PNG export, History, Clear all data, the threat pop-up and imports with odd values, plus the follow-up fixes to 1.15.0's pages, layers, align, format painter, attack paths, line jumps and minimap.
+
+1.15.0 added attack paths, align and distribute, layers, icon sets, line jumps, pages, the minimap and the format painter. The full list for every version is in [CHANGELOG.md](CHANGELOG.md).
 
 ---
 

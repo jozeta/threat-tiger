@@ -5,9 +5,42 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
-Fixes for the small issues the 1.15.0 reviews left open.
+## 1.15.1
+
+Fixes from the November 2026 bug check, and the small issues the 1.15.0 reviews left open.
 
 ### Fixed
+- **Icons from the icon sets:**
+  - A placed icon drags like any other shape: press, move, release. Before, the browser's own image drag took over and the icon stuck to the pointer until the next click.
+  - Icons can be dragged from the palette onto the canvas, and land where you drop them.
+- **Zoom:** the zoom buttons and the mouse wheel zoom around the centre of the view instead of the canvas's top-left corner.
+- **Privacy:** an imported image path starting with `//` or `/` is removed. A `//host/…` address used to load from another website without the "Load images from other websites?" question.
+- **Threat templates backup:** the backup now keeps every field (ids, controls, references, ratings, conditions, your edits) and the built-ins you deleted, so restoring it in another browser gives back the same library. Before, it kept only category, title and description.
+- **Pages:** shapes on an imported page that had no position (or the same position as another page) move with their page into its own area, so another page's trust zones no longer count them.
+- **Data flows:**
+  - Dragging a flow's end skips shapes on hidden layers and the flow's own other end, so it can no longer vanish or become a loop.
+  - The Source and Destination lists in Properties show only shapes on the flow's page, without the other end.
+  - A flow imported with only one bend value draws instead of disappearing.
+- **Copy and paste:** Ctrl/Cmd+C and Ctrl/Cmd+V are left to the browser unless shapes are selected on the canvas and no text is, so you can copy text from the threat register, Insights and the report again.
+- **Swimlanes:**
+  - Dragging a swimlane leaves shapes on locked or hidden layers where they are.
+  - An imported swimlane without columns or rows gets the default ones, with headers.
+- **Flowchart shapes:**
+  - Their suggestions cover all six STRIDE categories, like processes.
+  - Properties lists their threats.
+  - An imported fill or line colour that isn't a colour, or a line width that isn't a number, falls back to the shape's default instead of failing the whole import.
+  - An unknown flowchart type becomes a flowchart process, so the format painter can't crash on it.
+- **Threats:**
+  - A `$` in a component name stays literal in suggested threat titles. `Pay $& Co` used to give "Spoofing of Pay [name] Co".
+  - Undo on the "Deleted threat" message brings back that threat, even if you changed something else in the meantime.
+  - The threat pop-up closes when its shape is deleted or the canvas is redrawn.
+- **Renaming:** a shape whose imported id contains a quote mark can be renamed without an error.
+- **Page tabs:** cancelling a page delete started from the rename box no longer leaves a stuck rename box.
+- **PNG export:** a failed export brings back the grid and the selection. An image too large for the browser is reported instead of saving an empty file.
+- **History:** restoring a damaged snapshot shows a message and keeps your model.
+- **Clear all data:** also removes the hidden tabs, hidden icon sets, line jumps and minimap settings, and a pending save of the view can no longer write itself back.
+- **Settings:** the grid size, snapping, view mode and theme settings still respond when the browser blocks storage.
+- **Dev server** (`npm run serve`): refuses `.git` and `node_modules` at the top level too.
 - **Attack paths:**
   - Parallel flows between the same two shapes no longer give duplicate rows. The path uses the weakest of the flows.
   - "More paths exist" now appears only when another path really exists past the limit of 200.
