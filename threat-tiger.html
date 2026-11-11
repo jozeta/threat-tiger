@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-jeKUymlMuCyoRLsbgr5bs3LPNWZ+ayBO4gT9x0LLlSk='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-aVQCde40ox4VeUoHca69sknXmpz85mkgDQfj0RthaFg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3717,7 +3717,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.16.0';
+        const APP_VERSION = '1.17.0';
         const SCHEMA_VERSION = 1;
         const MAX_ZOOM = 2.5;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
@@ -3931,14 +3931,111 @@
             }
             return cost;
         }
+        // ── Routing around shapes ──
+        // Shapes are grown by a margin; the route runs over a grid made of their edges (plus the two ends and the
+        // line halfway between them) and is the cheapest path on it: length, plus a charge per bend, plus a tiny charge
+        // for straying from the centre line (so of two equal routes the balanced one wins). Nothing is stored in the
+        // model: every redraw routes again, so a line straightens as soon as the shape in its way is gone.
+        const ELBOW_MARGIN = 14, ELBOW_BEND_COST = 40, ELBOW_WINDOW = 400, ELBOW_MAX_OBSTACLES = 80;
+        const ELBOW_DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+        const elbowDirIndex = (d) => ELBOW_DIRS.findIndex(x => x[0] === d[0] && x[1] === d[1]);
+        const elbowRouteCache = new Map();
+        // Cheapest grid path from a to b. aDir/bDir: the direction of travel leaving a / arriving at b (index into
+        // ELBOW_DIRS, or -1 for any). rects: { l, r, t, b } already grown by the margin. Returns [a, …, b] or null.
+        function elbowShortestPath(a, aDir, b, bDir, rects) {
+            rects = rects.filter(r => !(a[0] > r.l && a[0] < r.r && a[1] > r.t && a[1] < r.b) && !(b[0] > r.l && b[0] < r.r && b[1] > r.t && b[1] < r.b));
+            const xs = new Set([a[0], b[0], (a[0] + b[0]) / 2]), ys = new Set([a[1], b[1], (a[1] + b[1]) / 2]);
+            rects.forEach(r => { xs.add(r.l); xs.add(r.r); ys.add(r.t); ys.add(r.b); });
+            const X = [...xs].sort((p, q) => p - q), Y = [...ys].sort((p, q) => p - q);
+            X.unshift(X[0] - ELBOW_DETOUR); X.push(X[X.length - 1] + ELBOW_DETOUR);   // lanes around everything
+            Y.unshift(Y[0] - ELBOW_DETOUR); Y.push(Y[Y.length - 1] + ELBOW_DETOUR);
+            const nx = X.length, ny = Y.length;
+            const inside = (x, y) => rects.some(r => x > r.l && x < r.r && y > r.t && y < r.b);
+            const blocked = (x1, y1, x2, y2) => rects.some(r => (y1 === y2)
+                ? (y1 > r.t && y1 < r.b && Math.max(x1, x2) > r.l && Math.min(x1, x2) < r.r)
+                : (x1 > r.l && x1 < r.r && Math.max(y1, y2) > r.t && Math.min(y1, y2) < r.b));
+            const free = new Uint8Array(nx * ny);
+            for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) free[j * nx + i] = inside(X[i], Y[j]) ? 0 : 1;
+            const ai = X.indexOf(a[0]), aj = Y.indexOf(a[1]), bi = X.indexOf(b[0]), bj = Y.indexOf(b[1]);
+            const midX = (a[0] + b[0]) / 2, midY = (a[1] + b[1]) / 2;
+            const h = (i, j) => Math.abs(X[i] - b[0]) + Math.abs(Y[j] - b[1]);
+            // Binary heap of [f, g, state]; state = ((j * nx + i) * 4 + dir), dir 4 = "no direction yet".
+            const heap = [], push = (n) => { heap.push(n); let k = heap.length - 1; while (k > 0) { const p = (k - 1) >> 1; if (heap[p][0] <= n[0]) break; heap[k] = heap[p]; k = p; } heap[k] = n; };
+            const pop = () => { const top = heap[0], last = heap.pop(); if (heap.length) { let k = 0; for (;;) { let c = 2 * k + 1; if (c >= heap.length) break; if (c + 1 < heap.length && heap[c + 1][0] < heap[c][0]) c++; if (heap[c][0] >= last[0]) break; heap[k] = heap[c]; k = c; } heap[k] = last; } return top; };
+            const S = 5, best = new Map(), parent = new Map();
+            const start = (aj * nx + ai) * S + (aDir >= 0 ? aDir : 4);
+            best.set(start, 0); push([h(ai, aj), 0, start]);
+            const DONE = -1;
+            let doneFrom = null;
+            while (heap.length) {
+                const [, g, st] = pop();
+                if (st === DONE) break;
+                if (g > (best.get(st) ?? Infinity)) continue;
+                const cell = Math.floor(st / S), dir = st % S, i = cell % nx, j = Math.floor(cell / nx);
+                if (i === bi && j === bj) {
+                    if (bDir >= 0 && dir !== 4 && dir !== bDir) {
+                        const opposite = ELBOW_DIRS[dir][0] === -ELBOW_DIRS[bDir][0] && ELBOW_DIRS[dir][1] === -ELBOW_DIRS[bDir][1];
+                        if (opposite) continue;
+                        const total = g + ELBOW_BEND_COST;
+                        if (total < (best.get(DONE) ?? Infinity)) { best.set(DONE, total); doneFrom = st; push([total, total, DONE]); }
+                        continue;
+                    }
+                    if (g < (best.get(DONE) ?? Infinity)) { best.set(DONE, g); doneFrom = st; push([g, g, DONE]); }
+                    continue;
+                }
+                for (let d = 0; d < 4; d++) {
+                    if (dir !== 4 && ELBOW_DIRS[d][0] === -ELBOW_DIRS[dir][0] && ELBOW_DIRS[d][1] === -ELBOW_DIRS[dir][1]) continue;   // no U-turns
+                    const ni = i + ELBOW_DIRS[d][0], nj = j + ELBOW_DIRS[d][1];
+                    if (ni < 0 || nj < 0 || ni >= nx || nj >= ny || !free[nj * nx + ni]) continue;
+                    if (blocked(X[i], Y[j], X[ni], Y[nj])) continue;
+                    const len = Math.abs(X[ni] - X[i]) + Math.abs(Y[nj] - Y[j]);
+                    const off = d < 2 ? Math.abs(Y[j] - midY) : Math.abs(X[i] - midX);
+                    const ng = g + len + len * off * 1e-5 + (dir !== 4 && dir !== d ? ELBOW_BEND_COST : 0);
+                    const ns = (nj * nx + ni) * S + d;
+                    if (ng < (best.get(ns) ?? Infinity)) { best.set(ns, ng); parent.set(ns, st); push([ng + h(ni, nj), ng, ns]); }
+                }
+            }
+            if (doneFrom === null) return null;
+            const path = [];
+            for (let st = doneFrom; st !== undefined; st = parent.get(st)) { const cell = Math.floor(st / S); path.push([X[cell % nx], Y[Math.floor(cell / nx)]]); }
+            return path.reverse();
+        }
+
         // Returns the inner points of the route (start and end excluded). Points are [x, y].
-        function orthogonalRoute(start, startSide, waypoints, end, endSide, stub = ELBOW_STUB) {
+        // obstacles: boxes { x, y, w, h } to go around (the flow's own two shapes included), or null for the simple route.
+        function orthogonalRoute(start, startSide, waypoints, end, endSide, obstacles = null, stub = ELBOW_STUB) {
             const d1 = SIDE_DIRS[startSide] || SIDE_DIRS.right, d2 = SIDE_DIRS[endSide] || SIDE_DIRS.left;
             const s = [start[0] + d1[0] * stub, start[1] + d1[1] * stub];
             const e = [end[0] + d2[0] * stub, end[1] + d2[1] * stub];
             const wps = (waypoints || []).map(p => [p[0], p[1]]);
             const stops = [s, ...wps, e];
-            let route = [s];
+            let route = Array.isArray(obstacles) ? elbowRouteAround(start, end, stops, d1, d2, obstacles) : null;
+            if (!route) route = elbowSimpleRoute(start, end, stops);
+            return elbowSimplify(start, route, end, wps);
+        }
+
+        function elbowRouteAround(start, end, stops, d1, d2, obstacles) {
+            // Only the shapes near the route matter.
+            const xs = stops.map(p => p[0]), ys = stops.map(p => p[1]);
+            const win = { l: Math.min(...xs) - ELBOW_WINDOW, r: Math.max(...xs) + ELBOW_WINDOW, t: Math.min(...ys) - ELBOW_WINDOW, b: Math.max(...ys) + ELBOW_WINDOW };
+            const rects = obstacles.filter(o => o.x < win.r && o.x + o.w > win.l && o.y < win.b && o.y + o.h > win.t)
+                .map(o => ({ l: o.x - ELBOW_MARGIN, r: o.x + o.w + ELBOW_MARGIN, t: o.y - ELBOW_MARGIN, b: o.y + o.h + ELBOW_MARGIN }));
+            if (rects.length > ELBOW_MAX_OBSTACLES) return null;
+            const key = JSON.stringify([start, end, stops, d1, d2, rects]);
+            if (elbowRouteCache.has(key)) return elbowRouteCache.get(key);
+            let route = [stops[0]];
+            for (let i = 1; i < stops.length && route; i++) {
+                const leg = elbowShortestPath(route[route.length - 1], i === 1 ? elbowDirIndex(d1) : -1, stops[i],
+                    i === stops.length - 1 ? elbowDirIndex([-d2[0], -d2[1]]) : -1, rects);
+                route = leg ? [...route, ...leg.slice(1)] : null;
+            }
+            if (elbowRouteCache.size > 2000) elbowRouteCache.clear();
+            elbowRouteCache.set(key, route);
+            return route;
+        }
+
+        function elbowSimpleRoute(start, end, stops) {
+            let route = [stops[0]];
             for (let i = 1; i < stops.length; i++) {
                 const a = route[route.length - 1], b = stops[i], last = i === stops.length - 1;
                 const options = [[[b[0], a[1]]], [[a[0], b[1]]]];   // the two L-shapes
@@ -3956,7 +4053,11 @@
                 });
                 route = [...route, ...best, b];
             }
-            // Drop repeated points and straight-through corners; the user's bend points always stay.
+            return route;
+        }
+
+        // Drops repeated points and straight-through corners; the user's bend points always stay.
+        function elbowSimplify(start, route, end, wps) {
             const keep = new Set(wps.map(p => p.join(',')));
             const full = [start, ...route, end], out = [];
             for (let i = 1; i < full.length - 1; i++) {
@@ -8364,6 +8465,20 @@
                 this.updateAlignToolbar();
             }
 
+            /** The shapes elbow flows go around: everything solid on the page (not zones, lanes, boundary lines or text). */
+            elbowObstacleBoxes() {
+                const skip = new Set(['boundary', 'boundary_line', 'swimlane', 'textbox', 'headline']);
+                return this.state.elements.filter(e => !skip.has(e.type) && this.isItemVisible(e)).map(e => {
+                    let w = e.width, h = e.height;
+                    if (!w || !h) {
+                        const d = e.type === 'step_activity' ? [260, 50] : e.type === 'infrastructure' ? [80, 70] : e.type === 'custom_image' ? [120, 120]
+                            : (typeof e.type === 'string' && e.type.startsWith('fc_')) ? [160, 80] : [240, 80];
+                        w = w || d[0]; h = h || d[1];
+                    }
+                    return { x: toNumber(e.x, 0), y: toNumber(e.y, 0), w: toNumber(w, 0), h: toNumber(h, 0) };
+                });
+            }
+
             /** True (and says why) when review mode stops a layout change. */
             blockedByReviewMode(action) {
                 if (!this.state.reviewMode) return false;
@@ -10707,6 +10822,7 @@
                 });
 
                 const drawnFlowPolys = [];   // line jumps: { poly, box } of the flows already drawn in this render
+                const elbowObstacles = this.state.flows.some(f => f.curveStyle === 'orthogonal') ? this.elbowObstacleBoxes() : null;
                 this.state.flows.forEach(f => {
                     const srcNode = this.state.elements.find(e => e.id === f.sourceId);
                     const dstNode = this.state.elements.find(e => e.id === f.targetId);
@@ -10742,7 +10858,7 @@
                     // Elbow flows: the drawn path is the right-angle route through the bend points; the handles stay on the bend points.
                     const curve = f.curveStyle || (this.isIsometric ? 'sharp' : 'smooth');
                     const handlePoints = controlPoints;
-                    if (curve === 'orthogonal') controlPoints = orthogonalRoute(startPt, anchorSide(f.sourceAnchor, 'right'), handlePoints, endPt, anchorSide(f.targetAnchor, 'left'));
+                    if (curve === 'orthogonal') controlPoints = orthogonalRoute(startPt, anchorSide(f.sourceAnchor, 'right'), handlePoints, endPt, anchorSide(f.targetAnchor, 'left'), elbowObstacles);
 
                     // Shorten endPt by arrW to attach to arrowhead base
                     let p_last = controlPoints.length > 0 ? controlPoints[controlPoints.length - 1] : startPt;
@@ -10896,7 +11012,7 @@
                     gLine.addEventListener('mousedown', (ev) => {
                         if (ev.button !== 0) return;
                         const isSel = this.state.selectedFlowId === f.id;
-                        if (isSel && !this.state.reviewMode) {
+                        if (isSel && !this.state.reviewMode && f.curveStyle !== 'orthogonal') {   // elbow routes are automatic
                             ev.stopPropagation();
                             const canvasSpaceCoords = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
                             const clickX = this.snapValue(canvasSpaceCoords.x);

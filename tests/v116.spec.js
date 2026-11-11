@@ -257,3 +257,97 @@ test('the title block never renders markup from the model', async ({ page }) => 
   expect(await page.evaluate(() => window.__pwned)).toBeUndefined();
   expect(errors).toEqual([]);
 });
+
+// ── Elbow routing around shapes (1.16.1) ──────────────────────────────────────
+
+/** True when a segment of the polyline runs through the inside of the box (edges and touching don't count). */
+function hitsBox(pts, b) {
+  return pts.slice(1).some((p, i) => {
+    const q = pts[i];
+    if (Math.abs(p[1] - q[1]) < 0.01) return p[1] > b.y && p[1] < b.y + b.h && Math.max(p[0], q[0]) > b.x && Math.min(p[0], q[0]) < b.x + b.w;
+    return p[0] > b.x && p[0] < b.x + b.w && Math.max(p[1], q[1]) > b.y && Math.min(p[1], q[1]) < b.y + b.h;
+  });
+}
+const flowPts = async (page, id) => polyOf(await page.locator(`#layers-flows-paths-group [data-flow-id="${id}"] path.flow-line`).getAttribute('d'));
+
+test('orthogonalRoute goes around a shape in the way, and straight when nothing is in the way', async ({ page }) => {
+  await setup(page);
+  const box = { x: 150, y: 50, w: 100, h: 100 };
+  const r = await page.evaluate((box) => ({
+    around: orthogonalRoute([0, 100], 'right', [], [400, 100], 'left', [box]),
+    clear: orthogonalRoute([0, 100], 'right', [], [400, 100], 'left', []),
+  }), box);
+  const around = [[0, 100], ...r.around, [400, 100]];
+  expect(axisAligned(around)).toBe(true);
+  expect(hitsBox(around, box)).toBe(false);
+  expect(r.around.length).toBe(4);              // one detour: up/down, across, back
+  expect(r.clear).toEqual([]);                  // a straight line
+});
+
+const ABC = (cy) => (s) => {
+  s.elements = [
+    { id: 'a', type: 'process', name: 'A', x: 0, y: 200, width: 120, height: 60, secProps: {} },
+    { id: 'b', type: 'process', name: 'B', x: 600, y: 200, width: 120, height: 60, secProps: {} },
+    { id: 'c', type: 'process', name: 'C', x: 300, y: cy, width: 120, height: 60, secProps: {} },
+  ];
+  s.flows = [{ id: 'f1', name: '', sourceId: 'a', targetId: 'b', sourceAnchor: 'right-2', targetAnchor: 'left-2', points: [], secProps: {}, curveStyle: 'orthogonal' }];
+};
+
+test('an elbow flow avoids a shape in its way and straightens again when the shape moves away', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await setup(page, ABC(190));
+  const C = { x: 300, y: 190, w: 120, h: 60 };
+  let pts = await flowPts(page, 'f1');
+  expect(axisAligned(pts)).toBe(true);
+  expect(hitsBox(pts, C)).toBe(false);
+  expect(pts.length).toBeGreaterThan(2);
+  // Move C out of the way with the mouse: the line goes back to straight.
+  await dragNode(page, 'c', 0, 200);
+  pts = await flowPts(page, 'f1');
+  expect(pts.length).toBe(2);
+  expect(pts[0][1]).toBe(pts[1][1]);
+  // And back into the way: it detours again.
+  await dragNode(page, 'c', 0, -200);
+  const C2 = await page.evaluate(() => { const c = app.state.elements.find((e) => e.id === 'c'); return { x: c.x, y: c.y, w: c.width, h: c.height }; });
+  expect(C2.y).toBeLessThan(260); expect(C2.y + C2.h).toBeGreaterThan(200);   // back in the way
+  pts = await flowPts(page, 'f1');
+  expect(hitsBox(pts, C2)).toBe(false);
+  expect(pts.length).toBeGreaterThan(2);
+  expect(errors).toEqual([]);
+});
+
+test('an elbow flow never runs through its own two shapes', async ({ page }) => {
+  // The target is behind the source: the line has to go around both.
+  await setup(page, (s) => {
+    s.elements = [
+      { id: 'a', type: 'process', name: 'A', x: 400, y: 200, width: 120, height: 100, secProps: {} },
+      { id: 'b', type: 'process', name: 'B', x: 0, y: 220, width: 120, height: 100, secProps: {} },
+    ];
+    s.flows = [{ id: 'f1', name: '', sourceId: 'a', targetId: 'b', sourceAnchor: 'right-2', targetAnchor: 'left-2', points: [], secProps: {}, curveStyle: 'orthogonal' }];
+  });
+  const pts = await flowPts(page, 'f1');
+  expect(axisAligned(pts)).toBe(true);
+  expect(hitsBox(pts, { x: 400, y: 200, w: 120, h: 100 })).toBe(false);
+  expect(hitsBox(pts, { x: 0, y: 220, w: 120, h: 100 })).toBe(false);
+  expect(pts.length).toBeLessThanOrEqual(7);   // a tidy U, not a staircase
+});
+
+test('clicking a selected elbow flow does not add a bend point (the route is automatic)', async ({ page }) => {
+  await setup(page, ABC(600));
+  await page.evaluate(() => app.handleFlowSelectionEvent('f1'));
+  const box = await page.locator('#layers-flows-paths-group [data-flow-id="f1"] path.flow-hit-area').boundingBox();
+  await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
+  expect(await page.evaluate(() => app.state.flows[0].points.length)).toBe(0);
+});
+
+test('routing 80 elbow flows among 80 shapes stays fast', async ({ page }) => {
+  await setup(page, (s) => {
+    s.elements = []; s.flows = [];
+    for (let i = 0; i < 80; i++) s.elements.push({ id: 'n' + i, type: 'process', name: 'N' + i, x: (i % 10) * 220, y: Math.floor(i / 10) * 160, width: 120, height: 60, secProps: {} });
+    for (let i = 0; i < 80; i++) s.flows.push({ id: 'f' + i, name: '', sourceId: 'n' + i, targetId: 'n' + ((i * 7 + 13) % 80), sourceAnchor: 'right-2', targetAnchor: 'left-2', points: [], secProps: {}, curveStyle: 'orthogonal' });
+  });
+  const ms = await page.evaluate(() => { elbowRouteCache.clear(); const t = performance.now(); app.renderSvgDiagramElements(); return performance.now() - t; });
+  expect(ms).toBeLessThan(1500);
+  const cached = await page.evaluate(() => { const t = performance.now(); app.renderSvgDiagramElements(); return performance.now() - t; });
+  expect(cached).toBeLessThan(ms);
+});

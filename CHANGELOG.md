@@ -5,6 +5,17 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.17.0
+
+### Added
+- **Elbow connectors route around shapes:** an elbow flow takes the shortest right-angle path that keeps clear of every shape on its page, including its own source and target, with as few bends as possible. The route is worked out again on every redraw and never stored, so it follows a shape while you drag it, detours when a shape is moved onto the line, and straightens again as soon as that shape is gone. Trust zones, swimlanes, boundary lines and text don't count as obstacles. Routes are cached, so big diagrams stay responsive.
+
+### Changed
+- Clicking a selected elbow flow no longer adds a bend point, because its route is automatic. Bend points it already has still work as waypoints and can be dragged or cleared.
+
+### Tests
+- Routing around a shape and straightening when it moves away (with real mouse drags), never running through the flow's own shapes, the click rule, and a speed budget for 80 elbow flows among 80 shapes.
+
 ## 1.16.0
 
 ### Added

@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.16.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.17.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -42,7 +42,9 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 ## What's new 🆕
 
-**1.16.0** adds three diagram features:
+**1.17.0:** elbow connectors find their own way around shapes. Move a shape onto an elbow line and the line detours; move it away and the line straightens again. A flow never runs through its own two shapes.
+
+**1.16.0** added three diagram features:
 
 - **Review mode** freezes the layout while names, properties, threats and mitigations stay editable, so nothing gets moved by accident during a review. It is saved with the model; the **Review mode** badge in the header turns it off.
 - **Title block and legend:** the model name, diagram level, version, status, author and date, plus a legend of what the diagram uses, in the canvas corner, the PNG export and the print.
@@ -79,7 +81,7 @@ All other actions (import, export, reports, History, help) are in the **☰ menu
 
 - **Review mode:** **☰ → View → Review mode (freeze layout)**. Shapes can still be selected, so names, properties, threats and mitigations stay editable, but nothing can be moved, resized, added, deleted, pasted or aligned, and flows can't be bent or reconnected. The setting is saved with the model (default: off). Click the **Review mode** badge in the header to turn it off.
 - **Title block and legend:** fill in the diagram details (level, version, status, author, date; all optional) under **Configure Session Metadata**, then **☰ → View → Show title block and legend** (default: off; remembered in this browser). The block sits in the bottom-right corner of the canvas and is added below the diagram in **Save as PNG** and in the print.
-- **Elbow connectors:** select a data flow and choose **Elbow (right angles)** under **Curve Rendering Style** in Properties. New flows stay smooth (sharp in isometric views).
+- **Elbow connectors:** select a data flow and choose **Elbow (right angles)** under **Curve Rendering Style** in Properties. The route is automatic: it goes around the shapes on the page and updates while you move them. Trust zones, swimlanes, boundary lines and text are crossed freely. New flows stay smooth (sharp in isometric views).
 
 ### Keyboard
 
