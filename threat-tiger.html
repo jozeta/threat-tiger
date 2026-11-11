@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Nzm7tkKTVZ0g1HZ3sSMtAa45cJqfxm3oJKctxmrtqFQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-r7Y2Vie+kMyEEhWAF2iWU3zk0o3EbfhQNdlff/LuCR8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1334,6 +1334,7 @@
         #canvas-svg .ap-on .flow-line { stroke: #dc3545 !important; stroke-width: 4px !important; }
         #canvas-svg .node-element.ap-on { filter: drop-shadow(0 0 6px rgba(220, 53, 69, .8)); }
         .card-icon-stripe img.stencil-icon { width: 26px; height: 26px; object-fit: contain; }
+        img.stencil-icon { pointer-events: none; -webkit-user-drag: none; user-select: none; }
         .stencil-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(52px, 1fr)); gap: 4px; max-height: 320px; overflow-y: auto; }
         .stencil-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; border: 1px solid #e9ecef; border-radius: 6px; background: #fff; font-size: 9px; line-height: 1.1; text-align: center; color: #343a40; overflow: hidden; }
         .stencil-item:hover, .stencil-item:focus-visible { border-color: #0d6efd; background: #eef4ff; }
@@ -3672,6 +3673,7 @@
         // ── App identity ──────────────────────────────────────────────────────────
         const APP_VERSION = '1.15.0';
         const SCHEMA_VERSION = 1;
+        const MAX_ZOOM = 2.5;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
         const MAX_ACTIVITY_LOG = 5000;      // PERF-003: older entries are discarded
         const LEDGER_PAGE_SIZE = 200;       // PERF-003: rows rendered per page
@@ -4784,6 +4786,7 @@
         // ── Cloud stencils ───────────────────────────────────────────────────────────
         const STENCIL_SETS = [['fluent', 'Devices & security'], ['brands', 'Security & DevOps brands'], ['devicon', 'Tech & OS logos'], ['aws', 'AWS'], ['azure', 'Azure'], ['entra', 'Microsoft Entra'], ['gcp', 'Google Cloud'], ['k8s', 'Kubernetes']];
         const STENCIL_ID = /^[a-z0-9]+:[\w.-]{1,120}$/i;
+        const STENCIL_DRAG_TYPE = 'application/x-threat-tiger-stencil';
         const STENCIL_ICON = /^data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+$/;
         // A placed stencil's icon: only a base64 SVG data URL (shown as <img>, where SVG cannot run script).
         function safeStencilIcon(v) {
@@ -6949,8 +6952,8 @@
                     });
                 }
 
-                document.getElementById('btn-canvas-zoom-in').addEventListener('click', () => { this.zoomScale = Math.min(this.zoomScale + 0.1, 2.5); this.applySvgViewportTransformations(); });
-                document.getElementById('btn-canvas-zoom-out').addEventListener('click', () => { this.zoomScale = Math.max(this.zoomScale - 0.1, MIN_ZOOM); this.applySvgViewportTransformations(); });
+                document.getElementById('btn-canvas-zoom-in').addEventListener('click', () => this.zoomAroundViewCentre(this.zoomScale + 0.1));
+                document.getElementById('btn-canvas-zoom-out').addEventListener('click', () => this.zoomAroundViewCentre(this.zoomScale - 0.1));
                 document.getElementById('btn-canvas-zoom-reset').addEventListener('click', () => this.zoomToFit());
                 document.getElementById('btn-menu-minimap').addEventListener('click', () => this.toggleMinimap());
                 this.setupViewMenu();
@@ -7312,9 +7315,10 @@
                     if (this.state.selectedFlowId) {
                         const flow = this.state.flows.find(f => f.id === this.state.selectedFlowId);
                         if (flow) {
+                            if (!ev.target.value || ev.target.value === flow.targetId) return;
                             flow.sourceId = ev.target.value;
                             this.logEvent("CHANGE", `Altered architectural topology structural source routing entry linkage context parameters for flow track: "${flow.name}"`);
-                            this.saveSessionToLocalStorage(); this.renderSvgDiagramElements();
+                            this.saveSessionToLocalStorage(); this.renderSvgDiagramElements(); this.handleFlowSelectionEvent(flow.id);
                         }
                     }
                 });
@@ -7322,9 +7326,10 @@
                     if (this.state.selectedFlowId) {
                         const flow = this.state.flows.find(f => f.id === this.state.selectedFlowId);
                         if (flow) {
+                            if (!ev.target.value || ev.target.value === flow.sourceId) return;
                             flow.targetId = ev.target.value;
                             this.logEvent("CHANGE", `Altered architectural topology structural target destination ingress mapping link parameters for flow track: "${flow.name}"`);
-                            this.saveSessionToLocalStorage(); this.renderSvgDiagramElements();
+                            this.saveSessionToLocalStorage(); this.renderSvgDiagramElements(); this.handleFlowSelectionEvent(flow.id);
                         }
                     }
                 });
@@ -7610,8 +7615,7 @@
 
                 svg.addEventListener('wheel', (ev) => {
                     ev.preventDefault();
-                    this.zoomScale = ev.deltaY < 0 ? Math.min(this.zoomScale + 0.05, 2.5) : Math.max(this.zoomScale - 0.05, MIN_ZOOM);
-                    this.applySvgViewportTransformations();
+                    this.zoomAroundViewCentre(this.zoomScale + (ev.deltaY < 0 ? 0.05 : -0.05));
                 }, { passive: false });
 
                 svg.addEventListener('dragover', (ev) => {
@@ -7621,11 +7625,11 @@
 
                 svg.addEventListener('drop', (ev) => {
                     ev.preventDefault();
+                    const coords = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
+                    const stencil = ev.dataTransfer.getData(STENCIL_DRAG_TYPE);
+                    if (stencil) { this.dropStencilNode(stencil, coords.x, coords.y); return; }
                     const type = ev.dataTransfer.getData('text/plain');
-                    if (type) {
-                        const coords = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
-                        this.instantiateNewCanvasElementNode(type, coords.x, coords.y);
-                    }
+                    if (type) this.instantiateNewCanvasElementNode(type, coords.x, coords.y);
                 });
 
                 svg.addEventListener('mousedown', (ev) => {
@@ -7698,8 +7702,11 @@
                             else if (this.activeFlowDragMode === 'flow_source' || this.activeFlowDragMode === 'flow_target') {
                                 // Find if mouse is over any element
                                 let hoverEl = null;
+                                // The flow's other end is excluded (no self-loops), as are shapes on hidden layers.
+                                const otherEnd = this.activeFlowDragMode === 'flow_source' ? flow.targetId : flow.sourceId;
                                 this.state.elements.forEach(el => {
                                     if (['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(el.type)) return;
+                                    if (el.id === otherEnd || !this.isItemVisible(el)) return;
                                     if (this.isPointInsideElement(el, canvasSpaceCoords)) {
                                         hoverEl = el;
                                     }
@@ -8011,11 +8018,13 @@
                     if (mod && ev.key.toLowerCase() === 'y') { ev.preventDefault(); this.redo(); return; }
                     if (ev.key === 'Delete' || ev.key === 'Backspace') this.executeTargetedActiveSelectionRemovalTask();
 
-                    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'c') {
+                    // Copy and paste shapes only when shapes are selected and no page text is; otherwise leave the keys to the browser.
+                    const textSelected = !!(window.getSelection && !window.getSelection().isCollapsed);
+                    if (mod && ev.key.toLowerCase() === 'c' && this.state.selectedElementIds.length && !textSelected) {
                         ev.preventDefault();
                         this.copySelection();
                     }
-                    if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === 'v') {
+                    if (mod && ev.key.toLowerCase() === 'v' && this.clipboard && !textSelected) {
                         ev.preventDefault();
                         this.pasteSelection();
                     }
@@ -8131,6 +8140,17 @@
                 const flowCount = (this.clipboard.flows || []).length;
                 this.logEvent("CREATE", `Pasted ${newElementIds.length} component(s)${flowCount ? ` and ${flowCount} data flow(s)` : ''} from the clipboard`);
                 this.refreshAppViewVisualWorkspace();
+            }
+
+            // Zooms (clamped) while keeping the point at the centre of the visible canvas where it is.
+            zoomAroundViewCentre(scale) {
+                const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, scale));
+                const r = this.dom.svg.getBoundingClientRect(), cx = r.width / 2, cy = r.height / 2;
+                const k = next / this.zoomScale;
+                this.panX = cx - (cx - this.panX) * k;
+                this.panY = cy - (cy - this.panY) * k;
+                this.zoomScale = next;
+                this.applySvgViewportTransformations();
             }
 
             applySvgViewportTransformations() {
@@ -8280,6 +8300,11 @@
                         const span = document.createElement('span'); span.textContent = toText(name);
                         b.append(img, span);
                         b.addEventListener('click', () => this.addStencilNode(id, icon));
+                        b.draggable = true;   // drag onto the canvas like the other palette items
+                        b.addEventListener('dragstart', (ev) => {
+                            ev.dataTransfer.setData(STENCIL_DRAG_TYPE, b.dataset.stencil);
+                            ev.dataTransfer.effectAllowed = 'copy';
+                        });
                         return b;
                     });
                     grid.append(...items);
@@ -8294,7 +8319,16 @@
             }
 
             // Places a stencil as a normal component of the icon's type, carrying its icon and subtypes (one undo step).
-            addStencilNode(setId, icon) {
+            // Drop from the palette: "<set>:<icon id>" from an icon set that is already loaded (its button was visible).
+            dropStencilNode(ref, x, y) {
+                const i = toText(ref).indexOf(':');
+                const setId = toText(ref).slice(0, i), iconId = toText(ref).slice(i + 1);
+                const pack = i > 0 ? (window.TT_STENCILS || {})[setId] : null;
+                const icon = pack && Array.isArray(pack.icons) && pack.icons.find(ic => toText(ic[0]) === iconId);
+                if (icon) this.addStencilNode(setId, icon, x, y);
+            }
+
+            addStencilNode(setId, icon, x = null, y = null) {
                 const [iconId, name, , type, tags, b64] = icon;
                 const kind = MODEL_NODE_TYPES[type] ? type : 'process';
                 const url = safeStencilIcon('data:image/svg+xml;base64,' + toText(b64));
@@ -8303,7 +8337,7 @@
                 if (STENCIL_ID.test(sid)) extra.stencil = sid;
                 if (url) extra.stencilIcon = url;
                 extra.stencilTags = (Array.isArray(tags) ? tags : []).map(toText).filter(t => SUBTYPE_LABELS[t]).slice(0, 6);
-                return this.instantiateNewCanvasElementNode(kind, null, null, extra);
+                return this.instantiateNewCanvasElementNode(kind, x, y, extra);
             }
 
             // Shows or hides one panel tab (☰ → View → Panel tabs). Hiding the shown tab moves to the next visible one.
@@ -8419,7 +8453,7 @@
                 let newScale = Math.min(scaleX, scaleY);
 
                 // Clamp scale
-                newScale = Math.max(MIN_ZOOM, Math.min(newScale, 2.5));
+                newScale = Math.max(MIN_ZOOM, Math.min(newScale, MAX_ZOOM));
                 this.zoomScale = newScale;
 
                 const contentCenterX = bbox.minX + contentWidth / 2;
@@ -8519,7 +8553,7 @@
                 const rect = this.dom.svg.getBoundingClientRect();
                 const id = `el-${Date.now()}`;
                 const def = this.elementDefaults(type);
-                const defaultName = def.name, w = def.width, h = def.height;
+                const defaultName = def.name, w = (extra && extra.width) || def.width, h = (extra && extra.height) || def.height;
 
                 let targetX, targetY;
                 if (customX !== null && customY !== null) {
@@ -10129,6 +10163,8 @@
             }
 
             renderSvgDiagramElementsCore() {
+                // The badge the threat pop-up belongs to is about to be replaced, so its mouseleave would never fire.
+                const bugPopover = document.getElementById('threat-bug-popover'); if (bugPopover) bugPopover.style.display = 'none';
                 this.trustAnalysis = this.computeTrustAnalysis();
                 this.layoutSwimlanes();
                 this.dom.layerSwimlanes.innerHTML = '';
@@ -10828,7 +10864,7 @@
                             // eslint-disable-next-line no-unsanitized/property -- reviewed: name is esc()'d; image via safeStencilIcon()+esc(); sizes are numbers; colour is a constant
                             foreignObj.innerHTML = `
                                 <div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card card-infrastructure-borderless stencil-card ${disabledClass}">
-                                    <img class="stencil-icon" src="${esc(safeStencilIcon(node.stencilIcon))}" alt="" style="width: ${iconSize}px; height: ${iconSize}px;${node.isDisabled ? ' filter: grayscale(1); opacity: .5;' : ''}">
+                                    <img class="stencil-icon" draggable="false" src="${esc(safeStencilIcon(node.stencilIcon))}" alt="" style="width: ${iconSize}px; height: ${iconSize}px;${node.isDisabled ? ' filter: grayscale(1); opacity: .5;' : ''}">
                                     <div class="fw-bold card-text-render-target text-center w-100 px-1 mt-1" style="font-size: 11px; color: ${labelColor}; line-height: 1.2; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;">${esc(node.name)}</div>
                                 </div>`;
                         } else if (node.type === 'infrastructure') {
@@ -10845,14 +10881,14 @@
                             // eslint-disable-next-line no-unsanitized/property -- reviewed: name is esc()'d; icon via safeIcon() or stencil image via safeStencilIcon()+esc(); colour via colorMap or safeColor(); font size is a number
                             foreignObj.innerHTML = `
                                 <div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card card-infrastructure-borderless ${disabledClass}">
-                                    ${safeStencilIcon(node.stencilIcon) ? `<img class="stencil-icon" src="${esc(safeStencilIcon(node.stencilIcon))}" alt="" style="width: ${iconFontSize}px; height: ${iconFontSize}px;">` : `<i class="bi ${safeIcon(node.icon)}" style="font-size: ${iconFontSize}px; color: ${disabledColor} !important; line-height: 1;"></i>`}
+                                    ${safeStencilIcon(node.stencilIcon) ? `<img class="stencil-icon" draggable="false" src="${esc(safeStencilIcon(node.stencilIcon))}" alt="" style="width: ${iconFontSize}px; height: ${iconFontSize}px;">` : `<i class="bi ${safeIcon(node.icon)}" style="font-size: ${iconFontSize}px; color: ${disabledColor} !important; line-height: 1;"></i>`}
                                     <div class="fw-bold card-text-render-target text-truncate text-center w-100 px-2 mt-1" style="font-size: 11px; color: ${labelColor}; line-height: 1.2;">${esc(node.name)}</div>
                                 </div>`;
                         } else {
                             // eslint-disable-next-line no-unsanitized/property -- reviewed: name and notes are esc()'d; icon via safeIcon() or stencil image via safeStencilIcon()+esc(); classes and security badges are constants
                             foreignObj.innerHTML = `
                                 <div xmlns="http://www.w3.org/1999/xhtml" class="canvas-card ${cardClass} ${disabledClass}">
-                                    <div class="card-icon-stripe ${stripeClass}">${safeStencilIcon(node.stencilIcon) ? `<img class="stencil-icon" src="${esc(safeStencilIcon(node.stencilIcon))}" alt="">` : `<i class="bi ${safeIcon(node.icon)}"></i>`}</div>
+                                    <div class="card-icon-stripe ${stripeClass}">${safeStencilIcon(node.stencilIcon) ? `<img class="stencil-icon" draggable="false" src="${esc(safeStencilIcon(node.stencilIcon))}" alt="">` : `<i class="bi ${safeIcon(node.icon)}"></i>`}</div>
                                     <div class="card-main-body">
                                         <div class="fw-bold text-dark text-truncate small card-text-render-target" style="font-size:12px; line-height:1.1;">${esc(node.name)}</div>
                                         <div class="text-muted text-truncate w-100" style="font-size:10px; font-weight:normal; line-height:1.1; white-space:nowrap;" title="${esc(node.notes)}">${esc(node.notes)}</div>
@@ -11529,10 +11565,13 @@
                     const srcSel = document.getElementById('props-flow-src-select');
                     const dstSel = document.getElementById('props-flow-dst-select');
                     srcSel.innerHTML = ''; dstSel.innerHTML = '';
+                    // Shapes on this flow's page only; each list leaves out the shape at the other end (no self-loops).
+                    const flowPage = (this.state.elements.find(e => e.id === targetItem.sourceId) || {}).pageId;
                     this.state.elements.forEach(el => {
                         if (['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(el.type)) return;
-                        srcSel.add(new Option(el.name, el.id));
-                        dstSel.add(new Option(el.name, el.id));
+                        if (flowPage && el.pageId !== flowPage) return;
+                        if (el.id !== targetItem.targetId) srcSel.add(new Option(el.name, el.id));
+                        if (el.id !== targetItem.sourceId) dstSel.add(new Option(el.name, el.id));
                     });
                     srcSel.value = targetItem.sourceId; dstSel.value = targetItem.targetId;
                     document.getElementById('props-flow-bidirectional-switch').checked = !!targetItem.isBidirectional;
