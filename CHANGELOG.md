@@ -5,6 +5,16 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.16.0
+
+### Added
+- **Review mode** (☰ → View → Review mode, or the header badge to turn it off): the layout is frozen while names, properties, threats and mitigations stay editable. Shapes can be selected but not moved, resized, deleted, added, pasted, nudged, aligned or moved to another page, and flows can't be bent or reconnected. It is saved with the model, so whoever opens the file sees it frozen too.
+- **Title block and legend** (☰ → View → Show title block and legend, off by default): a block in the canvas corner with the model name, the diagram's level, version, status, author and date, and a legend of the shapes, line styles and flow colours the model actually uses. It goes into the PNG export (below the diagram) and the print. The new diagram details are in the Session dialog, saved in the model and checked on import.
+- **Elbow connectors:** a third curve style for data flows, "Elbow (right angles)". The line leaves and enters each shape straight out of the anchor's side and turns only at right angles; bend points become waypoints it passes through. Line jumps and arrowheads work as before. It doesn't route around shapes yet.
+
+### Changed
+- An imported flow's curve style must be `smooth`, `sharp` or `orthogonal`; any other value is dropped (the flow draws smooth).
+
 ### Tests
 - 68 new end-to-end tests (`tests/cov-*.spec.js`) for parts no test covered before:
   - whole workflows built through the UI, with exports and re-imports and undo/redo of a whole session;
@@ -13,6 +23,7 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
   - a no-errors pass and focus and naming checks on every dialog;
   - performance budgets on a large model;
   - lint, including the inline script, and version consistency.
+- `tests/v116.spec.js` covers elbow routing, review mode, the title block and legend (including PNG export and import checks); the XSS suite now includes the diagram details.
 - The 10 tests that show known bugs are marked as expected to fail (`test.fail`, with a `// BUG:` note) until those bugs are fixed.
 
 ## 1.15.2

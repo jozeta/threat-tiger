@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.15.2** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.16.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -20,6 +20,7 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 *   **Threat suggestions**: a curated library of 601 concrete threats (OWASP, CWE, MITRE ATT&CK references; real-world incidents as examples; typical controls). Suggestions are ranked: **triggered by your model** (security switches, boundary crossings, connected flows — with the reason), **relevant for this component** (recognised from its icon and name, e.g. API, S3 bucket, administrator), then the rest. Every suggestion can be added (it then leaves the list), ignored, or marked **not applicable** with a reason, which is kept in the model and the report. The **Component Label** field suggests names that fit the component type. See [docs/threat-templates.md](docs/threat-templates.md).
 *   **Threat register**: likelihood × impact scoring, status and mitigation tracking, search and filters (severity, STRIDE category, status, "needs review"). Click a threat to jump to its component.
 *   **Insights**: summary tiles, open-risk heat map, STRIDE coverage per component, boundary crossings, model checks (unconnected components, duplicate names, …) and ranked attack paths from entry points to crown jewels, highlighted on the canvas and listed in the Markdown report.
+*   **Reviews and diagram clarity**: a review mode that freezes the layout while threats and properties stay editable, a title block (diagram level, version, status, author, date) and an automatic legend for the canvas, PNG and print, and elbow (right-angle) connectors.
 *   **Undo / redo**, automatic **History** snapshots, and an activity log.
 *   **Import / export**: JSON (full, or a git-friendly variant that diffs cleanly), Mermaid flowcharts (import: nodes become flowchart shapes, subgraphs trust zones, laid out automatically), CSV, Markdown report (with an embedded Mermaid diagram), Mermaid diagram, PNG and a print-ready report.
 *   **Keyboard and screen-reader friendly**, works on narrow screens, light and dark canvas themes, isometric views.
@@ -40,6 +41,12 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 ---
 
 ## What's new 🆕
+
+**1.16.0** adds three diagram features:
+
+- **Review mode** freezes the layout while names, properties, threats and mitigations stay editable, so nothing gets moved by accident during a review. It is saved with the model; the **Review mode** badge in the header turns it off.
+- **Title block and legend:** the model name, diagram level, version, status, author and date, plus a legend of what the diagram uses, in the canvas corner, the PNG export and the print.
+- **Elbow connectors:** data flows with right angles only, through your bend points.
 
 **1.15.2** fixes a double-click in the palette adding two shapes stacked on top of each other.
 
@@ -67,6 +74,12 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 5.  Open **Threat Templates** on a selected component to add threats — suggestions triggered by your model are listed first. Use the **Insights** tab to see what is still missing.
 
 All other actions (import, export, reports, History, help) are in the **☰ menu** at the top right.
+
+### Reviewing a model
+
+- **Review mode:** **☰ → View → Review mode (freeze layout)**. Shapes can still be selected, so names, properties, threats and mitigations stay editable, but nothing can be moved, resized, added, deleted, pasted or aligned, and flows can't be bent or reconnected. The setting is saved with the model (default: off). Click the **Review mode** badge in the header to turn it off.
+- **Title block and legend:** fill in the diagram details (level, version, status, author, date; all optional) under **Configure Session Metadata**, then **☰ → View → Show title block and legend** (default: off; remembered in this browser). The block sits in the bottom-right corner of the canvas and is added below the diagram in **Save as PNG** and in the print.
+- **Elbow connectors:** select a data flow and choose **Elbow (right angles)** under **Curve Rendering Style** in Properties. New flows stay smooth (sharp in isometric views).
 
 ### Keyboard
 

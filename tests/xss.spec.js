@@ -44,6 +44,9 @@ function poisonedModel() {
     s.elements.push({ id: 'el-layer', type: 'process', name: 'On evil layer', x: 3000, y: 0, width: 240, height: 80, secProps: {}, layerId: 'evil' });
     s.elements.push({ id: 'el-stencil', type: 'process', name: 'Stencil', x: 3400, y: 0, width: 240, height: 80, secProps: {}, stencil: P('stencil')[1], stencilIcon: `data:image/svg+xml;base64," onerror="__xss.push('stencilIcon')`, stencilTags: [P('tag')[0]] });
     s.elements.push({ id: 'el-swim', type: 'swimlane', name: P('swim')[0], x: 2000, y: 2000, width: 700, height: 500, columns: [P('col')[0], 'b'], rows: [P('row')[0], 'd'] });
+    // 1.16.0: title block fields and review mode (the block is shown by exerciseUi).
+    s.diagramInfo = { level: P('level')[0], version: P('version')[0], status: P('status')[1], author: P('author')[0], date: P('date')[0] };
+    s.reviewMode = true;
   });
 }
 
@@ -56,6 +59,7 @@ async function exerciseUi(page) {
       else { app.state.selectedElementIds = [id]; app.state.selectedFlowId = null; }
       app.refreshAppViewVisualWorkspace();
     }
+    if (!app.titleBlockVisible) app.toggleTitleBlock();
     app.repopulateThreatModalDropdownTargets();
     app.buildPrintThreatReport && app.buildPrintThreatReport();
   });

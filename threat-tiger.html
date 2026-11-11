@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Zlw8wy85XKlEDlmT3EXMrsq+UqG5H11K4xSfGGy5Chg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-jeKUymlMuCyoRLsbgr5bs3LPNWZ+ayBO4gT9x0LLlSk='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1350,6 +1350,9 @@
         .menu-view-item[aria-checked="false"] .menu-check { visibility: hidden; }
         #btn-format-painter:disabled { opacity: .3; }
         #btn-format-painter[aria-pressed="true"] { background: #dbeafe; color: #1d4ed8; }
+        #canvas-title-block { position: absolute; right: 1rem; bottom: 1rem; z-index: 9; pointer-events: none; filter: drop-shadow(0 .125rem .25rem rgba(0,0,0,.12)); }
+        @media print { #canvas-title-block:not(.d-none) { display: block !important; } }
+        #review-mode-badge { cursor: pointer; font-size: 11px; }
         #minimap { position: absolute; right: 1rem; top: 1rem; width: 200px; height: 140px; z-index: 10;
             background: #ffffff; border: 1px solid #dee2e6; border-radius: 6px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); cursor: pointer; }
         #minimap .minimap-item { fill: #cbd5e1; stroke: #94a3b8; vector-effect: non-scaling-stroke; stroke-width: 1px; }
@@ -1659,6 +1662,8 @@
 
                 <span class="badge bg-secondary text-light pt-1" id="project-title-badge">New Threat Model
                     Assessment</span>
+                <button type="button" class="badge bg-warning text-dark border-0 ms-2 d-none" id="review-mode-badge"
+                    title="Review mode: the layout is frozen. Click to turn it off."><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Review mode</button>
             </div>
             <div class="dropdown">
                 <button class="btn btn-sm btn-outline-light px-2" type="button" id="btn-main-menu" data-bs-toggle="dropdown"
@@ -1679,6 +1684,8 @@
                     <li><button class="dropdown-item d-flex align-items-center" type="button" id="btn-menu-view" aria-expanded="false" aria-controls="menu-view-items"><i class="bi bi-window-sidebar me-2"></i>View<i class="bi bi-chevron-down ms-auto" id="menu-view-chevron" aria-hidden="true"></i></button></li>
                     <li id="menu-view-items" class="d-none">
                         <ul class="list-unstyled mb-0 ps-3" role="group" aria-label="View">
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-review-mode" role="menuitemcheckbox" aria-checked="false" title="Freeze the layout while threats and properties stay editable (saved with the model)"><i class="bi bi-lock me-2"></i>Review mode (freeze layout)<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-title-block" role="menuitemcheckbox" aria-checked="false"><i class="bi bi-card-heading me-2"></i>Show title block and legend<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-minimap" role="menuitemcheckbox" aria-checked="false"><i class="bi bi-map me-2"></i>Show minimap<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-line-jumps" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-bezier2 me-2"></i>Line jumps where flows cross<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-left" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar me-2"></i>Show left panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
@@ -2338,6 +2345,8 @@
             </div>
 
             <div id="page-tabs" class="d-flex align-items-center gap-1 flex-wrap" role="tablist" aria-label="Pages"></div>
+            <svg id="canvas-title-block" class="d-none" role="img" aria-label="Title block and legend"
+                xmlns="http://www.w3.org/2000/svg"></svg>
             <svg id="minimap" class="d-none" role="img" aria-label="Diagram overview: click or drag to move the view"
                 xmlns="http://www.w3.org/2000/svg"></svg>
             <div id="align-toolbar" role="toolbar" aria-label="Align and distribute"
@@ -2551,6 +2560,7 @@
                                     <select class="form-select form-select-sm shadow-none" id="props-flow-curve-select">
                                         <option value="smooth">Smooth Curved Spline</option>
                                         <option value="sharp">Sharp Angled Polyline</option>
+                                        <option value="orthogonal">Elbow (right angles)</option>
                                     </select>
                                 </div>
                                 <div class="mb-2">
@@ -3379,6 +3389,42 @@
                             <input type="text" class="form-control shadow-none form-control-sm"
                                 id="modal-meta-participants" placeholder="Jane Doe, John Smith, Johan Zetterström">
                         </div>
+                        <fieldset class="mt-3 pt-2 border-top">
+                            <legend class="small fw-semibold text-muted mb-2" style="font-size: .875rem;">Diagram details (title block)</legend>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <label class="form-label small text-muted mb-1" for="modal-meta-level">Diagram</label>
+                                    <select class="form-select form-select-sm shadow-none" id="modal-meta-level">
+                                        <option value="">Not set</option>
+                                        <option value="context">Context diagram</option>
+                                        <option value="level-1">Level 1 diagram</option>
+                                        <option value="level-2">Level 2 diagram</option>
+                                        <option value="level-3">Level 3 diagram</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small text-muted mb-1" for="modal-meta-status">Status</label>
+                                    <select class="form-select form-select-sm shadow-none" id="modal-meta-status">
+                                        <option value="">Not set</option>
+                                        <option value="draft">Draft</option>
+                                        <option value="in-review">In review</option>
+                                        <option value="approved">Approved</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small text-muted mb-1" for="modal-meta-version">Version</label>
+                                    <input type="text" class="form-control form-control-sm shadow-none" id="modal-meta-version" maxlength="40" placeholder="e.g. 1.2">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small text-muted mb-1" for="modal-meta-date">Date</label>
+                                    <input type="date" class="form-control form-control-sm shadow-none" id="modal-meta-date">
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small text-muted mb-1" for="modal-meta-author">Author</label>
+                                    <input type="text" class="form-control form-control-sm shadow-none" id="modal-meta-author" maxlength="60">
+                                </div>
+                            </div>
+                        </fieldset>
                     </form>
                 </div>
                 <div class="modal-footer bg-light">
@@ -3671,7 +3717,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.15.2';
+        const APP_VERSION = '1.16.0';
         const SCHEMA_VERSION = 1;
         const MAX_ZOOM = 2.5;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
@@ -3863,6 +3909,63 @@
                         u * u * u * a[1] + 3 * u * u * t * b[1] + 3 * u * t * t * c[1] + t * t * t * d[1]]);
                 }
             });
+            return out;
+        }
+        // ── Elbow (orthogonal) connectors ────────────────────────────────────────────
+        // The flow leaves its source straight out of the anchor's side, turns only at right angles, passes through
+        // the user's bend points, and enters the target straight into the anchor's side.
+        const CURVE_STYLES = ['smooth', 'sharp', 'orthogonal'];
+        const ELBOW_STUB = 20, ELBOW_DETOUR = 40;
+        const SIDE_DIRS = { left: [-1, 0], right: [1, 0], top: [0, -1], bottom: [0, 1] };
+        function anchorSide(anchorId, fallback) { const s = String(anchorId || '').split('-')[0]; return SIDE_DIRS[s] ? s : fallback; }
+        // Cost of a polyline: length, plus a little per turn (fewer bends), plus a lot per U-turn back over itself.
+        function elbowCost(pts) {
+            let cost = 0, prev = null;
+            for (let i = 1; i < pts.length; i++) {
+                const dx = pts[i][0] - pts[i - 1][0], dy = pts[i][1] - pts[i - 1][1], len = Math.abs(dx) + Math.abs(dy);
+                if (len < 0.01) continue;
+                const dir = [Math.sign(dx), Math.sign(dy)];
+                cost += len;
+                if (prev && (prev[0] !== dir[0] || prev[1] !== dir[1])) cost += (prev[0] === -dir[0] && prev[1] === -dir[1]) ? 10000 : 5;
+                prev = dir;
+            }
+            return cost;
+        }
+        // Returns the inner points of the route (start and end excluded). Points are [x, y].
+        function orthogonalRoute(start, startSide, waypoints, end, endSide, stub = ELBOW_STUB) {
+            const d1 = SIDE_DIRS[startSide] || SIDE_DIRS.right, d2 = SIDE_DIRS[endSide] || SIDE_DIRS.left;
+            const s = [start[0] + d1[0] * stub, start[1] + d1[1] * stub];
+            const e = [end[0] + d2[0] * stub, end[1] + d2[1] * stub];
+            const wps = (waypoints || []).map(p => [p[0], p[1]]);
+            const stops = [s, ...wps, e];
+            let route = [s];
+            for (let i = 1; i < stops.length; i++) {
+                const a = route[route.length - 1], b = stops[i], last = i === stops.length - 1;
+                const options = [[[b[0], a[1]]], [[a[0], b[1]]]];   // the two L-shapes
+                if (stops.length === 2) {
+                    // One leg: also Z-shapes split halfway, and detours around both ends (a flow that has to turn back).
+                    const xs = [(a[0] + b[0]) / 2, Math.min(a[0], b[0]) - ELBOW_DETOUR, Math.max(a[0], b[0]) + ELBOW_DETOUR];
+                    const ys = [(a[1] + b[1]) / 2, Math.min(a[1], b[1]) - ELBOW_DETOUR, Math.max(a[1], b[1]) + ELBOW_DETOUR];
+                    options.unshift(...xs.map(x => [[x, a[1]], [x, b[1]]]), ...ys.map(y => [[a[0], y], [b[0], y]]));
+                }
+                let best = null, bestCost = Infinity;
+                options.forEach(corners => {
+                    const cand = [start, ...route, ...corners, b, ...(last ? [end] : [])];
+                    const c = elbowCost(cand);
+                    if (c < bestCost - 0.001) { bestCost = c; best = corners; }
+                });
+                route = [...route, ...best, b];
+            }
+            // Drop repeated points and straight-through corners; the user's bend points always stay.
+            const keep = new Set(wps.map(p => p.join(',')));
+            const full = [start, ...route, end], out = [];
+            for (let i = 1; i < full.length - 1; i++) {
+                const p = full[i], prev = out.length ? out[out.length - 1] : full[0], next = full[i + 1];
+                if (Math.abs(p[0] - prev[0]) < 0.01 && Math.abs(p[1] - prev[1]) < 0.01) continue;
+                const straight = (Math.abs(prev[0] - p[0]) < 0.01 && Math.abs(p[0] - next[0]) < 0.01) || (Math.abs(prev[1] - p[1]) < 0.01 && Math.abs(p[1] - next[1]) < 0.01);
+                if (straight && !keep.has(p.join(','))) continue;
+                out.push(p);
+            }
             return out;
         }
         // Crossings of poly with earlier polylines, in path order. Crossings near either line's ends (shared
@@ -4862,6 +4965,7 @@
                 ? raw.points.filter(isPlainObject).map(p => ({ x: toNumber(p.x, 0), y: toNumber(p.y, 0) }))
                 : [];
             if ('color' in raw) f.color = toText(raw.color).replace(/[^a-z]/gi, '');
+            if ('curveStyle' in raw) { if (CURVE_STYLES.includes(raw.curveStyle)) f.curveStyle = raw.curveStyle; else delete f.curveStyle; }
             if ('dismissedSuggestions' in raw) f.dismissedSuggestions = normalizeDismissed(raw.dismissedSuggestions);
             return f;
         }
@@ -4976,6 +5080,20 @@
             return out;
         }
 
+        // Title block: the diagram's level, version, status, author and date (Shostack, "Clarity in diagrams").
+        const DIAGRAM_LEVELS = { context: 'Context diagram', 'level-1': 'Level 1 diagram', 'level-2': 'Level 2 diagram', 'level-3': 'Level 3 diagram' };
+        const DIAGRAM_STATUSES = { draft: 'Draft', 'in-review': 'In review', approved: 'Approved' };
+        const FLOW_LEGEND_COLOURS = { blue: '#0d6efd', silver: '#cbd5e1', purple: '#6f42c1', pink: '#d63384', red: '#dc3545', orange: '#fd7e14', yellow: '#ffc107',
+            green: '#198754', teal: '#20c997', cyan: '#0dcaf0', lime: '#84cc16', emerald: '#10b981', slate: '#64748b', brown: '#78350f', navy: '#1e3a8a', black: '#212529' };
+        function emptyDiagramInfo() { return { level: '', version: '', status: '', author: '', date: '' }; }
+        function normalizeDiagramInfo(raw) {
+            const r = isPlainObject(raw) ? raw : {};
+            const clip = (v, n) => toText(v).replace(/\s+/g, ' ').trim().slice(0, n);
+            const pick = (v, allowed) => (typeof v === 'string' && Object.prototype.hasOwnProperty.call(allowed, v)) ? v : '';
+            const date = clip(r.date, 10);
+            return { level: pick(r.level, DIAGRAM_LEVELS), version: clip(r.version, 40), status: pick(r.status, DIAGRAM_STATUSES), author: clip(r.author, 60), date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : '' };
+        }
+
         function normalizeSession(raw) {
             if (!isPlainObject(raw)) throw new Error('The file does not contain a Threat Tiger model.');
             const warnings = [];
@@ -5068,6 +5186,7 @@
                 participants: toText(raw.participants),
                 activeUser: toText(raw.activeUser),
                 activityLog, elements, flows, threats, mitigations, layers, activeLayerId, pages, activePageId,
+                reviewMode: raw.reviewMode === true, diagramInfo: normalizeDiagramInfo(raw.diagramInfo),
                 selectedElementIds: [], selectedFlowId: null
             };
             return { session, warnings };
@@ -5114,6 +5233,7 @@
                 this.elements = []; this.flows = []; this.threats = []; this.mitigations = [];
                 this.layers = [{ ...DEFAULT_LAYER }]; this.activeLayerId = 'main';
                 this.pages = [{ ...DEFAULT_PAGE }]; this.activePageId = 'p1';
+                this.reviewMode = false; this.diagramInfo = emptyDiagramInfo();
                 this.selectedElementIds = []; this.selectedFlowId = null;
             }
 
@@ -5750,7 +5870,7 @@
             // Every logged model change is one undo step. The activity log itself is not rewound.
             serializeModel() {
                 const s = this.state;
-                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [], layers: s.layers || [{ ...DEFAULT_LAYER }], activeLayerId: s.activeLayerId, pages: s.pages || [{ ...DEFAULT_PAGE }] });
+                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [], layers: s.layers || [{ ...DEFAULT_LAYER }], activeLayerId: s.activeLayerId, pages: s.pages || [{ ...DEFAULT_PAGE }], diagramInfo: s.diagramInfo || emptyDiagramInfo() });
             }
 
             // New elements and flows go to the active layer (runs before every undo point and render).
@@ -5875,6 +5995,7 @@
 
             // Moves the selected shapes to another page (into its area); refused when a flow would join two pages.
             moveSelectionToPage(id) {
+                if (this.blockedByReviewMode('move shapes to another page')) return false;
                 const s = this.state, to = this.pageById(id), from = this.pageById(s.activePageId);
                 if (!to || !from || to.id === from.id) return false;
                 const ids = new Set(s.selectedElementIds || []);
@@ -6488,8 +6609,11 @@
                     const minY = bbox.minY - padding;
                     const maxX = bbox.maxX + padding;
                     const maxY = bbox.maxY + padding;
-                    const width = Math.max(100, maxX - minX);
-                    const height = Math.max(100, maxY - minY);
+                    // Title block and legend (when shown): below the diagram, right-aligned.
+                    const titleBlock = this.titleBlockVisible ? this.buildTitleBlockSvg() : null;
+                    const diagramH = Math.max(100, maxY - minY);
+                    const width = Math.max(100, maxX - minX, titleBlock ? titleBlock.width + 40 : 0);
+                    const height = diagramH + (titleBlock ? titleBlock.height + 20 : 0);
 
                     // 4. Clone the canvas SVG
                     const svgEl = document.getElementById('canvas-svg');
@@ -6503,6 +6627,11 @@
                     clone.setAttribute('width', width);
                     clone.setAttribute('height', height);
                     clone.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
+                    if (titleBlock) {
+                        titleBlock.node.setAttribute('class', 'export-title-block');
+                        titleBlock.node.setAttribute('transform', `translate(${minX + width - titleBlock.width - 20}, ${minY + diagramH})`);
+                        clone.appendChild(titleBlock.node);
+                    }
 
                     // Remove zoom/pan transforms from the clone's transform group
                     const transformGroup = clone.querySelector('#canvas-transform-group');
@@ -6984,6 +7113,10 @@
                 try { this.lineJumps = localStorage.getItem('line_jumps') !== 'false'; } catch { this.lineJumps = true; }
                 document.getElementById('btn-menu-line-jumps').setAttribute('aria-checked', String(this.lineJumps));
                 document.getElementById('btn-menu-line-jumps').addEventListener('click', () => this.toggleLineJumps());
+                document.getElementById('btn-menu-review-mode').addEventListener('click', () => this.toggleReviewMode());
+                document.getElementById('review-mode-badge').addEventListener('click', () => this.toggleReviewMode(false));
+                try { this.titleBlockVisible = localStorage.getItem('title_block') === 'true'; } catch { this.titleBlockVisible = false; }
+                document.getElementById('btn-menu-title-block').addEventListener('click', () => this.toggleTitleBlock());
                 document.getElementById('btn-flow-clear-points').addEventListener('click', () => this.clearFlowBendPoints());
                 this.setupMinimap();
                 this.applySvgViewportTransformations();   // show the remembered view straight away
@@ -7074,6 +7207,8 @@
                     document.getElementById('modal-meta-project-title').value = this.state.projectTitle || '';
                     document.getElementById('modal-meta-scope').value = this.state.scopeDefinition || '';
                     document.getElementById('modal-meta-participants').value = this.state.participants || '';
+                    const info = normalizeDiagramInfo(this.state.diagramInfo);
+                    ['level', 'version', 'status', 'author', 'date'].forEach(k => { document.getElementById(`modal-meta-${k}`).value = info[k]; });
                     this.sessionMetaModal.show();
                 });
 
@@ -8075,6 +8210,7 @@
                 const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
                 if (arrows[ev.key] && this.state.selectedElementIds.length && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
                     ev.preventDefault();
+                    if (this.blockedByReviewMode('move shapes')) return true;
                     const step = (this.isSnappingActive ? this.gridSize : 10) * (ev.shiftKey ? 5 : 1);
                     const [dx, dy] = arrows[ev.key];
                     const ids = new Set(this.state.selectedElementIds);
@@ -8109,6 +8245,7 @@
 
             pasteSelection() {
                 if (!this.clipboard || !this.clipboard.elements || this.clipboard.elements.length === 0) return;
+                if (this.blockedByReviewMode('paste')) return;
                 this.pasteCount = (this.pasteCount || 0) + 1;
                 const offset = 30 * this.pasteCount;   // each paste lands further away instead of stacking
                 const stamp = Date.now();
@@ -8212,6 +8349,135 @@
                 if (item) item.setAttribute('aria-checked', String(!!this.minimapVisible));
             }
 
+            // ── Review mode: the layout is frozen; properties, threats and mitigations stay editable ──
+            // Saved with the model (no undo step), so whoever opens it next sees it frozen too.
+            toggleReviewMode(on = !this.state.reviewMode) {
+                on = !!on;
+                if (on === !!this.state.reviewMode) return;
+                // Drop any move, resize, bend or connection in progress.
+                this.isDraggingElements = false; this.resizingElementId = null; this.activeFlowDragMode = null; this.activeFlowDragId = null;
+                if (this.isDrawingPhantomWire) { this.isDrawingPhantomWire = false; this.phantomWireSourceId = null; const w = document.getElementById('interactive-phantom-wire'); if (w) w.setAttribute('visibility', 'hidden'); }
+                this.state.reviewMode = on;
+                this.logEvent('CONFIGURE', on ? 'Turned review mode on: the layout is frozen' : 'Turned review mode off', { undoable: false });
+                this.saveSessionToLocalStorage();
+                this.refreshAppViewVisualWorkspace();
+                this.updateAlignToolbar();
+            }
+
+            /** True (and says why) when review mode stops a layout change. */
+            blockedByReviewMode(action) {
+                if (!this.state.reviewMode) return false;
+                this.notify(`Review mode is on, so the layout is frozen. Turn it off (header badge or View menu) to ${action}.`, 'info');
+                return true;
+            }
+
+            // View setting (no undo step): title block and legend in the canvas corner, PNG and print.
+            toggleTitleBlock() {
+                this.titleBlockVisible = !this.titleBlockVisible;
+                try { localStorage.setItem('title_block', String(this.titleBlockVisible)); } catch { /* view setting only */ }
+                this.syncViewMenu();
+                this.renderTitleBlock();
+            }
+
+            renderTitleBlock() {
+                const svg = document.getElementById('canvas-title-block');
+                if (!svg) return;
+                svg.classList.toggle('d-none', !this.titleBlockVisible);
+                svg.replaceChildren();
+                if (!this.titleBlockVisible) return;
+                const tb = this.buildTitleBlockSvg();
+                svg.setAttribute('width', tb.width); svg.setAttribute('height', tb.height);
+                svg.setAttribute('viewBox', `0 0 ${tb.width} ${tb.height}`);
+                svg.appendChild(tb.node);
+            }
+
+            /** What the legend shows: only the kinds of shapes, line styles and colours this model uses. */
+            legendEntries() {
+                const s = this.state, out = [];
+                const kinds = [['process', 'Process'], ['datastore', 'Data store'], ['interactor', 'External entity'], ['infrastructure', 'Infrastructure'],
+                    ['custom_image', 'Icon'], ['boundary', 'Trust zone'], ['boundary_line', 'Trust boundary line']];
+                const types = new Set(s.elements.map(e => e.type));
+                kinds.forEach(([t, label]) => { if (types.has(t)) out.push({ kind: t, label }); });
+                if (s.elements.some(e => typeof e.type === 'string' && e.type.startsWith('fc_'))) out.push({ kind: 'fc', label: 'Flowchart shape' });
+                if (s.flows.length) out.push({ kind: 'flow', label: 'Data flow' });
+                const flows = s.flows;
+                if (flows.some(f => f.isDashed)) out.push({ kind: 'dashed', label: 'Dashed flow' });
+                if (flows.some(f => f.secProps && f.secProps.authenticated === 'true')) out.push({ kind: 'auth', label: 'Authenticated flow' });
+                if (flows.some(f => f.isBidirectional)) out.push({ kind: 'twoway', label: 'Two-way flow' });
+                if (flows.some(f => f.isDisabled)) out.push({ kind: 'disabled', label: 'Disabled flow' });
+                if (this.trustAnalysis && flows.some(f => (this.trustAnalysis.crossings.get(f.id) || {}).crosses)) out.push({ kind: 'crossing', label: 'Crosses a boundary' });
+                if (s.threats.length) out.push({ kind: 'threat', label: 'Has threats' });
+                const colours = [...new Set(flows.filter(f => f.color && FLOW_LEGEND_COLOURS[f.color] && !f.isDisabled).map(f => f.color))].sort();
+                colours.forEach(c => out.push({ kind: 'colour', colour: FLOW_LEGEND_COLOURS[c], label: `${c[0].toUpperCase()}${c.slice(1)} flow` }));
+                return out;
+            }
+
+            /**
+             * Builds the title block and legend as an SVG group (text through textContent only, never markup).
+             * Fixed light colours, so it reads the same on a dark canvas, in PNG and on paper. Returns { node, width, height }.
+             */
+            buildTitleBlockSvg() {
+                const NS = 'http://www.w3.org/2000/svg', W = 280, PAD = 10, ROW = 17;
+                const el = (tag, attrs, text) => {
+                    const n = document.createElementNS(NS, tag);
+                    Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, String(v)));
+                    if (text !== undefined) n.textContent = text;
+                    return n;
+                };
+                const clip = (t, n) => { t = toText(t).replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
+                const s = this.state, info = normalizeDiagramInfo(s.diagramInfo);
+                const g = el('g', { class: 'title-block', 'font-family': 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' });
+                const bg = el('rect', { x: 0.5, y: 0.5, width: W - 1, height: 10, rx: 4, fill: '#ffffff', stroke: '#495057', 'stroke-width': 1 });
+                g.appendChild(bg);
+                let y = PAD + 13;
+                g.appendChild(el('text', { x: PAD, y, 'font-size': 14, 'font-weight': 700, fill: '#212529' }, clip(s.projectTitle, 36)));
+                const line1 = [DIAGRAM_LEVELS[info.level], info.version && `Version ${clip(info.version, 20)}`, DIAGRAM_STATUSES[info.status]].filter(Boolean).join('  ·  ');
+                const line2 = [info.author && clip(info.author, 30), info.date].filter(Boolean).join('  ·  ');
+                [line1, line2].filter(Boolean).forEach(t => { y += ROW; g.appendChild(el('text', { x: PAD, y, 'font-size': 11, fill: '#495057' }, t)); });
+                if (s.reviewMode) { y += ROW; g.appendChild(el('text', { x: PAD, y, 'font-size': 11, 'font-weight': 600, fill: '#9a6700' }, 'Review mode: layout frozen')); }
+                const entries = this.legendEntries();
+                if (entries.length) {
+                    y += 10;
+                    g.appendChild(el('line', { x1: PAD, x2: W - PAD, y1: y, y2: y, stroke: '#dee2e6' }));
+                    y += 15;
+                    g.appendChild(el('text', { x: PAD, y, 'font-size': 11, 'font-weight': 700, fill: '#212529' }, 'Legend'));
+                    const colW = (W - 2 * PAD) / 2;
+                    entries.forEach((e, i) => {
+                        const cx = PAD + (i % 2) * colW, cy = y + 8 + Math.floor(i / 2) * ROW;
+                        g.appendChild(this.legendSymbol(el, e, cx, cy));
+                        g.appendChild(el('text', { x: cx + 26, y: cy + 4, 'font-size': 10, fill: '#343a40' }, clip(e.label, 22)));
+                    });
+                    y += 8 + Math.ceil(entries.length / 2) * ROW - 4;
+                }
+                const H = Math.round(y + PAD);
+                bg.setAttribute('height', H - 1);
+                return { node: g, width: W, height: H };
+            }
+
+            legendSymbol(el, e, x, y) {
+                const g = el('g', {});
+                const line = (attrs) => el('line', Object.assign({ x1: x, x2: x + 20, y1: y, y2: y, 'stroke-width': 2, stroke: '#212529' }, attrs));
+                switch (e.kind) {
+                    case 'process': g.appendChild(el('rect', { x, y: y - 6, width: 20, height: 12, rx: 4, fill: '#e7f1ff', stroke: '#0d6efd' })); break;
+                    case 'datastore': g.appendChild(line({ y1: y - 5, y2: y - 5, 'stroke-width': 1.5 })); g.appendChild(line({ y1: y + 5, y2: y + 5, 'stroke-width': 1.5 })); break;
+                    case 'interactor': g.appendChild(el('rect', { x, y: y - 6, width: 20, height: 12, fill: '#f8f9fa', stroke: '#212529' })); break;
+                    case 'infrastructure': g.appendChild(el('rect', { x: x + 4, y: y - 7, width: 12, height: 14, rx: 2, fill: '#f1f3f5', stroke: '#6c757d' })); break;
+                    case 'custom_image': g.appendChild(el('rect', { x: x + 4, y: y - 6, width: 12, height: 12, fill: 'none', stroke: '#6c757d', 'stroke-dasharray': '2,2' })); break;
+                    case 'boundary': g.appendChild(el('rect', { x, y: y - 6, width: 20, height: 12, rx: 2, fill: 'none', stroke: '#b70918', 'stroke-dasharray': '4,2' })); break;
+                    case 'boundary_line': g.appendChild(line({ stroke: '#b70918', 'stroke-dasharray': '4,2' })); break;
+                    case 'fc': g.appendChild(el('path', { d: `M ${x + 10} ${y - 7} L ${x + 20} ${y} L ${x + 10} ${y + 7} L ${x} ${y} Z`, fill: '#fff8e1', stroke: '#6c757d' })); break;
+                    case 'dashed': g.appendChild(line({ 'stroke-dasharray': '5,3' })); break;
+                    case 'disabled': g.appendChild(line({ stroke: '#ced4da' })); break;
+                    case 'twoway': g.appendChild(line({})); g.appendChild(el('path', { d: `M ${x} ${y} l 5 -3 v 6 Z M ${x + 20} ${y} l -5 -3 v 6 Z`, fill: '#212529' })); break;
+                    case 'auth': g.appendChild(el('path', { d: `M ${x + 10} ${y - 7} L ${x + 16} ${y - 4} L ${x + 15} ${y + 3} L ${x + 10} ${y + 7} L ${x + 5} ${y + 3} L ${x + 4} ${y - 4} Z`, fill: '#0d6efd' })); break;
+                    case 'crossing': g.appendChild(el('rect', { x, y: y - 6, width: 20, height: 12, rx: 2, fill: '#fff', stroke: '#b45309' })); g.appendChild(el('path', { d: `M ${x + 3} ${y} h 14 M ${x + 10} ${y - 6} v 12`, stroke: '#b45309' })); break;
+                    case 'threat': g.appendChild(el('rect', { x, y: y - 6, width: 20, height: 12, rx: 3, fill: '#dc3545' })); break;
+                    case 'colour': g.appendChild(line({ stroke: e.colour, 'stroke-width': 3 })); break;
+                    default: g.appendChild(line({})); g.appendChild(el('path', { d: `M ${x + 20} ${y} l -5 -3 v 6 Z`, fill: '#212529' }));
+                }
+                return g;
+            }
+
             // View setting (no undo step): hop arcs where flows cross.
             toggleLineJumps() {
                 this.lineJumps = !this.lineJumps;
@@ -8224,6 +8490,7 @@
             clearFlowBendPoints() {
                 const flow = this.state.flows.find(f => f.id === this.state.selectedFlowId);
                 if (!flow || !((flow.points && flow.points.length) || flow.bendX || flow.bendY)) return;
+                if (this.blockedByReviewMode('change bend points')) return;
                 flow.points = []; flow.bendX = 0; flow.bendY = 0;
                 this.logEvent('CHANGE', `Cleared the bend points of flow "${flow.name}"`);
                 this.refreshAppViewVisualWorkspace();
@@ -8388,6 +8655,8 @@
                 document.querySelectorAll('#menu-view-items [data-tab-trigger]').forEach(item => item.setAttribute('aria-checked', String(!(this.hiddenTabs && this.hiddenTabs.has(item.dataset.tabTrigger)))));
                 set('btn-menu-minimap', this.minimapVisible);
                 set('btn-menu-line-jumps', this.lineJumps);
+                set('btn-menu-title-block', this.titleBlockVisible);
+                set('btn-menu-review-mode', this.state && this.state.reviewMode);
                 set('btn-menu-panel-left', !this.isLeftCollapsed);
                 set('btn-menu-panel-right', !this.isRightCollapsed);
                 set('btn-menu-panel-bottom', !this.isBottomCollapsed);
@@ -8573,6 +8842,7 @@
             }
 
             instantiateNewCanvasElementNode(type, customX = null, customY = null, extra = null) {
+                if (this.blockedByReviewMode('add shapes')) return null;
                 const rect = this.dom.svg.getBoundingClientRect();
                 const id = `el-${Date.now()}`;
                 const def = this.elementDefaults(type);
@@ -8693,6 +8963,7 @@
 
             /** Adds a node of the same type, size and colours as `srcId` in the anchor's direction, connected by a flow. One undo step. */
             quickAddFlowchartNode(srcId, anchorId) {
+                if (this.blockedByReviewMode('add shapes')) return null;
                 const src = this.state.elements.find(e => e.id === srcId);
                 if (!src || !FLOWCHART_DEFAULTS[src.type]) return null;
                 const p = this.quickAddPlacement(src, anchorId);
@@ -8751,6 +9022,7 @@
             executeTargetedActiveSelectionRemovalTask() {
                 const plan = this.planSelectionRemoval();
                 if (!plan) return;
+                if (this.blockedByReviewMode('delete')) return;
                 if (plan.threats.length > 0) { this.confirmSelectionRemoval(plan); return; }
                 this.applySelectionRemoval(plan);
             }
@@ -10322,7 +10594,7 @@
                         g.appendChild(mainVLine);
                     }
 
-                    if (!this.isItemLocked(swim)) this.appendSwimlaneResizeHandles(swim, g, totalW, totalH);
+                    if (!this.isItemLocked(swim) && !this.state.reviewMode) this.appendSwimlaneResizeHandles(swim, g, totalW, totalH);
 
                     // Highlight the cell a dragged node will be dropped into.
                     const drop = this.swimlaneDropTarget;
@@ -10375,7 +10647,7 @@
                     txt.setAttribute('fill', b.isDisabled ? '#6c757d' : '#b70918'); txt.setAttribute('font-size', '11px'); txt.setAttribute('font-weight', 'bold');
                     txt.textContent = b.name.toUpperCase(); g.appendChild(txt);
 
-                    if (isSelected && this.state.selectedElementIds.length === 1) g.appendChild(this.createResizeHandleSvgDOMItem(b));
+                    if (isSelected && this.state.selectedElementIds.length === 1 && !this.state.reviewMode) g.appendChild(this.createResizeHandleSvgDOMItem(b));
                     this.attachNodeEventHandlersLayers(b, g); this.dom.layerBoundaries.appendChild(g);
                 });
 
@@ -10395,7 +10667,7 @@
                     path.setAttribute('stroke-width', isSelected ? '4' : '3'); path.setAttribute('stroke-dasharray', '6,4');
                     gLine.appendChild(path);
 
-                    if (isSelected) {
+                    if (isSelected && !this.state.reviewMode) {
                         const startH = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                         startH.setAttribute('cx', bl.x); startH.setAttribute('cy', bl.y); startH.setAttribute('r', '6');
                         startH.setAttribute('fill', '#0d6efd'); startH.setAttribute('stroke', '#ffffff'); startH.setAttribute('stroke-width', '1.5');
@@ -10467,6 +10739,11 @@
                         controlPoints = [[midX + (f.bendX || 0), midY + (f.bendY || 0)]];
                     }
 
+                    // Elbow flows: the drawn path is the right-angle route through the bend points; the handles stay on the bend points.
+                    const curve = f.curveStyle || (this.isIsometric ? 'sharp' : 'smooth');
+                    const handlePoints = controlPoints;
+                    if (curve === 'orthogonal') controlPoints = orthogonalRoute(startPt, anchorSide(f.sourceAnchor, 'right'), handlePoints, endPt, anchorSide(f.targetAnchor, 'left'));
+
                     // Shorten endPt by arrW to attach to arrowhead base
                     let p_last = controlPoints.length > 0 ? controlPoints[controlPoints.length - 1] : startPt;
                     let dx_end = endPt[0] - p_last[0];
@@ -10522,7 +10799,7 @@
                     let pathD = `M ${startPt[0]} ${startPt[1]}`;
                     if (controlPoints.length === 0) {
                         pathD += ` L ${endPt[0]} ${endPt[1]}`;
-                    } else if ((f.curveStyle || (this.isIsometric ? 'sharp' : 'smooth')) === 'sharp') {
+                    } else if (curve !== 'smooth') {
                         controlPoints.forEach(pt => {
                             pathD += ` L ${pt[0]} ${pt[1]}`;
                         });
@@ -10535,7 +10812,7 @@
 
                     // Not while dragging: the canvas redraws on every mouse move; the hops return on release.
                     if (this.lineJumps && !this.isDraggingElements && !this.activeFlowDragMode && !this.resizingElementId && this.isItemVisible(f)) {
-                        const smooth = (f.curveStyle || (this.isIsometric ? 'sharp' : 'smooth')) !== 'sharp';
+                        const smooth = curve === 'smooth';
                         const poly = flowPolyline(startPt, controlPoints, endPt, smooth);
                         const xs = poly.map(p => p[0]), ys = poly.map(p => p[1]);
                         const box = [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)];
@@ -10562,8 +10839,8 @@
                     if (f.isDashed) line.setAttribute('stroke-dasharray', '6,4');
                     gLine.appendChild(line);
 
-                    if (isSelected) {
-                        controlPoints.forEach((pt, index) => {
+                    if (isSelected && !this.state.reviewMode) {
+                        handlePoints.forEach((pt, index) => {
                             const pointHandle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                             pointHandle.setAttribute('cx', pt[0]);
                             pointHandle.setAttribute('cy', pt[1]);
@@ -10619,7 +10896,7 @@
                     gLine.addEventListener('mousedown', (ev) => {
                         if (ev.button !== 0) return;
                         const isSel = this.state.selectedFlowId === f.id;
-                        if (isSel) {
+                        if (isSel && !this.state.reviewMode) {
                             ev.stopPropagation();
                             const canvasSpaceCoords = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
                             const clickX = this.snapValue(canvasSpaceCoords.x);
@@ -10971,7 +11248,7 @@
                         bugG.appendChild(bugFO); g.appendChild(bugG);
                     }
 
-                    if (!['textbox', 'headline', 'step_activity', 'swimlane'].includes(node.type) && !this.isItemLocked(node) && this.isItemVisible(node)) {
+                    if (!['textbox', 'headline', 'step_activity', 'swimlane'].includes(node.type) && !this.isItemLocked(node) && this.isItemVisible(node) && !this.state.reviewMode) {
                         let forceShowAnchors = false;
                         if ((this.isDrawingPhantomWire || this.activeFlowDragMode === 'flow_source' || this.activeFlowDragMode === 'flow_target') && this.currentMouseCanvasCoords) {
                             const nodeCenter = { x: node.x + w / 2, y: node.y + h / 2 };
@@ -11018,7 +11295,7 @@
                         });
                     }
 
-                    if (isSelected && this.state.selectedElementIds.length === 1 && !node.hideTextAndBox) g.appendChild(this.createResizeHandleSvgDOMItem(node));
+                    if (isSelected && this.state.selectedElementIds.length === 1 && !node.hideTextAndBox && !this.state.reviewMode) g.appendChild(this.createResizeHandleSvgDOMItem(node));
                     this.attachNodeEventHandlersLayers(node, g); this.dom.layerNodes.appendChild(g);
 
                 });
@@ -11051,6 +11328,7 @@
                         gElement.classList.add('selected');
                         this.refreshAppViewVisualWorkspace();
                     }
+                    if (this.state.reviewMode) return;   // review mode: select, never move
                     this.isDraggingElements = true;
                     this.dragStartCanvasCoords = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
 
@@ -11349,6 +11627,7 @@
 
             // Aligns or distributes the selection (see computeAlignment); one undo step, none when nothing moves.
             alignSelection(mode) {
+                if (this.blockedByReviewMode('align shapes')) return 0;
                 const moves = computeAlignment(this.alignableSelection(), mode);
                 if (moves.size === 0) return 0;
                 this.state.elements.forEach(e => { const m = moves.get(e.id); if (m) { e.x = m.x; e.y = m.y; } });
@@ -11406,7 +11685,7 @@
             updateAlignToolbar() {
                 const bar = document.getElementById('align-toolbar');
                 if (!bar) return;
-                const n = this.alignableSelection().length;
+                const n = this.state.reviewMode ? 0 : this.alignableSelection().length;   // review mode: nothing moves
                 bar.classList.toggle('d-none', n < 2);
                 bar.querySelectorAll('[data-align="hspace"], [data-align="vspace"]').forEach(b => { b.disabled = n < 3; });
                 if (n < 2) return;
@@ -12286,6 +12565,12 @@
                 }
 
                 this.dom.projectTitleBadge.innerText = this.state.projectTitle;
+                const reviewBadge = document.getElementById('review-mode-badge');
+                if (reviewBadge) reviewBadge.classList.toggle('d-none', !this.state.reviewMode);
+                const reviewItem = document.getElementById('btn-menu-review-mode');
+                if (reviewItem) reviewItem.setAttribute('aria-checked', String(!!this.state.reviewMode));
+                this.dom.svg.classList.toggle('review-mode', !!this.state.reviewMode);
+                this.renderTitleBlock();
             }
 
             repopulateThreatModalDropdownTargets() {
@@ -12387,6 +12672,7 @@
                 this.state.projectTitle = document.getElementById('modal-meta-project-title').value.trim() || "Service Architecture Framework";
                 this.state.scopeDefinition = document.getElementById('modal-meta-scope').value.trim() || "All App Container Layers.";
                 this.state.participants = document.getElementById('modal-meta-participants').value.trim();
+                this.state.diagramInfo = normalizeDiagramInfo(Object.fromEntries(['level', 'version', 'status', 'author', 'date'].map(k => [k, document.getElementById(`modal-meta-${k}`).value])));
 
                 this.logEvent("CONFIGURE", `Updated workspace meta configurations. Project Title: "${this.state.projectTitle}", Scope: "${this.state.scopeDefinition}"`);
 
@@ -12925,7 +13211,8 @@
                     projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, activeUser: s.activeUser,
                     elements: canon(s.elements), flows: canon(s.flows), threats: canon(s.threats), mitigations: canon(s.mitigations || []),
                     layers: canon(s.layers || [{ ...DEFAULT_LAYER }]), activeLayerId: s.activeLayerId || 'main',
-                    pages: canon(s.pages || [{ ...DEFAULT_PAGE }]), activePageId: s.activePageId || 'p1'
+                    pages: canon(s.pages || [{ ...DEFAULT_PAGE }]), activePageId: s.activePageId || 'p1',
+                    reviewMode: !!s.reviewMode, diagramInfo: canon(normalizeDiagramInfo(s.diagramInfo))
                 };
                 if (includeLog) payload.activityLog = s.activityLog;
                 const name = includeLog ? 'STRIDE-Threat-Model-Export.json' : `${(toText(s.projectTitle).trim() || 'threat-model').replace(/[^\w.-]+/g, '-').slice(0, 60)}.threat-model.json`;
