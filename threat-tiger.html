@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xE/AAWugpul6xgk07+jIgMJHOiK+ovFvzp8jIjPaBOs='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-wnS7iYpjpNpD2ROnxHMiyFdfAZmgiYUuu/9BedZVqFA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4217,8 +4217,9 @@
         /** Mermaid label text -> plain text: entity codes decoded, HTML tags and control characters removed, length capped. */
         function mermaidLabel(raw) {
             const named = { quot: '"', lt: '<', gt: '>', amp: '&', nbsp: ' ', apos: "'" };
-            let s = toText(raw).replace(/^"([\s\S]*)"$/, '$1').replace(/^`([\s\S]*)`$/, '$1');
-            s = s.replace(/<br\s*\/?>/gi, ' ').replace(/<\/?[a-z][^>]*>/gi, '');
+            // Capped first (entities and tags only shorten the text), and tags end at the next "<", so crafted input stays linear.
+            let s = toText(raw).replace(/^"([\s\S]*)"$/, '$1').replace(/^`([\s\S]*)`$/, '$1').slice(0, MERMAID_LIMITS.label * 20);
+            s = s.replace(/<br\s*\/?>/gi, ' ').replace(/<\/?[a-z][^<>]*>/gi, '');
             s = s.replace(/#([a-z]+);/gi, (m, n) => (n.toLowerCase() in named ? named[n.toLowerCase()] : m));
             s = s.replace(/#(\d{1,7});/g, (m, n) => { const c = Number(n); return c > 31 && c < 0x110000 && !(c >= 0xd800 && c < 0xe000) ? String.fromCodePoint(c) : ''; });
             // eslint-disable-next-line no-control-regex
@@ -4356,7 +4357,8 @@
                 i += len;
                 let j = i; while (s[j] === ' ') j++;
                 if (s[j] === '|') {
-                    const end = s.indexOf('|', j + 1);
+                    const close = s[j + 1] === '"' ? s.indexOf('"', j + 2) : -1;   // |"a|b"|: a quoted label may contain "|"
+                    const end = s.indexOf('|', close > 0 ? close + 1 : j + 1);
                     if (end < 0) return null;
                     label = s.slice(j + 1, end); i = end + 1;
                 }
@@ -12898,7 +12900,8 @@
              */
             buildMermaidDiagram({ pageId } = {}) {
                 const onPage = (e) => !(this.state.pages || []).length || (e.pageId || this.state.pages[0].id) === (pageId || this.state.activePageId);
-                const label = (s) => '"' + toText(s).replace(/"/g, '#quot;').replace(/[\r\n]+/g, ' ').replace(/[<>]/g, (c) => c === '<' ? '#lt;' : '#gt;') + '"';
+                // Entity codes for characters that would end the label, the edge label (|) or a Markdown code fence (`).
+                const label = (s) => '"' + toText(s).replace(/"/g, '#quot;').replace(/[\r\n]+/g, ' ').replace(/[<>|`]/g, (c) => ({ '<': '#lt;', '>': '#gt;', '|': '#124;', '`': '#96;' })[c]) + '"';
                 const center = (e) => ({ x: e.x + (e.width || 0) / 2, y: e.y + (e.height || 0) / 2 });
                 const zones = this.state.elements.filter(e => e.type === 'boundary' && onPage(e));
                 const zoneOf = (e) => {
@@ -12925,7 +12928,7 @@
                         default: return `(${l})`;   // processes and other shapes: rounded box
                     }
                 };
-                const lines = ['flowchart LR', `    %% ${toText(this.state.projectTitle).replace(/[\r\n]+/g, ' ')} — exported from Threat Tiger ${APP_VERSION}`];
+                const lines = ['flowchart LR', `    %% ${toText(this.state.projectTitle).replace(/[\r\n]+/g, ' ').replace(/`/g, "'")} — exported from Threat Tiger ${APP_VERSION}`];
                 const byZone = new Map();
                 nodes.forEach(e => { const z = zoneOf(e); const k = z ? z.id : ''; if (!byZone.has(k)) byZone.set(k, []); byZone.get(k).push(e); });
                 (byZone.get('') || []).forEach(e => lines.push(`    ${ids.get(e.id)}${shape(e)}`));
