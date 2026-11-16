@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-aVQCde40ox4VeUoHca69sknXmpz85mkgDQfj0RthaFg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-h75iQdV2buEd0XvThT0I+RHQFc0iCHb8/Ftc5LZkNUI='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1352,6 +1352,8 @@
         #btn-format-painter[aria-pressed="true"] { background: #dbeafe; color: #1d4ed8; }
         #canvas-title-block { position: absolute; right: 1rem; bottom: 1rem; z-index: 9; pointer-events: none; filter: drop-shadow(0 .125rem .25rem rgba(0,0,0,.12)); }
         @media print { #canvas-title-block:not(.d-none) { display: block !important; } }
+        /* Phones: the block would sit behind the canvas controls and cover most of the canvas (it stays in PNG and print). */
+        @media screen and (max-width: 575.98px) { #canvas-title-block { display: none !important; } }
         #review-mode-badge { cursor: pointer; font-size: 11px; }
         #minimap { position: absolute; right: 1rem; top: 1rem; width: 200px; height: 140px; z-index: 10;
             background: #ffffff; border: 1px solid #dee2e6; border-radius: 6px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); cursor: pointer; }
@@ -1518,7 +1520,9 @@
             background-color: #1a1a24 !important;
         }
 
-        .dark-theme-canvas text {
+        /* The title block (on the canvas and in the PNG) keeps its own dark text on its white box; :where() keeps the
+           specificity of this rule as it was, so the rules below still override it. */
+        .dark-theme-canvas text:not(:where(.title-block text, .export-title-block text)) {
             fill: #cbd5e1 !important;
         }
 
@@ -3936,14 +3940,25 @@
         // line halfway between them) and is the cheapest path on it: length, plus a charge per bend, plus a tiny charge
         // for straying from the centre line (so of two equal routes the balanced one wins). Nothing is stored in the
         // model: every redraw routes again, so a line straightens as soon as the shape in its way is gone.
-        const ELBOW_MARGIN = 14, ELBOW_BEND_COST = 40, ELBOW_WINDOW = 400, ELBOW_MAX_OBSTACLES = 80;
+        // Past ELBOW_MAX_OBSTACLES shapes in the window only the ones nearest the route are kept (pathfinding with 250
+        // shapes takes a few milliseconds, and the route cache spares the redraws that change nothing).
+        const ELBOW_MARGIN = 14, ELBOW_BEND_COST = 40, ELBOW_WINDOW = 400, ELBOW_MAX_OBSTACLES = 250;
         const ELBOW_DIRS = [[1, 0], [-1, 0], [0, 1], [0, -1]];
         const elbowDirIndex = (d) => ELBOW_DIRS.findIndex(x => x[0] === d[0] && x[1] === d[1]);
         const elbowRouteCache = new Map();
         // Cheapest grid path from a to b. aDir/bDir: the direction of travel leaving a / arriving at b (index into
         // ELBOW_DIRS, or -1 for any). rects: { l, r, t, b } already grown by the margin. Returns [a, …, b] or null.
         function elbowShortestPath(a, aDir, b, bDir, rects) {
-            rects = rects.filter(r => !(a[0] > r.l && a[0] < r.r && a[1] > r.t && a[1] < r.b) && !(b[0] > r.l && b[0] < r.r && b[1] > r.t && b[1] < r.b));
+            // An end inside a grown shape (a neighbour close to the anchor, or the flow's own shape with a short stub):
+            // that shape's margin gives way on the side nearest the end, so the end lies on its edge and the shape still
+            // blocks the route. Only an end inside the shape itself (overlapping shapes) drops it.
+            const relax = (r, p) => {
+                if (!(p[0] > r.l && p[0] < r.r && p[1] > r.t && p[1] < r.b)) return r;
+                const sides = [['l', p[0] - r.l], ['r', r.r - p[0]], ['t', p[1] - r.t], ['b', r.b - p[1]]].sort((x, y) => x[1] - y[1]);
+                if (sides[0][1] > ELBOW_MARGIN + 0.01) return null;
+                return { ...r, [sides[0][0]]: sides[0][0] === 'l' || sides[0][0] === 'r' ? p[0] : p[1] };
+            };
+            rects = rects.map(r => { const x = relax(r, a); return x && relax(x, b); }).filter(Boolean);
             const xs = new Set([a[0], b[0], (a[0] + b[0]) / 2]), ys = new Set([a[1], b[1], (a[1] + b[1]) / 2]);
             rects.forEach(r => { xs.add(r.l); xs.add(r.r); ys.add(r.t); ys.add(r.b); });
             const X = [...xs].sort((p, q) => p - q), Y = [...ys].sort((p, q) => p - q);
@@ -4005,6 +4020,15 @@
         // obstacles: boxes { x, y, w, h } to go around (the flow's own two shapes included), or null for the simple route.
         function orthogonalRoute(start, startSide, waypoints, end, endSide, obstacles = null, stub = ELBOW_STUB) {
             const d1 = SIDE_DIRS[startSide] || SIDE_DIRS.right, d2 = SIDE_DIRS[endSide] || SIDE_DIRS.left;
+            // Facing anchors closer than two stubs: stubs of half the gap (longer ones would cross and loop round the
+            // target), and a straight line when the anchors line up.
+            if (d1[0] === -d2[0] && d1[1] === -d2[1] && !(waypoints || []).length) {
+                const gap = (end[0] - start[0]) * d1[0] + (end[1] - start[1]) * d1[1];
+                if (gap > 0 && gap < 2 * stub) {
+                    if (Math.abs((end[0] - start[0]) * d1[1]) + Math.abs((end[1] - start[1]) * d1[0]) < 0.01) return [];
+                    stub = gap / 2;
+                }
+            }
             const s = [start[0] + d1[0] * stub, start[1] + d1[1] * stub];
             const e = [end[0] + d2[0] * stub, end[1] + d2[1] * stub];
             const wps = (waypoints || []).map(p => [p[0], p[1]]);
@@ -4018,9 +4042,14 @@
             // Only the shapes near the route matter.
             const xs = stops.map(p => p[0]), ys = stops.map(p => p[1]);
             const win = { l: Math.min(...xs) - ELBOW_WINDOW, r: Math.max(...xs) + ELBOW_WINDOW, t: Math.min(...ys) - ELBOW_WINDOW, b: Math.max(...ys) + ELBOW_WINDOW };
-            const rects = obstacles.filter(o => o.x < win.r && o.x + o.w > win.l && o.y < win.b && o.y + o.h > win.t)
+            let rects = obstacles.filter(o => o.x < win.r && o.x + o.w > win.l && o.y < win.b && o.y + o.h > win.t)
                 .map(o => ({ l: o.x - ELBOW_MARGIN, r: o.x + o.w + ELBOW_MARGIN, t: o.y - ELBOW_MARGIN, b: o.y + o.h + ELBOW_MARGIN }));
-            if (rects.length > ELBOW_MAX_OBSTACLES) return null;
+            if (rects.length > ELBOW_MAX_OBSTACLES) {
+                // Too many to route around them all: keep the ones nearest the box around the route's stops.
+                const bx = { l: Math.min(...xs), r: Math.max(...xs), t: Math.min(...ys), b: Math.max(...ys) };
+                const dist = (q) => Math.max(0, bx.l - q.r, q.l - bx.r) + Math.max(0, bx.t - q.b, q.t - bx.b);
+                rects = rects.map(q => [dist(q), q]).sort((p, q) => p[0] - q[0]).slice(0, ELBOW_MAX_OBSTACLES).map(p => p[1]);
+            }
             const key = JSON.stringify([start, end, stops, d1, d2, rects]);
             if (elbowRouteCache.has(key)) return elbowRouteCache.get(key);
             let route = [stops[0]];
@@ -6069,6 +6098,7 @@
             deletePage(id) {
                 const s = this.state, pageObj = this.pageById(id);
                 if (!pageObj || s.pages.length < 2) return;
+                if (this.blockedByReviewMode('delete pages')) return;
                 const els = s.elements.filter(e => e.pageId === id), elIds = new Set(els.map(e => e.id));
                 const flows = s.flows.filter(f => elIds.has(f.sourceId) || elIds.has(f.targetId)), gone = new Set([...elIds, ...flows.map(f => f.id)]);
                 const threats = s.threats.filter(t => gone.has(t.elementId));
@@ -6161,7 +6191,7 @@
                 input.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); finish(true); } if (ev.key === 'Escape') { ev.preventDefault(); finish(false); } });
                 input.addEventListener('blur', (ev) => { if (ev.relatedTarget && ev.relatedTarget.classList.contains('page-tab-delete')) return; finish(true); });
                 wrap.appendChild(input);
-                if ((this.state.pages || []).length > 1) {
+                if ((this.state.pages || []).length > 1 && !this.state.reviewMode) {   // review mode: pages stay
                     const del = document.createElement('button');
                     del.type = 'button'; del.className = 'page-tab-delete'; del.textContent = '×';
                     del.title = `Delete page "${page.name}" and its shapes`; del.setAttribute('aria-label', `Delete page ${page.name} and its shapes`);
@@ -6472,9 +6502,32 @@
                 this.updateUndoButtons();
             }
 
+            /**
+             * The layout part of a model snapshot: what review mode freezes (shapes, their positions and sizes, lane
+             * columns and rows, flow ends and bend points, pages). Names, properties, threats and mitigations are left out.
+             */
+            static layoutOf(json) {
+                const m = typeof json === 'string' ? JSON.parse(json) : json;
+                const pick = (o, keys) => keys.map(k => o[k] === undefined ? null : o[k]);
+                const lanes = (e) => e.type === 'swimlane' ? [(e.columns || []).length, (e.rows || []).length, e.colWidths, e.rowHeights] : null;
+                return JSON.stringify([
+                    (m.elements || []).map(e => [...pick(e, ['id', 'type', 'x', 'y', 'x2', 'y2', 'width', 'height', 'bendX', 'bendY', 'pageId']), lanes(e)]),
+                    (m.flows || []).map(f => pick(f, ['id', 'sourceId', 'targetId', 'sourceAnchor', 'targetAnchor', 'points', 'bendX', 'bendY'])),
+                    (m.pages || []).map(p => pick(p, ['id', 'offset']))
+                ]);
+            }
+
+            /** Review mode: true (and says why) when going to the snapshot would change the layout. */
+            undoBlockedByReviewMode(json, action) {
+                if (!this.state.reviewMode || !json) return false;
+                if (ThreatModelingApp.layoutOf(json) === ThreatModelingApp.layoutOf(this.undoBaseline)) return false;
+                return this.blockedByReviewMode(action);
+            }
+
             undo() {
                 this.recordUndoPoint();   // capture edits that were not logged yet
                 if (!this.undoStack.length) { this.notify('Nothing to undo.', 'info'); return; }
+                if (this.undoBlockedByReviewMode(this.undoStack[this.undoStack.length - 1], 'undo a layout change')) return;
                 this.redoStack.push(this.undoBaseline);
                 this.applyModelSnapshot(this.undoStack.pop());
                 this.logEvent('CHANGE', 'Undo', { undoable: false });
@@ -6482,6 +6535,7 @@
 
             redo() {
                 if (!this.redoStack.length) { this.notify('Nothing to redo.', 'info'); return; }
+                if (this.undoBlockedByReviewMode(this.redoStack[this.redoStack.length - 1], 'redo a layout change')) return;
                 this.undoStack.push(this.undoBaseline);
                 this.applyModelSnapshot(this.redoStack.pop());
                 this.logEvent('CHANGE', 'Redo', { undoable: false });
@@ -7574,6 +7628,7 @@
                     if (this.state.selectedFlowId) {
                         const flow = this.state.flows.find(f => f.id === this.state.selectedFlowId);
                         if (flow) {
+                            if (this.blockedByReviewMode('reconnect data flows')) { ev.target.value = flow.sourceId; return; }
                             if (!ev.target.value || ev.target.value === flow.targetId) return;
                             flow.sourceId = ev.target.value;
                             this.logEvent("CHANGE", `Altered architectural topology structural source routing entry linkage context parameters for flow track: "${flow.name}"`);
@@ -7585,6 +7640,7 @@
                     if (this.state.selectedFlowId) {
                         const flow = this.state.flows.find(f => f.id === this.state.selectedFlowId);
                         if (flow) {
+                            if (this.blockedByReviewMode('reconnect data flows')) { ev.target.value = flow.targetId; return; }
                             if (!ev.target.value || ev.target.value === flow.sourceId) return;
                             flow.targetId = ev.target.value;
                             this.logEvent("CHANGE", `Altered architectural topology structural target destination ingress mapping link parameters for flow track: "${flow.name}"`);
@@ -7784,7 +7840,7 @@
 
                     colsList.addEventListener('click', (ev) => {
                         const deleteBtn = ev.target.closest('.col-delete-btn');
-                        if (deleteBtn) {
+                        if (deleteBtn && !this.blockedByReviewMode('remove columns')) {
                             const index = parseInt(deleteBtn.getAttribute('data-index'));
                             if (this.state.selectedElementIds.length === 1) {
                                 const item = this.state.elements.find(el => el.id === this.state.selectedElementIds[0]);
@@ -7818,7 +7874,7 @@
 
                     rowsList.addEventListener('click', (ev) => {
                         const deleteBtn = ev.target.closest('.row-delete-btn');
-                        if (deleteBtn) {
+                        if (deleteBtn && !this.blockedByReviewMode('remove rows')) {
                             const index = parseInt(deleteBtn.getAttribute('data-index'));
                             if (this.state.selectedElementIds.length === 1) {
                                 const item = this.state.elements.find(el => el.id === this.state.selectedElementIds[0]);
@@ -7838,7 +7894,7 @@
                 const addColBtn = document.getElementById('props-swimlane-add-col');
                 if (addColBtn) {
                     addColBtn.addEventListener('click', () => {
-                        if (this.state.selectedElementIds.length === 1) {
+                        if (this.state.selectedElementIds.length === 1 && !this.blockedByReviewMode('add columns')) {
                             const item = this.state.elements.find(el => el.id === this.state.selectedElementIds[0]);
                             if (item && item.type === 'swimlane') {
                                 if (!item.columns) item.columns = [];
@@ -7854,7 +7910,7 @@
                 const addRowBtn = document.getElementById('props-swimlane-add-row');
                 if (addRowBtn) {
                     addRowBtn.addEventListener('click', () => {
-                        if (this.state.selectedElementIds.length === 1) {
+                        if (this.state.selectedElementIds.length === 1 && !this.blockedByReviewMode('add rows')) {
                             const item = this.state.elements.find(el => el.id === this.state.selectedElementIds[0]);
                             if (item && item.type === 'swimlane') {
                                 if (!item.rows) item.rows = [];
@@ -8475,8 +8531,58 @@
                             : (typeof e.type === 'string' && e.type.startsWith('fc_')) ? [160, 80] : [240, 80];
                         w = w || d[0]; h = h || d[1];
                     }
-                    return { x: toNumber(e.x, 0), y: toNumber(e.y, 0), w: toNumber(w, 0), h: toNumber(h, 0) };
+                    const x = toNumber(e.x, 0), y = toNumber(e.y, 0);
+                    w = toNumber(w, 0); h = toNumber(h, 0);
+                    // Isometric views: an upright (disableIso) shape is drawn as a parallelogram in model space (the same
+                    // matrix as its transform and getAnchorCoordinates); its bounding box is the obstacle. Exact, apart
+                    // from the empty corners of that box.
+                    if (this.isIsometric && e.disableIso && (e.type === 'custom_image' || e.type === 'step_activity')) {
+                        const ne = this.viewMode === 'ne-isometric', k = 0.57735027;
+                        const map = ([u, v]) => ne ? [k * u + v, -k * u + v] : [k * u - v, k * u + v];
+                        const pts = [[0, 0], [w, 0], [0, h], [w, h]].map(map), xs = pts.map(q => q[0]), ys = pts.map(q => q[1]);
+                        return { x: x + Math.min(...xs), y: y + Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) };
+                    }
+                    return { x, y, w, h };
                 });
+            }
+
+            /** Arrowhead length for a flow thickness (the renderer trims the line by this much at each arrow). */
+            flowArrowLength(f) {
+                const thickness = parseFloat(f.thickness || 2);
+                return 8 + thickness * 2.5 + (thickness >= 3 ? 1.5 : 0);
+            }
+
+            /**
+             * A flow's route as drawn, before the arrowheads trim its ends: anchors, the bend point or points, and for
+             * elbow flows the right-angle route around elbowObstacles. The renderer and the trust-boundary check both use
+             * it. p1/p2 replace the anchor points (an end being dragged); nodes is an optional Map of the elements by id.
+             * Returns { startPt, endPt, controlPoints, handlePoints, curve }, or null when an end shape is missing.
+             */
+            flowRoute(f, elbowObstacles = null, p1 = null, p2 = null, nodes = null) {
+                const find = (id) => nodes ? nodes.get(id) : this.state.elements.find(e => e.id === id);
+                const srcNode = find(f.sourceId), dstNode = find(f.targetId);
+                if (!srcNode || !dstNode) return null;
+                p1 = p1 || this.getAnchorCoordinates(srcNode, f.sourceAnchor || 'right-2');
+                p2 = p2 || this.getAnchorCoordinates(dstNode, f.targetAnchor || 'left-2');
+                let controlPoints = [];
+                if (f.points && f.points.length > 0) {
+                    controlPoints = f.points.map(pt => [pt.x, pt.y]);
+                } else if ((f.bendX || 0) !== 0 || (f.bendY || 0) !== 0) {
+                    controlPoints = [[(p1.x + p2.x) / 2 + (f.bendX || 0), (p1.y + p2.y) / 2 + (f.bendY || 0)]];
+                }
+                const curve = f.curveStyle || (this.isIsometric ? 'sharp' : 'smooth');
+                const handlePoints = controlPoints;
+                const startPt = [p1.x, p1.y], endPt = [p2.x, p2.y];
+                // Elbow flows: the right-angle route through the bend points. The stubs out of the anchors are longer than
+                // the arrowheads, so trimming for an arrowhead never reverses the first or last leg.
+                if (curve === 'orthogonal') controlPoints = orthogonalRoute(startPt, anchorSide(f.sourceAnchor, 'right'), handlePoints, endPt, anchorSide(f.targetAnchor, 'left'), elbowObstacles, Math.max(ELBOW_STUB, this.flowArrowLength(f) + 8));
+                return { startPt, endPt, controlPoints, handlePoints, curve };
+            }
+
+            /** The drawn line of a flow as points (smooth curves sampled), anchor to anchor; null when an end is missing. */
+            flowDrawnPolyline(f, elbowObstacles = null, nodes = null) {
+                const r = this.flowRoute(f, elbowObstacles, null, null, nodes);
+                return r ? flowPolyline(r.startPt, r.controlPoints, r.endPt, r.curve === 'smooth') : null;
             }
 
             /** True (and says why) when review mode stops a layout change. */
@@ -8484,6 +8590,15 @@
                 if (!this.state.reviewMode) return false;
                 this.notify(`Review mode is on, so the layout is frozen. Turn it off (header badge or View menu) to ${action}.`, 'info');
                 return true;
+            }
+
+            /** Review mode: the Properties controls that change the layout (type, flow ends, swimlane columns and rows) are disabled. */
+            applyReviewModeToControls() {
+                const on = !!(this.state && this.state.reviewMode);
+                document.querySelectorAll('#props-node-type, #props-flow-src-select, #props-flow-dst-select, #props-swimlane-add-col, #props-swimlane-add-row, #props-swimlane-cols-list .col-delete-btn, #props-swimlane-rows-list .row-delete-btn').forEach(c => {
+                    if (on) { if (!c.disabled) { c.disabled = true; c.dataset.reviewDisabled = '1'; c.title = 'Review mode is on: the layout is frozen'; } }
+                    else if (c.dataset.reviewDisabled) { c.disabled = false; delete c.dataset.reviewDisabled; c.removeAttribute('title'); }
+                });
             }
 
             // View setting (no undo step): title block and legend in the canvas corner, PNG and print.
@@ -8506,23 +8621,29 @@
                 svg.appendChild(tb.node);
             }
 
-            /** What the legend shows: only the kinds of shapes, line styles and colours this model uses. */
+            /** What the legend shows: only the kinds of shapes, line styles and colours drawn on the page (visible layers). */
             legendEntries() {
                 const s = this.state, out = [];
+                this.indexLayers();
+                const elements = s.elements.filter(e => this.isItemVisible(e));
+                const shown = new Set(elements.map(e => e.id));
+                const flows = s.flows.filter(f => shown.has(f.sourceId) && shown.has(f.targetId) && this.isItemVisible(f));
                 const kinds = [['process', 'Process'], ['datastore', 'Data store'], ['interactor', 'External entity'], ['infrastructure', 'Infrastructure'],
                     ['custom_image', 'Icon'], ['boundary', 'Trust zone'], ['boundary_line', 'Trust boundary line']];
-                const types = new Set(s.elements.map(e => e.type));
+                const types = new Set(elements.map(e => e.type));
                 kinds.forEach(([t, label]) => { if (types.has(t)) out.push({ kind: t, label }); });
-                if (s.elements.some(e => typeof e.type === 'string' && e.type.startsWith('fc_'))) out.push({ kind: 'fc', label: 'Flowchart shape' });
-                if (s.flows.length) out.push({ kind: 'flow', label: 'Data flow' });
-                const flows = s.flows;
+                if (elements.some(e => typeof e.type === 'string' && e.type.startsWith('fc_'))) out.push({ kind: 'fc', label: 'Flowchart shape' });
+                if (flows.length) out.push({ kind: 'flow', label: 'Data flow' });
                 if (flows.some(f => f.isDashed)) out.push({ kind: 'dashed', label: 'Dashed flow' });
                 if (flows.some(f => f.secProps && f.secProps.authenticated === 'true')) out.push({ kind: 'auth', label: 'Authenticated flow' });
                 if (flows.some(f => f.isBidirectional)) out.push({ kind: 'twoway', label: 'Two-way flow' });
                 if (flows.some(f => f.isDisabled)) out.push({ kind: 'disabled', label: 'Disabled flow' });
                 if (this.trustAnalysis && flows.some(f => (this.trustAnalysis.crossings.get(f.id) || {}).crosses)) out.push({ kind: 'crossing', label: 'Crosses a boundary' });
-                if (s.threats.length) out.push({ kind: 'threat', label: 'Has threats' });
-                const colours = [...new Set(flows.filter(f => f.color && FLOW_LEGEND_COLOURS[f.color] && !f.isDisabled).map(f => f.color))].sort();
+                flows.forEach(f => shown.add(f.id));
+                if (s.threats.some(t => shown.has(t.elementId))) out.push({ kind: 'threat', label: 'Has threats' });
+                // Colours as drawn: black is the default, and disabled and encrypted flows are drawn in their own colour.
+                const colours = [...new Set(flows.filter(f => f.color && f.color !== 'black' && FLOW_LEGEND_COLOURS[f.color] && !f.isDisabled
+                    && !(f.secProps && f.secProps.encrypted === 'true')).map(f => f.color))].sort();
                 colours.forEach(c => out.push({ kind: 'colour', colour: FLOW_LEGEND_COLOURS[c], label: `${c[0].toUpperCase()}${c.slice(1)} flow` }));
                 return out;
             }
@@ -8540,15 +8661,40 @@
                     return n;
                 };
                 const clip = (t, n) => { t = toText(t).replace(/\s+/g, ' ').trim(); return t.length > n ? t.slice(0, n - 1) + '…' : t; };
+                // Text is measured in the block's own font and trimmed with an ellipsis to fit its width.
+                const FONT = 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif', MAX = W - 2 * PAD - 4;
+                if (this.titleBlockMeasure === undefined) this.titleBlockMeasure = document.createElement('canvas').getContext('2d');
+                const ctx = this.titleBlockMeasure;
+                const widthOf = (t, size, weight) => { if (!ctx) return t.length * size * 0.6; ctx.font = `${weight} ${size}px ${FONT}`; return ctx.measureText(t).width; };
+                const fit = (t, max, size, weight = 400) => {
+                    t = toText(t).replace(/\s+/g, ' ').trim();
+                    if (widthOf(t, size, weight) <= max) return t;
+                    let lo = 0, hi = t.length;   // the longest start that fits with its ellipsis
+                    while (lo < hi) { const mid = (lo + hi + 1) >> 1; if (widthOf(t.slice(0, mid).trimEnd() + '…', size, weight) <= max) lo = mid; else hi = mid - 1; }
+                    return t.slice(0, lo).trimEnd() + '…';
+                };
+                // The title wraps to a second line at a word break (and is trimmed on that line when still too long).
+                const titleLines = (t) => {
+                    t = toText(t).replace(/\s+/g, ' ').trim();
+                    if (widthOf(t, 14, 700) <= MAX) return [t];
+                    const words = t.split(' ');
+                    let n = 0;
+                    while (n < words.length && widthOf(words.slice(0, n + 1).join(' '), 14, 700) <= MAX) n++;
+                    if (n === 0) return [fit(t, MAX, 14, 700)];
+                    return [`${words.slice(0, n).join(' ')} `, fit(words.slice(n).join(' '), MAX, 14, 700)];   // the space keeps the text content readable as one title
+                };
                 const s = this.state, info = normalizeDiagramInfo(s.diagramInfo);
-                const g = el('g', { class: 'title-block', 'font-family': 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif' });
+                const g = el('g', { class: 'title-block', 'font-family': FONT });
                 const bg = el('rect', { x: 0.5, y: 0.5, width: W - 1, height: 10, rx: 4, fill: '#ffffff', stroke: '#495057', 'stroke-width': 1 });
                 g.appendChild(bg);
                 let y = PAD + 13;
-                g.appendChild(el('text', { x: PAD, y, 'font-size': 14, 'font-weight': 700, fill: '#212529' }, clip(s.projectTitle, 36)));
+                titleLines(s.projectTitle).forEach((t, i) => {
+                    if (i) y += 18;
+                    g.appendChild(el('text', { x: PAD, y, 'font-size': 14, 'font-weight': 700, fill: '#212529' }, t));
+                });
                 const line1 = [DIAGRAM_LEVELS[info.level], info.version && `Version ${clip(info.version, 20)}`, DIAGRAM_STATUSES[info.status]].filter(Boolean).join('  ·  ');
                 const line2 = [info.author && clip(info.author, 30), info.date].filter(Boolean).join('  ·  ');
-                [line1, line2].filter(Boolean).forEach(t => { y += ROW; g.appendChild(el('text', { x: PAD, y, 'font-size': 11, fill: '#495057' }, t)); });
+                [line1, line2].filter(Boolean).forEach(t => { y += ROW; g.appendChild(el('text', { x: PAD, y, 'font-size': 11, fill: '#495057' }, fit(t, MAX, 11))); });
                 if (s.reviewMode) { y += ROW; g.appendChild(el('text', { x: PAD, y, 'font-size': 11, 'font-weight': 600, fill: '#9a6700' }, 'Review mode: layout frozen')); }
                 const entries = this.legendEntries();
                 if (entries.length) {
@@ -8560,7 +8706,7 @@
                     entries.forEach((e, i) => {
                         const cx = PAD + (i % 2) * colW, cy = y + 8 + Math.floor(i / 2) * ROW;
                         g.appendChild(this.legendSymbol(el, e, cx, cy));
-                        g.appendChild(el('text', { x: cx + 26, y: cy + 4, 'font-size': 10, fill: '#343a40' }, clip(e.label, 22)));
+                        g.appendChild(el('text', { x: cx + 26, y: cy + 4, 'font-size': 10, fill: '#343a40' }, fit(e.label, colW - 30, 10)));
                     });
                     y += 8 + Math.ceil(entries.length / 2) * ROW - 4;
                 }
@@ -9011,6 +9157,10 @@
             changeNodeType(id, newType) {
                 const el = this.state.elements.find(e => e.id === id);
                 if (!el || !SWITCHABLE_NODE_TYPES.has(el.type) || !SWITCHABLE_NODE_TYPES.has(newType) || el.type === newType) return false;
+                if (this.blockedByReviewMode('change shape types')) {   // a new type has a new size, so the shape moves
+                    const sel = document.getElementById('props-node-type'); if (sel && sel.dataset.elementId === id) sel.value = el.type;
+                    return false;
+                }
                 const oldType = el.type, oldDef = this.elementDefaults(oldType), def = this.elementDefaults(newType);
                 const cx = el.x + (el.width || oldDef.width) / 2, cy = el.y + (el.height || oldDef.height) / 2;
                 const oldSec = el.secProps || {}, oldIcon = el.icon;
@@ -9556,6 +9706,7 @@
                     `;
                     rowsList.appendChild(itemDiv);
                 });
+                this.applyReviewModeToControls();
             }
 
             ensureColorMarkerExists(colorHex, thickness = 2) {
@@ -9630,15 +9781,21 @@
                     return pts;
                 });
                 const orient = (a, b, c) => Math.sign((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x));
-                const segX = (p1, p2, q1, q2) => orient(p1, p2, q1) * orient(p1, p2, q2) < 0 && orient(q1, q2, p1) * orient(q1, q2, p2) < 0;
+                // Touching counts (a bend point exactly on the line), running along it (collinear) does not.
+                const segX = (p1, p2, q1, q2) => {
+                    const o1 = orient(p1, p2, q1), o2 = orient(p1, p2, q2);
+                    return !(o1 === 0 && o2 === 0) && o1 * o2 <= 0 && orient(q1, q2, p1) * orient(q1, q2, p2) <= 0;
+                };
                 const polyX = (a, b) => { for (let i = 0; i < a.length - 1; i++) for (let j = 0; j < b.length - 1; j++) if (segX(a[i], a[i + 1], b[j], b[j + 1])) return true; return false; };
                 const crossings = new Map();
+                // Boundary lines are checked against the line as drawn (anchors, bends, smooth curves, elbow routes).
+                const elbowObstacles = lines.length && this.state.flows.some(f => f.curveStyle === 'orthogonal') ? this.elbowObstacleBoxes() : null;
                 this.state.flows.forEach(f => {
                     const a = byId.get(f.sourceId), b = byId.get(f.targetId);
                     if (!a || !b) { crossings.set(f.id, { crosses: false, names: [] }); return; }
                     const za = new Set((nodeZones.get(a.id) || []).map(z => z.id)), zb = new Set((nodeZones.get(b.id) || []).map(z => z.id));
                     const crossedZones = zones.filter(z => za.has(z.id) !== zb.has(z.id));
-                    const path = [center(a), ...(Array.isArray(f.points) ? f.points : []), center(b)];
+                    const path = lines.length ? this.flowDrawnPolyline(f, elbowObstacles, byId).map(p => ({ x: p[0], y: p[1] })) : [];
                     const crossedLines = lines.filter((l, i) => polyX(path, lineSamples[i]));
                     const names = [...crossedZones, ...crossedLines].map(x => `"${toText(x.name) || 'trust boundary'}"`);
                     crossings.set(f.id, { crosses: names.length > 0, names: [...new Set(names)] });
@@ -10533,6 +10690,9 @@
                 this.applyPageLinkBadges();
                 this.applyCanvasAccessibility();
                 this.renderMinimap();
+                // The legend follows every redraw (a flow made dashed, two-way or recoloured), but not each mouse move of a
+                // drag: nothing it lists changes until the release, which redraws again.
+                if (!this.isDraggingElements && !this.activeFlowDragMode && !this.resizingElementId) this.renderTitleBlock();
                 if (focusKey) { const el = this.dom.svg.querySelector(focusKey); if (el) el.focus({ preventScroll: true }); }
             }
 
@@ -10823,9 +10983,10 @@
 
                 const drawnFlowPolys = [];   // line jumps: { poly, box } of the flows already drawn in this render
                 const elbowObstacles = this.state.flows.some(f => f.curveStyle === 'orthogonal') ? this.elbowObstacleBoxes() : null;
+                const nodeById = new Map(this.state.elements.map(e => [e.id, e]));
                 this.state.flows.forEach(f => {
-                    const srcNode = this.state.elements.find(e => e.id === f.sourceId);
-                    const dstNode = this.state.elements.find(e => e.id === f.targetId);
+                    const srcNode = nodeById.get(f.sourceId);
+                    const dstNode = nodeById.get(f.targetId);
                     if (!srcNode || !dstNode) return;
 
                     let p1 = this.getAnchorCoordinates(srcNode, f.sourceAnchor || 'right-2');
@@ -10841,42 +11002,33 @@
                     }
 
                     const thickness = parseFloat(f.thickness || 2);
-                    let arrW = 8 + thickness * 2.5;
-                    if (thickness >= 3) arrW += 1.5;
+                    const arrW = this.flowArrowLength(f);
 
-                    let startPt = [p1.x, p1.y];
-                    let endPt = [p2.x, p2.y];
-                    let controlPoints = [];
-                    if (f.points && f.points.length > 0) {
-                        controlPoints = f.points.map(pt => [pt.x, pt.y]);
-                    } else if ((f.bendX || 0) !== 0 || (f.bendY || 0) !== 0) {
-                        const midX = (p1.x + p2.x) / 2;
-                        const midY = (p1.y + p2.y) / 2;
-                        controlPoints = [[midX + (f.bendX || 0), midY + (f.bendY || 0)]];
-                    }
+                    // The route as drawn (shared with the trust-boundary check); the handles stay on the bend points.
+                    const route = this.flowRoute(f, elbowObstacles, p1, p2, nodeById);
+                    let { startPt, endPt } = route;
+                    const { controlPoints, handlePoints, curve } = route;
 
-                    // Elbow flows: the drawn path is the right-angle route through the bend points; the handles stay on the bend points.
-                    const curve = f.curveStyle || (this.isIsometric ? 'sharp' : 'smooth');
-                    const handlePoints = controlPoints;
-                    if (curve === 'orthogonal') controlPoints = orthogonalRoute(startPt, anchorSide(f.sourceAnchor, 'right'), handlePoints, endPt, anchorSide(f.targetAnchor, 'left'), elbowObstacles);
-
-                    // Shorten endPt by arrW to attach to arrowhead base
+                    // Shorten endPt by arrW to attach to arrowhead base; with bend points never past the last segment's
+                    // start (that would turn the line, and so the arrowhead, round).
                     let p_last = controlPoints.length > 0 ? controlPoints[controlPoints.length - 1] : startPt;
                     let dx_end = endPt[0] - p_last[0];
                     let dy_end = endPt[1] - p_last[1];
                     let dist_end = Math.sqrt(dx_end * dx_end + dy_end * dy_end);
                     if (dist_end > 0) {
-                        endPt = [endPt[0] - (dx_end / dist_end) * arrW, endPt[1] - (dy_end / dist_end) * arrW];
+                        const cut = controlPoints.length > 0 ? Math.min(arrW, Math.max(0, dist_end - 1)) : arrW;
+                        endPt = [endPt[0] - (dx_end / dist_end) * cut, endPt[1] - (dy_end / dist_end) * cut];
                     }
 
-                    // Shorten startPt by arrW if bidirectional
+                    // Shorten startPt by arrW if bidirectional (again never past the first segment's end)
                     if (f.isBidirectional) {
                         let p_next = controlPoints.length > 0 ? controlPoints[0] : endPt;
                         let dx_start = p_next[0] - startPt[0];
                         let dy_start = p_next[1] - startPt[1];
                         let dist_start = Math.sqrt(dx_start * dx_start + dy_start * dy_start);
                         if (dist_start > 0) {
-                            startPt = [startPt[0] + (dx_start / dist_start) * arrW, startPt[1] + (dy_start / dist_start) * arrW];
+                            const cut = controlPoints.length > 0 ? Math.min(arrW, Math.max(0, dist_start - 1)) : arrW;
+                            startPt = [startPt[0] + (dx_start / dist_start) * cut, startPt[1] + (dy_start / dist_start) * cut];
                         }
                     }
 
@@ -11848,6 +12000,7 @@
                 if (one && safeStencilIcon(one.stencilIcon)) {
                     ['box-props-node-type', 'box-props-icon-customization', 'box-props-security'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('d-none'); });
                 }
+                this.applyReviewModeToControls();
             }
 
             updatePropertiesInspectorViewCore() {
@@ -12686,6 +12839,7 @@
                 const reviewItem = document.getElementById('btn-menu-review-mode');
                 if (reviewItem) reviewItem.setAttribute('aria-checked', String(!!this.state.reviewMode));
                 this.dom.svg.classList.toggle('review-mode', !!this.state.reviewMode);
+                this.applyReviewModeToControls();
                 this.renderTitleBlock();
             }
 
@@ -12959,6 +13113,7 @@
                     showError('');
                 });
                 document.getElementById('btn-mermaid-import-go').addEventListener('click', () => {
+                    if (this.state.reviewMode) { showError('Review mode is on, so the layout is frozen. Turn it off (header badge or View menu) to import a diagram.'); return; }
                     let mode = 'add';
                     if (this.state.elements.length) {
                         const picked = document.querySelector('input[name="mermaid-import-mode"]:checked');
@@ -12983,6 +13138,7 @@
              * mitigations first. One undo step. Throws an Error with a readable message if the text cannot be imported.
              */
             importMermaidFlowchart(source, mode = 'add') {
+                if (this.state.reviewMode) throw new Error('Review mode is on, so the layout is frozen. Turn it off (header badge or View menu) to import a diagram.');
                 const g = parseMermaidFlowchart(source);
                 const lay = layoutMermaidGraph(g);
                 const s = this.state;
