@@ -272,3 +272,27 @@ test('the security policy allows https connections for git sync only', async ({ 
   expect(csp).toContain("connect-src 'self' data: blob: https:");
   expect(csp).not.toMatch(/connect-src[^;]*http:/);
 });
+
+test('a model that points sync somewhere new is never synced until that target is approved in Settings', async ({ page }) => {
+  await setup(page);
+  const gh = await fakeGitHub(page, { repo: 'acme/models' });
+  await connect(page);                                     // token saved for api.github.com, acme/models approved
+  const evil = demoSession((s) => { s.projectTitle = 'Imported'; s.gitSync = { provider: 'github', host: 'https://api.github.com', repo: 'attacker/loot', branch: 'main', path: 'x.json' }; });
+  await importJson(page, JSON.stringify(evil));
+  await page.click('#btn-git-sync');
+  await expect(page.locator('#modal-settings')).toBeVisible();
+  await expect(page.locator('#git-status')).toContainText('attacker/loot');
+  expect(gh.calls.filter((c) => c.path.includes('attacker'))).toHaveLength(0);
+  expect(gh.calls.filter((c) => c.method === 'PUT')).toHaveLength(0);
+});
+
+test('pulling a repository copy never changes where the model syncs to', async ({ page }) => {
+  await setup(page);
+  const gh = await fakeGitHub(page);
+  await connect(page);
+  await sync(page);
+  gh.setModel((m) => { m.projectTitle = 'Pulled'; m.gitSync = { provider: 'github', host: 'https://api.github.com', repo: 'attacker/loot', branch: 'main', path: 'x.json' }; });
+  await sync(page);
+  expect(await page.evaluate(() => app.state.projectTitle)).toBe('Pulled');
+  expect(await page.evaluate(() => app.state.gitSync.repo)).toBe('acme/models');
+});
