@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-wnS7iYpjpNpD2ROnxHMiyFdfAZmgiYUuu/9BedZVqFA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-qng/bCwKc24l6Fmoh8Xxe9E7GHvMPrHgpbPNIrB4BUo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4756,16 +4756,16 @@
             if ((m = /^ATT&CK (T\d{4})(?:\.(\d{3}))?$/i.exec(r))) return `https://attack.mitre.org/techniques/${m[1].toUpperCase()}/${m[2] ? m[2] + '/' : ''}`;
             if (/^OWASP API\d+:2023$/i.test(r)) return 'https://owasp.org/API-Security/';
             if (/^OWASP A\d{2}:20\d\d$/i.test(r)) return 'https://owasp.org/www-project-top-ten/';
-            if (/^GDPR Art\. 5/i.test(r)) return 'https://gdpr-info.eu/art-5-gdpr/';
+            if (/^GDPR Art\. 5(?:\(\d+\)(?:\([a-z]\))?)?$/i.test(r)) return 'https://gdpr-info.eu/art-5-gdpr/';
             if (/^OWASP LLM\d{2}:2025$/i.test(r)) return 'https://genai.owasp.org/llm-top-10/';
             if (/^OWASP M\d{1,2}:2024$/i.test(r)) return 'https://owasp.org/www-project-mobile-top-10/';
             if (/^OWASP CICD-SEC-\d{1,2}$/i.test(r)) return 'https://owasp.org/www-project-top-10-ci-cd-security-risks/';
             if (/^OWASP K\d{2}:2022$/i.test(r)) return 'https://owasp.org/www-project-kubernetes-top-ten/';
-            if (/^PCI DSS \d/i.test(r)) return 'https://www.pcisecuritystandards.org/document_library/';
-            if (/^HIPAA 45 CFR 164\.312/i.test(r)) return 'https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C/section-164.312';
+            if (/^PCI DSS \d+(?:\.\d+)*(?: Req\. \d+(?:\.\d+)*)?$/i.test(r)) return 'https://www.pcisecuritystandards.org/document_library/';
+            if (/^HIPAA 45 CFR 164\.312(?:\([a-z]\)(?:\(\d+\))?)?$/i.test(r)) return 'https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C/section-164.312';
             if (/^OWASP OAT-\d{3}$/i.test(r)) return 'https://owasp.org/www-project-automated-threats-to-web-applications/';
             if ((m = /^RFC (\d{3,5})$/i.exec(r))) return `https://www.rfc-editor.org/rfc/rfc${m[1]}`;
-            if (/^PCI DSS/i.test(r)) return 'https://www.pcisecuritystandards.org/';
+            if (/^PCI DSS(?: v?\d+(?:\.\d+)*)?$/i.test(r)) return 'https://www.pcisecuritystandards.org/';
             return null;
         }
 
@@ -10281,8 +10281,11 @@
 
             // ── Markdown report (FEAT-008) ────────────────────────────────────────────
             buildMarkdownReport() {
-                const cell = (s) => toText(s).replace(/\|/g, '\\|').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r?\n+/g, ' ').trim() || '—';
-                const para = (s) => toText(s).replace(/</g, '&lt;').replace(/>/g, '&gt;').trim();
+                // Every model value goes through mdText (cell: '—' when empty); links only to strict http(s) URLs (mdUrl).
+                const cell = (s) => mdText(s) || '—';
+                const para = (s) => mdText(s);
+                const category = (c) => STRIDE_CATEGORIES.includes(c) ? c : cell(c);
+                const link = (text, url) => { const u = mdUrl(url); return u ? `[${mdText(text)}](${u})` : mdText(text); };
                 const s = this.state;
                 const risk = (t) => ThreatModelSession.calculateRisk(t.likelihood, t.impact);
                 const byId = new Map([...s.elements, ...s.flows].map(x => [x.id, x]));
@@ -10318,22 +10321,22 @@
                 [...s.threats].sort((a, b) => risk(b).score - risk(a).score).forEach(t => { const k = t.elementId; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(t); });
                 groups.forEach((list, id) => {
                     const target = byId.get(id);
-                    out.push(`### ${para(target ? target.name : 'Unknown component')}${target ? ` (${target.sourceId !== undefined ? 'data flow' : target.type.replace(/_/g, ' ')})` : ''}`, '');
+                    out.push(`### ${para(target ? target.name : 'Unknown component')}${target ? ` (${target.sourceId !== undefined ? 'data flow' : para(toText(target.type).replace(/_/g, ' '))})` : ''}`, '');
                     out.push('| ID | STRIDE | Threat | Risk | Status |', '|---|---|---|---|---|');
-                    list.forEach(t => out.push(`| ${cell(t.id)} | ${cell(t.category)} | ${cell(t.title)} | ${risk(t).label} (${risk(t).score}) | ${cell(t.status)} |`));
+                    list.forEach(t => out.push(`| ${cell(t.id)} | ${category(t.category)} | ${cell(t.title)} | ${risk(t).label} (${risk(t).score}) | ${cell(t.status)} |`));
                     out.push('');
                     list.forEach(t => {
-                        out.push(`**${cell(t.id)} — ${para(t.title)}**  `, `${t.category} · likelihood ${t.likelihood} × impact ${t.impact} = ${risk(t).score} (${risk(t).label}) · ${t.status}${t.needsReview ? ' · needs review' : ''}`, '');
-                        if (t.desc) out.push(para(t.desc).split(/\r?\n/).map(l => `> ${l}`).join('\n'), '');
+                        out.push(`**${cell(t.id)} — ${para(t.title)}**  `, `${category(t.category)} · likelihood ${para(t.likelihood)} × impact ${para(t.impact)} = ${risk(t).score} (${risk(t).label}) · ${para(t.status)}${t.needsReview ? ' · needs review' : ''}`, '');
+                        if (toText(t.desc).trim()) out.push(toText(t.desc).trim().split(/\r?\n/).map(l => { const item = /^\s*- (.*)$/.exec(l); return (item ? `> - ${para(item[1])}` : `> ${para(l)}`).trimEnd(); }).join('\n'), '');   // "- " list items (typical controls) stay a list
                         if (t.mitigationExplanation) out.push(`_Mitigation:_ ${para(t.mitigationExplanation)}`, '');
-                        if (Array.isArray(t.refs) && t.refs.length) out.push(`_References:_ ${t.refs.map(r => refLink(r) ? `[${r}](${refLink(r)})` : para(r)).join(', ')}`, '');
+                        if (Array.isArray(t.refs) && t.refs.length) out.push(`_References:_ ${t.refs.map(r => link(r, refLink(r))).join(', ')}`, '');
                         const linkedMits = (t.mitigationIds || []).map(id => this.mitigationById(id)).filter(Boolean);
-                        if (linkedMits.length) out.push(`_Mitigations:_ ${linkedMits.map(m => `${m.id} ${para(m.title)} (${m.status})`).join('; ')}`, '');
+                        if (linkedMits.length) out.push(`_Mitigations:_ ${linkedMits.map(m => `${para(m.id)} ${para(m.title)} (${para(m.status)})`).join('; ')}`, '');
                     });
                 });
                 if ((s.mitigations || []).length) {
                     out.push('## Mitigations', '', '| ID | Mitigation | Status | Owner | Covers | Ticket |', '|---|---|---|---|---|---|');
-                    s.mitigations.forEach(m => out.push(`| ${cell(m.id)} | ${cell(m.title)} | ${cell(m.status)} | ${cell(m.owner)} | ${cell(this.threatsCoveredBy(m.id).map(t => t.id).join(', '))} | ${m.ticketUrl ? `[link](${m.ticketUrl})` : '—'} |`));
+                    s.mitigations.forEach(m => out.push(`| ${cell(m.id)} | ${cell(m.title)} | ${cell(m.status)} | ${cell(m.owner)} | ${cell(this.threatsCoveredBy(m.id).map(t => t.id).join(', '))} | ${mdUrl(m.ticketUrl) ? `[link](${mdUrl(m.ticketUrl)})` : '—'} |`));
                     out.push('');
                 }
                 out.push('## Data flows', '', '| Flow | From | To | Ports | Encrypted | Authenticated | Crosses trust boundary |', '|---|---|---|---|---|---|---|');
@@ -10358,8 +10361,8 @@
                 if (pending.length || warnings.length) {
                     out.push('', '## Open findings', '');
                     const byModel = pending.filter(f => f.source === 'model'), byKind = pending.filter(f => f.source !== 'model');
-                    if (byModel.length) { out.push('### Suggested by model rules (not yet in the register)', ''); byModel.forEach(f => out.push(`- **${para(f.title)}** (${f.rule.category}, ${f.rule.id}) — ${para(f.reason)}`)); out.push(''); }
-                    if (byKind.length) { out.push(`### Suggested for the kind of component (${byKind.length}, not yet in the register)`, ''); [...new Set(byKind.map(f => f.item))].forEach(it => { const fs = byKind.filter(f => f.item === it); out.push(`- **${para(it.name || 'unnamed')}** (${para(fs[0].reason)}): ${fs.map(f => `${f.rule.id}`).join(', ')}`); }); out.push(''); }
+                    if (byModel.length) { out.push('### Suggested by model rules (not yet in the register)', ''); byModel.forEach(f => out.push(`- **${para(f.title)}** (${category(f.rule.category)}, ${para(f.rule.id)}) — ${para(f.reason)}`)); out.push(''); }
+                    if (byKind.length) { out.push(`### Suggested for the kind of component (${byKind.length}, not yet in the register)`, ''); [...new Set(byKind.map(f => f.item))].forEach(it => { const fs = byKind.filter(f => f.item === it); out.push(`- **${para(it.name || 'unnamed')}** (${para(fs[0].reason)}): ${fs.map(f => para(f.rule.id)).join(', ')}`); }); out.push(''); }
                     if (warnings.length) { out.push('### Model checks', ''); warnings.forEach(x => out.push(`- ${para(x.text)}`)); out.push(''); }
                 }
                 return out.join('\n') + '\n';
