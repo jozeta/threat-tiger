@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-0OXIqETsgo2T7d3nLxplLCKD4hx1iEGaRJcALZIykRY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-vaycVsrUxGhn82WkM81Px9NJo24AbMdwGwVCTM8dblk='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3908,7 +3908,7 @@
             if (/^data:image\/(png|jpe?g|gif|webp|svg\+xml|bmp);/i.test(v)) return v;
             if (/^https?:\/\//i.test(v)) return v;
             // A relative file name, never "//host/…" or "/…" (a protocol-relative URL would load from another site without asking).
-            if (/^[\w.-][\w.\/-]*\.(png|jpe?g|gif|webp|svg)$/i.test(v) && !v.includes('..') && !v.includes('//')) return v;
+            if (/^[\w.-][\w./-]*\.(png|jpe?g|gif|webp|svg)$/i.test(v) && !v.includes('..') && !v.includes('//')) return v;
             return '';
         }
         function isExternalUrl(value) {
@@ -3963,17 +3963,20 @@
         // ── Attack paths ─────────────────────────────────────────────────────────────
         // Routes an attacker could take from an entry point to a crown jewel along the data flows.
         const ATTACK_PATH_LIMITS = { hops: 8, paths: 200, expansions: 50000 };
-        const ATTACK_PATH_NODE_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'custom_image', ...Object.keys(FLOWCHART_DEFAULTS)]);
+        // Shapes that are parts of the system being modelled (threats, suggestions, reports, Insights coverage, attack paths).
+        const MODEL_COMPONENT_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'custom_image', ...Object.keys(FLOWCHART_DEFAULTS)]);
+        const ATTACK_PATH_NODE_TYPES = MODEL_COMPONENT_TYPES;
         const THREAT_WEIGHT = { 'Open / Unmitigated': 1, 'Partially mitigated': 0.5 };
-        // model: { elements, flows, threats, nodeZones: Map(id -> zones[]), zoneCount }. Breadth-first over simple paths, so the
+        // model: { elements, flows, threats, nodeZones: Map(id -> zones[]), zoneCount, zoneCountOf?(element) (zones on that shape's page) }. Breadth-first over simple paths, so the
         // shortest are found first; stops at the hop, path or expansion limit (then truncated = true). Ranked by score.
         function computeAttackPaths(model, { start = '', target = '' } = {}) {
-            const nodes = model.elements.filter(e => ATTACK_PATH_NODE_TYPES.has(e.type));
+            const nodes = model.elements.filter(e => ATTACK_PATH_NODE_TYPES.has(e.type) && !e.isDisabled);   // a disabled shape carries no traffic
             const ids = new Set(nodes.map(e => e.id));
             const jewel = (e) => !!(e.secProps && e.secProps.isCrownJewel === 'true');
             const zonesOf = (id) => (model.nodeZones && model.nodeZones.get(id)) || [];
+            const zoneCountOf = (e) => typeof model.zoneCountOf === 'function' ? model.zoneCountOf(e) : (model.zoneCount || 0);
             const entries = start && ids.has(start) ? [start]
-                : nodes.filter(e => !jewel(e) && (e.type === 'interactor' || (model.zoneCount > 0 && zonesOf(e.id).length === 0))).map(e => e.id);
+                : nodes.filter(e => !jewel(e) && (e.type === 'interactor' || (zoneCountOf(e) > 0 && zonesOf(e.id).length === 0))).map(e => e.id);
             const targets = target && ids.has(target) ? [target] : nodes.filter(jewel).map(e => e.id);
             const targetSet = new Set(targets);
             const adj = new Map();
@@ -4361,8 +4364,9 @@
         /** Mermaid label text -> plain text: entity codes decoded, HTML tags and control characters removed, length capped. */
         function mermaidLabel(raw) {
             const named = { quot: '"', lt: '<', gt: '>', amp: '&', nbsp: ' ', apos: "'" };
-            let s = toText(raw).replace(/^"([\s\S]*)"$/, '$1').replace(/^`([\s\S]*)`$/, '$1');
-            s = s.replace(/<br\s*\/?>/gi, ' ').replace(/<\/?[a-z][^>]*>/gi, '');
+            // Capped first (entities and tags only shorten the text), and tags end at the next "<", so crafted input stays linear.
+            let s = toText(raw).replace(/^"([\s\S]*)"$/, '$1').replace(/^`([\s\S]*)`$/, '$1').slice(0, MERMAID_LIMITS.label * 20);
+            s = s.replace(/<br\s*\/?>/gi, ' ').replace(/<\/?[a-z][^<>]*>/gi, '');
             s = s.replace(/#([a-z]+);/gi, (m, n) => (n.toLowerCase() in named ? named[n.toLowerCase()] : m));
             s = s.replace(/#(\d{1,7});/g, (m, n) => { const c = Number(n); return c > 31 && c < 0x110000 && !(c >= 0xd800 && c < 0xe000) ? String.fromCodePoint(c) : ''; });
             // eslint-disable-next-line no-control-regex
@@ -4500,7 +4504,8 @@
                 i += len;
                 let j = i; while (s[j] === ' ') j++;
                 if (s[j] === '|') {
-                    const end = s.indexOf('|', j + 1);
+                    const close = s[j + 1] === '"' ? s.indexOf('"', j + 2) : -1;   // |"a|b"|: a quoted label may contain "|"
+                    const end = s.indexOf('|', close > 0 ? close + 1 : j + 1);
                     if (end < 0) return null;
                     label = s.slice(j + 1, end); i = end + 1;
                 }
@@ -4808,7 +4813,7 @@
             [/\b(s3|buckets?|blob|gcs|object ?storage|data ?lake|datalake|minio)\b/i, 'object-storage'],
             [/\b(redis|memcached?|cache)\b/i, 'cache'],
             [/\b(kafka|rabbit ?mq|sqs|sns|queues?|service ?bus|event ?hub|pub ?\/? ?sub|mq|nats|amqp|consumers?|workers?|topics?)\b/i, 'queue'],
-            [/\b(llm|gpt|openai|claude|gemini|chat ?bot|ai|genai|rag|vector|embeddings?|copilot|assistant|agent)\b/i, 'llm'],
+            [/\b(llm|gpt|openai|claude|gemini|chat ?bot|ai|genai|rag|vector|embeddings?|copilot|(virtual|chat|voice|coding|smart) ?assistants?|(autonomous|conversational|agentic) agents?|agentic)\b/i, 'llm'],   // "agent"/"assistant" alone: build agent, support assistant
             [/\b(payments?|checkout|billing|psp|stripe|adyen|paypal|klarna|cards?|wallet)\b/i, 'payment'],
             [/\bgraphql\b/i, 'graphql'],
             [/\b(dns|route ?53|nameservers?|registrar)\b/i, 'dns'],
@@ -4831,19 +4836,19 @@
             [/\b(iot|devices?|sensors?|plc|scada|cameras?|printers?|kiosk|pos)\b/i, 'iot'],
             [/\b(ec2|vm|vms|virtual machines?|instances?|compute engine|droplet)\b/i, 'cloud-host'],
             [/\b(router|firewall|switch|load ?balancer|waf|vpn|proxy|nginx|haproxy|f5)\b/i, 'network-device'],
-            [/\b(mail|smtp|exchange|imap)\b/i, 'email'],
-            [/\b(users?|customers?|employees?|clients?|visitors?|people)\b/i, 'human'],
+            [/\b(mail|smtp|imap|(ms|microsoft) exchange|exchange (server|online))\b/i, 'email'],   // not "exchange rate"
+            [/\b(users?|customers?|employees?|visitors?|people)\b/i, 'human'],   // not "client": API client, desktop/mobile client (external entities are human anyway)
             [/\b(config(uration)?|settings|\.env|dotenv|ya?ml|ini|toml|feature ?flags?|parameter ?store)\b/i, 'config'],
             [/\b(blockchain|ledger|smart ?contracts?|ethereum|solana|bitcoin|crypto|web3|nft|defi|crypto ?wallet)\b/i, 'ledger'],
             [/\b(usb|removable|sd ?card|thumb ?drive|external (disk|drive)|floppy)\b/i, 'removable-media'],
             [/\b(local disk|hard ?drive|hdd|ssd|disk|volume|block storage|ebs)\b/i, 'local-disk'],
-            [/\b(npm|pypi|maven|nuget|rubygems|artifactory|nexus|registry|package (registry|manager)|librar(y|ies)|sdk|plugins?|extensions?|artifacts?|dependenc(y|ies))\b/i, 'supply-chain'],
+            [/\b(npm|pypi|maven|nuget|rubygems|artifactory|nexus|(container|docker|image|package|artifact|npm|helm|model|plugin|module) registr(y|ies)|package manager|librar(y|ies)|sdk|plugins?|extensions?|artifacts?|dependenc(y|ies))\b/i, 'supply-chain'],   // not "land registry"
             [/\b(cron|batch|scheduler|scheduled|jobs?|etl|airflow|nightly|daemon)\b/i, 'scheduler'],
             [/\b(gpu|training|inference|model serving|jupyter|notebooks?|mlflow|ray|sagemaker|vertex|kubeflow|hugging ?face|ml|mlops)\b/i, 'ml-compute'],
             [/\b(kiosk|terminal|point of sale|self[- ]service|ticket machine|atm)\b/i, 'kiosk'],
             [/\b(laptops?|workstations?|desktops?|pcs?|macbook|thin client)\b/i, 'workstation'],
             [/\b(scripts?|shell|bash|powershell|cli|automation)\b/i, 'script'],
-            [/\b(test|testing|staging|stage|dev|development|qa|sandbox|uat|debug|preview|demo)\b/i, 'non-prod'],
+            [/\b(test|testing|staging|stage|dev|development|qa|sandbox|uat|debug|preview|demo (environment|env|instance|server|site|system|tenant))\b/i, 'non-prod'],   // not "demo booking"
             [/\b(connectors?|integrations?|ipaas|zapier|mulesoft|boomi|make\.com|workato|n8n|middleware|adapters?)\b/i, 'integration'],
             [/\b(monitoring|grafana|prometheus|datadog|kibana|dashboards?|metrics|alerting|apm|new relic|zabbix|nagios|observability|telemetry)\b/i, 'monitoring'],
             [/\b(analytics|data ?warehouse|warehouse|snowflake|bigquery|redshift|databricks|tableau|power ?bi|looker|reporting|bi)\b/i, 'analytics'],
@@ -4869,6 +4874,25 @@
             [/\b(sql|jdbc|postgres(ql)?|mysql|mongo(db)?|redis|database|db)\b/i, 'database']
         ];
 
+        /** A template text with every "[name]" replaced by the component's name (a function, so "$&" in a name stays literal). */
+        function fillTemplateName(text, item) {
+            return toText(text).replace(/\[name\]/g, () => toText(item && item.name) || 'unnamed');
+        }
+
+        /** Model text -> Markdown text that renders literally: specials backslash-escaped, < > & as entities, one line. */
+        function mdText(text) {
+            return toText(text).replace(/[\r\n\u2028\u2029]+/g, ' ').trim()
+                .replace(/[\\`*_[\]#|~]/g, '\\$&').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/^[-+=]/, '\\$&').replace(/^(\d+)([.)])/, '$1\\$2');   // a leading "-", "+", "=" or "1." would start a list or heading
+        }
+
+        /** A strict http(s) URL as a Markdown link destination (<…>), or null. */
+        function mdUrl(url) {
+            const u = toText(url).trim();
+            if (!/^https?:\/\/[^\s<>"`\\]+$/i.test(u)) return null;
+            try { const p = new URL(u); return /^https?:$/.test(p.protocol) ? `<${p.href.replace(/[()[\]]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase())}>` : null; } catch { return null; }   // href percent-encodes < > and spaces
+        }
+
         /** Turns a reference id into a link to its authoritative source (or null). */
         function refLink(ref) {
             const r = toText(ref).trim();
@@ -4879,16 +4903,16 @@
             if ((m = /^ATT&CK (T\d{4})(?:\.(\d{3}))?$/i.exec(r))) return `https://attack.mitre.org/techniques/${m[1].toUpperCase()}/${m[2] ? m[2] + '/' : ''}`;
             if (/^OWASP API\d+:2023$/i.test(r)) return 'https://owasp.org/API-Security/';
             if (/^OWASP A\d{2}:20\d\d$/i.test(r)) return 'https://owasp.org/www-project-top-ten/';
-            if (/^GDPR Art\. 5/i.test(r)) return 'https://gdpr-info.eu/art-5-gdpr/';
+            if (/^GDPR Art\. 5(?:\(\d+\)(?:\([a-z]\))?)?$/i.test(r)) return 'https://gdpr-info.eu/art-5-gdpr/';
             if (/^OWASP LLM\d{2}:2025$/i.test(r)) return 'https://genai.owasp.org/llm-top-10/';
             if (/^OWASP M\d{1,2}:2024$/i.test(r)) return 'https://owasp.org/www-project-mobile-top-10/';
             if (/^OWASP CICD-SEC-\d{1,2}$/i.test(r)) return 'https://owasp.org/www-project-top-10-ci-cd-security-risks/';
             if (/^OWASP K\d{2}:2022$/i.test(r)) return 'https://owasp.org/www-project-kubernetes-top-ten/';
-            if (/^PCI DSS \d/i.test(r)) return 'https://www.pcisecuritystandards.org/document_library/';
-            if (/^HIPAA 45 CFR 164\.312/i.test(r)) return 'https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C/section-164.312';
+            if (/^PCI DSS \d+(?:\.\d+)*(?: Req\. \d+(?:\.\d+)*)?$/i.test(r)) return 'https://www.pcisecuritystandards.org/document_library/';
+            if (/^HIPAA 45 CFR 164\.312(?:\([a-z]\)(?:\(\d+\))?)?$/i.test(r)) return 'https://www.ecfr.gov/current/title-45/subtitle-A/subchapter-C/part-164/subpart-C/section-164.312';
             if (/^OWASP OAT-\d{3}$/i.test(r)) return 'https://owasp.org/www-project-automated-threats-to-web-applications/';
             if ((m = /^RFC (\d{3,5})$/i.exec(r))) return `https://www.rfc-editor.org/rfc/rfc${m[1]}`;
-            if (/^PCI DSS/i.test(r)) return 'https://www.pcisecuritystandards.org/';
+            if (/^PCI DSS(?: v?\d+(?:\.\d+)*)?$/i.test(r)) return 'https://www.pcisecuritystandards.org/';
             return null;
         }
 
@@ -10282,20 +10306,6 @@
             }
 
             // ── Rule engine (FEAT-002) ────────────────────────────────────────────────
-            ruleHelpers(analysis) {
-                const els = new Map(this.state.elements.map(e => [e.id, e]));
-                return {
-                    on: (item, key) => !!(item && item.secProps && item.secProps[key] === 'true'),
-                    off: (item, key) => !!(item && item.secProps && item.secProps[key] === 'false'),
-                    crossing: (f) => analysis.crossings.get(f.id) || { crosses: false, names: [] },
-                    node: (id) => els.get(id),
-                    flowsOf: (item) => this.state.flows.filter(f => f.sourceId === item.id || f.targetId === item.id),
-                    inbound: (item) => this.state.flows.filter(f => f.targetId === item.id || (f.isBidirectional && f.sourceId === item.id)),
-                    outbound: (item) => this.state.flows.filter(f => f.sourceId === item.id || (f.isBidirectional && f.targetId === item.id)),
-                    zones: (item) => (analysis.nodeZones.get(item.id) || []).map(z => z.name)
-                };
-            }
-
             isFlowItem(item) { return item && item.sourceId !== undefined && item.targetId !== undefined; }
 
             /** Which template library applies to a component or data flow. */
@@ -10343,8 +10353,11 @@
                     node: (id) => els.get(id),
                     subtypes: (item) => { if (!subtypeCache.has(item.id)) subtypeCache.set(item.id, this.subtypesOf(item)); return subtypeCache.get(item.id); },
                     flowsOf: (item) => this.state.flows.filter(f => f.sourceId === item.id || f.targetId === item.id),
-                    inbound: (item) => this.state.flows.filter(f => f.targetId === item.id || (f.isBidirectional && f.sourceId === item.id)),
-                    outbound: (item) => this.state.flows.filter(f => f.sourceId === item.id || (f.isBidirectional && f.targetId === item.id)),
+                    // A two-way flow matched from its other end is seen reversed, so "source" of an inbound flow is always the other end.
+                    inbound: (item) => this.state.flows.filter(f => f.targetId === item.id || (f.isBidirectional && f.sourceId === item.id))
+                        .map(f => f.targetId === item.id ? f : Object.assign({}, f, { sourceId: f.targetId, targetId: f.sourceId })),
+                    outbound: (item) => this.state.flows.filter(f => f.sourceId === item.id || (f.isBidirectional && f.targetId === item.id))
+                        .map(f => f.sourceId === item.id ? f : Object.assign({}, f, { sourceId: f.targetId, targetId: f.sourceId })),
                     zones: (item) => (analysis.nodeZones.get(item.id) || []).map(z => z.name)
                 };
             }
@@ -10421,7 +10434,7 @@
              */
             describeTemplate(tpl, libraryKey, item, m) {
                 const id = this.templateIdOf(libraryKey, tpl);
-                const title = toText(tpl.title).replace('[name]', () => toText(item.name) || 'unnamed');   // a function, so "$&" in a name stays literal
+                const title = fillTemplateName(tpl.title, item);
                 let reason = null;
                 if (tpl.when) { try { const r = this.evaluateCondition(tpl.when, item, m); if (r.ok) reason = r.reasons.join('; ') || 'matches your model'; } catch (err) { console.warn('[ThreatTiger] Condition failed', id, err); } }
                 const mine = m.subtypes(item);
@@ -10452,15 +10465,16 @@
             /** All triggered suggestions across the model. */
             evaluateAllRules() {
                 const analysis = this.computeTrustAnalysis();
-                const items = [...this.state.elements.filter(e => ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(e.type)), ...this.state.flows];
+                const items = [...this.modelComponents(), ...this.state.flows];
                 return items.flatMap(item => this.evaluateRules(item, analysis));
             }
 
             /** The description stored on a threat created from a template: what, controls, references, example, why. */
-            composeThreatDescription(tpl, reason) {
-                const parts = [toText(tpl.desc).trim()];
-                if (tpl.controls && tpl.controls.length) parts.push('Typical controls:\n' + tpl.controls.map(c => `- ${c}`).join('\n'));
-                if (tpl.example) parts.push(`Real-world example: ${tpl.example}`);
+            composeThreatDescription(tpl, reason, item) {
+                const fill = (text) => item ? fillTemplateName(text, item) : toText(text);
+                const parts = [fill(tpl.desc).trim()];
+                if (tpl.controls && tpl.controls.length) parts.push('Typical controls:\n' + tpl.controls.map(c => `- ${fill(c)}`).join('\n'));
+                if (tpl.example) parts.push(`Real-world example: ${fill(tpl.example)}`);
                 if (tpl.refs && tpl.refs.length) parts.push(`References: ${tpl.refs.join(', ')}`);
                 if (reason) parts.push(`Why suggested: ${reason}.`);
                 return parts.filter(Boolean).join('\n\n');
@@ -10477,7 +10491,7 @@
                     added.push({
                         id: this.generateNextThreatId(), title: f.title, category: f.rule.category, elementId: f.item.id,
                         status: 'Open / Unmitigated', likelihood: String(L), impact: String(I),
-                        riskScore: risk.score, riskLabel: risk.label, desc: this.composeThreatDescription(f.rule, f.reason),
+                        riskScore: risk.score, riskLabel: risk.label, desc: this.composeThreatDescription(f.rule, f.reason, f.item),
                         mitigationExplanation: '', templateId: f.rule.id, ruleId: f.reason ? f.rule.id : undefined, refs: f.rule.refs || []
                     });
                     this.state.threats.push(added[added.length - 1]);
@@ -10617,7 +10631,8 @@
                     const analysis = this.computeTrustAnalysis();
                     zones.filter(z => ![...analysis.nodeZones.values()].some(list => list.some(x => x.id === z.id)))
                         .forEach(z => w.push({ level: 'info', code: 'MC-EMPTY-ZONE', text: `Trust zone ${nameOf(z)} contains no components.`, id: z.id }));
-                    const outside = this.state.elements.filter(e => ['process', 'datastore'].includes(e.type) && !(analysis.nodeZones.get(e.id) || []).length);
+                    const zonesOnPage = this.pageZoneCounter();
+                    const outside = this.state.elements.filter(e => ['process', 'datastore'].includes(e.type) && zonesOnPage(e) > 0 && !(analysis.nodeZones.get(e.id) || []).length);
                     if (outside.length) w.push({ level: 'info', text: `${outside.length} process(es)/data store(s) are outside every trust zone: ${outside.slice(0, 4).map(e => `"${e.name}"`).join(', ')}${outside.length > 4 ? '…' : ''}.` });
                 }
                 return w;
@@ -10631,7 +10646,7 @@
                 const open = threats.filter(t => t.status !== 'Mitigated / Resolved');
                 const risk = (t) => ThreatModelSession.calculateRisk(t.likelihood, t.impact);
                 const critHigh = open.filter(t => ['Critical', 'High'].includes(risk(t).label));
-                const modelEls = this.state.elements.filter(e => ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(e.type));
+                const modelEls = this.modelComponents();
                 const withThreats = new Set(threats.map(t => t.elementId));
                 const uncovered = [...modelEls, ...this.state.flows].filter(x => !withThreats.has(x.id));
                 const findings = this.evaluateAllRules();
@@ -10805,8 +10820,19 @@
             // ── Attack paths (Insights) ──────────────────────────────────────────────
             attackPathModel() {
                 const analysis = this.computeTrustAnalysis();
-                return { elements: this.state.elements, flows: this.state.flows, threats: this.state.threats, nodeZones: analysis.nodeZones, zoneCount: analysis.zones.length };
+                return { elements: this.state.elements, flows: this.state.flows, threats: this.state.threats, nodeZones: analysis.nodeZones, zoneCount: analysis.zones.length, zoneCountOf: this.pageZoneCounter() };
             }
+
+            /** (element) -> how many trust zones are on that element's page (shapes without a page are on the first one). */
+            pageZoneCounter() {
+                const first = ((this.state.pages || [])[0] || {}).id || '';
+                const pageOf = (e) => e.pageId || first, counts = new Map();
+                this.state.elements.filter(e => e.type === 'boundary').forEach(z => counts.set(pageOf(z), (counts.get(pageOf(z)) || 0) + 1));
+                return (e) => counts.get(pageOf(e)) || 0;
+            }
+
+            /** The shapes that are parts of the modelled system (processes, stores, entities, infrastructure, images, flowchart shapes). */
+            modelComponents() { return this.state.elements.filter(e => MODEL_COMPONENT_TYPES.has(e.type)); }
 
             attackPathNames(path) {
                 const byId = new Map(this.state.elements.map(e => [e.id, e]));
@@ -10906,8 +10932,11 @@
 
             // ── Markdown report (FEAT-008) ────────────────────────────────────────────
             buildMarkdownReport() {
-                const cell = (s) => toText(s).replace(/\|/g, '\\|').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\r?\n+/g, ' ').trim() || '—';
-                const para = (s) => toText(s).replace(/</g, '&lt;').replace(/>/g, '&gt;').trim();
+                // Every model value goes through mdText (cell: '—' when empty); links only to strict http(s) URLs (mdUrl).
+                const cell = (s) => mdText(s) || '—';
+                const para = (s) => mdText(s);
+                const category = (c) => STRIDE_CATEGORIES.includes(c) ? c : cell(c);
+                const link = (text, url) => { const u = mdUrl(url); return u ? `[${mdText(text)}](${u})` : mdText(text); };
                 const s = this.state;
                 const risk = (t) => ThreatModelSession.calculateRisk(t.likelihood, t.impact);
                 const byId = new Map([...s.elements, ...s.flows].map(x => [x.id, x]));
@@ -10917,7 +10946,7 @@
                 out.push(`# ${para(s.projectTitle) || 'Threat model'}`, '');
                 out.push(`_Threat model report generated by Threat Tiger ${APP_VERSION} on ${new Date().toISOString().slice(0, 10)}._`, '');
                 out.push('| | |', '|---|---|', `| Scope | ${cell(s.scopeDefinition)} |`, `| Participants | ${cell(s.participants)} |`,
-                    `| Components | ${s.elements.filter(e => ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(e.type)).length} |`,
+                    `| Components | ${this.modelComponents().length} |`,
                     `| Data flows | ${s.flows.length} |`, `| Threats | ${s.threats.length} |`, '');
                 out.push('## Risk summary', '', `| Severity | ${statuses.join(' | ')} | Total |`, `|---|${statuses.map(() => '---:').join('|')}|---:|`);
                 ['Critical', 'High', 'Medium', 'Low'].forEach(sev => {
@@ -10943,22 +10972,22 @@
                 [...s.threats].sort((a, b) => risk(b).score - risk(a).score).forEach(t => { const k = t.elementId; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(t); });
                 groups.forEach((list, id) => {
                     const target = byId.get(id);
-                    out.push(`### ${para(target ? target.name : 'Unknown component')}${target ? ` (${target.sourceId !== undefined ? 'data flow' : target.type.replace(/_/g, ' ')})` : ''}`, '');
+                    out.push(`### ${para(target ? target.name : 'Unknown component')}${target ? ` (${target.sourceId !== undefined ? 'data flow' : para(toText(target.type).replace(/_/g, ' '))})` : ''}`, '');
                     out.push('| ID | STRIDE | Threat | Risk | Status |', '|---|---|---|---|---|');
-                    list.forEach(t => out.push(`| ${cell(t.id)} | ${cell(t.category)} | ${cell(t.title)} | ${risk(t).label} (${risk(t).score}) | ${cell(t.status)} |`));
+                    list.forEach(t => out.push(`| ${cell(t.id)} | ${category(t.category)} | ${cell(t.title)} | ${risk(t).label} (${risk(t).score}) | ${cell(t.status)} |`));
                     out.push('');
                     list.forEach(t => {
-                        out.push(`**${cell(t.id)} — ${para(t.title)}**  `, `${t.category} · likelihood ${t.likelihood} × impact ${t.impact} = ${risk(t).score} (${risk(t).label}) · ${t.status}${t.needsReview ? ' · needs review' : ''}`, '');
-                        if (t.desc) out.push(para(t.desc).split(/\r?\n/).map(l => `> ${l}`).join('\n'), '');
+                        out.push(`**${cell(t.id)} — ${para(t.title)}**  `, `${category(t.category)} · likelihood ${para(t.likelihood)} × impact ${para(t.impact)} = ${risk(t).score} (${risk(t).label}) · ${para(t.status)}${t.needsReview ? ' · needs review' : ''}`, '');
+                        if (toText(t.desc).trim()) out.push(toText(t.desc).trim().split(/\r?\n/).map(l => { const item = /^\s*- (.*)$/.exec(l); return (item ? `> - ${para(item[1])}` : `> ${para(l)}`).trimEnd(); }).join('\n'), '');   // "- " list items (typical controls) stay a list
                         if (t.mitigationExplanation) out.push(`_Mitigation:_ ${para(t.mitigationExplanation)}`, '');
-                        if (Array.isArray(t.refs) && t.refs.length) out.push(`_References:_ ${t.refs.map(r => refLink(r) ? `[${r}](${refLink(r)})` : para(r)).join(', ')}`, '');
+                        if (Array.isArray(t.refs) && t.refs.length) out.push(`_References:_ ${t.refs.map(r => link(r, refLink(r))).join(', ')}`, '');
                         const linkedMits = (t.mitigationIds || []).map(id => this.mitigationById(id)).filter(Boolean);
-                        if (linkedMits.length) out.push(`_Mitigations:_ ${linkedMits.map(m => `${m.id} ${para(m.title)} (${m.status})`).join('; ')}`, '');
+                        if (linkedMits.length) out.push(`_Mitigations:_ ${linkedMits.map(m => `${para(m.id)} ${para(m.title)} (${para(m.status)})`).join('; ')}`, '');
                     });
                 });
                 if ((s.mitigations || []).length) {
                     out.push('## Mitigations', '', '| ID | Mitigation | Status | Owner | Covers | Ticket |', '|---|---|---|---|---|---|');
-                    s.mitigations.forEach(m => out.push(`| ${cell(m.id)} | ${cell(m.title)} | ${cell(m.status)} | ${cell(m.owner)} | ${cell(this.threatsCoveredBy(m.id).map(t => t.id).join(', '))} | ${m.ticketUrl ? `[link](${m.ticketUrl})` : '—'} |`));
+                    s.mitigations.forEach(m => out.push(`| ${cell(m.id)} | ${cell(m.title)} | ${cell(m.status)} | ${cell(m.owner)} | ${cell(this.threatsCoveredBy(m.id).map(t => t.id).join(', '))} | ${mdUrl(m.ticketUrl) ? `[link](${mdUrl(m.ticketUrl)})` : '—'} |`));
                     out.push('');
                 }
                 out.push('## Data flows', '', '| Flow | From | To | Ports | Encrypted | Authenticated | Crosses trust boundary |', '|---|---|---|---|---|---|---|');
@@ -10968,7 +10997,7 @@
                     out.push(`| ${cell(f.name)} | ${cell((byId.get(f.sourceId) || {}).name)} | ${cell((byId.get(f.targetId) || {}).name)} | ${cell(f.ports)} | ${yn('encrypted')} | ${yn('authenticated')} | ${c.crosses ? cell(c.names.join(', ')) : 'no'} |`);
                 });
                 out.push('', '## Components', '', '| Component | Type | Trust zone | Security properties | Notes |', '|---|---|---|---|---|');
-                s.elements.filter(e => ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(e.type)).forEach(e => {
+                this.modelComponents().forEach(e => {
                     const props = Object.entries(e.secProps || {}).filter(([, v]) => v === 'true').map(([k]) => k.replace(/([A-Z])/g, ' $1').toLowerCase()).join(', ');
                     out.push(`| ${cell(e.name)} | ${e.type.replace(/_/g, ' ')} | ${cell((analysis.nodeZones.get(e.id) || []).map(z => z.name).join(', '))} | ${cell(props)} | ${cell(e.notes)} |`);
                 });
@@ -10983,8 +11012,8 @@
                 if (pending.length || warnings.length) {
                     out.push('', '## Open findings', '');
                     const byModel = pending.filter(f => f.source === 'model'), byKind = pending.filter(f => f.source !== 'model');
-                    if (byModel.length) { out.push('### Suggested by model rules (not yet in the register)', ''); byModel.forEach(f => out.push(`- **${para(f.title)}** (${f.rule.category}, ${f.rule.id}) — ${para(f.reason)}`)); out.push(''); }
-                    if (byKind.length) { out.push(`### Suggested for the kind of component (${byKind.length}, not yet in the register)`, ''); [...new Set(byKind.map(f => f.item))].forEach(it => { const fs = byKind.filter(f => f.item === it); out.push(`- **${para(it.name || 'unnamed')}** (${para(fs[0].reason)}): ${fs.map(f => `${f.rule.id}`).join(', ')}`); }); out.push(''); }
+                    if (byModel.length) { out.push('### Suggested by model rules (not yet in the register)', ''); byModel.forEach(f => out.push(`- **${para(f.title)}** (${category(f.rule.category)}, ${para(f.rule.id)}) — ${para(f.reason)}`)); out.push(''); }
+                    if (byKind.length) { out.push(`### Suggested for the kind of component (${byKind.length}, not yet in the register)`, ''); [...new Set(byKind.map(f => f.item))].forEach(it => { const fs = byKind.filter(f => f.item === it); out.push(`- **${para(it.name || 'unnamed')}** (${para(fs[0].reason)}): ${fs.map(f => para(f.rule.id)).join(', ')}`); }); out.push(''); }
                     if (warnings.length) { out.push('### Model checks', ''); warnings.forEach(x => out.push(`- ${para(x.text)}`)); out.push(''); }
                 }
                 return out.join('\n') + '\n';
@@ -13186,7 +13215,7 @@
                     </div>
                     ${entry.reason ? `<div class="extra-small text-dark mb-1"><i class="bi bi-lightning-charge-fill text-warning me-1"></i><strong>Why:</strong> ${esc(entry.reason)}</div>` : ''}
                     ${!entry.reason && entry.relevant.length ? `<div class="extra-small text-primary mb-1"><i class="bi bi-bullseye me-1"></i>Relevant for: ${esc(entry.relevant.map(s => SUBTYPE_LABELS[s] || s).join(', '))}</div>` : ''}
-                    <div class="extra-small text-muted mb-1" style="font-size:10.5px; line-height: 1.35;">${esc(tpl.desc)}</div>
+                    <div class="extra-small text-muted mb-1" style="font-size:10.5px; line-height: 1.35;">${esc(fillTemplateName(tpl.desc, item))}</div>
                     <div class="d-flex flex-wrap gap-1 align-items-center template-refs"></div>
                     <details class="template-details mt-1 extra-small">
                         <summary class="text-primary" style="cursor: pointer;">Controls${tpl.example ? ' &amp; real-world example' : ''}</summary>
@@ -13217,7 +13246,7 @@
                 if (ignoreBtn) ignoreBtn.addEventListener('click', (ev) => { ev.stopPropagation(); this.ignoreSuggestion(entry); });
                 card.addEventListener('click', () => {
                     if (entry.added) return;
-                    this.openThreatModalForTemplate(entry.category, entry.title, item.id, this.composeThreatDescription(tpl, entry.reason));
+                    this.openThreatModalForTemplate(entry.category, entry.title, item.id, this.composeThreatDescription(tpl, entry.reason, item));
                     if (tpl.likelihood) document.getElementById('modal-threat-likelihood').value = String(tpl.likelihood);
                     if (tpl.impact) document.getElementById('modal-threat-impact').value = String(tpl.impact);
                     this.pendingTemplate = { id: entry.id, refs: tpl.refs || [], triggered: !!entry.reason };
@@ -13256,8 +13285,11 @@
                     else if (this.currentSortColumn === 'riskScore') {
                         valA = ThreatModelSession.calculateRisk(a.likelihood, a.impact).score;
                         valB = ThreatModelSession.calculateRisk(b.likelihood, b.impact).score;
+                    } else if (this.currentSortColumn === 'riskLabel') {   // severity rank (Low < Medium < High < Critical), then score
+                        const rank = (t) => { const r = ThreatModelSession.calculateRisk(t.likelihood, t.impact); return ['Low', 'Medium', 'High', 'Critical'].indexOf(r.label) * 1000 + r.score; };
+                        valA = rank(a); valB = rank(b);
                     } else { valA = a[this.currentSortColumn] || ''; valB = b[this.currentSortColumn] || ''; }
-                    if (this.currentSortColumn !== 'riskScore') { valA = String(valA).toLowerCase(); valB = String(valB).toLowerCase(); }
+                    if (this.currentSortColumn !== 'riskScore' && this.currentSortColumn !== 'riskLabel') { valA = String(valA).toLowerCase(); valB = String(valB).toLowerCase(); }
                     if (valA < valB) return this.currentSortOrder === 'asc' ? -1 : 1;
                     if (valA > valB) return this.currentSortOrder === 'asc' ? 1 : -1;
                     return 0;
@@ -13534,7 +13566,8 @@
              */
             buildMermaidDiagram({ pageId } = {}) {
                 const onPage = (e) => !(this.state.pages || []).length || (e.pageId || this.state.pages[0].id) === (pageId || this.state.activePageId);
-                const label = (s) => '"' + toText(s).replace(/"/g, '#quot;').replace(/[\r\n]+/g, ' ').replace(/[<>]/g, (c) => c === '<' ? '#lt;' : '#gt;') + '"';
+                // Entity codes for characters that would end the label, the edge label (|) or a Markdown code fence (`).
+                const label = (s) => '"' + toText(s).replace(/"/g, '#quot;').replace(/[\r\n]+/g, ' ').replace(/[<>|`]/g, (c) => ({ '<': '#lt;', '>': '#gt;', '|': '#124;', '`': '#96;' })[c]) + '"';
                 const center = (e) => ({ x: e.x + (e.width || 0) / 2, y: e.y + (e.height || 0) / 2 });
                 const zones = this.state.elements.filter(e => e.type === 'boundary' && onPage(e));
                 const zoneOf = (e) => {
@@ -13561,7 +13594,7 @@
                         default: return `(${l})`;   // processes and other shapes: rounded box
                     }
                 };
-                const lines = ['flowchart LR', `    %% ${toText(this.state.projectTitle).replace(/[\r\n]+/g, ' ')} — exported from Threat Tiger ${APP_VERSION}`];
+                const lines = ['flowchart LR', `    %% ${toText(this.state.projectTitle).replace(/[\r\n]+/g, ' ').replace(/`/g, "'")} — exported from Threat Tiger ${APP_VERSION}`];
                 const byZone = new Map();
                 nodes.forEach(e => { const z = zoneOf(e); const k = z ? z.id : ''; if (!byZone.has(k)) byZone.set(k, []); byZone.get(k).push(e); });
                 (byZone.get('') || []).forEach(e => lines.push(`    ${ids.get(e.id)}${shape(e)}`));
