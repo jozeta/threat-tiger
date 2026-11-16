@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-aVQCde40ox4VeUoHca69sknXmpz85mkgDQfj0RthaFg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-nfqZLO3zezEJ/jZsV+FrAwYDNwlvaHDxOvGzjWl3Lmo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3766,7 +3766,7 @@
             if (/^data:image\/(png|jpe?g|gif|webp|svg\+xml|bmp);/i.test(v)) return v;
             if (/^https?:\/\//i.test(v)) return v;
             // A relative file name, never "//host/…" or "/…" (a protocol-relative URL would load from another site without asking).
-            if (/^[\w.-][\w.\/-]*\.(png|jpe?g|gif|webp|svg)$/i.test(v) && !v.includes('..') && !v.includes('//')) return v;
+            if (/^[\w.-][\w./-]*\.(png|jpe?g|gif|webp|svg)$/i.test(v) && !v.includes('..') && !v.includes('//')) return v;
             return '';
         }
         function isExternalUrl(value) {
@@ -9647,20 +9647,6 @@
             }
 
             // ── Rule engine (FEAT-002) ────────────────────────────────────────────────
-            ruleHelpers(analysis) {
-                const els = new Map(this.state.elements.map(e => [e.id, e]));
-                return {
-                    on: (item, key) => !!(item && item.secProps && item.secProps[key] === 'true'),
-                    off: (item, key) => !!(item && item.secProps && item.secProps[key] === 'false'),
-                    crossing: (f) => analysis.crossings.get(f.id) || { crosses: false, names: [] },
-                    node: (id) => els.get(id),
-                    flowsOf: (item) => this.state.flows.filter(f => f.sourceId === item.id || f.targetId === item.id),
-                    inbound: (item) => this.state.flows.filter(f => f.targetId === item.id || (f.isBidirectional && f.sourceId === item.id)),
-                    outbound: (item) => this.state.flows.filter(f => f.sourceId === item.id || (f.isBidirectional && f.targetId === item.id)),
-                    zones: (item) => (analysis.nodeZones.get(item.id) || []).map(z => z.name)
-                };
-            }
-
             isFlowItem(item) { return item && item.sourceId !== undefined && item.targetId !== undefined; }
 
             /** Which template library applies to a component or data flow. */
