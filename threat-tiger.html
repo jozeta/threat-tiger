@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-d7XukU0xnqgXI9lEfI89Osf0ndfEPMvURQEwz0MPS/8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-TXX9PitEwlcOliazPGlbu2Kyr2u9mgHGbOsc5/zkHSo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -218,6 +218,7 @@
             top: 0;
             left: 0;
             user-select: none;
+            touch-action: none;   /* the canvas handles touch itself: drag, pan, pinch-zoom */
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
@@ -3190,7 +3191,7 @@
     <!-- Print-only Threat Report Container (populated by JS before print) -->
     <div id="print-threat-report" style="display:none;"></div>
 
-    <div class="modal fade" id="modal-edit-threat" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="modal-edit-threat" data-bs-backdrop="static" tabindex="-1" aria-labelledby="modal-threat-title-lbl" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content shadow-lg border-0">
                 <div class="modal-header bg-dark text-light">
@@ -3305,7 +3306,7 @@
     </div>
 
     <!-- Threat Template Edit/Add Modal -->
-    <div class="modal fade" id="modal-edit-template" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="modal-edit-template" data-bs-backdrop="static" tabindex="-1" aria-labelledby="modal-template-title-lbl" aria-hidden="true">
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content shadow-lg border-0">
                 <div class="modal-header bg-dark text-light">
@@ -3371,11 +3372,11 @@
         </div>
     </div>
 
-    <div class="modal fade" id="modal-session-context" data-bs-backdrop="static" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="modal-session-context" data-bs-backdrop="static" tabindex="-1" aria-labelledby="modal-session-title" aria-hidden="true">
         <div class="modal-dialog modal-md modal-dialog-centered">
             <div class="modal-content shadow-lg border-0">
                 <div class="modal-header bg-dark text-light">
-                    <h5 class="modal-title fs-6 fw-bold"><i class="bi bi-people-fill text-primary me-2"></i>Configure
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-session-title"><i class="bi bi-people-fill text-primary me-2"></i>Configure
                         Session Metadata</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
@@ -5497,7 +5498,7 @@
                 document.getElementById('btn-export-markdown').addEventListener('click', () => this.exportMarkdownReport());
                 document.getElementById('btn-export-no-log').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile({ includeLog: false }));
 
-                this.bindUiEvents(); this.bindCanvasEvents(); this.bindKeyboardShortcuts();
+                this.bindUiEvents(); this.bindCanvasEvents(); this.bindKeyboardShortcuts(); this.bindDialogFocusReturn();
                 this.bindResponsiveLayout();
                 this.setupNameAutosuggest();
                 this.bindWindowResizerEvents(); this.bindPrintScalingEngine();
@@ -7699,6 +7700,7 @@
                         if (fcFillCustom) fcFillCustom.value = c;
                         document.querySelectorAll('#props-fc-fill-grid .color-swatch-btn').forEach(b => b.classList.remove('active'));
                         ev.currentTarget.classList.add('active');
+                        this.logEvent('CHANGE', `Changed the fill of flowchart shape "${node.name}" to ${c}`);
                         this.renderSvgDiagramElements(); this.saveSessionToLocalStorage();
                     });
                 });
@@ -7707,6 +7709,10 @@
                     node.fcFillColor = ev.target.value;
                     document.querySelectorAll('#props-fc-fill-grid .color-swatch-btn').forEach(b => b.classList.remove('active'));
                     this.renderSvgDiagramElements(); this.saveSessionToLocalStorage();
+                });
+                // Live preview while picking; one undo step when the picker closes.
+                document.getElementById('props-fc-fill-custom').addEventListener('change', () => {
+                    const node = getFcNode(); if (node) this.logEvent('CHANGE', `Changed the fill of flowchart shape "${node.name}" to ${node.fcFillColor}`);
                 });
 
                 // Stroke color swatches
@@ -7719,6 +7725,7 @@
                         if (fcStrokeCustom) fcStrokeCustom.value = c;
                         document.querySelectorAll('#props-fc-stroke-grid .color-swatch-btn').forEach(b => b.classList.remove('active'));
                         ev.currentTarget.classList.add('active');
+                        this.logEvent('CHANGE', `Changed the border colour of flowchart shape "${node.name}" to ${c}`);
                         this.renderSvgDiagramElements(); this.saveSessionToLocalStorage();
                     });
                 });
@@ -7727,6 +7734,9 @@
                     node.fcStrokeColor = ev.target.value;
                     document.querySelectorAll('#props-fc-stroke-grid .color-swatch-btn').forEach(b => b.classList.remove('active'));
                     this.renderSvgDiagramElements(); this.saveSessionToLocalStorage();
+                });
+                document.getElementById('props-fc-stroke-custom').addEventListener('change', () => {
+                    const node = getFcNode(); if (node) this.logEvent('CHANGE', `Changed the border colour of flowchart shape "${node.name}" to ${node.fcStrokeColor}`);
                 });
 
                 // Stroke width slider
@@ -7737,6 +7747,10 @@
                     const lbl = document.getElementById('props-fc-stroke-width-lbl');
                     if (lbl) lbl.textContent = val;
                     this.renderSvgDiagramElements(); this.saveSessionToLocalStorage();
+                });
+                // One undo step when the slider is released, not one per pixel of the drag.
+                document.getElementById('props-fc-stroke-width').addEventListener('change', () => {
+                    const node = getFcNode(); if (node) this.logEvent('CHANGE', `Changed the border width of flowchart shape "${node.name}" to ${node.fcStrokeWidth}`);
                 });
 
                 // Label input
@@ -7770,6 +7784,7 @@
                             if (item && item.type === 'swimlane') {
                                 item.name = ev.target.value;
                                 document.getElementById('props-input-name').value = item.name;
+                                this.logEvent('CHANGE', `Renamed swimlane to "${item.name}"`);
                                 this.renderSvgDiagramElements();
                                 this.saveSessionToLocalStorage();
                             }
@@ -7785,6 +7800,7 @@
                                 const item = this.state.elements.find(el => el.id === this.state.selectedElementIds[0]);
                                 if (item && item.type === 'swimlane' && item.columns) {
                                     item.columns[index] = ev.target.value;
+                                    this.logEvent('CHANGE', `Renamed column ${index + 1} of swimlane "${item.name}" to "${ev.target.value}"`);
                                     this.renderSvgDiagramElements();
                                     this.saveSessionToLocalStorage();
                                 }
@@ -7819,6 +7835,7 @@
                                 const item = this.state.elements.find(el => el.id === this.state.selectedElementIds[0]);
                                 if (item && item.type === 'swimlane' && item.rows) {
                                     item.rows[index] = ev.target.value;
+                                    this.logEvent('CHANGE', `Renamed row ${index + 1} of swimlane "${item.name}" to "${ev.target.value}"`);
                                     this.renderSvgDiagramElements();
                                     this.saveSessionToLocalStorage();
                                 }
@@ -7853,6 +7870,7 @@
                             if (item && item.type === 'swimlane') {
                                 if (!item.columns) item.columns = [];
                                 item.columns.push(`Column ${item.columns.length + 1}`);
+                                this.logEvent('CHANGE', `Added a column to swimlane "${item.name}"`);
                                 this.renderSvgDiagramElements();
                                 this.renderSwimlanePropertiesInspectorControls(item);
                                 this.saveSessionToLocalStorage();
@@ -7869,6 +7887,7 @@
                             if (item && item.type === 'swimlane') {
                                 if (!item.rows) item.rows = [];
                                 item.rows.push(`Row ${item.rows.length + 1}`);
+                                this.logEvent('CHANGE', `Added a row to swimlane "${item.name}"`);
                                 this.renderSvgDiagramElements();
                                 this.renderSwimlanePropertiesInspectorControls(item);
                                 this.saveSessionToLocalStorage();
@@ -7901,6 +7920,11 @@
                     if (type) this.instantiateNewCanvasElementNode(type, coords.x, coords.y);
                 });
 
+                // Escape cancels a drag, resize or bend: keep the shapes and flows as they were at the press (before any handler changes them).
+                svg.addEventListener('mousedown', (ev) => {
+                    if (ev.button === 0 && !this.isCanvasGestureActive()) this.gestureBackup = JSON.stringify({ elements: this.state.elements, flows: this.state.flows });
+                }, true);
+
                 svg.addEventListener('mousedown', (ev) => {
                     const canvasSpaceCoords = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
                     if (ev.button === 2) {
@@ -7923,6 +7947,9 @@
                 });
 
                 window.addEventListener('mousemove', (ev) => {
+                    this.lastPointerClient = { x: ev.clientX, y: ev.clientY };
+                    // No button held any more (released outside the window): finish the gesture as a mouseup would.
+                    if (ev.buttons === 0 && this.isCanvasGestureActive()) { this.finishCanvasGesture(ev); return; }
                     const canvasSpaceCoords = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
                     this.currentMouseCanvasCoords = canvasSpaceCoords;
                     if (this.swimlaneResize) { this.updateSwimlaneResize(canvasSpaceCoords); return; }
@@ -7939,7 +7966,8 @@
                                 bl.y2 = this.snapValue(canvasSpaceCoords.y);
                             } else if (this.activeFlowDragMode === 'bl_bend') {
                                 const baseMidX = (bl.x + bl.x2) / 2; const baseMidY = (bl.y + bl.y2) / 2;
-                                bl.bendX = 2 * (canvasSpaceCoords.x - baseMidX); bl.bendY = 2 * (canvasSpaceCoords.y + 24 - baseMidY);
+                                const grab = this.blBendGrab || { x: 0, y: 0 };   // the handle keeps the offset it had at the press
+                                bl.bendX = 2 * (canvasSpaceCoords.x + grab.x - baseMidX); bl.bendY = 2 * (canvasSpaceCoords.y + grab.y - baseMidY);
                             }
                             this.scheduleDiagramRender();
                         }
@@ -8166,7 +8194,103 @@
                     }
                 });
 
-                window.addEventListener('mouseup', (ev) => {
+                window.addEventListener('mouseup', (ev) => this.endCanvasGesture(ev));
+                // A mouseup outside the window may never arrive: losing focus ends the gesture as a mouseup would.
+                window.addEventListener('blur', () => { if (this.isCanvasGestureActive()) this.finishCanvasGesture(null); });
+                this.bindCanvasTouch();
+            }
+
+            /**
+             * Basic touch on the canvas (Pointer Events): a one-finger drag on a shape moves it (it is replayed as the
+             * mouse gesture, so handles and flows work too), on empty canvas it pans, a tap selects, two fingers pinch-zoom.
+             */
+            bindCanvasTouch() {
+                const svg = this.dom.svg, touches = new Map();
+                let single = null, pinch = null;
+                const send = (type, target, p, button) => target.dispatchEvent(new MouseEvent(type, {
+                    bubbles: true, cancelable: true, view: window, detail: 1, clientX: p.x, clientY: p.y, button, buttons: type === 'mouseup' ? 0 : (button === 2 ? 2 : 1)
+                }));
+                const two = () => { const [a, b] = [...touches.values()]; return { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, c: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 } }; };
+                svg.addEventListener('pointerdown', (ev) => {
+                    if (ev.pointerType !== 'touch') return;
+                    ev.preventDefault();   // no emulated mouse events (they are sent below); a tap still clicks
+                    touches.set(ev.pointerId, { x: ev.clientX, y: ev.clientY });
+                    if (touches.size === 1) {
+                        const empty = ev.target === svg || ev.target.classList.contains('canvas-grid');
+                        single = { id: ev.pointerId, x: ev.clientX, y: ev.clientY, empty, moved: false };
+                        send('mousedown', empty ? svg : ev.target, single, empty ? 2 : 0);   // empty canvas: pan like a right-drag
+                    } else if (touches.size === 2) {
+                        if (single) { single = null; this.cancelCanvasGesture(); }   // a second finger turns the drag into a pinch
+                        pinch = { ...two(), zoom: this.zoomScale, panX: this.panX, panY: this.panY };
+                    }
+                }, { passive: false });
+                window.addEventListener('pointermove', (ev) => {
+                    if (ev.pointerType !== 'touch' || !touches.has(ev.pointerId)) return;
+                    const p = { x: ev.clientX, y: ev.clientY };
+                    touches.set(ev.pointerId, p);
+                    if (pinch && touches.size >= 2) {
+                        const now = two(), r = svg.getBoundingClientRect();
+                        const zoom = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, pinch.zoom * now.d / pinch.d)), k = zoom / pinch.zoom;
+                        // The canvas point under the starting centre stays under the fingers' centre.
+                        this.panX = (now.c.x - r.left) - (pinch.c.x - r.left - pinch.panX) * k;
+                        this.panY = (now.c.y - r.top) - (pinch.c.y - r.top - pinch.panY) * k;
+                        this.zoomScale = zoom;
+                        this.applySvgViewportTransformations();
+                    } else if (single && single.id === ev.pointerId) {
+                        if (Math.hypot(p.x - single.x, p.y - single.y) > 4) single.moved = true;
+                        send('mousemove', window, p, single.empty ? 2 : 0);
+                    }
+                });
+                const up = (ev) => {
+                    if (ev.pointerType !== 'touch' || !touches.has(ev.pointerId)) return;
+                    touches.delete(ev.pointerId);
+                    if (pinch) { if (touches.size < 2) pinch = null; return; }   // the finger left after a pinch does nothing
+                    if (!single || single.id !== ev.pointerId) return;
+                    const s = single; single = null;
+                    if (ev.type === 'pointercancel') { this.cancelCanvasGesture(); return; }
+                    send('mouseup', window, { x: ev.clientX, y: ev.clientY }, s.empty ? 2 : 0);
+                    if (s.empty && !s.moved) this.clearActiveSelectionPointers();   // a tap on empty canvas deselects
+                };
+                window.addEventListener('pointerup', up);
+                window.addEventListener('pointercancel', up);
+            }
+
+            /** True while a canvas mouse gesture (drag, resize, bend, connection, pan, marquee) is in progress. */
+            isCanvasGestureActive() {
+                return !!(this.swimlaneResize || this.activeFlowDragMode || this.isBoxSelecting || this.isDrawingPhantomWire || this.resizingElementId || this.isPanning || this.isDraggingElements);
+            }
+
+            /** Ends the gesture in progress as if its button had been released at ev (or at the last known pointer position). */
+            finishCanvasGesture(ev) {
+                const at = ev ? { clientX: ev.clientX, clientY: ev.clientY } : { clientX: (this.lastPointerClient || {}).x || 0, clientY: (this.lastPointerClient || {}).y || 0 };
+                for (let i = 0; i < 3 && this.isCanvasGestureActive(); i++) this.endCanvasGesture({ ...at, button: this.isPanning ? 2 : 0 });
+            }
+
+            /** Escape: stops the gesture in progress and puts back what it changed (no undo step). */
+            cancelCanvasGesture() {
+                if (!this.isCanvasGestureActive()) return false;
+                const changesModel = !!(this.swimlaneResize || this.activeFlowDragMode || this.resizingElementId || this.isDraggingElements);
+                if (this.isDrawingPhantomWire) { this.isDrawingPhantomWire = false; this.dom.phantomWire.setAttribute('visibility', 'hidden'); this.phantomWireSourceId = null; this.phantomWireSourceAnchor = null; this.phantomWirePress = null; }
+                if (this.isBoxSelecting) { this.isBoxSelecting = false; this.dom.selectionMarquee.setAttribute('visibility', 'hidden'); }
+                if (this.isPanning) { this.isPanning = false; this.dom.svg.style.cursor = 'default'; }
+                this.swimlaneResize = null; this.activeFlowDragMode = null; this.activeFlowDragId = null;
+                this.flowDragCurrentPos = null; this.flowDragInitialState = null; this.flowPointAdded = false;
+                this.resizingElementId = null; this.isDraggingElements = false;
+                if (changesModel && this.gestureBackup) {
+                    const b = JSON.parse(this.gestureBackup);
+                    this.state.elements = b.elements; this.state.flows = b.flows;
+                    const ids = new Set(b.elements.map(e => e.id));
+                    this.state.selectedElementIds = this.state.selectedElementIds.filter(id => ids.has(id));
+                    if (this.state.selectedFlowId && !b.flows.some(f => f.id === this.state.selectedFlowId)) this.state.selectedFlowId = null;
+                    this.saveSessionToLocalStorage();
+                }
+                this.gestureBackup = null;
+                this.refreshAppViewVisualWorkspace();
+                return true;
+            }
+
+            /** Mouseup on the canvas: commits the gesture in progress (one undo step). */
+            endCanvasGesture(ev) {
                     if (this.swimlaneResize) {
                         const rs = this.swimlaneResize; this.swimlaneResize = null;
                         const swim = this.state.elements.find(e => e.id === rs.id);
@@ -8192,7 +8316,11 @@
                             this.flowDragInitialState = null;
                         } else if (this.activeFlowDragMode === 'flow_point') {
                             const flow = this.state.flows.find(f => f.id === this.activeFlowDragId);
-                            if (flow) {
+                            const added = this.flowPointAdded; this.flowPointAdded = false;
+                            if (flow && added) {
+                                // Added on the press and maybe dragged: one undo step for both.
+                                this.logEvent("CHANGE", `Added control point to communication stream "${flow.name}"`);
+                            } else if (flow) {
                                 if (!this.hasMovedDragPoint) {
                                     if (flow.points) {
                                         flow.points.splice(this.activeFlowDragPointIndex, 1);
@@ -8274,17 +8402,39 @@
                         }
                         this.resizingElementId = null; this.isDraggingElements = false; this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace();
                     }
+            }
+
+            /** Every dialog gives keyboard focus back to the control that opened it (or the main menu button) when it closes. */
+            bindDialogFocusReturn() {
+                const openers = new WeakMap();
+                document.addEventListener('show.bs.modal', (ev) => {
+                    const a = document.activeElement;
+                    if (a && a !== document.body && !ev.target.contains(a)) openers.set(ev.target, a);
+                });
+                document.addEventListener('hidden.bs.modal', (ev) => {
+                    const opener = openers.get(ev.target); openers.delete(ev.target);
+                    if (document.querySelector('.modal.show')) return;   // another dialog took over; it handles focus
+                    const a = document.activeElement;
+                    if (a && a !== document.body && !ev.target.contains(a)) return;   // something else already has focus
+                    const usable = (el) => el && el.isConnected && !el.disabled && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== 'hidden';
+                    const target = [opener, document.getElementById('btn-main-menu'), this.dom.svg].find(usable);
+                    if (target) target.focus({ preventScroll: true });
                 });
             }
 
             bindKeyboardShortcuts() {
                 window.addEventListener('keydown', (ev) => {
+                    // Escape stops a drag, resize, bend or connection in progress, wherever focus is.
+                    if (ev.key === 'Escape' && this.cancelCanvasGesture()) { ev.preventDefault(); ev.stopPropagation(); return; }
                     if (['INPUT', 'TEXTAREA', 'SELECT'].includes(ev.target.tagName)) return;
                     if (document.querySelector('.modal.show')) return;   // keys belong to the open dialog
+                    if (ev.target.closest && ev.target.closest('.modal')) return;   // e.g. the Escape that just closed a dialog
                     if (this.handleCanvasKeyboard(ev)) return;
                     const mod = ev.ctrlKey || ev.metaKey;
                     if (mod && ev.key.toLowerCase() === 'z') { ev.preventDefault(); if (ev.shiftKey) this.redo(); else this.undo(); return; }
                     if (mod && ev.key.toLowerCase() === 'y') { ev.preventDefault(); this.redo(); return; }
+                    // Delete, copy and paste act on the canvas only when it (or nothing) has focus, not a button, tab, menu or panel.
+                    if (!this.isCanvasKeyTarget(ev.target)) return;
                     if (ev.key === 'Delete' || ev.key === 'Backspace') this.executeTargetedActiveSelectionRemovalTask();
 
                     // Copy and paste shapes only when shapes are selected and no page text is; otherwise leave the keys to the browser.
@@ -8298,6 +8448,13 @@
                         this.pasteSelection();
                     }
                 });
+            }
+
+            /** True when a key press may act on the canvas selection: focus is on the canvas (or nowhere), not on a panel control. */
+            isCanvasKeyTarget(t) {
+                if (!t || t === document.body || t === document.documentElement) return true;
+                if (t.isContentEditable) return false;
+                return this.dom.svg.contains(t) && !['BUTTON', 'A'].includes(t.tagName);
             }
 
             /** Keyboard operation of the canvas (UI-003). Returns true when the key was handled. */
@@ -8319,7 +8476,7 @@
                     this.clearActiveSelectionPointers(); return true;
                 }
                 const arrows = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
-                if (arrows[ev.key] && this.state.selectedElementIds.length && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+                if (arrows[ev.key] && this.state.selectedElementIds.length && !ev.ctrlKey && !ev.metaKey && !ev.altKey && this.isCanvasKeyTarget(t)) {
                     ev.preventDefault();
                     if (this.blockedByReviewMode('move shapes')) return true;
                     const step = (this.isSnappingActive ? this.gridSize : 10) * (ev.shiftKey ? 5 : 1);
@@ -10871,14 +11028,14 @@
                         startH.setAttribute('cx', bl.x); startH.setAttribute('cy', bl.y); startH.setAttribute('r', '6');
                         startH.setAttribute('fill', '#0d6efd'); startH.setAttribute('stroke', '#ffffff'); startH.setAttribute('stroke-width', '1.5');
                         startH.setAttribute('style', 'cursor: move;');
-                        startH.addEventListener('mousedown', (ev) => { ev.stopPropagation(); ev.preventDefault(); this.activeFlowDragMode = 'bl_start'; this.activeFlowDragId = bl.id; });
+                        startH.addEventListener('mousedown', (ev) => { if (ev.button !== 0) return; ev.stopPropagation(); ev.preventDefault(); this.activeFlowDragMode = 'bl_start'; this.activeFlowDragId = bl.id; });
                         gLine.appendChild(startH);
 
                         const endH = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                         endH.setAttribute('cx', bl.x2); endH.setAttribute('cy', bl.y2); endH.setAttribute('r', '6');
                         endH.setAttribute('fill', '#dc3545'); endH.setAttribute('stroke', '#ffffff'); endH.setAttribute('stroke-width', '1.5');
                         endH.setAttribute('style', 'cursor: move;');
-                        endH.addEventListener('mousedown', (ev) => { ev.stopPropagation(); ev.preventDefault(); this.activeFlowDragMode = 'bl_end'; this.activeFlowDragId = bl.id; });
+                        endH.addEventListener('mousedown', (ev) => { if (ev.button !== 0) return; ev.stopPropagation(); ev.preventDefault(); this.activeFlowDragMode = 'bl_end'; this.activeFlowDragId = bl.id; });
                         gLine.appendChild(endH);
 
                         const peakX = 0.25 * bl.x + 0.5 * ctrlX + 0.25 * bl.x2; const peakY = 0.25 * bl.y + 0.5 * ctrlY + 0.25 * bl.y2;
@@ -10887,7 +11044,10 @@
                         bendH.setAttribute('width', '10'); bendH.setAttribute('height', '10');
                         bendH.setAttribute('fill', '#ffc107'); bendH.setAttribute('stroke', '#212529');
                         bendH.addEventListener('mousedown', (ev) => {
+                            if (ev.button !== 0) return;
                             ev.stopPropagation(); ev.preventDefault(); this.activeFlowDragMode = 'bl_bend'; this.activeFlowDragId = bl.id;
+                            const at = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
+                            this.blBendGrab = { x: peakX - at.x, y: peakY - at.y };
                         });
                         this.dom.layerInteractiveHandles.appendChild(bendH);
                     }
@@ -11052,8 +11212,8 @@
                             pointHandle.setAttribute('title', 'Drag to shape path, click to remove point');
 
                             pointHandle.addEventListener('mousedown', (ev) => {
+                                if (ev.button !== 0) return;   // other buttons fall through to the canvas (right-drag pans)
                                 ev.stopPropagation(); ev.preventDefault();
-                                if (ev.button !== 0) return;
                                 this.activeFlowDragMode = 'flow_point';
                                 this.activeFlowDragId = f.id;
                                 this.activeFlowDragPointIndex = index;
@@ -11070,6 +11230,7 @@
                         srcHandle.setAttribute('style', 'cursor: move;');
                         srcHandle.setAttribute('title', 'Drag to reconnect source endpoint');
                         srcHandle.addEventListener('mousedown', (ev) => {
+                            if (ev.button !== 0) return;
                             ev.stopPropagation(); ev.preventDefault();
                             this.activeFlowDragMode = 'flow_source'; this.activeFlowDragId = f.id;
                             this.flowDragStartCanvas = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
@@ -11084,6 +11245,7 @@
                         dstHandle.setAttribute('style', 'cursor: move;');
                         dstHandle.setAttribute('title', 'Drag to reconnect destination endpoint');
                         dstHandle.addEventListener('mousedown', (ev) => {
+                            if (ev.button !== 0) return;
                             ev.stopPropagation(); ev.preventDefault();
                             this.activeFlowDragMode = 'flow_target'; this.activeFlowDragId = f.id;
                             this.flowDragStartCanvas = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
@@ -11094,7 +11256,7 @@
 
                     // Add point on line on mousedown if already selected
                     gLine.addEventListener('mousedown', (ev) => {
-                        if (ev.button !== 0) return;
+                        if (ev.button !== 0 || ev.detail > 1) return;   // the second press of a double-click adds no point
                         const isSel = this.state.selectedFlowId === f.id;
                         if (isSel && !this.state.reviewMode && f.curveStyle !== 'orthogonal') {   // elbow routes are automatic
                             ev.stopPropagation();
@@ -11141,14 +11303,14 @@
                             f.points.splice(bestIndex, 0, { x: clickX, y: clickY });
                             f.bendX = 0; f.bendY = 0;
 
-                            this.logEvent("CHANGE", `Added control point to communication stream "${f.name}"`);
-                            this.saveSessionToLocalStorage();
+                            // Logged on mouseup, together with the drag that may follow (one undo step).
                             this.refreshAppViewVisualWorkspace();
 
                             this.activeFlowDragMode = 'flow_point';
                             this.activeFlowDragId = f.id;
                             this.activeFlowDragPointIndex = bestIndex;
                             this.hasMovedDragPoint = true;
+                            this.flowPointAdded = true;
                         }
                     });
 
@@ -12064,6 +12226,8 @@
                 document.getElementById('props-input-notes').value = targetItem.notes || '';
 
                 if (!targetItem.type) {
+                    document.getElementById('box-props-status-state').classList.remove('d-none');   // a disabled flow can be turned back on
+                    document.getElementById('props-input-disabled').checked = !!targetItem.isDisabled;
                     document.getElementById('box-props-flow-routing').classList.remove('d-none');
                     document.getElementById('box-props-text-offset').classList.remove('d-none');
                     const srcSel = document.getElementById('props-flow-src-select');
