@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-aVQCde40ox4VeUoHca69sknXmpz85mkgDQfj0RthaFg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-aR4nyW4wTkExhvuRJR2npdzRr3QPeF+EWe++Wj7MxWE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3543,6 +3543,23 @@
         </div>
     </div>
 
+    <!-- Shown when another tab saved this model: this tab stops saving so it does not overwrite that version -->
+    <div id="alert-other-tab" class="alert alert-warning d-none position-fixed top-0 start-50 translate-middle-x mt-5 shadow"
+        role="alert" style="z-index: 2100; max-width: 640px; width: calc(100% - 32px);">
+        <div class="d-flex flex-wrap align-items-start gap-2">
+            <i class="bi bi-window-stack fs-5"></i>
+            <div class="small flex-grow-1" style="min-width: 200px;">
+                <strong>This model was changed in another tab.</strong>
+                This tab has stopped saving so it doesn't overwrite those changes. Reload to continue with the other tab's version
+                (this tab's version is kept in History), or keep this tab's version (the other one is kept in History).
+            </div>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-dark text-nowrap" id="btn-other-tab-reload" style="min-height: 44px;">Reload</button>
+                <button type="button" class="btn btn-sm btn-light text-nowrap" id="btn-other-tab-keep" style="min-height: 44px;">Keep this tab's version</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Delete confirmation (BUG-010) -->
     <div class="modal fade" id="modal-confirm-delete" tabindex="-1" aria-labelledby="modal-confirm-delete-title" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -3800,6 +3817,11 @@
             fc_database:     { label: 'Database (cylinder)',    name: 'Database',     w: 120, h: 100, fill: '#ecfccb', stroke: '#65a30d' },
             fc_cube:         { label: 'Cube (3D box)',          name: 'Cube',         w: 140, h: 100, fill: '#e0e7ff', stroke: '#4f46e5' },
         };
+        // Every shape type the palette can add; imported or dropped types outside this list are not trusted.
+        const ELEMENT_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'boundary', 'boundary_line', 'step_activity', 'textbox', 'headline',
+            'custom_image', 'swimlane', ...Object.keys(FLOWCHART_DEFAULTS)]);
+        // Grid sizes offered in the View menu.
+        const GRID_SIZES = [10, 20, 40, 80];
         // Quick add: space between a flowchart node and the node added from one of its anchors.
         const QUICK_ADD_GAP = 80;
         const OPPOSITE_ANCHOR = { top: 'bottom', bottom: 'top', left: 'right', right: 'left' };
@@ -5006,7 +5028,11 @@
             const el = copyPlain(raw);
             el.id = id;
             el.type = toText(raw.type) || 'process';
-            if (el.type.startsWith('fc_') && !FLOWCHART_DEFAULTS[el.type]) el.type = 'fc_process';   // unknown flowchart shape
+            if (el.type.startsWith('fc_') && !ELEMENT_TYPES.has(el.type)) el.type = 'fc_process';   // unknown flowchart shape
+            else if (!ELEMENT_TYPES.has(el.type)) {
+                ctx.warn(`Changed the unknown component type "${el.type.slice(0, 40)}" of "${toText(raw.name) || id}" to a process.`);
+                el.type = 'process';
+            }
             // Flowchart styling: colours as safe colour tokens, the line width as a number; anything else falls back to the shape's defaults.
             ['fcFillColor', 'fcStrokeColor'].forEach(k => { if (k in raw) { const c = safeColor(raw[k], ''); if (c) el[k] = c; else delete el[k]; } });
             if ('fcStrokeWidth' in raw) { const w = toNumber(raw.fcStrokeWidth, undefined); if (w > 0) el.fcStrokeWidth = Math.min(20, w); else delete el.fcStrokeWidth; }
@@ -5192,7 +5218,9 @@
             const clip = (v, n) => toText(v).replace(/\s+/g, ' ').trim().slice(0, n);
             const pick = (v, allowed) => (typeof v === 'string' && Object.prototype.hasOwnProperty.call(allowed, v)) ? v : '';
             const date = clip(r.date, 10);
-            return { level: pick(r.level, DIAGRAM_LEVELS), version: clip(r.version, 40), status: pick(r.status, DIAGRAM_STATUSES), author: clip(r.author, 60), date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : '' };
+            // A real calendar date: 2026-02-30 or 2026-99-99 match the pattern but are not dates.
+            const realDate = /^\d{4}-\d{2}-\d{2}$/.test(date) && (() => { const d = new Date(`${date}T00:00:00Z`); return !isNaN(d) && d.toISOString().slice(0, 10) === date; })();
+            return { level: pick(r.level, DIAGRAM_LEVELS), version: clip(r.version, 40), status: pick(r.status, DIAGRAM_STATUSES), author: clip(r.author, 60), date: realDate ? date : '' };
         }
 
         function normalizeSession(raw) {
@@ -5441,7 +5469,8 @@
                 this.canvasTheme = savedTheme === 'dark' ? 'dark' : 'light';
 
                 const savedGridSize = localStorage.getItem('canvas_grid_size');
-                this.gridSize = savedGridSize ? parseInt(savedGridSize, 10) : 20;
+                const parsedGrid = Number(savedGridSize);   // only the sizes the View menu offers; anything else (NaN, 0, huge) is ignored
+                this.gridSize = GRID_SIZES.includes(parsedGrid) ? parsedGrid : 20;
 
                 const savedSnapping = localStorage.getItem('canvas_grid_snapping');
                 this.isSnappingActive = savedSnapping === null ? true : savedSnapping === 'true';
@@ -5461,6 +5490,14 @@
                 document.getElementById('btn-clear-local-data').addEventListener('click', () => this.confirmClearLocalData());
                 document.getElementById('btn-redo').addEventListener('click', () => this.redo());
                 document.getElementById('btn-storage-failure-export').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile());
+                document.getElementById('btn-other-tab-reload').addEventListener('click', () => this.loadOtherTabVersion());
+                document.getElementById('btn-other-tab-keep').addEventListener('click', () => this.keepThisTabVersion());
+                // Another tab of this browser saved the model: stop overwriting it silently.
+                window.addEventListener('storage', (ev) => {
+                    if (ev.storageArea !== localStorage || ev.key !== 'stride_workbench_session_manifest_v26' || ev.newValue === null) return;
+                    this.otherTabChanged = true;
+                    document.getElementById('alert-other-tab').classList.remove('d-none');
+                });
                 const threatTitleInput = document.getElementById('modal-threat-title');
                 threatTitleInput.addEventListener('input', () => threatTitleInput.classList.remove('is-invalid'));
                 document.getElementById('modal-edit-threat').addEventListener('show.bs.modal', () => threatTitleInput.classList.remove('is-invalid'));
@@ -5501,7 +5538,8 @@
                 let hasStoredSession = false;
                 try { hasStoredSession = this.loadSessionFromLocalStorage(); }
                 catch (err) { this.quarantineStoredSession(err); }
-                if (!hasStoredSession || this.state.elements.length === 0) {
+                // Only an empty browser starts a new model: a stored model without shapes keeps its title, scope, threats and mitigations.
+                if (!hasStoredSession) {
                     this.state = new ThreatModelSession();
                     this.saveSessionToLocalStorage();
                 }
@@ -5561,14 +5599,14 @@
                 if (!operatorName) return;
                 const name = operatorName.trim();
                 if (name === "") return;
-                let list = [];
-                if (this.state.participants && this.state.participants.trim() !== "") {
-                    list = this.state.participants.split(/[,;\n]+/).map(p => p.trim()).filter(p => p !== "");
-                }
-                const exists = list.some(p => p.toLowerCase() === name.toLowerCase());
+                // Compare as lists of names, but never rewrite what is there: a name with a comma ("Smith, John")
+                // counts as present when its parts appear together, and a new name is appended to the text as it is.
+                const tokens = (v) => toText(v).split(/[,;\n]+/).map(p => p.trim().toLowerCase()).filter(p => p !== "");
+                const list = tokens(this.state.participants), wanted = tokens(name);
+                const exists = list.some((_, i) => wanted.every((w, j) => list[i + j] === w));
                 if (!exists) {
-                    list.push(name);
-                    this.state.participants = list.join(", ");
+                    const current = toText(this.state.participants).replace(/[\s,;]+$/, '').trim();
+                    this.state.participants = current ? `${current}, ${name}` : name;
                 }
             }
 
@@ -6178,7 +6216,10 @@
                 const offset = Math.max(...s.pages.map(p => p.offset)) + PAGE_STRIDE;
                 let n = s.pages.length + 1, id;
                 do { id = `p${n}`; n++; } while (this.pageById(id));
-                const name = `Page ${s.pages.length + 1}`;
+                // The lowest "Page N" not in use, so a name never repeats after a delete.
+                const used = new Set(s.pages.map(p => p.name));
+                let k = 1; while (used.has(`Page ${k}`)) k++;
+                const name = `Page ${k}`;
                 s.pages.push({ id, name, offset });
                 this.logEvent('CHANGE', `Added page "${name}"`);
                 this.setActivePage(id, { fit: false });
@@ -7888,7 +7929,8 @@
                     const stencil = ev.dataTransfer.getData(STENCIL_DRAG_TYPE);
                     if (stencil) { this.dropStencilNode(stencil, coords.x, coords.y); return; }
                     const type = ev.dataTransfer.getData('text/plain');
-                    if (type) this.instantiateNewCanvasElementNode(type, coords.x, coords.y);
+                    // Only palette items: text dragged in from elsewhere (another page, a file) is not a shape type.
+                    if (ELEMENT_TYPES.has(type)) this.instantiateNewCanvasElementNode(type, coords.x, coords.y);
                 });
 
                 svg.addEventListener('mousedown', (ev) => {
@@ -8339,7 +8381,7 @@
                 const linked = new Set([...elements.map(e => e.id), ...flows.map(f => f.id)]);
                 const threats = this.state.threats.filter(t => linked.has(t.elementId)).map(clone);
                 if (elements.length > 0) {
-                    this.clipboard = { elements, flows, threats };
+                    this.clipboard = { elements, flows, threats, model: this.state };   // model: page links only make sense in the same model
                     this.pasteCount = 0;
                 }
             }
@@ -8371,6 +8413,8 @@
                     if (pastedEl.name) pastedEl.name = pastedEl.name + " - copy";
                     delete pastedEl.layerId;   // stampLayers puts copies on the active layer
                     if (from && active) pastedEl.pageId = active.id; else delete pastedEl.pageId;   // unknown page: stampPages places it
+                    // A page link points into the model it was copied from; in another model a page with the same id is a different page.
+                    if ('linkedPageId' in pastedEl && !(this.clipboard.model === this.state && this.pageById(pastedEl.linkedPageId))) delete pastedEl.linkedPageId;
                     this.state.elements.push(pastedEl);
                     newElementIds.push(pastedEl.id);
                 });
@@ -8393,6 +8437,8 @@
                     const pastedThreat = JSON.parse(JSON.stringify(t));
                     pastedThreat.id = this.generateNextThreatId();
                     pastedThreat.elementId = target;
+                    // Keep only links to mitigations this model has (the clipboard may come from another model).
+                    if (Array.isArray(pastedThreat.mitigationIds)) pastedThreat.mitigationIds = pastedThreat.mitigationIds.filter(id => this.mitigationById(id));
                     this.state.threats.push(pastedThreat);
                 });
 
@@ -9835,19 +9881,35 @@
             addRuleThreats(findings) {
                 const fresh = findings.filter(f => !f.added && !f.dismissed);
                 if (!fresh.length) { this.notify('Those suggestions are already in the register or marked not applicable.', 'info'); return; }
+                const added = [];
                 fresh.forEach(f => {
                     const L = f.rule.likelihood || 3, I = f.rule.impact || 3;
                     const risk = ThreatModelSession.calculateRisk(L, I);
-                    this.state.threats.push({
+                    added.push({
                         id: this.generateNextThreatId(), title: f.title, category: f.rule.category, elementId: f.item.id,
                         status: 'Open / Unmitigated', likelihood: String(L), impact: String(I),
                         riskScore: risk.score, riskLabel: risk.label, desc: this.composeThreatDescription(f.rule, f.reason),
                         mitigationExplanation: '', templateId: f.rule.id, ruleId: f.reason ? f.rule.id : undefined, refs: f.rule.refs || []
                     });
+                    this.state.threats.push(added[added.length - 1]);
                 });
                 this.logEvent('CREATE', `Added ${fresh.length} suggested threat(s)`);
                 this.refreshAppViewVisualWorkspace();
-                this.notify(`Added ${fresh.length} threat(s) to the register.`, 'success', { label: 'Undo', onClick: () => this.undo() });
+                // Undo on the toast takes back exactly these threats, once (not whatever was changed last).
+                let undone = false;
+                this.notify(`Added ${fresh.length} threat(s) to the register.`, 'success', { label: 'Undo', onClick: (ev) => {
+                    const toast = ev && ev.currentTarget && ev.currentTarget.closest('.toast');
+                    if (toast) bootstrap.Toast.getOrCreateInstance(toast).hide();
+                    if (undone) return;
+                    undone = true;
+                    const same = (t, a) => t.id === a.id && t.title === a.title && t.elementId === a.elementId && t.templateId === a.templateId;
+                    const before = this.state.threats.length;
+                    this.state.threats = this.state.threats.filter(t => !added.some(a => same(t, a)));
+                    const n = before - this.state.threats.length;
+                    if (!n) return;
+                    this.logEvent('REMOVE', `Removed ${n} suggested threat(s) just added`);
+                    this.refreshAppViewVisualWorkspace();
+                } });
             }
 
             /** Records "not applicable" for a suggestion on a component or data flow, with the reason (Shostack: every suggestion ends in a decision). */
@@ -12705,6 +12767,7 @@
                 document.getElementById('mitigation-explanation-row').style.display = 'none';
                 document.getElementById('modal-threat-title-lbl').innerText = "New threat";
                 this.startThreatMitigationDraft(null, []);
+                this.threatDialogCommitted = false;
                 this.editThreatModal.show();
             }
 
@@ -12723,6 +12786,7 @@
                 document.getElementById('modal-threat-mitigation-explanation').value = '';
                 document.getElementById('mitigation-explanation-row').style.display = 'none';
                 this.startThreatMitigationDraft(null, []);
+                this.threatDialogCommitted = false;
                 this.editThreatModal.show();
             }
 
@@ -12742,10 +12806,12 @@
                 const showExp = (t.status === 'Mitigated / Resolved' || t.status === 'Partially mitigated');
                 document.getElementById('mitigation-explanation-row').style.display = showExp ? '' : 'none';
                 this.startThreatMitigationDraft(t, []);
+                this.threatDialogCommitted = false;
                 this.editThreatModal.show();
             }
 
             commitThreatModalFormEditorData() {
+                if (this.threatDialogCommitted) return;   // a second click on Save while the dialog closes adds nothing
                 const hiddenId = document.getElementById('modal-threat-hidden-id').value;
                 const titleInput = document.getElementById('modal-threat-title');
                 const title = titleInput.value.trim();
@@ -12767,6 +12833,7 @@
                     needsReview: false,
                     mitigationIds: this.applyThreatMitigationDraft()
                 };
+                this.threatDialogCommitted = true;
 
                 if (hiddenId) {
                     const m = this.state.threats.find(item => item.id === hiddenId);
@@ -12817,17 +12884,23 @@
                 this.logEvent("REMOVE", `Deleted threat ${t.id} "${t.title}"`);
                 this.refreshAppViewVisualWorkspace();
                 // Undo puts back this threat, not whatever was changed last (the toast stays up for a few seconds).
-                this.notify(`Deleted threat ${t.id}.`, 'secondary', { label: 'Undo', onClick: () => this.restoreDeletedThreat(t, index) });
+                let restored = false;
+                this.notify(`Deleted threat ${t.id}.`, 'secondary', { label: 'Undo', onClick: () => { if (!restored) restored = this.restoreDeletedThreat(t, index); } });
             }
 
             restoreDeletedThreat(t, index) {
-                if (this.state.threats.some(item => item.id === t.id)) return;   // already back (an undo got there first)
+                const sameId = this.state.threats.find(item => item.id === t.id);
+                if (sameId && JSON.stringify(sameId) === JSON.stringify(t)) return true;   // already back (an undo got there first)
                 if (t.elementId && !this.state.elements.some(e => e.id === t.elementId) && !this.state.flows.some(f => f.id === t.elementId)) {
-                    this.notify(`Can't restore threat ${t.id}: its component was deleted.`, 'warning'); return;
+                    this.notify(`Can't restore threat ${t.id}: its component was deleted.`, 'warning'); return false;
                 }
-                this.state.threats.splice(Math.min(index, this.state.threats.length), 0, t);
-                this.logEvent("ADD", `Restored deleted threat ${t.id} "${t.title}"`);
+                // A new threat took the id in the meantime: put this one back under a fresh id.
+                const oldId = t.id, restored = sameId ? Object.assign({}, t, { id: this.generateNextThreatId() }) : t;
+                this.state.threats.splice(Math.min(index, this.state.threats.length), 0, restored);
+                this.logEvent("ADD", `Restored deleted threat ${restored.id} "${restored.title}"${sameId ? ` (was ${oldId})` : ''}`);
                 this.refreshAppViewVisualWorkspace();
+                if (sameId) this.notify(`Restored the deleted threat as ${restored.id}, because ${oldId} is now used by another threat.`, 'info');
+                return true;
             }
 
             /** Selects a component or flow and centres the canvas on it (FEAT-016). */
@@ -13227,6 +13300,7 @@
                 document.getElementById('mitigation-threat-filter').value = '';
                 this.mitigationDraftThreats = new Set(m ? this.threatsCoveredBy(m.id).map(t => t.id) : []);
                 this.renderMitigationThreatList();
+                this.mitigationDialogCommitted = false;
                 this.mitigationModal.show();
             }
 
@@ -13248,6 +13322,7 @@
             }
 
             commitMitigationModal() {
+                if (this.mitigationDialogCommitted) return;   // a second click on Save while the dialog closes adds nothing
                 const titleEl = document.getElementById('mitigation-input-title');
                 const title = titleEl.value.trim();
                 if (!title) { titleEl.classList.add('is-invalid'); titleEl.focus(); return; }
@@ -13255,6 +13330,7 @@
                 const ticket = ticketEl.value.trim();
                 if (ticket && !/^https?:\/\/[^\s"'<>]+$/i.test(ticket)) { ticketEl.classList.add('is-invalid'); ticketEl.focus(); return; }
                 if (!Array.isArray(this.state.mitigations)) this.state.mitigations = [];
+                this.mitigationDialogCommitted = true;
                 const id = document.getElementById('mitigation-hidden-id').value || this.generateNextMitigationId();
                 const data = { id, title, desc: document.getElementById('mitigation-input-desc').value.trim(), status: document.getElementById('mitigation-input-status').value,
                     owner: document.getElementById('mitigation-input-owner').value.trim(), ticketUrl: ticket };
@@ -13453,7 +13529,8 @@
             safeSetItem(key, value) {
                 try {
                     localStorage.setItem(key, value);
-                    this.setStorageFailure(false);
+                    // Only a saved model clears the warning: a small unrelated write can succeed while the model still cannot.
+                    if (key === 'stride_workbench_session_manifest_v26') this.setStorageFailure(false);
                     return true;
                 } catch (err) {
                     console.error('[ThreatTiger] Could not save to browser storage', err);
@@ -13487,8 +13564,49 @@
                 if (this.clearingData || !this.saveTimer) return;
                 clearTimeout(this.saveTimer);
                 this.saveTimer = null;
+                if (this.otherTabChanged) {
+                    // Another tab saved since: keep this tab's work in History instead of overwriting that version.
+                    this.takeSnapshot('This tab, not saved (another tab saved first)', !this.otherTabSnapshotTaken);
+                    this.otherTabSnapshotTaken = true;
+                    document.getElementById('alert-other-tab').classList.remove('d-none');
+                    return;
+                }
                 this.safeSetItem('stride_workbench_session_manifest_v26', JSON.stringify(this.state));
                 this.takeSnapshot('Autosave');
+            }
+
+            /** "Reload" on the other-tab notice: keeps this tab's version in History, then loads the stored one. */
+            loadOtherTabVersion() {
+                clearTimeout(this.saveTimer); this.saveTimer = null;
+                this.takeSnapshot('This tab, before loading the other tab\'s version', true);
+                const operator = this.state.activeUser;
+                try { if (!this.loadSessionFromLocalStorage()) return; }
+                catch (err) { this.notify(`The other tab's version could not be opened (${err.message}). This tab's version is unchanged.`); return; }
+                this.otherTabChanged = false; this.otherTabSnapshotTaken = false;
+                document.getElementById('alert-other-tab').classList.add('d-none');
+                if (this.formatPainter) this.disarmFormatPainter();
+                this.forgetPageViews();
+                this.state.activeUser = this.state.activeUser || operator;
+                this.state.selectedElementIds = []; this.state.selectedFlowId = null;
+                this.resetUndoHistory();
+                this.refreshAppViewVisualWorkspace();
+                this.isCanvasUnsaved = false;
+                this.notify('Loaded the version saved in the other tab.', 'success');
+            }
+
+            /** "Keep this tab's version": keeps the other tab's version in History, then saves this one over it. */
+            keepThisTabVersion() {
+                const mine = this.state;
+                try {
+                    const { session } = normalizeSession(JSON.parse(localStorage.getItem('stride_workbench_session_manifest_v26') || 'null'));
+                    this.state = Object.assign(new ThreatModelSession(), session);
+                    this.takeSnapshot('The other tab\'s version (replaced)', true);
+                } catch (_) { /* nothing readable stored: nothing to keep */ }
+                finally { this.state = mine; }
+                this.otherTabChanged = false; this.otherTabSnapshotTaken = false;
+                document.getElementById('alert-other-tab').classList.add('d-none');
+                this.saveSessionToLocalStorage();
+                this.flushSave();
             }
 
             loadSessionFromLocalStorage() {
@@ -13833,10 +13951,12 @@
                     hiddenIndex.value = index.toString();
                 }
 
+                this.templateDialogCommitted = false;
                 this.templateModal.show();
             }
 
             saveTemplate() {
+                if (this.templateDialogCommitted) return;   // a second click on Save while the dialog closes adds nothing
                 const type = document.getElementById('modal-template-hidden-type').value;
                 const indexStr = document.getElementById('modal-template-hidden-index').value;
                 const index = parseInt(indexStr, 10);
@@ -13853,6 +13973,7 @@
                 if (!this.threatSuggestions[type]) {
                     this.threatSuggestions[type] = [];
                 }
+                this.templateDialogCommitted = true;
 
                 const controls = document.getElementById('modal-template-controls').value.split('\n').map(s => s.trim()).filter(Boolean);
                 const refs = document.getElementById('modal-template-refs').value.split(',').map(s => s.trim()).filter(Boolean);
