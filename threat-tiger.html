@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xwv5Rzkdg2sYrofZ7lNPJIu8szIMDS+0+OnOodCNBN4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4dvnyPcvj5Xrd13JXs7sjhJpFPvsdydyJAXZxz9S7bY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4721,6 +4721,25 @@
             [/\b(smtp|imap|mail|email)\b/i, 'email'],
             [/\b(sql|jdbc|postgres(ql)?|mysql|mongo(db)?|redis|database|db)\b/i, 'database']
         ];
+
+        /** A template text with every "[name]" replaced by the component's name (a function, so "$&" in a name stays literal). */
+        function fillTemplateName(text, item) {
+            return toText(text).replace(/\[name\]/g, () => toText(item && item.name) || 'unnamed');
+        }
+
+        /** Model text -> Markdown text that renders literally: specials backslash-escaped, < > & as entities, one line. */
+        function mdText(text) {
+            return toText(text).replace(/[\r\n\u2028\u2029]+/g, ' ').trim()
+                .replace(/[\\`*_[\]#|~]/g, '\\$&').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/^[-+=]/, '\\$&').replace(/^(\d+)([.)])/, '$1\\$2');   // a leading "-", "+", "=" or "1." would start a list or heading
+        }
+
+        /** A strict http(s) URL as a Markdown link destination (<…>), or null. */
+        function mdUrl(url) {
+            const u = toText(url).trim();
+            if (!/^https?:\/\/[^\s<>"`\\]+$/i.test(u)) return null;
+            try { const p = new URL(u); return /^https?:$/.test(p.protocol) ? `<${p.href.replace(/[()[\]]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase())}>` : null; } catch { return null; }   // href percent-encodes < > and spaces
+        }
 
         /** Turns a reference id into a link to its authoritative source (or null). */
         function refLink(ref) {
@@ -9775,7 +9794,7 @@
              */
             describeTemplate(tpl, libraryKey, item, m) {
                 const id = this.templateIdOf(libraryKey, tpl);
-                const title = toText(tpl.title).replace('[name]', () => toText(item.name) || 'unnamed');   // a function, so "$&" in a name stays literal
+                const title = fillTemplateName(tpl.title, item);
                 let reason = null;
                 if (tpl.when) { try { const r = this.evaluateCondition(tpl.when, item, m); if (r.ok) reason = r.reasons.join('; ') || 'matches your model'; } catch (err) { console.warn('[ThreatTiger] Condition failed', id, err); } }
                 const mine = m.subtypes(item);
@@ -9811,10 +9830,11 @@
             }
 
             /** The description stored on a threat created from a template: what, controls, references, example, why. */
-            composeThreatDescription(tpl, reason) {
-                const parts = [toText(tpl.desc).trim()];
-                if (tpl.controls && tpl.controls.length) parts.push('Typical controls:\n' + tpl.controls.map(c => `- ${c}`).join('\n'));
-                if (tpl.example) parts.push(`Real-world example: ${tpl.example}`);
+            composeThreatDescription(tpl, reason, item) {
+                const fill = (text) => item ? fillTemplateName(text, item) : toText(text);
+                const parts = [fill(tpl.desc).trim()];
+                if (tpl.controls && tpl.controls.length) parts.push('Typical controls:\n' + tpl.controls.map(c => `- ${fill(c)}`).join('\n'));
+                if (tpl.example) parts.push(`Real-world example: ${fill(tpl.example)}`);
                 if (tpl.refs && tpl.refs.length) parts.push(`References: ${tpl.refs.join(', ')}`);
                 if (reason) parts.push(`Why suggested: ${reason}.`);
                 return parts.filter(Boolean).join('\n\n');
@@ -9830,7 +9850,7 @@
                     this.state.threats.push({
                         id: this.generateNextThreatId(), title: f.title, category: f.rule.category, elementId: f.item.id,
                         status: 'Open / Unmitigated', likelihood: String(L), impact: String(I),
-                        riskScore: risk.score, riskLabel: risk.label, desc: this.composeThreatDescription(f.rule, f.reason),
+                        riskScore: risk.score, riskLabel: risk.label, desc: this.composeThreatDescription(f.rule, f.reason, f.item),
                         mitigationExplanation: '', templateId: f.rule.id, ruleId: f.reason ? f.rule.id : undefined, refs: f.rule.refs || []
                     });
                 });
@@ -12524,7 +12544,7 @@
                     </div>
                     ${entry.reason ? `<div class="extra-small text-dark mb-1"><i class="bi bi-lightning-charge-fill text-warning me-1"></i><strong>Why:</strong> ${esc(entry.reason)}</div>` : ''}
                     ${!entry.reason && entry.relevant.length ? `<div class="extra-small text-primary mb-1"><i class="bi bi-bullseye me-1"></i>Relevant for: ${esc(entry.relevant.map(s => SUBTYPE_LABELS[s] || s).join(', '))}</div>` : ''}
-                    <div class="extra-small text-muted mb-1" style="font-size:10.5px; line-height: 1.35;">${esc(tpl.desc)}</div>
+                    <div class="extra-small text-muted mb-1" style="font-size:10.5px; line-height: 1.35;">${esc(fillTemplateName(tpl.desc, item))}</div>
                     <div class="d-flex flex-wrap gap-1 align-items-center template-refs"></div>
                     <details class="template-details mt-1 extra-small">
                         <summary class="text-primary" style="cursor: pointer;">Controls${tpl.example ? ' &amp; real-world example' : ''}</summary>
@@ -12555,7 +12575,7 @@
                 if (ignoreBtn) ignoreBtn.addEventListener('click', (ev) => { ev.stopPropagation(); this.ignoreSuggestion(entry); });
                 card.addEventListener('click', () => {
                     if (entry.added) return;
-                    this.openThreatModalForTemplate(entry.category, entry.title, item.id, this.composeThreatDescription(tpl, entry.reason));
+                    this.openThreatModalForTemplate(entry.category, entry.title, item.id, this.composeThreatDescription(tpl, entry.reason, item));
                     if (tpl.likelihood) document.getElementById('modal-threat-likelihood').value = String(tpl.likelihood);
                     if (tpl.impact) document.getElementById('modal-threat-impact').value = String(tpl.impact);
                     this.pendingTemplate = { id: entry.id, refs: tpl.refs || [], triggered: !!entry.reason };
