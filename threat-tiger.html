@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-4dvnyPcvj5Xrd13JXs7sjhJpFPvsdydyJAXZxz9S7bY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-88lDT3zhZUyaCnZIu07DQP+kYMjj+9uGZx1McO7DTf4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -3816,17 +3816,20 @@
         // ── Attack paths ─────────────────────────────────────────────────────────────
         // Routes an attacker could take from an entry point to a crown jewel along the data flows.
         const ATTACK_PATH_LIMITS = { hops: 8, paths: 200, expansions: 50000 };
-        const ATTACK_PATH_NODE_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'custom_image', ...Object.keys(FLOWCHART_DEFAULTS)]);
+        // Shapes that are parts of the system being modelled (threats, suggestions, reports, Insights coverage, attack paths).
+        const MODEL_COMPONENT_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'custom_image', ...Object.keys(FLOWCHART_DEFAULTS)]);
+        const ATTACK_PATH_NODE_TYPES = MODEL_COMPONENT_TYPES;
         const THREAT_WEIGHT = { 'Open / Unmitigated': 1, 'Partially mitigated': 0.5 };
-        // model: { elements, flows, threats, nodeZones: Map(id -> zones[]), zoneCount }. Breadth-first over simple paths, so the
+        // model: { elements, flows, threats, nodeZones: Map(id -> zones[]), zoneCount, zoneCountOf?(element) (zones on that shape's page) }. Breadth-first over simple paths, so the
         // shortest are found first; stops at the hop, path or expansion limit (then truncated = true). Ranked by score.
         function computeAttackPaths(model, { start = '', target = '' } = {}) {
-            const nodes = model.elements.filter(e => ATTACK_PATH_NODE_TYPES.has(e.type));
+            const nodes = model.elements.filter(e => ATTACK_PATH_NODE_TYPES.has(e.type) && !e.isDisabled);   // a disabled shape carries no traffic
             const ids = new Set(nodes.map(e => e.id));
             const jewel = (e) => !!(e.secProps && e.secProps.isCrownJewel === 'true');
             const zonesOf = (id) => (model.nodeZones && model.nodeZones.get(id)) || [];
+            const zoneCountOf = (e) => typeof model.zoneCountOf === 'function' ? model.zoneCountOf(e) : (model.zoneCount || 0);
             const entries = start && ids.has(start) ? [start]
-                : nodes.filter(e => !jewel(e) && (e.type === 'interactor' || (model.zoneCount > 0 && zonesOf(e.id).length === 0))).map(e => e.id);
+                : nodes.filter(e => !jewel(e) && (e.type === 'interactor' || (zoneCountOf(e) > 0 && zonesOf(e.id).length === 0))).map(e => e.id);
             const targets = target && ids.has(target) ? [target] : nodes.filter(jewel).map(e => e.id);
             const targetSet = new Set(targets);
             const adj = new Map();
@@ -9825,7 +9828,7 @@
             /** All triggered suggestions across the model. */
             evaluateAllRules() {
                 const analysis = this.computeTrustAnalysis();
-                const items = [...this.state.elements.filter(e => ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(e.type)), ...this.state.flows];
+                const items = [...this.modelComponents(), ...this.state.flows];
                 return items.flatMap(item => this.evaluateRules(item, analysis));
             }
 
@@ -9975,7 +9978,8 @@
                     const analysis = this.computeTrustAnalysis();
                     zones.filter(z => ![...analysis.nodeZones.values()].some(list => list.some(x => x.id === z.id)))
                         .forEach(z => w.push({ level: 'info', code: 'MC-EMPTY-ZONE', text: `Trust zone ${nameOf(z)} contains no components.`, id: z.id }));
-                    const outside = this.state.elements.filter(e => ['process', 'datastore'].includes(e.type) && !(analysis.nodeZones.get(e.id) || []).length);
+                    const zonesOnPage = this.pageZoneCounter();
+                    const outside = this.state.elements.filter(e => ['process', 'datastore'].includes(e.type) && zonesOnPage(e) > 0 && !(analysis.nodeZones.get(e.id) || []).length);
                     if (outside.length) w.push({ level: 'info', text: `${outside.length} process(es)/data store(s) are outside every trust zone: ${outside.slice(0, 4).map(e => `"${e.name}"`).join(', ')}${outside.length > 4 ? '…' : ''}.` });
                 }
                 return w;
@@ -9989,7 +9993,7 @@
                 const open = threats.filter(t => t.status !== 'Mitigated / Resolved');
                 const risk = (t) => ThreatModelSession.calculateRisk(t.likelihood, t.impact);
                 const critHigh = open.filter(t => ['Critical', 'High'].includes(risk(t).label));
-                const modelEls = this.state.elements.filter(e => ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(e.type));
+                const modelEls = this.modelComponents();
                 const withThreats = new Set(threats.map(t => t.elementId));
                 const uncovered = [...modelEls, ...this.state.flows].filter(x => !withThreats.has(x.id));
                 const findings = this.evaluateAllRules();
@@ -10163,8 +10167,19 @@
             // ── Attack paths (Insights) ──────────────────────────────────────────────
             attackPathModel() {
                 const analysis = this.computeTrustAnalysis();
-                return { elements: this.state.elements, flows: this.state.flows, threats: this.state.threats, nodeZones: analysis.nodeZones, zoneCount: analysis.zones.length };
+                return { elements: this.state.elements, flows: this.state.flows, threats: this.state.threats, nodeZones: analysis.nodeZones, zoneCount: analysis.zones.length, zoneCountOf: this.pageZoneCounter() };
             }
+
+            /** (element) -> how many trust zones are on that element's page (shapes without a page are on the first one). */
+            pageZoneCounter() {
+                const first = ((this.state.pages || [])[0] || {}).id || '';
+                const pageOf = (e) => e.pageId || first, counts = new Map();
+                this.state.elements.filter(e => e.type === 'boundary').forEach(z => counts.set(pageOf(z), (counts.get(pageOf(z)) || 0) + 1));
+                return (e) => counts.get(pageOf(e)) || 0;
+            }
+
+            /** The shapes that are parts of the modelled system (processes, stores, entities, infrastructure, images, flowchart shapes). */
+            modelComponents() { return this.state.elements.filter(e => MODEL_COMPONENT_TYPES.has(e.type)); }
 
             attackPathNames(path) {
                 const byId = new Map(this.state.elements.map(e => [e.id, e]));
@@ -10275,7 +10290,7 @@
                 out.push(`# ${para(s.projectTitle) || 'Threat model'}`, '');
                 out.push(`_Threat model report generated by Threat Tiger ${APP_VERSION} on ${new Date().toISOString().slice(0, 10)}._`, '');
                 out.push('| | |', '|---|---|', `| Scope | ${cell(s.scopeDefinition)} |`, `| Participants | ${cell(s.participants)} |`,
-                    `| Components | ${s.elements.filter(e => ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(e.type)).length} |`,
+                    `| Components | ${this.modelComponents().length} |`,
                     `| Data flows | ${s.flows.length} |`, `| Threats | ${s.threats.length} |`, '');
                 out.push('## Risk summary', '', `| Severity | ${statuses.join(' | ')} | Total |`, `|---|${statuses.map(() => '---:').join('|')}|---:|`);
                 ['Critical', 'High', 'Medium', 'Low'].forEach(sev => {
@@ -10326,7 +10341,7 @@
                     out.push(`| ${cell(f.name)} | ${cell((byId.get(f.sourceId) || {}).name)} | ${cell((byId.get(f.targetId) || {}).name)} | ${cell(f.ports)} | ${yn('encrypted')} | ${yn('authenticated')} | ${c.crosses ? cell(c.names.join(', ')) : 'no'} |`);
                 });
                 out.push('', '## Components', '', '| Component | Type | Trust zone | Security properties | Notes |', '|---|---|---|---|---|');
-                s.elements.filter(e => ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(e.type)).forEach(e => {
+                this.modelComponents().forEach(e => {
                     const props = Object.entries(e.secProps || {}).filter(([, v]) => v === 'true').map(([k]) => k.replace(/([A-Z])/g, ' $1').toLowerCase()).join(', ');
                     out.push(`| ${cell(e.name)} | ${e.type.replace(/_/g, ' ')} | ${cell((analysis.nodeZones.get(e.id) || []).map(z => z.name).join(', '))} | ${cell(props)} | ${cell(e.notes)} |`);
                 });
