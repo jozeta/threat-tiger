@@ -52,7 +52,7 @@ test('a set that fails to load says so, and View can hide a set from the palette
   await page.evaluate(() => document.getElementById('collapseDataNodes').classList.add('show'));
   await page.locator('[data-stencil-set="gcp"] .stencil-set-toggle').click();
   await expect(page.locator('[data-stencil-set="gcp"]')).toContainText('Could not load');
-  await page.click('#btn-main-menu'); await page.click('#btn-menu-view');
+  await page.click('#btn-main-menu'); await page.click('#btn-menu-view'); await page.click('#btn-menu-icon-sets');
   await page.click('#btn-menu-stencil-gcp');
   await expect(page.locator('[data-stencil-set="gcp"]')).toBeHidden();
 });

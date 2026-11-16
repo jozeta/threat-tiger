@@ -1,4 +1,4 @@
-// ☰ menu → View: a sub-menu with the minimap, line jumps and a switch per panel.
+// ☰ menu → View: a flyout sub-menu with the minimap, line jumps, a switch per panel, and Icon sets / Panel tabs flyouts.
 const { test } = require('@playwright/test');
 const { expect, openApp, demoSession } = require('./helpers');
 
@@ -7,7 +7,7 @@ async function openView(page) {
   await page.click('#btn-menu-view');
 }
 
-test('View opens in place with its switches and keeps the menu open', async ({ page }) => {
+test('View opens its flyout with its switches and keeps the menu open', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await openApp(page, { session: demoSession() });
   await page.click('#btn-main-menu');
@@ -31,7 +31,7 @@ for (const [side, sel] of [['left', '.sidebar-left'], ['right', '.sidebar-right'
     await expect(item).toHaveAttribute('aria-checked', 'false');      // the menu stays open
     await item.click();
     await expect(page.locator(sel)).toBeVisible();
-    await page.keyboard.press('Escape');
+    await page.keyboard.press('Escape'); await page.keyboard.press('Escape');   // the flyout, then the menu
     await page.click(`#handle-${side}`);
     await openView(page);
     await expect(item).toHaveAttribute('aria-checked', 'false');
@@ -41,7 +41,7 @@ for (const [side, sel] of [['left', '.sidebar-left'], ['right', '.sidebar-right'
 test('View → panel tabs hides a tab; hiding the active one switches to the next; it is remembered', async ({ page }) => {
   await page.setViewportSize({ width: 1600, height: 1000 });
   await openApp(page, { session: demoSession() });
-  await openView(page);
+  await openView(page); await page.click('#btn-menu-panel-tabs');
   const item = page.locator('#btn-menu-tab-tab-props-trigger');
   await expect(item).toHaveAttribute('aria-checked', 'true');
   await item.click();
@@ -49,7 +49,7 @@ test('View → panel tabs hides a tab; hiding the active one switches to the nex
   await expect(page.locator('#tab-suggest-trigger')).toHaveClass(/active/);
   await page.reload();
   await expect(page.locator('#tab-props-trigger')).toBeHidden();
-  await openView(page);
+  await openView(page); await page.click('#btn-menu-panel-tabs');
   await page.locator('#btn-menu-tab-tab-props-trigger').click();
   await expect(page.locator('#tab-props-trigger')).toBeVisible();
 });

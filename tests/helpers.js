@@ -39,10 +39,18 @@ function demoSession(mutate) {
   return s;
 }
 
-/** Clicks a control; opens the main (hamburger) menu first when the control lives inside it. */
+/** Clicks a control; opens the main (hamburger) menu, and any flyouts it sits in, first when the control lives inside it. */
 async function clickControl(page, selector) {
   const inMenu = await page.locator(`.dropdown-menu ${selector}`).count();
-  if (inMenu && !(await page.locator(selector).isVisible())) await page.click('#btn-main-menu');
+  if (inMenu && !(await page.locator(selector).isVisible())) {
+    if ((await page.locator('#btn-main-menu').getAttribute('aria-expanded')) !== 'true') await page.click('#btn-main-menu');
+    const triggers = await page.locator(selector).evaluate((el) => {
+      const ids = [];
+      for (let m = el.closest('.submenu'); m; m = m.parentElement.closest('.submenu')) { const t = document.querySelector(`[aria-controls="${m.id}"]`); if (t) ids.unshift('#' + t.id); }
+      return ids;
+    });
+    for (const t of triggers) if ((await page.locator(t).getAttribute('aria-expanded')) !== 'true') await page.click(t);
+  }
   await page.click(selector);
 }
 

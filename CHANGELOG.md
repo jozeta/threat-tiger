@@ -5,6 +5,9 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+### Changed
+- **☰ menu:** View opens as a flyout window beside the menu instead of expanding inside it, and **Icon sets** and **Panel tabs** are flyouts of their own inside View. A flyout opens to the left or right, whichever has room (on a phone: below or above its item, on screen). It works like a desktop menu: hover or click opens one, hovering another item closes it, → / Enter opens and ← / Escape closes one level, and ↑ / ↓ stay inside the current level.
+
 ## 1.17.0
 
 ### Added

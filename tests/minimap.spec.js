@@ -34,10 +34,10 @@ test('minimap shows one item per element and a viewport; hidden when empty; togg
   await expect(map).toBeVisible();
   await expect(map.locator('.minimap-item')).toHaveCount(2);
   await expect(map.locator('.minimap-viewport')).toHaveCount(1);
-  await page.click('#btn-main-menu'); await page.click('#btn-menu-view'); await page.click('#btn-menu-minimap'); await page.keyboard.press('Escape');
+  await page.click('#btn-main-menu'); await page.click('#btn-menu-view'); await page.click('#btn-menu-minimap'); await page.keyboard.press('Escape'); await page.keyboard.press('Escape');   // flyout, then menu
   await expect(map).toBeHidden();
   expect(await page.evaluate(() => localStorage.getItem('minimap_visible'))).toBe('false');
-  await page.click('#btn-main-menu'); await page.click('#btn-menu-view'); await page.click('#btn-menu-minimap'); await page.keyboard.press('Escape');
+  await page.click('#btn-main-menu'); await page.click('#btn-menu-view'); await page.click('#btn-menu-minimap'); await page.keyboard.press('Escape'); await page.keyboard.press('Escape');   // flyout, then menu
   await page.evaluate(() => { app.state.elements = []; app.refreshAppViewVisualWorkspace(); });
   await expect(map).toBeHidden();
   await page.evaluate(() => { app.state.elements = [{ id: 'c', type: 'process', name: 'C', x: 0, y: 0, width: 240, height: 80, secProps: {} }]; app.refreshAppViewVisualWorkspace(); });

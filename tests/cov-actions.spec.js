@@ -458,7 +458,7 @@ test('Help & License shows the same version as package.json, and the header show
 test('View menu: every panel-tab switch hides and shows its own tab', async ({ page }) => {
   await C.openApp(page, { session: C.demoSession() });
   const tabs = ['tab-props-trigger', 'tab-suggest-trigger', 'tab-layers-trigger', 'tab-register-trigger', 'tab-mitigations-trigger', 'tab-insights-trigger', 'tab-notes-trigger'];
-  await page.click('#btn-main-menu'); await page.click('#btn-menu-view');
+  await page.click('#btn-main-menu'); await page.click('#btn-menu-view'); await page.click('#btn-menu-panel-tabs');
   for (const t of tabs) {
     const item = page.locator(`#btn-menu-tab-${t}`);
     await item.click();
@@ -475,7 +475,7 @@ test('View menu: every icon-set switch hides and shows its set in the palette', 
   await page.evaluate(() => document.getElementById('collapseDataNodes').classList.add('show'));
   const sets = await page.locator('[data-stencil-toggle]').evaluateAll((els) => els.map((e) => e.dataset.stencilToggle));
   expect(sets.length).toBe(8);
-  await page.click('#btn-main-menu'); await page.click('#btn-menu-view');
+  await page.click('#btn-main-menu'); await page.click('#btn-menu-view'); await page.click('#btn-menu-icon-sets');
   for (const s of sets) {
     await expect(page.locator(`[data-stencil-set="${s}"]`)).toBeVisible();
     await page.click(`#btn-menu-stencil-${s}`);

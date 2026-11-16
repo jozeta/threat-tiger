@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-aVQCde40ox4VeUoHca69sknXmpz85mkgDQfj0RthaFg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-d7XukU0xnqgXI9lEfI89Osf0ndfEPMvURQEwz0MPS/8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1348,6 +1348,12 @@
         #canvas-svg .layer-locked, #canvas-svg .layer-locked * { cursor: not-allowed !important; }
         #canvas-svg.painting, #canvas-svg.painting .node-element { cursor: copy !important; }
         .menu-view-item[aria-checked="false"] .menu-check { visibility: hidden; }
+        /* ☰ menu flyouts: a sub-menu opens beside its parent (left or right, whichever fits), like a desktop menu. */
+        .dropdown-submenu { position: relative; }
+        /* No scrolling here: a scrolling flyout would clip the flyouts nested in it. */
+        .dropdown-menu.submenu { position: absolute; top: -.5rem; margin: 0; min-width: 260px; }
+        .dropdown-menu.submenu.show { display: block; }
+        .submenu-toggle[aria-expanded="true"] { background-color: var(--bs-dropdown-link-hover-bg, #e9ecef); }
         #btn-format-painter:disabled { opacity: .3; }
         #btn-format-painter[aria-pressed="true"] { background: #dbeafe; color: #1d4ed8; }
         #canvas-title-block { position: absolute; right: 1rem; bottom: 1rem; z-index: 9; pointer-events: none; filter: drop-shadow(0 .125rem .25rem rgba(0,0,0,.12)); }
@@ -1681,9 +1687,8 @@
                     <li><button class="dropdown-item" type="button" id="btn-export-markdown"><i class="bi bi-markdown me-2"></i>Export Markdown report</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-export-mermaid"><i class="bi bi-diagram-3 me-2"></i>Export Mermaid diagram</button></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><button class="dropdown-item d-flex align-items-center" type="button" id="btn-menu-view" aria-expanded="false" aria-controls="menu-view-items"><i class="bi bi-window-sidebar me-2"></i>View<i class="bi bi-chevron-down ms-auto" id="menu-view-chevron" aria-hidden="true"></i></button></li>
-                    <li id="menu-view-items" class="d-none">
-                        <ul class="list-unstyled mb-0 ps-3" role="group" aria-label="View">
+                    <li class="dropdown-submenu"><button class="dropdown-item d-flex align-items-center submenu-toggle" type="button" id="btn-menu-view" aria-haspopup="true" aria-expanded="false" aria-controls="menu-view-items"><i class="bi bi-window-sidebar me-2"></i>View<i class="bi bi-chevron-right ms-auto submenu-chevron" aria-hidden="true"></i></button>
+                        <ul class="dropdown-menu submenu shadow" id="menu-view-items" aria-label="View">
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-review-mode" role="menuitemcheckbox" aria-checked="false" title="Freeze the layout while threats and properties stay editable (saved with the model)"><i class="bi bi-lock me-2"></i>Review mode (freeze layout)<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-title-block" role="menuitemcheckbox" aria-checked="false"><i class="bi bi-card-heading me-2"></i>Show title block and legend<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-minimap" role="menuitemcheckbox" aria-checked="false"><i class="bi bi-map me-2"></i>Show minimap<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
@@ -1691,7 +1696,9 @@
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-left" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar me-2"></i>Show left panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-right" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar-reverse me-2"></i>Show right panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-bottom" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-window-dock me-2"></i>Show bottom panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
-                            <li><h6 class="dropdown-header ps-2 pb-1">Icon sets</h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li class="dropdown-submenu"><button class="dropdown-item d-flex align-items-center submenu-toggle" type="button" id="btn-menu-icon-sets" aria-haspopup="true" aria-expanded="false" aria-controls="menu-icon-sets"><i class="bi bi-images me-2"></i>Icon sets<i class="bi bi-chevron-right ms-auto submenu-chevron" aria-hidden="true"></i></button>
+                            <ul class="dropdown-menu submenu shadow" id="menu-icon-sets" aria-label="Icon sets">
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-fluent" data-stencil-toggle="fluent" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Devices &amp; security<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-brands" data-stencil-toggle="brands" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Security &amp; DevOps brands<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-devicon" data-stencil-toggle="devicon" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Tech &amp; OS logos<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
@@ -1700,7 +1707,9 @@
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-entra" data-stencil-toggle="entra" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Microsoft Entra<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-gcp" data-stencil-toggle="gcp" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Google Cloud<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-k8s" data-stencil-toggle="k8s" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Kubernetes<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
-                            <li><h6 class="dropdown-header ps-2 pb-1">Panel tabs</h6></li>
+                            </ul></li>
+                            <li class="dropdown-submenu"><button class="dropdown-item d-flex align-items-center submenu-toggle" type="button" id="btn-menu-panel-tabs" aria-haspopup="true" aria-expanded="false" aria-controls="menu-panel-tabs"><i class="bi bi-folder2 me-2"></i>Panel tabs<i class="bi bi-chevron-right ms-auto submenu-chevron" aria-hidden="true"></i></button>
+                            <ul class="dropdown-menu submenu shadow" id="menu-panel-tabs" aria-label="Panel tabs">
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-props-trigger" data-tab-trigger="tab-props-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Properties<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-suggest-trigger" data-tab-trigger="tab-suggest-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Threat Templates<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-layers-trigger" data-tab-trigger="tab-layers-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Layers<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
@@ -1708,6 +1717,7 @@
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-mitigations-trigger" data-tab-trigger="tab-mitigations-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Mitigations<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-insights-trigger" data-tab-trigger="tab-insights-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Insights<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-tab-tab-notes-trigger" data-tab-trigger="tab-notes-trigger" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-folder2 me-2"></i>Activity Log<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            </ul></li>
                         </ul>
                     </li>
                     <li><hr class="dropdown-divider"></li>
@@ -8612,14 +8622,89 @@
             }
 
             // ☰ menu → View: expands in place; its switches keep the menu open so several can be set in a row.
-            setupViewMenu() {
-                const btn = document.getElementById('btn-menu-view'), list = document.getElementById('menu-view-items');
-                const setOpen = (open) => {
-                    list.classList.toggle('d-none', !open);
-                    btn.setAttribute('aria-expanded', String(open));
-                    document.getElementById('menu-view-chevron').className = `bi ${open ? 'bi-chevron-up' : 'bi-chevron-down'} ms-auto`;
+            // ☰ menu flyouts: View, and inside it Icon sets and Panel tabs, open beside their parent like a desktop
+            // menu. Click, Enter, Space, → or hovering opens one; ← or Escape closes one level; hovering another item
+            // of the same menu closes it after a short pause (so a diagonal move into the flyout doesn't).
+            setupMenuFlyouts() {
+                const root = document.querySelector('.dropdown-menu[aria-labelledby="btn-main-menu"]');
+                const items = (menu) => [...menu.querySelectorAll(':scope > li > .dropdown-item')].filter(b => !b.disabled);
+                const triggerOf = (menu) => document.querySelector(`[aria-controls="${menu.id}"]`);
+                const closeTimers = new Map();
+                const close = (menu) => {
+                    menu.querySelectorAll('.submenu.show').forEach(close);
+                    menu.classList.remove('show');
+                    const t = triggerOf(menu); if (t) t.setAttribute('aria-expanded', 'false');
                 };
-                btn.addEventListener('click', (ev) => { ev.stopPropagation(); setOpen(list.classList.contains('d-none')); this.syncViewMenu(); });
+                const closeSiblings = (menu, except) => menu.querySelectorAll(':scope > li > .submenu.show').forEach(m => { if (m !== except) close(m); });
+                const place = (sub, trigger) => {
+                    sub.style.left = sub.style.right = sub.style.top = '';
+                    const li = trigger.parentElement.getBoundingClientRect(), parent = trigger.closest('.dropdown-menu').getBoundingClientRect();
+                    const w = sub.offsetWidth, h = sub.offsetHeight, vw = document.documentElement.clientWidth, vh = window.innerHeight;
+                    // Keep going the way the parent flyout went (right for the first level), else the other way if it fits.
+                    const parentSub = trigger.closest('.submenu'), prefer = (parentSub && parentSub.dataset.side) || 'right';
+                    const fits = { right: vw - parent.right >= w, left: parent.left >= w };
+                    const side = fits[prefer] ? prefer : (fits[prefer === 'right' ? 'left' : 'right'] ? (prefer === 'right' ? 'left' : 'right') : 'overlap');
+                    sub.dataset.side = side === 'overlap' ? prefer : side;
+                    if (side === 'right') sub.style.left = `${parent.right - li.left}px`;
+                    else if (side === 'left') sub.style.left = `${parent.left - w - li.left}px`;
+                    else {   // no room either side (phones): over the parent, below its trigger or else above it, kept on screen
+                        sub.style.left = `${Math.max(8, Math.min(vw - w - 8, li.left + 24)) - li.left}px`;
+                        if (li.bottom + h <= vh - 8) sub.style.top = `${li.height}px`;
+                        else if (li.top - h >= 8) sub.style.top = `${-h}px`;
+                        else sub.style.top = `${8 - li.top}px`;
+                        return;
+                    }
+                    const r = sub.getBoundingClientRect();
+                    if (r.bottom > vh - 8) sub.style.top = `${sub.offsetTop - Math.min(r.bottom - (vh - 8), r.top - 8)}px`;
+                };
+                const open = (trigger, { focus = false } = {}) => {
+                    const sub = document.getElementById(trigger.getAttribute('aria-controls'));
+                    clearTimeout(closeTimers.get(trigger.closest('.dropdown-menu')));
+                    closeSiblings(trigger.closest('.dropdown-menu'), sub);
+                    if (!sub.classList.contains('show')) {
+                        this.syncViewMenu();
+                        sub.classList.add('show'); trigger.setAttribute('aria-expanded', 'true');
+                        place(sub, trigger);
+                    }
+                    if (focus) { const first = items(sub)[0]; if (first) first.focus(); }
+                };
+                root.querySelectorAll('.submenu-toggle').forEach(trigger => {
+                    trigger.addEventListener('click', (ev) => { ev.stopPropagation(); open(trigger); });
+                    trigger.addEventListener('pointerenter', (ev) => { if (ev.pointerType === 'mouse') open(trigger); });
+                });
+                // Hovering another item of a menu closes that menu's open flyout, after a pause.
+                root.querySelectorAll('.dropdown-item:not(.submenu-toggle)').forEach(item => item.addEventListener('pointerenter', (ev) => {
+                    if (ev.pointerType !== 'mouse') return;
+                    const menu = item.closest('.dropdown-menu');
+                    clearTimeout(closeTimers.get(menu));
+                    closeTimers.set(menu, setTimeout(() => closeSiblings(menu), 250));
+                }));
+                root.querySelectorAll('.submenu').forEach(sub => sub.addEventListener('pointerenter', () => clearTimeout(closeTimers.get(triggerOf(sub).closest('.dropdown-menu')))));
+                // Keyboard. Handled before Bootstrap's own menu keys, which know nothing about flyouts.
+                root.addEventListener('keydown', (ev) => {
+                    const item = ev.target.closest && ev.target.closest('.dropdown-item');
+                    if (!item) return;
+                    const menu = item.closest('.dropdown-menu'), inFlyout = menu !== root;
+                    if (['ArrowRight', 'Enter', ' '].includes(ev.key) && item.classList.contains('submenu-toggle')) {
+                        ev.preventDefault(); ev.stopPropagation(); open(item, { focus: true }); return;
+                    }
+                    if (inFlyout && (ev.key === 'ArrowLeft' || ev.key === 'Escape')) {
+                        ev.preventDefault(); ev.stopPropagation(); close(menu); triggerOf(menu).focus(); return;
+                    }
+                    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') {
+                        ev.preventDefault(); ev.stopPropagation();
+                        closeSiblings(menu);
+                        const list = items(menu), i = list.indexOf(item);
+                        list[(i + (ev.key === 'ArrowDown' ? 1 : -1) + list.length) % list.length].focus();
+                    }
+                }, true);
+                document.getElementById('btn-main-menu').addEventListener('hidden.bs.dropdown', () => root.querySelectorAll('.submenu.show').forEach(close));
+                window.addEventListener('resize', () => root.querySelectorAll('.submenu.show').forEach(sub => place(sub, triggerOf(sub))));
+            }
+
+            setupViewMenu() {
+                this.setupMenuFlyouts();
+                const list = document.getElementById('menu-view-items');
                 list.querySelectorAll('.menu-view-item').forEach(item => item.addEventListener('click', (ev) => { ev.stopPropagation(); }));
                 const panels = { left: () => this.toggleLeftPanel(), right: () => this.toggleRightPanel(), bottom: () => this.toggleBottomPanel() };
                 Object.entries(panels).forEach(([side, toggle]) => document.getElementById(`btn-menu-panel-${side}`).addEventListener('click', () => { toggle(); this.syncViewMenu(); }));
@@ -8630,7 +8715,6 @@
                 [...this.hiddenTabs].forEach(id => this.setTabVisible(id, false, { save: false }));
                 const menuBtn = document.getElementById('btn-main-menu');
                 menuBtn.addEventListener('show.bs.dropdown', () => this.syncViewMenu());
-                menuBtn.addEventListener('hidden.bs.dropdown', () => setOpen(false));
             }
 
             // ── Cloud stencils ───────────────────────────────────────────────────────
