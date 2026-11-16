@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-nfqZLO3zezEJ/jZsV+FrAwYDNwlvaHDxOvGzjWl3Lmo='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xwv5Rzkdg2sYrofZ7lNPJIu8szIMDS+0+OnOodCNBN4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -9694,8 +9694,11 @@
                     node: (id) => els.get(id),
                     subtypes: (item) => { if (!subtypeCache.has(item.id)) subtypeCache.set(item.id, this.subtypesOf(item)); return subtypeCache.get(item.id); },
                     flowsOf: (item) => this.state.flows.filter(f => f.sourceId === item.id || f.targetId === item.id),
-                    inbound: (item) => this.state.flows.filter(f => f.targetId === item.id || (f.isBidirectional && f.sourceId === item.id)),
-                    outbound: (item) => this.state.flows.filter(f => f.sourceId === item.id || (f.isBidirectional && f.targetId === item.id)),
+                    // A two-way flow matched from its other end is seen reversed, so "source" of an inbound flow is always the other end.
+                    inbound: (item) => this.state.flows.filter(f => f.targetId === item.id || (f.isBidirectional && f.sourceId === item.id))
+                        .map(f => f.targetId === item.id ? f : Object.assign({}, f, { sourceId: f.targetId, targetId: f.sourceId })),
+                    outbound: (item) => this.state.flows.filter(f => f.sourceId === item.id || (f.isBidirectional && f.targetId === item.id))
+                        .map(f => f.sourceId === item.id ? f : Object.assign({}, f, { sourceId: f.targetId, targetId: f.sourceId })),
                     zones: (item) => (analysis.nodeZones.get(item.id) || []).map(z => z.name)
                 };
             }
