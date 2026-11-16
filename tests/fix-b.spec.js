@@ -417,3 +417,11 @@ test.describe('#50: touch', () => {
     expect(await page.evaluate(() => [app.state.elements[0].x, app.state.elements[0].y])).toEqual([200, 260]);
   });
 });
+
+test('Delete right after adding a shape from the palette removes it (focus is still on the palette item)', async ({ page }) => {
+  await C.emptyApp(page);
+  const id = await C.addFromPalette(page, 'pal-process');
+  await expect(page.locator('#pal-process')).toBeFocused();
+  await page.keyboard.press('Delete');
+  await expect.poll(() => page.evaluate((i) => app.state.elements.some((e) => e.id === i), id)).toBe(false);
+});
