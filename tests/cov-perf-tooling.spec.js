@@ -91,10 +91,6 @@ test('tooling: the inline app script has no unreviewed innerHTML/outerHTML sinks
 });
 
 test('tooling: the inline app script has no ESLint errors (dead duplicate methods, undefined names)', () => {
-  // BUG: threat-tiger.html:9263 defines ruleHelpers() and threat-tiger.html:9313 defines it again (no-dupe-class-members);
-  // the first copy is dead code that silently differs (no subtypes/analysis helpers). Also threat-tiger.html:3723 has a
-  // useless escape. `npm run lint` passes only because it never reads the inline script.
-  test.fail();
   const errors = lintInlineApp().filter((m) => m.severity === 2);
   expect(errors).toEqual([]);
 });

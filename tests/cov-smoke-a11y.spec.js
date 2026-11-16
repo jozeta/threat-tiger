@@ -81,9 +81,6 @@ for (const d of DIALOGS) {
 }
 
 test('every dialog has an accessible name', async ({ page }) => {
-  // BUG: #modal-edit-threat, #modal-edit-template and #modal-session-context have no aria-labelledby or aria-label
-  // (threat-tiger.html markup), so screen readers announce them only as "dialog". The other seven dialogs are labelled.
-  test.fail();
   await C.openApp(page, { session: C.demoSession() });
   const unnamed = [];
   for (const d of DIALOGS) if (!(await dialogInfo(page, d.id)).name) unnamed.push(d.id);
@@ -91,10 +88,6 @@ test('every dialog has an accessible name', async ({ page }) => {
 });
 
 test('closing a dialog returns keyboard focus to the control that opened it', async ({ page }) => {
-  // BUG: the app opens every dialog with bootstrap.Modal#show() from its own click handlers, and Bootstrap only restores
-  // focus for data-bs-toggle triggers, so after Escape/Close focus falls to <body> (WCAG 2.4.3). Keyboard users must
-  // Tab from the top of the page again. Checked here for dialogs whose opener stays visible.
-  test.fail();
   await C.openApp(page, { session: C.demoSession() });
   const lost = [];
   for (const d of DIALOGS.filter((x) => x.back && x.back !== '#btn-main-menu')) {

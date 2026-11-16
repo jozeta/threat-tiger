@@ -88,9 +88,6 @@ test('grid dropdown: the size changes the pattern and the snap step; Snap to Gri
 });
 
 test('a broken saved grid size is ignored: new shapes still get real coordinates', async ({ page }) => {
-  // BUG: init() parses localStorage canvas_grid_size with parseInt and no validation, so a bad value gives gridSize NaN
-  // and snapValue() turns every new or moved shape's x/y into NaN.
-  test.fail();
   await setup(page, [P('A', 0, 0)]);
   await page.evaluate(() => localStorage.setItem('canvas_grid_size', 'big'));
   await page.reload(); await page.waitForFunction(() => window.app && window.app.state);
@@ -165,10 +162,6 @@ test('the Disabled switch greys a component, is saved in the export, and undoes'
 });
 
 test('a disabled data flow can be re-enabled from Properties', async ({ page }) => {
-  // BUG: the 'Disabled' switch handler supports flows (bindUiEvents, props-input-disabled 'change' → flow.isDisabled), but
-  // updatePropertiesInspectorView never shows #box-props-status-state for a flow, so a flow that arrives disabled
-  // (import, older model) is drawn grey and left out of attack paths with no way to turn it back on in the UI.
-  test.fail();
   await setup(page, [P('A', 0), P('B', 600)], [{ id: 'F', name: 'f', sourceId: 'A', targetId: 'B', isDisabled: true }]);
   await expect(flowLine(page, 'F')).toHaveClass(/disabled/);
   await selectFlow(page, 'F');
@@ -281,9 +274,6 @@ test('register: every column header sorts, and a second click reverses', async (
 });
 
 test('register: sorting by Severity orders by severity, not alphabetically', async ({ page }) => {
-  // BUG: the Severity header sorts on the riskLabel text (threat-tiger.html renderThreatRegisterTableGrid, String compare),
-  // so ascending gives Critical, High, Low, Medium instead of Low, Medium, High, Critical.
-  test.fail();
   const mk = (n, l, i) => ({ id: `th-00${n}`, title: 'T' + n, elementId: 'A', likelihood: String(l), impact: String(i), riskLabel: ThreatLabel(l * i) });
   function ThreatLabel(s) { return s >= 15 ? 'Critical' : s >= 10 ? 'High' : s >= 5 ? 'Medium' : 'Low'; }
   await setup(page, [P('A', 0)], [], [mk(1, 5, 5), mk(2, 1, 1), mk(3, 3, 2), mk(4, 4, 3)]);
@@ -500,10 +490,6 @@ test('the operator badge opens the name dialog from the keyboard too', async ({ 
 });
 
 test('session title, scope and participants entered before any shape survive a reload', async ({ page }) => {
-  // BUG: init() replaces a stored model that has no elements with a new ThreatModelSession (threat-tiger.html, init:
-  // "if (!hasStoredSession || this.state.elements.length === 0)"), so metadata, mitigations and threats typed in before the
-  // first shape are thrown away on reload.
-  test.fail();
   await C.emptyApp(page);
   await page.click('#btn-open-session-meta');
   await page.fill('#modal-meta-project-title', 'Kept title');
@@ -527,10 +513,6 @@ test('flowchart style: fill, stroke and width change the shape; each change is i
   await page.fill('#props-fc-label', 'Renamed step');
   await page.locator('#props-fc-label').press('Tab');
   // One Undo should take back only the rename.
-  // BUG: the fill/stroke/width handlers (bindUiEvents, '#props-fc-fill-grid' etc.) never call logEvent, so those edits
-  // get no undo step or activity entry of their own and are folded into the next logged change: Undo of the rename also
-  // reverts the colours and width.
-  test.fail();
   await page.click('#btn-undo');
   const after = await page.evaluate(() => app.state.elements[0]);
   expect(after.name).toBe('Step');

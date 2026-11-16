@@ -5,8 +5,38 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.18.0
+
+### Added
+- **Git sync with GitHub and GitLab** (also GitHub Enterprise and self-hosted GitLab):
+  - Set it up under **☰ → Settings… → Git sync**: service, server, repository, branch, file, access token and a passphrase. **Connect** checks access first.
+  - A **⟳** button next to ☰ syncs. If only your copy changed it is saved to the repository; if only the repository copy changed it is loaded (your previous version goes to History); if both changed you choose **Keep mine**, **Take theirs** or **Cancel**.
+  - The sync settings (never the token) are part of the model and its exports, so a colleague only needs their own token.
+  - The token is stored in this browser encrypted with your passphrase (PBKDF2-SHA-256 + AES-GCM) and kept in memory once unlocked; after a reload the first sync asks for the passphrase. **Forget token** and **Remove sync from this model** undo the setup.
+  - A model can't redirect sync: nothing is sent to a target (server, repository, branch, file) until you confirm it with Connect in this browser, and a loaded repository copy never changes the target.
+  - The Content-Security-Policy now allows `connect-src https:` so self-hosted servers work (see SECURITY.md).
+- **Basic touch support** on the canvas: tap selects, drag moves a shape or pans, two-finger pinch zooms.
+- A notice when the same model is changed in another tab, with **Reload** or **Keep this tab's version** (instead of one tab silently overwriting the other).
+
 ### Changed
 - **☰ menu:** View opens as a flyout window beside the menu instead of expanding inside it, and **Icon sets** and **Panel tabs** are flyouts of their own inside View. A flyout opens to the left or right, whichever has room (on a phone: below or above its item, on screen). It works like a desktop menu: hover or click opens one, hovering another item closes it, → / Enter opens and ← / Escape closes one level, and ↑ / ↓ stay inside the current level.
+- **Trust-boundary crossings** are measured along the line as drawn (connection points, bends, curves and elbow routes), not between shape centres.
+- **Review mode** now also blocks changing a shape's type, deleting a page, Mermaid import, swimlane column and row changes, reconnecting a flow from Properties, and undo/redo steps that would change the layout (other steps still undo).
+- **Escape** closes one menu level at a time, cancels drawing a connection and cancels a drag, resize or bend in progress. Closing a dialog with Escape no longer clears the canvas selection.
+
+### Fixed
+Everything from the November 2026 bug check:
+- **Data:** reloading no longer wipes a model that has no shapes yet; the storage-full banner stays until the model itself is saved; a broken saved grid size, impossible dates and unknown shape types from imports are handled; loading a model no longer rewrites the participants list; new pages get a free "Page N" name.
+- **Dialogs and toasts:** double-clicking Save no longer creates two threats, mitigations or templates; Undo on "Added N threats" removes exactly those threats, once; Undo on a deleted threat works even when its id was reused; focus returns to the control that opened a dialog; the threat, template and Session dialogs have accessible names.
+- **Keyboard and mouse:** Delete, Backspace and arrow keys on a focused panel button, page tab or layer row no longer act on the canvas; a drag ends when the window loses focus or the button is released outside it; double-clicking a flow adds no bend point; adding a bend point by dragging is one undo step; the boundary-line bend handle stays under the pointer; right-dragging a handle pans; flowchart fill, stroke and width and swimlane title, column and row changes are undo steps of their own; a disabled data flow can be re-enabled from Properties; pasted threats no longer keep links to another model's mitigations or pages.
+- **Threat rules and reports:** two-way flows no longer mix up sender and receiver; `[name]` is filled in everywhere; flowchart shapes count as components in Insights, suggestions and the report; attack paths skip disabled components and use each page's own trust zones; the Severity column sorts by severity; fewer wrong keyword matches ("Build agent", "Exchange rate", "Client portal", "Land registry", "Demo booking").
+- **Markdown and Mermaid:** model text can no longer inject headings, links or HTML into the Markdown report; backticks and `|` in names survive Mermaid export and import; a crafted Mermaid label no longer freezes the tab.
+- **Elbow connectors:** thick lines keep their arrowheads the right way round; lines no longer run through shapes on big diagrams or through a shape right next to a connection point; close shapes get a short straight line instead of a loop; isometric views use the drawn area of icon and step shapes.
+- **Title block and legend:** readable on the dark canvas and in a dark PNG; the legend updates after Properties changes and lists only what is visible on the page (no "Black flow", no colour for encrypted flows); long text fits the box; hidden on screens below 576 px (still in PNG and print). **Clear all data** also removes the title-block setting.
+- **Code:** a duplicate `ruleHelpers()` and a needless regex escape removed.
+
+### Tests
+- `tests/menu.spec.js`, `tests/git-sync.spec.js` (GitHub and GitLab faked in the browser) and `tests/fix-a…d.spec.js`: a test for every fixed bug. The 8 coverage tests that were marked as known bugs now pass normally.
 
 ## 1.17.0
 

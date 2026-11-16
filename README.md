@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.17.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.18.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -21,6 +21,7 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 *   **Threat register**: likelihood × impact scoring, status and mitigation tracking, search and filters (severity, STRIDE category, status, "needs review"). Click a threat to jump to its component.
 *   **Insights**: summary tiles, open-risk heat map, STRIDE coverage per component, boundary crossings, model checks (unconnected components, duplicate names, …) and ranked attack paths from entry points to crown jewels, highlighted on the canvas and listed in the Markdown report.
 *   **Reviews and diagram clarity**: a review mode that freezes the layout while threats and properties stay editable, a title block (diagram level, version, status, author, date) and an automatic legend for the canvas, PNG and print, and elbow (right-angle) connectors.
+*   **Git sync**: save and load the model in a GitHub or GitLab repository (also self-hosted) with one button; the token is stored encrypted with your passphrase.
 *   **Undo / redo**, automatic **History** snapshots, and an activity log.
 *   **Import / export**: JSON (full, or a git-friendly variant that diffs cleanly), Mermaid flowcharts (import: nodes become flowchart shapes, subgraphs trust zones, laid out automatically), CSV, Markdown report (with an embedded Mermaid diagram), Mermaid diagram, PNG and a print-ready report.
 *   **Keyboard and screen-reader friendly**, works on narrow screens, light and dark canvas themes, isometric views.
@@ -41,6 +42,8 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 ---
 
 ## What's new 🆕
+
+**1.18.0** adds **git sync with GitHub and GitLab** (see [Syncing with GitHub or GitLab](#syncing-with-github-or-gitlab)), a **desktop-style ☰ menu** whose View, Icon sets and Panel tabs open as flyout windows, **basic touch support**, a warning when another tab changes the same model, and fixes for all 50 issues from the November 2026 bug check (see the [changelog](CHANGELOG.md)).
 
 **1.17.0:** elbow connectors find their own way around shapes. Move a shape onto an elbow line and the line detours; move it away and the line straightens again. A flow never runs through its own two shapes.
 
@@ -106,7 +109,7 @@ The sync settings (not the token) are part of the model and its exports, so a co
 | Enter / Space | Select the focused item |
 | Arrow keys (Shift for larger steps) | Move the selection |
 | Delete / Backspace | Delete the selection (asks first if threats would be deleted) |
-| Escape | Deselect |
+| Escape | Cancel drawing a connection or a drag in progress; otherwise deselect. In the ☰ menu, close one level |
 | Ctrl/Cmd+Z, Ctrl/Cmd+Shift+Z or Ctrl+Y | Undo / redo |
 | Ctrl/Cmd+C, Ctrl/Cmd+V | Copy / paste components (with the data flows between them) |
 
