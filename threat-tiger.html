@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-GxmY8irNH0n08DK1nYeTPBDgtW4uxptzT9p1ut5QcnE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xE/AAWugpul6xgk07+jIgMJHOiK+ovFvzp8jIjPaBOs='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4664,7 +4664,7 @@
             [/\b(s3|buckets?|blob|gcs|object ?storage|data ?lake|datalake|minio)\b/i, 'object-storage'],
             [/\b(redis|memcached?|cache)\b/i, 'cache'],
             [/\b(kafka|rabbit ?mq|sqs|sns|queues?|service ?bus|event ?hub|pub ?\/? ?sub|mq|nats|amqp|consumers?|workers?|topics?)\b/i, 'queue'],
-            [/\b(llm|gpt|openai|claude|gemini|chat ?bot|ai|genai|rag|vector|embeddings?|copilot|assistant|agent)\b/i, 'llm'],
+            [/\b(llm|gpt|openai|claude|gemini|chat ?bot|ai|genai|rag|vector|embeddings?|copilot|(virtual|chat|voice|coding|smart) ?assistants?|(autonomous|conversational|agentic) agents?|agentic)\b/i, 'llm'],   // "agent"/"assistant" alone: build agent, support assistant
             [/\b(payments?|checkout|billing|psp|stripe|adyen|paypal|klarna|cards?|wallet)\b/i, 'payment'],
             [/\bgraphql\b/i, 'graphql'],
             [/\b(dns|route ?53|nameservers?|registrar)\b/i, 'dns'],
@@ -4687,19 +4687,19 @@
             [/\b(iot|devices?|sensors?|plc|scada|cameras?|printers?|kiosk|pos)\b/i, 'iot'],
             [/\b(ec2|vm|vms|virtual machines?|instances?|compute engine|droplet)\b/i, 'cloud-host'],
             [/\b(router|firewall|switch|load ?balancer|waf|vpn|proxy|nginx|haproxy|f5)\b/i, 'network-device'],
-            [/\b(mail|smtp|exchange|imap)\b/i, 'email'],
-            [/\b(users?|customers?|employees?|clients?|visitors?|people)\b/i, 'human'],
+            [/\b(mail|smtp|imap|(ms|microsoft) exchange|exchange (server|online))\b/i, 'email'],   // not "exchange rate"
+            [/\b(users?|customers?|employees?|visitors?|people)\b/i, 'human'],   // not "client": API client, desktop/mobile client (external entities are human anyway)
             [/\b(config(uration)?|settings|\.env|dotenv|ya?ml|ini|toml|feature ?flags?|parameter ?store)\b/i, 'config'],
             [/\b(blockchain|ledger|smart ?contracts?|ethereum|solana|bitcoin|crypto|web3|nft|defi|crypto ?wallet)\b/i, 'ledger'],
             [/\b(usb|removable|sd ?card|thumb ?drive|external (disk|drive)|floppy)\b/i, 'removable-media'],
             [/\b(local disk|hard ?drive|hdd|ssd|disk|volume|block storage|ebs)\b/i, 'local-disk'],
-            [/\b(npm|pypi|maven|nuget|rubygems|artifactory|nexus|registry|package (registry|manager)|librar(y|ies)|sdk|plugins?|extensions?|artifacts?|dependenc(y|ies))\b/i, 'supply-chain'],
+            [/\b(npm|pypi|maven|nuget|rubygems|artifactory|nexus|(container|docker|image|package|artifact|npm|helm|model|plugin|module) registr(y|ies)|package manager|librar(y|ies)|sdk|plugins?|extensions?|artifacts?|dependenc(y|ies))\b/i, 'supply-chain'],   // not "land registry"
             [/\b(cron|batch|scheduler|scheduled|jobs?|etl|airflow|nightly|daemon)\b/i, 'scheduler'],
             [/\b(gpu|training|inference|model serving|jupyter|notebooks?|mlflow|ray|sagemaker|vertex|kubeflow|hugging ?face|ml|mlops)\b/i, 'ml-compute'],
             [/\b(kiosk|terminal|point of sale|self[- ]service|ticket machine|atm)\b/i, 'kiosk'],
             [/\b(laptops?|workstations?|desktops?|pcs?|macbook|thin client)\b/i, 'workstation'],
             [/\b(scripts?|shell|bash|powershell|cli|automation)\b/i, 'script'],
-            [/\b(test|testing|staging|stage|dev|development|qa|sandbox|uat|debug|preview|demo)\b/i, 'non-prod'],
+            [/\b(test|testing|staging|stage|dev|development|qa|sandbox|uat|debug|preview|demo (environment|env|instance|server|site|system|tenant))\b/i, 'non-prod'],   // not "demo booking"
             [/\b(connectors?|integrations?|ipaas|zapier|mulesoft|boomi|make\.com|workato|n8n|middleware|adapters?)\b/i, 'integration'],
             [/\b(monitoring|grafana|prometheus|datadog|kibana|dashboards?|metrics|alerting|apm|new relic|zabbix|nagios|observability|telemetry)\b/i, 'monitoring'],
             [/\b(analytics|data ?warehouse|warehouse|snowflake|bigquery|redshift|databricks|tableau|power ?bi|looker|reporting|bi)\b/i, 'analytics'],
