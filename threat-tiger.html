@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-d7XukU0xnqgXI9lEfI89Osf0ndfEPMvURQEwz0MPS/8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-VcOZgnxqU4SH21+lfIwcZZxqKifkqKBVs+VG6Yh9U54='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1359,6 +1359,10 @@
         #canvas-title-block { position: absolute; right: 1rem; bottom: 1rem; z-index: 9; pointer-events: none; filter: drop-shadow(0 .125rem .25rem rgba(0,0,0,.12)); }
         @media print { #canvas-title-block:not(.d-none) { display: block !important; } }
         #review-mode-badge { cursor: pointer; font-size: 11px; }
+        @keyframes tt-spin { to { transform: rotate(360deg); } }
+        #btn-git-sync.syncing i { display: inline-block; animation: tt-spin 1s linear infinite; }
+        @media (prefers-reduced-motion: reduce) { #btn-git-sync.syncing i { animation: none; } #btn-git-sync.syncing { opacity: .6; } }
+        @media print { #btn-git-sync { display: none !important; } }
         #minimap { position: absolute; right: 1rem; top: 1rem; width: 200px; height: 140px; z-index: 10;
             background: #ffffff; border: 1px solid #dee2e6; border-radius: 6px; box-shadow: 0 .125rem .25rem rgba(0,0,0,.075); cursor: pointer; }
         #minimap .minimap-item { fill: #cbd5e1; stroke: #94a3b8; vector-effect: non-scaling-stroke; stroke-width: 1px; }
@@ -1671,6 +1675,8 @@
                 <button type="button" class="badge bg-warning text-dark border-0 ms-2 d-none" id="review-mode-badge"
                     title="Review mode: the layout is frozen. Click to turn it off."><i class="bi bi-lock-fill me-1" aria-hidden="true"></i>Review mode</button>
             </div>
+            <div class="d-flex align-items-center gap-2">
+            <button class="btn btn-sm btn-outline-light px-2 d-none" type="button" id="btn-git-sync" aria-label="Sync with the repository" title="Sync with the repository"><i class="bi bi-arrow-repeat fs-5 lh-1" aria-hidden="true"></i></button>
             <div class="dropdown">
                 <button class="btn btn-sm btn-outline-light px-2" type="button" id="btn-main-menu" data-bs-toggle="dropdown"
                     aria-expanded="false" aria-label="Main menu" title="Menu"><i class="bi bi-list fs-5 lh-1"></i></button>
@@ -1721,10 +1727,12 @@
                         </ul>
                     </li>
                     <li><hr class="dropdown-divider"></li>
+                    <li><button class="dropdown-item" type="button" id="btn-settings"><i class="bi bi-gear me-2"></i>Settings…</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-help-trigger"><i class="bi bi-question-circle me-2"></i>Help &amp; License</button></li>
                     <li><button class="dropdown-item text-danger" type="button" id="btn-reset-session"><i class="bi bi-trash me-2"></i>Reset canvas…</button></li>
                     <li><button class="dropdown-item text-danger" type="button" id="btn-clear-local-data" title="Remove every model, snapshot, template change and preference stored by Threat Tiger in this browser"><i class="bi bi-eraser me-2"></i>Clear all data in this browser…</button></li>
                 </ul>
+            </div>
             </div>
         </header>
 
@@ -3440,6 +3448,113 @@
                 <div class="modal-footer bg-light">
                     <button type="button" class="btn btn-primary btn-sm w-100" id="btn-modal-session-save">Apply
                         Configuration Framework</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-settings" tabindex="-1" aria-labelledby="modal-settings-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-light">
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-settings-title"><i class="bi bi-gear me-2" aria-hidden="true"></i>Settings</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <h6 class="fw-bold mb-1"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Git sync (GitHub / GitLab)</h6>
+                    <p class="small text-muted mb-2">Save this model to a file in a repository and load it from there with the sync button next to ☰.
+                        Server, repository, branch and file are saved in the model and its exports, so a colleague only needs their own token.
+                        The token stays in this browser, encrypted with your passphrase. Sync sends the model to the server you enter here.</p>
+                    <form id="form-git-sync" autocomplete="off">
+                        <div class="row g-2">
+                            <div class="col-5">
+                                <label class="form-label small text-muted mb-1" for="git-provider">Service</label>
+                                <select class="form-select form-select-sm shadow-none" id="git-provider">
+                                    <option value="github">GitHub</option>
+                                    <option value="gitlab">GitLab</option>
+                                </select>
+                            </div>
+                            <div class="col-7">
+                                <label class="form-label small text-muted mb-1" for="git-host">Server (API address)</label>
+                                <input type="url" class="form-control form-control-sm shadow-none" id="git-host" placeholder="https://api.github.com" spellcheck="false">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small text-muted mb-1" for="git-repo">Repository</label>
+                                <input type="text" class="form-control form-control-sm shadow-none" id="git-repo" placeholder="owner/repository (GitLab: group/subgroup/project)" spellcheck="false">
+                            </div>
+                            <div class="col-5">
+                                <label class="form-label small text-muted mb-1" for="git-branch">Branch</label>
+                                <input type="text" class="form-control form-control-sm shadow-none" id="git-branch" placeholder="main" spellcheck="false">
+                            </div>
+                            <div class="col-7">
+                                <label class="form-label small text-muted mb-1" for="git-path">File in the repository</label>
+                                <input type="text" class="form-control form-control-sm shadow-none" id="git-path" placeholder="threat-model.json" spellcheck="false">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label small text-muted mb-1" for="git-token">Access token</label>
+                                <input type="password" class="form-control form-control-sm shadow-none" id="git-token" autocomplete="off" spellcheck="false" aria-describedby="git-token-help">
+                                <div class="form-text extra-small" id="git-token-help">GitHub: a fine-grained token for this repository with <em>Contents: Read and write</em>.
+                                    GitLab: a personal or project access token with the <em>api</em> scope. Leave empty to keep the token already saved for this server.</div>
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1" for="git-passphrase">Passphrase (8+ characters)</label>
+                                <input type="password" class="form-control form-control-sm shadow-none" id="git-passphrase" autocomplete="new-password">
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label small text-muted mb-1" for="git-passphrase2">Repeat passphrase</label>
+                                <input type="password" class="form-control form-control-sm shadow-none" id="git-passphrase2" autocomplete="new-password">
+                            </div>
+                        </div>
+                    </form>
+                    <div id="git-status" class="small mt-2" role="status" aria-live="polite"></div>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-sm btn-outline-danger me-auto" id="btn-git-remove">Remove sync from this model</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-git-forget">Forget token</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="btn-git-connect">Connect</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-git-unlock" tabindex="-1" aria-labelledby="modal-git-unlock-title" aria-hidden="true">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-light">
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-git-unlock-title"><i class="bi bi-key me-2" aria-hidden="true"></i>Unlock git sync</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form class="modal-body p-3" id="form-git-unlock" autocomplete="off">
+                    <label class="form-label small text-muted mb-1" for="git-unlock-passphrase">Passphrase for the saved token</label>
+                    <input type="password" class="form-control form-control-sm shadow-none" id="git-unlock-passphrase" autocomplete="current-password">
+                    <div id="git-unlock-error" class="small text-danger mt-2" role="alert"></div>
+                    <div class="d-flex justify-content-between mt-3">
+                        <button type="button" class="btn btn-sm btn-link px-0" id="btn-git-unlock-settings">Use another token…</button>
+                        <button type="submit" class="btn btn-sm btn-primary" id="btn-git-unlock">Unlock and sync</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="modal-git-conflict" tabindex="-1" aria-labelledby="modal-git-conflict-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-light">
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-git-conflict-title"><i class="bi bi-exclamation-triangle me-2 text-warning" aria-hidden="true"></i>Both copies changed</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3 small">
+                    <p class="mb-2">The model changed here and in the repository (<span id="git-conflict-where"></span>) since the last sync.</p>
+                    <ul class="mb-0 ps-3">
+                        <li><strong>Keep mine</strong> saves this model over the repository copy (git history keeps the old one).</li>
+                        <li><strong>Take theirs</strong> loads the repository copy; this model is saved in History first.</li>
+                    </ul>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-sm btn-outline-secondary me-auto" id="btn-git-conflict-cancel" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btn-git-take-theirs">Take theirs</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="btn-git-keep-mine">Keep mine</button>
                 </div>
             </div>
         </div>
@@ -5205,6 +5320,136 @@
             return { level: pick(r.level, DIAGRAM_LEVELS), version: clip(r.version, 40), status: pick(r.status, DIAGRAM_STATUSES), author: clip(r.author, 60), date: /^\d{4}-\d{2}-\d{2}$/.test(date) ? date : '' };
         }
 
+        // ── Git sync (GitHub / GitLab) ───────────────────────────────────────────
+        // The model stores where it syncs to (no secrets). The access token is kept per server in localStorage,
+        // encrypted with AES-GCM under a key derived from the user's passphrase (PBKDF2-SHA-256), and in memory once unlocked.
+        const GIT_PROVIDERS = { github: { label: 'GitHub', host: 'https://api.github.com' }, gitlab: { label: 'GitLab', host: 'https://gitlab.com' } };
+        const GIT_SECRETS_KEY = 'git_sync_secrets', GIT_STATE_KEY = 'git_sync_state', GIT_KDF_ITERATIONS = 310000;
+        /** Returns valid sync settings { provider, host, repo, branch, path } or null. Anything else (a token!) is dropped. */
+        function normalizeGitSync(raw) {
+            if (!isPlainObject(raw)) return null;
+            const provider = typeof raw.provider === 'string' && Object.prototype.hasOwnProperty.call(GIT_PROVIDERS, raw.provider) ? raw.provider : null;
+            if (!provider) return null;
+            let host;
+            try {
+                const u = new URL(toText(raw.host).trim() || GIT_PROVIDERS[provider].host);
+                if (u.protocol !== 'https:' || u.username || u.password || u.search || u.hash) return null;
+                host = (u.origin + u.pathname).replace(/\/+$/, '');
+            } catch { return null; }
+            if (host.length > 200) return null;
+            const repo = toText(raw.repo).trim(), branch = toText(raw.branch).trim() || 'main', path = toText(raw.path).trim() || 'threat-model.json';
+            const segs = repo.split('/');
+            if (repo.length > 200 || !segs.every(x => /^[A-Za-z0-9_.-]+$/.test(x) && x !== '.' && x !== '..')) return null;
+            if (provider === 'github' ? segs.length !== 2 : (segs.length < 2 || segs.length > 20)) return null;
+            if (branch.length > 100 || !/^[A-Za-z0-9._\/-]+$/.test(branch) || branch.includes('..') || /^[/-]|\/$/.test(branch)) return null;
+            const parts = path.split('/');
+            if (path.length > 200 || !/\.json$/i.test(path) || !parts.every(x => /^[A-Za-z0-9 _.-]+$/.test(x) && x !== '.' && x !== '..' && x.trim() === x)) return null;
+            return { provider, host, repo, branch, path };
+        }
+        const gitConfigKey = (c) => [c.provider, c.host, c.repo, c.branch, c.path].join('|');
+        const gitServerKey = (c) => `${c.provider} ${c.host}`;
+        function bytesToBase64(bytes) { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
+        function base64ToBytes(b64) { const bin = atob(String(b64 || '').replace(/\s+/g, '')); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
+        const utf8ToBase64 = (text) => bytesToBase64(new TextEncoder().encode(text));
+        const base64ToUtf8 = (b64) => new TextDecoder().decode(base64ToBytes(b64));
+        const hexOf = (buf) => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+        /** The git blob id of a text (what GitHub calls sha and GitLab blob_id). */
+        async function gitBlobSha(text) {
+            const body = new TextEncoder().encode(text), head = new TextEncoder().encode(`blob ${body.length}\0`);
+            const all = new Uint8Array(head.length + body.length); all.set(head); all.set(body, head.length);
+            return hexOf(await crypto.subtle.digest('SHA-1', all));
+        }
+        async function sha256Hex(text) { return hexOf(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))); }
+        async function deriveSecretKey(passphrase, salt, iterations) {
+            const base = await crypto.subtle.importKey('raw', new TextEncoder().encode(passphrase), 'PBKDF2', false, ['deriveKey']);
+            return crypto.subtle.deriveKey({ name: 'PBKDF2', salt, iterations, hash: 'SHA-256' }, base, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']);
+        }
+        async function encryptSecret(secret, passphrase, context) {
+            const salt = crypto.getRandomValues(new Uint8Array(16)), iv = crypto.getRandomValues(new Uint8Array(12));
+            const key = await deriveSecretKey(passphrase, salt, GIT_KDF_ITERATIONS);
+            const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: new TextEncoder().encode(context) }, key, new TextEncoder().encode(secret));
+            return { v: 1, iter: GIT_KDF_ITERATIONS, salt: bytesToBase64(salt), iv: bytesToBase64(iv), ct: bytesToBase64(new Uint8Array(ct)) };
+        }
+        /** The secret, or null for a wrong passphrase or a damaged record. */
+        async function decryptSecret(rec, passphrase, context) {
+            try {
+                if (!isPlainObject(rec) || rec.v !== 1) return null;
+                const iter = Number(rec.iter);
+                if (!Number.isInteger(iter) || iter < 100000 || iter > 5000000) return null;
+                const key = await deriveSecretKey(passphrase, base64ToBytes(rec.salt), iter);
+                const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: base64ToBytes(rec.iv), additionalData: new TextEncoder().encode(context) }, key, base64ToBytes(rec.ct));
+                return new TextDecoder().decode(pt);
+            } catch { return null; }
+        }
+        class GitSyncError extends Error { constructor(message, kind = 'error') { super(message); this.kind = kind; } }
+        async function gitFetch(cfg, token, url, { method = 'GET', body } = {}) {
+            const headers = cfg.provider === 'github'
+                ? { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
+                : { 'PRIVATE-TOKEN': token };
+            if (body) headers['Content-Type'] = 'application/json';
+            let res;
+            try { res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error' }); }
+            catch { throw new GitSyncError(`Could not reach ${new URL(url).host}. Check the server address and your connection, and that the server accepts requests from this page.`, 'network'); }
+            let data = null;
+            try { data = await res.json(); } catch { /* not JSON */ }
+            return { status: res.status, ok: res.ok, data };
+        }
+        function gitHttpError(r, what) {
+            const msg = r.data && typeof r.data.message === 'string' ? ` (${r.data.message.slice(0, 160)})` : '';
+            if (r.status === 401) return new GitSyncError('The server rejected the access token (401). Check that it is correct and has not expired.', 'auth');
+            if (r.status === 403) return new GitSyncError(`The access token is not allowed to ${what} (403)${msg}. It needs read and write access to the repository's files.`, 'auth');
+            return new GitSyncError(`Could not ${what}: the server answered ${r.status}${msg}.`);
+        }
+        const GitRemote = {
+            fileUrl(cfg) {
+                if (cfg.provider === 'github') return `${cfg.host}/repos/${cfg.repo}/contents/${cfg.path.split('/').map(encodeURIComponent).join('/')}`;
+                return `${cfg.host}/api/v4/projects/${encodeURIComponent(cfg.repo)}/repository/files/${encodeURIComponent(cfg.path)}`;
+            },
+            /** Checks that the token can open the repository (and, on GitHub, write to it). */
+            async check(cfg, token) {
+                const url = cfg.provider === 'github' ? `${cfg.host}/repos/${cfg.repo}` : `${cfg.host}/api/v4/projects/${encodeURIComponent(cfg.repo)}`;
+                const r = await gitFetch(cfg, token, url);
+                if (r.status === 404) throw new GitSyncError(`Repository "${cfg.repo}" not found (404). Check the name, and that the access token can see it.`);
+                if (!r.ok) throw gitHttpError(r, 'open the repository');
+                if (cfg.provider === 'github' && r.data && r.data.permissions && r.data.permissions.push === false) throw new GitSyncError('The access token can read this repository but not write to it.', 'auth');
+            },
+            /** { exists: false } or { exists: true, id, commit, text }. */
+            async read(cfg, token) {
+                const r = await gitFetch(cfg, token, `${this.fileUrl(cfg)}?ref=${encodeURIComponent(cfg.branch)}`);
+                if (r.status === 404) return { exists: false };
+                if (!r.ok || !isPlainObject(r.data)) throw gitHttpError(r, 'read the file');
+                let b64 = r.data.content;
+                const id = toText(cfg.provider === 'github' ? r.data.sha : r.data.blob_id);
+                if (!/^[0-9a-f]{40,64}$/.test(id)) throw new GitSyncError('The server sent an unexpected answer (no file id).');
+                if (cfg.provider === 'github' && (!b64 || r.data.encoding === 'none')) {   // files over 1 MB come from the blob API
+                    const b = await gitFetch(cfg, token, `${cfg.host}/repos/${cfg.repo}/git/blobs/${id}`);
+                    if (!b.ok || !isPlainObject(b.data)) throw gitHttpError(b, 'read the file');
+                    b64 = b.data.content;
+                }
+                let text;
+                try { text = base64ToUtf8(b64); } catch { throw new GitSyncError('The file in the repository could not be decoded.'); }
+                return { exists: true, id, commit: toText(r.data.last_commit_id), text };
+            },
+            /** Writes text over the version last read (remote); returns the new file id. */
+            async write(cfg, token, text, message, remote) {
+                let r;
+                if (cfg.provider === 'github') {
+                    const body = { message, content: utf8ToBase64(text), branch: cfg.branch };
+                    if (remote.exists) body.sha = remote.id;
+                    r = await gitFetch(cfg, token, this.fileUrl(cfg), { method: 'PUT', body });
+                    if (r.status === 409) throw new GitSyncError('The file changed in the repository while syncing. Sync again.', 'conflict');
+                } else {
+                    const body = { branch: cfg.branch, content: text, commit_message: message, encoding: 'text' };
+                    if (remote.exists && remote.commit) body.last_commit_id = remote.commit;
+                    r = await gitFetch(cfg, token, this.fileUrl(cfg), { method: remote.exists ? 'PUT' : 'POST', body });
+                    if (r.status === 400 && r.data && /changed|already exists/i.test(toText(r.data.message))) throw new GitSyncError('The file changed in the repository while syncing. Sync again.', 'conflict');
+                }
+                if (!r.ok) throw gitHttpError(r, 'save the file');
+                const sha = cfg.provider === 'github' && r.data && r.data.content && toText(r.data.content.sha);
+                return /^[0-9a-f]{40,64}$/.test(sha || '') ? sha : gitBlobSha(text);
+            }
+        };
+
         function normalizeSession(raw) {
             if (!isPlainObject(raw)) throw new Error('The file does not contain a Threat Tiger model.');
             const warnings = [];
@@ -5298,6 +5543,7 @@
                 activeUser: toText(raw.activeUser),
                 activityLog, elements, flows, threats, mitigations, layers, activeLayerId, pages, activePageId,
                 reviewMode: raw.reviewMode === true, diagramInfo: normalizeDiagramInfo(raw.diagramInfo),
+                gitSync: normalizeGitSync(raw.gitSync),
                 selectedElementIds: [], selectedFlowId: null
             };
             return { session, warnings };
@@ -5344,7 +5590,7 @@
                 this.elements = []; this.flows = []; this.threats = []; this.mitigations = [];
                 this.layers = [{ ...DEFAULT_LAYER }]; this.activeLayerId = 'main';
                 this.pages = [{ ...DEFAULT_PAGE }]; this.activePageId = 'p1';
-                this.reviewMode = false; this.diagramInfo = emptyDiagramInfo();
+                this.reviewMode = false; this.diagramInfo = emptyDiagramInfo(); this.gitSync = null;
                 this.selectedElementIds = []; this.selectedFlowId = null;
             }
 
@@ -5981,7 +6227,7 @@
             // Every logged model change is one undo step. The activity log itself is not rewound.
             serializeModel() {
                 const s = this.state;
-                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [], layers: s.layers || [{ ...DEFAULT_LAYER }], activeLayerId: s.activeLayerId, pages: s.pages || [{ ...DEFAULT_PAGE }], diagramInfo: s.diagramInfo || emptyDiagramInfo() });
+                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [], layers: s.layers || [{ ...DEFAULT_LAYER }], activeLayerId: s.activeLayerId, pages: s.pages || [{ ...DEFAULT_PAGE }], diagramInfo: s.diagramInfo || emptyDiagramInfo(), gitSync: s.gitSync || null });
             }
 
             // New elements and flows go to the active layer (runs before every undo point and render).
@@ -7225,6 +7471,7 @@
                 document.getElementById('btn-menu-line-jumps').setAttribute('aria-checked', String(this.lineJumps));
                 document.getElementById('btn-menu-line-jumps').addEventListener('click', () => this.toggleLineJumps());
                 document.getElementById('btn-menu-review-mode').addEventListener('click', () => this.toggleReviewMode());
+                this.setupGitSync();
                 document.getElementById('review-mode-badge').addEventListener('click', () => this.toggleReviewMode(false));
                 try { this.titleBlockVisible = localStorage.getItem('title_block') === 'true'; } catch { this.titleBlockVisible = false; }
                 document.getElementById('btn-menu-title-block').addEventListener('click', () => this.toggleTitleBlock());
@@ -8458,6 +8705,247 @@
             syncMinimapButton() {
                 const item = document.getElementById('btn-menu-minimap');
                 if (item) item.setAttribute('aria-checked', String(!!this.minimapVisible));
+            }
+
+            // ── Git sync: settings, token, sync button ────────────────────────────────
+            setupGitSync() {
+                this.gitTokens = new Map();   // server key → token, only while this page is open
+                const modal = (id) => bootstrap.Modal.getOrCreateInstance(document.getElementById(id));
+                this.gitSettingsModal = modal('modal-settings');
+                this.gitUnlockModal = modal('modal-git-unlock');
+                this.gitConflictModal = modal('modal-git-conflict');
+                document.getElementById('btn-settings').addEventListener('click', () => this.openGitSettings());
+                document.getElementById('btn-git-sync').addEventListener('click', () => this.syncWithGit());
+                document.getElementById('btn-git-connect').addEventListener('click', () => this.connectGitFromSettings());
+                document.getElementById('form-git-sync').addEventListener('submit', (ev) => { ev.preventDefault(); this.connectGitFromSettings(); });
+                document.getElementById('btn-git-forget').addEventListener('click', () => this.forgetGitToken());
+                document.getElementById('btn-git-remove').addEventListener('click', () => this.removeGitSync());
+                const provider = document.getElementById('git-provider'), host = document.getElementById('git-host');
+                provider.addEventListener('change', () => {
+                    const defaults = Object.values(GIT_PROVIDERS).map(p => p.host);
+                    if (!host.value.trim() || defaults.includes(host.value.trim())) host.value = GIT_PROVIDERS[provider.value].host;
+                    host.placeholder = GIT_PROVIDERS[provider.value].host;
+                });
+            }
+
+            renderGitSyncButton() {
+                const btn = document.getElementById('btn-git-sync');
+                if (!btn) return;
+                const cfg = normalizeGitSync(this.state.gitSync);
+                btn.classList.toggle('d-none', !cfg);
+                if (cfg) {
+                    const label = `Sync with ${GIT_PROVIDERS[cfg.provider].label}: ${cfg.repo} (${cfg.branch}) ${cfg.path}`;
+                    btn.title = label; btn.setAttribute('aria-label', label);
+                }
+            }
+
+            setGitStatus(text, variant = 'muted') {
+                const el = document.getElementById('git-status');
+                el.textContent = text;
+                el.className = `small mt-2 text-${variant}`;
+            }
+
+            readGitSecrets() {
+                try { const v = JSON.parse(localStorage.getItem(GIT_SECRETS_KEY) || '{}'); return isPlainObject(v) ? v : {}; } catch { return {}; }
+            }
+
+            openGitSettings(message = '', variant = 'muted') {
+                const cfg = normalizeGitSync(this.state.gitSync) || { provider: 'github', host: GIT_PROVIDERS.github.host, repo: '', branch: 'main', path: 'threat-model.json' };
+                document.getElementById('git-provider').value = cfg.provider;
+                document.getElementById('git-host').value = cfg.host;
+                document.getElementById('git-host').placeholder = GIT_PROVIDERS[cfg.provider].host;
+                document.getElementById('git-repo').value = cfg.repo;
+                document.getElementById('git-branch').value = cfg.branch;
+                document.getElementById('git-path').value = cfg.path;
+                ['git-token', 'git-passphrase', 'git-passphrase2'].forEach(id => { document.getElementById(id).value = ''; });
+                if (!message && this.state.gitSync) {
+                    const saved = this.gitTokens.has(gitServerKey(cfg)) || !!this.readGitSecrets()[gitServerKey(cfg)];
+                    message = saved ? `Syncs with ${cfg.repo} (${cfg.branch}). A token for this server is saved in this browser.` : 'Enter an access token for this server to sync.';
+                }
+                this.setGitStatus(message || 'Not connected.', variant);
+                this.gitSettingsModal.show();
+            }
+
+            async connectGitFromSettings() {
+                if (this.gitConnecting) return;
+                const v = (id) => document.getElementById(id).value;
+                const cfg = normalizeGitSync({ provider: v('git-provider'), host: v('git-host'), repo: v('git-repo'), branch: v('git-branch'), path: v('git-path') });
+                if (!cfg) { this.setGitStatus('Check the server (an https:// address), the repository (GitHub: owner/name; GitLab: group/project), the branch and the file (ending in .json).', 'danger'); return; }
+                if (!(window.crypto && crypto.subtle)) { this.setGitStatus('Git sync needs the app to be opened over https:// or from localhost.', 'danger'); return; }
+                const token = v('git-token').trim(), pass = v('git-passphrase'), pass2 = v('git-passphrase2');
+                const serverKey = gitServerKey(cfg), haveSaved = this.gitTokens.has(serverKey) || !!this.readGitSecrets()[serverKey];
+                if (!token && !haveSaved) { this.setGitStatus('Enter an access token.', 'danger'); return; }
+                if (token) {
+                    if (pass.length < 8) { this.setGitStatus('Choose a passphrase of at least 8 characters; it encrypts the token in this browser.', 'danger'); return; }
+                    if (pass !== pass2) { this.setGitStatus('The two passphrases are different.', 'danger'); return; }
+                }
+                this.gitConnecting = true;
+                this.setGitStatus('Checking access…');
+                try {
+                    const useToken = token || this.gitTokens.get(serverKey);
+                    if (useToken) await GitRemote.check(cfg, useToken);
+                    if (token) {
+                        const secrets = this.readGitSecrets();
+                        secrets[serverKey] = await encryptSecret(token, pass, serverKey);
+                        if (!this.safeSetItem(GIT_SECRETS_KEY, JSON.stringify(secrets))) throw new GitSyncError('The token could not be saved in this browser (storage is full or blocked).');
+                        this.gitTokens.set(serverKey, token);
+                    }
+                    this.state.gitSync = cfg;
+                    this.logEvent('CONFIGURE', `Git sync set to ${GIT_PROVIDERS[cfg.provider].label} ${cfg.repo}, branch ${cfg.branch}, file ${cfg.path}`, { undoable: false });
+                    this.saveSessionToLocalStorage();
+                    this.renderGitSyncButton();
+                    this.setGitStatus(`Connected to ${cfg.repo}.`, 'success');
+                    this.gitSettingsModal.hide();
+                    this.notify(`Git sync is set up: use the ⟳ button next to ☰ to sync with ${cfg.repo}.`, 'success');
+                } catch (err) {
+                    this.setGitStatus(err instanceof GitSyncError ? err.message : `Could not connect: ${err.message}`, 'danger');
+                } finally {
+                    this.gitConnecting = false;
+                    document.getElementById('git-token').value = '';
+                }
+            }
+
+            forgetGitToken() {
+                const cfg = normalizeGitSync({ provider: document.getElementById('git-provider').value, host: document.getElementById('git-host').value, repo: 'a/b', branch: 'main', path: 'x.json' });
+                if (!cfg) return;
+                const key = gitServerKey(cfg), secrets = this.readGitSecrets();
+                delete secrets[key]; this.gitTokens.delete(key);
+                try { localStorage.setItem(GIT_SECRETS_KEY, JSON.stringify(secrets)); } catch { /* nothing stored then */ }
+                this.setGitStatus(`The token for ${cfg.host} is removed from this browser.`, 'success');
+            }
+
+            removeGitSync() {
+                if (!this.state.gitSync) { this.setGitStatus('This model has no git sync settings.'); return; }
+                this.state.gitSync = null;
+                this.logEvent('CONFIGURE', 'Removed the git sync settings from the model', { undoable: false });
+                this.saveSessionToLocalStorage();
+                this.renderGitSyncButton();
+                this.setGitStatus('Git sync is removed from this model. Saved tokens stay until you forget them.', 'success');
+            }
+
+            /** The token for this server: from memory, unlocked with the passphrase, or (none saved) null after opening Settings. */
+            async gitTokenFor(cfg) {
+                const key = gitServerKey(cfg);
+                if (this.gitTokens.has(key)) return this.gitTokens.get(key);
+                const rec = this.readGitSecrets()[key];
+                if (!rec) { this.openGitSettings(`Enter your access token for ${cfg.host} to sync this model.`, 'warning'); return null; }
+                return new Promise(resolve => {
+                    const el = document.getElementById('modal-git-unlock'), form = document.getElementById('form-git-unlock');
+                    const input = document.getElementById('git-unlock-passphrase'), error = document.getElementById('git-unlock-error');
+                    const other = document.getElementById('btn-git-unlock-settings');
+                    input.value = ''; error.textContent = '';
+                    let done = false;
+                    const finish = (value) => { if (done) return; done = true; form.removeEventListener('submit', submit); other.removeEventListener('click', useOther); el.removeEventListener('hidden.bs.modal', cancel); resolve(value); };
+                    const submit = async (ev) => {
+                        ev.preventDefault();
+                        error.textContent = 'Unlocking…';
+                        const token = await decryptSecret(rec, input.value, key);
+                        if (!token) { error.textContent = 'Wrong passphrase.'; input.select(); return; }
+                        this.gitTokens.set(key, token);
+                        finish(token); this.gitUnlockModal.hide();
+                    };
+                    const useOther = () => { finish(null); this.gitUnlockModal.hide(); this.openGitSettings(`Enter an access token for ${cfg.host}.`, 'warning'); };
+                    const cancel = () => finish(null);
+                    form.addEventListener('submit', submit); other.addEventListener('click', useOther); el.addEventListener('hidden.bs.modal', cancel);
+                    el.addEventListener('shown.bs.modal', () => input.focus(), { once: true });
+                    this.gitUnlockModal.show();
+                });
+            }
+
+            /** 'mine', 'theirs' or null (cancelled). */
+            askGitConflict(cfg) {
+                return new Promise(resolve => {
+                    const el = document.getElementById('modal-git-conflict');
+                    document.getElementById('git-conflict-where').textContent = `${cfg.repo}, ${cfg.branch}, ${cfg.path}`;
+                    const mine = document.getElementById('btn-git-keep-mine'), theirs = document.getElementById('btn-git-take-theirs');
+                    let choice = null;
+                    const pick = (v) => () => { choice = v; this.gitConflictModal.hide(); };
+                    const onMine = pick('mine'), onTheirs = pick('theirs');
+                    const onHidden = () => { mine.removeEventListener('click', onMine); theirs.removeEventListener('click', onTheirs); el.removeEventListener('hidden.bs.modal', onHidden); resolve(choice); };
+                    mine.addEventListener('click', onMine); theirs.addEventListener('click', onTheirs); el.addEventListener('hidden.bs.modal', onHidden);
+                    this.gitConflictModal.show();
+                });
+            }
+
+            /** A fingerprint of the model's content: what an export would contain, minus who and where it was opened. */
+            async gitModelHash(state) {
+                const p = this.buildExportPayload(normalizeSession(this.buildExportPayload(state, { includeLog: false })).session, { includeLog: false });
+                delete p.appVersion; delete p.activeUser; delete p.activePageId; delete p.activeLayerId;
+                return sha256Hex(JSON.stringify(p));
+            }
+
+            readGitSyncState(cfg) {
+                try { const all = JSON.parse(localStorage.getItem(GIT_STATE_KEY) || '{}'); const st = isPlainObject(all) && all[gitConfigKey(cfg)]; return isPlainObject(st) ? st : null; } catch { return null; }
+            }
+
+            writeGitSyncState(cfg, st) {
+                let all = {};
+                try { all = JSON.parse(localStorage.getItem(GIT_STATE_KEY) || '{}'); if (!isPlainObject(all)) all = {}; } catch { all = {}; }
+                all[gitConfigKey(cfg)] = { remoteId: st.remoteId, hash: st.hash, at: new Date().toISOString() };
+                this.safeSetItem(GIT_STATE_KEY, JSON.stringify(all));
+            }
+
+            /**
+             * Sync: only this copy changed → save it to the repository; only the repository copy changed → load it;
+             * both → ask. The version that gets replaced locally always goes into History first.
+             */
+            async syncWithGit() {
+                const cfg = normalizeGitSync(this.state.gitSync);
+                if (!cfg || this.gitSyncBusy) return;
+                const btn = document.getElementById('btn-git-sync');
+                this.gitSyncBusy = true; btn.classList.add('syncing'); btn.setAttribute('aria-busy', 'true');
+                const where = `${cfg.repo} (${cfg.branch})`;
+                try {
+                    if (!(window.crypto && crypto.subtle)) throw new GitSyncError('Git sync needs the app to be opened over https:// or from localhost.');
+                    const token = await this.gitTokenFor(cfg);
+                    if (!token) return;
+                    const remote = await GitRemote.read(cfg, token);
+                    const st = this.readGitSyncState(cfg);
+                    const localHash = await this.gitModelHash(this.state);
+                    const push = async () => {
+                        const text = JSON.stringify(this.buildExportPayload(this.state, { includeLog: false }), null, 2) + '\n';
+                        const title = toText(this.state.projectTitle).replace(/\s+/g, ' ').trim().slice(0, 60) || 'threat model';
+                        const id = await GitRemote.write(cfg, token, text, `Update threat model "${title}" (Threat Tiger)`, remote);
+                        this.writeGitSyncState(cfg, { remoteId: id, hash: localHash });
+                        this.logEvent('CONFIGURE', `Synced: saved the model to ${GIT_PROVIDERS[cfg.provider].label} ${where} ${cfg.path}`, { undoable: false });
+                        this.notify(`Saved to ${where}.`, 'success');
+                    };
+                    const pull = async () => {
+                        let parsed;
+                        try { parsed = JSON.parse(remote.text); } catch { throw new GitSyncError(`${cfg.path} in the repository is not valid JSON, so it was not loaded.`); }
+                        const applied = await new Promise(resolve => {
+                            const ok = this.importWorkspaceJsonText(JSON.stringify(parsed), `${cfg.repo}/${cfg.path}`, () => resolve(true));
+                            if (!ok) resolve(false);
+                        });
+                        if (!applied) return;
+                        if (!normalizeGitSync(this.state.gitSync)) { this.state.gitSync = cfg; this.saveSessionToLocalStorage(); this.renderGitSyncButton(); }
+                        this.writeGitSyncState(cfg, { remoteId: remote.id, hash: await this.gitModelHash(this.state) });
+                        this.notify(`Loaded the latest version from ${where}. Your previous version is in History.`, 'success');
+                    };
+                    if (!remote.exists) { await push(); return; }
+                    let localChanged, remoteChanged;
+                    if (!st) {   // first sync on this browser: equal content counts as in sync
+                        let remoteHash = null;
+                        try { remoteHash = await this.gitModelHash(normalizeSession(JSON.parse(remote.text)).session); } catch { /* not a model */ }
+                        if (remoteHash === localHash) { this.writeGitSyncState(cfg, { remoteId: remote.id, hash: localHash }); this.notify(`Up to date with ${where}.`, 'success'); return; }
+                        localChanged = remoteChanged = true;
+                    } else {
+                        localChanged = localHash !== st.hash;
+                        remoteChanged = remote.id !== st.remoteId;
+                    }
+                    if (!localChanged && !remoteChanged) { this.notify(`Up to date with ${where}.`, 'success'); return; }
+                    if (localChanged && !remoteChanged) { await push(); return; }
+                    if (!localChanged && remoteChanged) { await pull(); return; }
+                    const choice = await this.askGitConflict(cfg);
+                    if (choice === 'mine') await push();
+                    else if (choice === 'theirs') await pull();
+                } catch (err) {
+                    console.warn('[ThreatTiger] Git sync failed', err);
+                    this.notify(err instanceof GitSyncError ? err.message : `Sync failed: ${err.message}`);
+                    if (err instanceof GitSyncError && err.kind === 'auth') this.gitTokens.delete(gitServerKey(cfg));
+                } finally {
+                    this.gitSyncBusy = false; btn.classList.remove('syncing'); btn.removeAttribute('aria-busy');
+                }
             }
 
             // ── Review mode: the layout is frozen; properties, threats and mitigations stay editable ──
@@ -12771,6 +13259,7 @@
                 if (reviewItem) reviewItem.setAttribute('aria-checked', String(!!this.state.reviewMode));
                 this.dom.svg.classList.toggle('review-mode', !!this.state.reviewMode);
                 this.renderTitleBlock();
+                this.renderGitSyncButton();
             }
 
             repopulateThreatModalDropdownTargets() {
@@ -13133,7 +13622,8 @@
                 clearTimeout(this.saveTimer); this.saveTimer = null;
                 clearTimeout(this.viewSaveTimer); this.viewSaveTimer = null;   // a pending view save would write canvas_view back
                 const prefixes = ['stride_workbench_', 'threat_tiger_', 'canvas_'];
-                const prefs = ['license_accepted', 'hidden_tabs', 'hidden_stencil_sets', 'line_jumps', 'minimap_visible'];
+                const prefs = ['license_accepted', 'hidden_tabs', 'hidden_stencil_sets', 'line_jumps', 'minimap_visible', 'title_block', GIT_SECRETS_KEY, GIT_STATE_KEY];
+                if (this.gitTokens) this.gitTokens.clear();
                 Object.keys(localStorage).filter(k => prefixes.some(p => k.startsWith(p)) || prefs.includes(k)).forEach(k => localStorage.removeItem(k));
                 if (SnapshotStore.db) { SnapshotStore.db.close(); SnapshotStore.db = null; }
                 await new Promise(resolve => { try { const r = indexedDB.deleteDatabase('threat-tiger'); r.onsuccess = r.onerror = r.onblocked = () => resolve(); } catch (_) { resolve(); } });
@@ -13398,6 +13888,14 @@
              * change to the model produces a small diff in git (FEAT-009). includeLog=false omits the activity log.
              */
             exportWorkspaceJsonPayloadFile({ includeLog = true } = {}) {
+                const s = this.state, payload = this.buildExportPayload(s, { includeLog });
+                const name = includeLog ? 'STRIDE-Threat-Model-Export.json' : `${(toText(s.projectTitle).trim() || 'threat-model').replace(/[^\w.-]+/g, '-').slice(0, 60)}.threat-model.json`;
+                this.downloadBlob(new Blob([JSON.stringify(payload, null, 2) + '\n'], { type: 'application/json' }), name);
+                this.isCanvasUnsaved = false;
+            }
+
+            /** The exported form of a model (deterministic; sync settings included, never a token). */
+            buildExportPayload(state, { includeLog = true } = {}) {
                 const GEOMETRY = new Set(['x', 'y', 'width', 'height', 'x2', 'y2', 'bendX', 'bendY']);
                 const canon = (v, key) => {
                     if (Array.isArray(v)) return v.map(x => canon(x));
@@ -13405,7 +13903,7 @@
                     if (typeof v === 'number' && (GEOMETRY.has(key) || key === undefined)) return Math.round(v);
                     return v;
                 };
-                const s = JSON.parse(JSON.stringify(this.state));
+                const s = JSON.parse(JSON.stringify(state));
                 const payload = {
                     appVersion: APP_VERSION, schemaVersion: SCHEMA_VERSION,
                     projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, activeUser: s.activeUser,
@@ -13414,10 +13912,10 @@
                     pages: canon(s.pages || [{ ...DEFAULT_PAGE }]), activePageId: s.activePageId || 'p1',
                     reviewMode: !!s.reviewMode, diagramInfo: canon(normalizeDiagramInfo(s.diagramInfo))
                 };
+                const git = normalizeGitSync(s.gitSync);
+                if (git) payload.gitSync = canon(git);
                 if (includeLog) payload.activityLog = s.activityLog;
-                const name = includeLog ? 'STRIDE-Threat-Model-Export.json' : `${(toText(s.projectTitle).trim() || 'threat-model').replace(/[^\w.-]+/g, '-').slice(0, 60)}.threat-model.json`;
-                this.downloadBlob(new Blob([JSON.stringify(payload, null, 2) + '\n'], { type: 'application/json' }), name);
-                this.isCanvasUnsaved = false;
+                return payload;
             }
 
             triggerWorkspaceJsonImportSelector() {
@@ -13432,7 +13930,7 @@
             }
 
             /** Validates, normalises and applies an imported model; never leaves the app half-loaded. */
-            importWorkspaceJsonText(text, fileName = 'file') {
+            importWorkspaceJsonText(text, fileName = 'file', onApplied = null) {
                 let parsed, result;
                 try { parsed = JSON.parse(text); }
                 catch (err) { this.notify(`Could not import "${fileName}": it is not valid JSON.`); return false; }
@@ -13447,16 +13945,16 @@
                         title: 'Load images from other websites?',
                         body: `This model loads ${external.length} image(s) from ${hosts.join(', ')}.\nLoading them lets those websites see that you opened the model.`,
                         confirmLabel: 'Load images', cancelLabel: 'Import without them', variant: 'primary',
-                        onConfirm: () => this.applyImportedSession(result, fileName),
+                        onConfirm: () => this.applyImportedSession(result, fileName, onApplied),
                         onCancel: () => {
                             external.forEach(el => { el.imageUrl = ''; });
                             result.warnings.push(`Did not load ${external.length} external image(s).`);
-                            this.applyImportedSession(result, fileName);
+                            this.applyImportedSession(result, fileName, onApplied);
                         }
                     });
                     return true;
                 }
-                return this.applyImportedSession(result, fileName);
+                return this.applyImportedSession(result, fileName, onApplied);
             }
 
             async openDemoModel() {
@@ -13480,7 +13978,7 @@
             }
 
             /** Applies a normalised import result. */
-            applyImportedSession(result, fileName) {
+            applyImportedSession(result, fileName, onApplied = null) {
                 if (this.formatPainter) this.disarmFormatPainter();   // ids in the new model may be reused by other shapes
                 const previous = this.state;
                 this.takeSnapshot('Before import', true);
@@ -13503,9 +14001,10 @@
                     const shown = result.warnings.slice(0, 4).join(' ');
                     this.notify(`Imported with ${result.warnings.length} adjustment(s): ${shown}${result.warnings.length > 4 ? ' …' : ''}`, 'warning');
                     console.warn('[ThreatTiger] Import adjustments:', result.warnings);
-                } else {
+                } else if (!onApplied) {
                     this.notify(`Imported "${fileName}".`, 'success');
                 }
+                if (onApplied) onApplied();
                 return true;
             }
 

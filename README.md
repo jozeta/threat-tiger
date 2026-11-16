@@ -77,6 +77,21 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 All other actions (import, export, reports, History, help) are in the **☰ menu** at the top right.
 
+### Syncing with GitHub or GitLab
+
+1.  Create an access token: on GitHub a *fine-grained token* for the one repository with **Contents: Read and write**; on GitLab a personal or project access token with the **api** scope.
+2.  Open **☰ → Settings…** and fill in **Git sync**:
+    - **Service:** GitHub or GitLab.
+    - **Server:** defaults to `https://api.github.com` or `https://gitlab.com`. For GitHub Enterprise use `https://your-host/api/v3`; for self-hosted GitLab use `https://your-host`.
+    - **Repository:** `owner/name` (GitLab: `group/subgroup/project`).
+    - **Branch:** defaults to `main`.
+    - **File in the repository:** defaults to `threat-model.json`.
+    - **Access token** and a **passphrase** (8+ characters) that encrypts the token in this browser.
+3.  Press **Connect**. Threat Tiger checks that the token can open the repository, then shows the **⟳** sync button next to ☰.
+4.  Press **⟳** to sync. If only your copy changed, it is saved to the repository (as a commit in the git-friendly JSON format); if only the repository copy changed, it is loaded (your previous version goes to History); if both changed, you choose **Keep mine**, **Take theirs** or **Cancel**. After a reload, the first sync asks for your passphrase.
+
+The sync settings (not the token) are part of the model and its exports, so a colleague who opens your JSON gets the ⟳ button straight away and only needs to enter their own token. **Forget token** removes the token from this browser; **Remove sync from this model** removes the settings.
+
 ### Reviewing a model
 
 - **Review mode:** **☰ → View → Review mode (freeze layout)**. Shapes can still be selected, so names, properties, threats and mitigations stay editable, but nothing can be moved, resized, added, deleted, pasted or aligned, and flows can't be bent or reconnected. The setting is saved with the model (default: off). Click the **Review mode** badge in the header to turn it off.
@@ -99,7 +114,8 @@ All other actions (import, export, reports, History, help) are in the **☰ menu
 
 ## 🔒 Your data
 
-*   Everything is stored **only in your browser** (localStorage for the current model, IndexedDB for History snapshots). Nothing is uploaded.
+*   Everything is stored **only in your browser** (localStorage for the current model, IndexedDB for History snapshots). Nothing is uploaded, unless you set up **git sync** (below) and press the sync button: then the model is sent to the repository you chose.
+*   **Git sync tokens** are stored encrypted with your passphrase (AES-GCM) and never go into the model or exported files. See [SECURITY.md](SECURITY.md).
 *   Anyone with access to your browser profile can read it. Use **☰ → Clear all data in this browser…** on shared machines, and keep exported files somewhere appropriate — threat models describe weaknesses of real systems.
 *   If you host Threat Tiger yourself, give it its **own origin** (domain or sub-domain). Browser storage is shared by every page on the same origin.
 *   When an imported model loads images from other websites, Threat Tiger asks first, because loading them tells those websites that the model was opened.

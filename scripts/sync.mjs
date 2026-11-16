@@ -44,7 +44,7 @@ const csp = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https: http:",   // custom images may be remote (the user is asked first on import)
   "font-src 'self' data:",
-  "connect-src 'self' data: blob:",
+  "connect-src 'self' data: blob: https:",   // git sync (GitHub / GitLab, also self-hosted); only when the user sets it up
   "object-src 'none'",
   "base-uri 'none'",
   "form-action 'none'",

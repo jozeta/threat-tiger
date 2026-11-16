@@ -46,8 +46,11 @@ PW_BASE_URL=http://127.0.0.1:8080 npm test   # test the running container
 
 ## Rules
 
-- **Data never leaves the browser.** Models live in localStorage, History in IndexedDB. No
-  network requests except loading images an imported model references, and only after asking.
+- **Data never leaves the browser unless the user asks.** Models live in localStorage, History in IndexedDB. No
+  network requests except loading images an imported model references (only after asking) and git sync to the
+  server the user configured in Settings (only when they press sync). Sync tokens are stored only encrypted
+  (passphrase, AES-GCM) and never go into the model or its exports; sync settings in the model are validated
+  by `normalizeGitSync()`.
 - **Imported models and templates are untrusted:** never render them via `innerHTML` without
   escaping; the XSS suite (`tests/xss.spec.js`) must keep passing.
 - Keep it a single self-contained file with vendored assets: no CDNs, no build step.
