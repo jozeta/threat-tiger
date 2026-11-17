@@ -95,6 +95,22 @@ All other actions (import, export, reports, History, help) are in the **☰ menu
 
 The sync settings (not the token) are part of the model and its exports, so a colleague who opens your JSON gets the ⟳ button straight away and only needs to enter their own token. **Forget token** removes the token from this browser; **Remove sync from this model** removes the settings.
 
+### Choosing what the palette shows
+
+Open **☰ → Settings… → Palette** and switch off what you don't use. Changes apply at once and are remembered in this browser (they are a view setting, not part of the model; shapes already on the canvas stay as they are).
+
+- **Palette sections:** Attack paths & trees, Text items, Data nodes & icons, Ready-made nodes, Flowchart items, Architecture & process diagrams, and each of its sub-groups (C4 model, UML, BPMN, Entity-relationship). All are shown by default.
+- **Icon sets:** the cloud and device stencil packs (the same switches as **☰ → View → Icon sets**).
+- **Icon picker groups:** the groups offered in a shape's **Icon** list in Properties (for example *Attack & threat*, *Security artefacts*, *Identity & directory*). A shape keeps its icon even when its group is hidden.
+
+### Drawing attack trees and attack flows
+
+The **Attack Paths & Trees** palette section follows MITRE Attack Flow and attack-defence trees:
+
+- **Threat actor** and **Crown jewel** are ordinary components (an external entity and a crown-jewel data store), so Insights → **Attack paths** finds routes between them.
+- **Entry point, Attack step, Asset / target, Condition, AND gate, OR gate, Goal, Countermeasure** and **Choke point** are diagram shapes. Connect them with flows to draw an attack tree (goal at the top, gates below) or an attack flow (steps left to right). An attack step takes an ATT&CK tactic and an optional technique ID (`T1566` or `T1566.001`), shown on the shape; a condition can be marked success or fail.
+- These shapes and the links between them get no STRIDE threats and are never data-flow steps in attack paths.
+
 ### Reviewing a model
 
 - **Review mode:** **☰ → View → Review mode (freeze layout)**. Shapes can still be selected, so names, properties, threats and mitigations stay editable, but nothing can be moved, resized, added, deleted, pasted or aligned, and flows can't be bent or reconnected. The setting is saved with the model (default: off). Click the **Review mode** badge in the header to turn it off.
