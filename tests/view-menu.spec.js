@@ -14,7 +14,12 @@ test('View opens its flyout with its switches and keeps the menu open', async ({
   await expect(page.locator('#btn-menu-minimap')).toBeHidden();
   await page.click('#btn-menu-view');
   await expect(page.locator('#btn-menu-view')).toHaveAttribute('aria-expanded', 'true');
-  for (const id of ['#btn-menu-minimap', '#btn-menu-line-jumps', '#btn-menu-panel-left', '#btn-menu-panel-right', '#btn-menu-panel-bottom']) {
+  for (const id of ['#btn-menu-canvas', '#btn-menu-panel-left', '#btn-menu-panel-right', '#btn-menu-panel-bottom']) {
+    await expect(page.locator(id)).toBeVisible();
+  }
+  // the canvas display switches sit in View → Canvas
+  await page.click('#btn-menu-canvas');
+  for (const id of ['#btn-menu-minimap', '#btn-menu-line-jumps', '#btn-menu-traffic', '#btn-menu-live-status']) {
     await expect(page.locator(id)).toBeVisible();
   }
 });

@@ -108,7 +108,7 @@ test('a two-way flow animates both ways; a disabled flow does not animate', asyn
 
 test('View → Animate traffic pauses every flow (remembered, no undo step)', async ({ page }) => {
   await setup(page, (fl) => { fl[0].traffic = { on: true, speed: 'normal', style: 'dashes' }; fl[1].traffic = { on: true, speed: 'fast', style: 'dots' }; });
-  await page.click('#btn-main-menu'); await page.click('#btn-menu-view');
+  await page.click('#btn-main-menu'); await page.click('#btn-menu-view'); await page.click('#btn-menu-canvas');
   await expect(page.locator('#btn-menu-traffic')).toHaveAttribute('aria-checked', 'true');
   const names = () => page.locator('path.flow-traffic').evaluateAll((ps) => ps.map((p) => getComputedStyle(p).animationName));
   expect(await names()).toEqual(['tt-traffic-run', 'tt-traffic-run']);
@@ -120,7 +120,7 @@ test('View → Animate traffic pauses every flow (remembered, no undo step)', as
   expect(await page.evaluate(() => app.undoStack.length)).toBe(0);
   await page.reload(); await page.waitForFunction(() => window.app && window.app.state);
   expect(await names()).toEqual(['none', 'none']);
-  await page.click('#btn-main-menu'); await page.click('#btn-menu-view');
+  await page.click('#btn-main-menu'); await page.click('#btn-menu-view'); await page.click('#btn-menu-canvas');
   await expect(page.locator('#btn-menu-traffic')).toHaveAttribute('aria-checked', 'false');
   await page.click('#btn-menu-traffic');
   expect(await names()).toEqual(['tt-traffic-run', 'tt-traffic-run']);

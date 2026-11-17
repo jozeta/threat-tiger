@@ -64,6 +64,10 @@ function poisonedModel() {
     s.elements.push({ id: 'el-cls', type: 'uml_class', name: P('clsname')[2], x: 4300, y: 0, width: 200, height: 160, umlAttributes: `${P('attr')[0]}\n${P('attr2')[1]}`, umlOperations: P('op')[2] });
     s.elements.push({ id: 'el-erd', type: 'erd_entity', name: P('erdname')[0], x: 4600, y: 0, width: 200, height: 120, erdRows: `PK ${P('pk')[0]}\nFK ${P('fk')[1]}\n${P('row')[2]}` });
     s.elements.push({ id: 'el-bpmn', type: 'bpmn_gateway_exclusive', name: P('gw')[1], x: 4900, y: 0, width: 60, height: 60 });
+    // Live status: source names and fields, the check's key, rule values and labels.
+    s.statusSources = [{ id: 'src-p', name: P('liveSrc')[0], kind: 'json', url: 'https://status.example.test/s.json', keyField: P('liveKf')[1], valueField: P('liveVf')[2], path: P('livePath')[0] }];
+    byType('process').liveStatus = { enabled: true, check: { kind: 'source', sourceId: 'src-p', key: P('liveKey')[1] }, rules: [{ when: 'eq', value: P('liveVal')[0], label: P('liveLabel')[1], icon: P('liveIcon')[0], fill: P('liveFill')[2] }] };
+    s.flows[0].liveStatus = { enabled: true, check: { kind: 'http', key: P('liveUrl')[0] }, rules: [{ when: 'else', label: P('liveFlowLabel')[0] }] };
   });
 }
 
@@ -170,6 +174,10 @@ function attributeContextModel() {
       t.id = i ? `T-${i}` : INJ[1]; t.title = INJ[1]; t.category = INJ[1]; t.status = INJ[2]; t.desc = INJ[0];
       t.mitigationExplanation = INJ[1]; t.likelihood = INJ[3]; t.impact = INJ[1]; t.mitigationIds = ['M-1', 'M-2'];
     });
+    // Live status: sources, the check's key and every rule field (drawn on the canvas by the test below).
+    s.statusSources = [{ id: 'src-x', name: INJ[1], kind: 'json', url: 'https://status.example.test/s.json', keyField: INJ[2], valueField: INJ[3], path: INJ[0] }, { id: INJ[1], name: INJ[0], kind: 'sheet', url: INJ[1] }];
+    proc.liveStatus = { enabled: true, check: { kind: 'source', sourceId: 'src-x', key: INJ[1] }, rules: [{ when: 'eq', value: INJ[1], fill: INJ[3], stroke: INJ[1], icon: INJ[3], label: INJ[0] }, { when: 'else', label: INJ[1], fill: '#dc3545', icon: 'bi-x' }] };
+    s.flows[0].liveStatus = { enabled: true, check: { kind: INJ[1], key: INJ[2] }, rules: [{ when: 'else', label: INJ[2], stroke: INJ[3] }, { when: INJ[1], label: INJ[0] }] };
     s.threats.push({ id: 'T-proc', title: INJ[2], category: 'Spoofing', status: 'Mitigated / Resolved', elementId: proc.id, desc: INJ[1], mitigationExplanation: INJ[0], likelihood: 4, impact: 4, mitigationIds: ['M-1'] });
   });
 }
@@ -192,6 +200,11 @@ test('payloads in attribute, style and SVG contexts never inject markup (SEC-DOM
   const checked = await page.evaluate(() => {
     // Select every component and flow so the inspector, swimlane editor, security switches, linked threats and
     // template cards render for each, then the register, ledger, mitigations table, report and threat popovers.
+    // Live status on in memory with a (fake, never fetched) result, so indicators, labels and tooltips render.
+    localStorage.setItem('threat_tiger_live_approved', JSON.stringify(['status.example.test']));
+    app.live.sourceData.set('src-x', { url: 'https://status.example.test/s.json', at: Date.now(), json: [], count: 0 });
+    app.liveOn = true;
+    app.renderLiveSettings();
     const ids = app.state.elements.map((e) => e.id).concat(app.state.flows.map((f) => '__flow:' + f.id));
     let cards = 0;
     for (const id of ids) {
@@ -221,6 +234,10 @@ test('payloads in attribute, style and SVG contexts never inject markup (SEC-DOM
   // The legend and its dialog rendered the payloads as text.
   await expect(page.locator('#canvas-title-block .legend-title')).toHaveText(INJ[0]);
   await expect(page.locator('#legend-items .legend-item-row[data-key="type:process"] input.legend-item-label')).toHaveValue(INJ[1]);
+  // Live status labels and tooltips are literal text.
+  await expect(page.locator('#canvas-svg .live-status-label', { hasText: INJ[1] })).not.toHaveCount(0);
+  await expect(page.locator('#live-sources-list .live-source-row')).toHaveCount(1);   // the source with a bad id and address was dropped
+  await expect(page.locator('#live-sources-list .live-source-row .fw-semibold')).toHaveText(INJ[1]);
   expect(await injectedNodes(page)).toEqual([]);
   // Diagram-shape text is drawn as literal text (so the payloads really reached the renderer).
   await expect(page.locator('[data-id="el-dg-cls"] text[data-dg-text="attr"]').first()).toHaveText(/^<b data-injected/);

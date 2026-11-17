@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-XGavLPWmN3fcD1sVz1TOhRlhISG9JLdRoGEF/SVg0jM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Fn0AzEh8s8RHnhsQhnrayQ6YRKwEeVqZ62GjQJUFsNc='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -312,6 +312,19 @@
             background-color: transparent !important;
             box-shadow: none !important;
         }
+
+        /* Live status */
+        .live-status-ind { cursor: help; }
+        .live-status-ind circle:first-of-type { filter: drop-shadow(0 1px 1px rgba(0, 0, 0, .35)); }
+        #props-live-rules .live-rule-when { width: auto; flex: 1 1 8rem; min-width: 7rem; }
+        #props-live-rules .live-rule-value { flex: 1 1 6rem; min-width: 5rem; width: auto; }
+        #props-live-rules .live-rule-icon, #props-live-rules .live-rule-label { flex: 1 1 7rem; min-width: 6rem; width: auto; }
+        #props-live-rules .live-rule-btn { padding: 0 .4rem; }
+        #props-live-rules .form-control-color { width: 2.2rem; height: 1.8rem; padding: .1rem; }
+        .live-interval-input { width: 7rem; }
+        @media (pointer: coarse) { #props-live-rules .live-rule-btn, #props-live-rules .form-control-color, #props-live-rules .form-check-input { min-width: 44px; min-height: 44px; } }
+        .dark-theme-canvas .live-status-label-bg, .dark-theme-canvas .live-status-ind circle:first-of-type { stroke: #1e1e24; }
+        html[data-bs-theme="dark"] #props-live-rules .live-rule-row { background-color: var(--bs-body-bg) !important; }
 
         .canvas-card {
             background: #ffffff;
@@ -700,6 +713,8 @@
         .flow-traffic { fill: none; pointer-events: none; stroke-linecap: round; animation: tt-traffic-run 0.8s linear infinite; }
         .flow-traffic.tt-traffic-dashes { stroke-dasharray: 10 14; }
         .flow-traffic.tt-traffic-dots { stroke-dasharray: 0 12; }
+        /* Light canvas: moving dashes are white, so they show as bright gaps running along any dark line. The dark canvas keeps the line colour. */
+        .workspace-wrapper:not(.dark-theme-canvas) .flow-traffic.tt-traffic-dashes { stroke: #ffffff; stroke-opacity: .9; }
         .flow-traffic.tt-traffic-slow { animation-duration: 1.6s; }
         .flow-traffic.tt-traffic-fast { animation-duration: 0.4s; }
         .flow-traffic.tt-traffic-back { animation-direction: reverse; opacity: .6; }   /* the return leg of a two-way flow */
@@ -1829,9 +1844,13 @@
                         <ul class="dropdown-menu submenu shadow" id="menu-view-items" aria-label="View">
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-review-mode" role="menuitemcheckbox" aria-checked="false" title="Freeze the layout while threats and properties stay editable (saved with the model)"><i class="bi bi-lock me-2"></i>Review mode (freeze layout)<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center" type="button" id="btn-menu-title-block" aria-haspopup="dialog"><i class="bi bi-card-heading me-2"></i>Title block &amp; legend…</button></li>
+                            <li class="dropdown-submenu"><button class="dropdown-item d-flex align-items-center submenu-toggle" type="button" id="btn-menu-canvas" aria-haspopup="true" aria-expanded="false" aria-controls="menu-canvas-items"><i class="bi bi-easel2 me-2"></i>Canvas<i class="bi bi-chevron-right ms-auto submenu-chevron" aria-hidden="true"></i></button>
+                            <ul class="dropdown-menu submenu shadow" id="menu-canvas-items" aria-label="Canvas">
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-minimap" role="menuitemcheckbox" aria-checked="false"><i class="bi bi-map me-2"></i>Show minimap<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-line-jumps" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-bezier2 me-2"></i>Line jumps where flows cross<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-traffic" role="menuitemcheckbox" aria-checked="true" title="Play the traffic animation on the data flows that have it (off: they show a still dashed or dotted line)"><i class="bi bi-activity me-2"></i>Animate traffic<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-live-status" role="menuitemcheckbox" aria-checked="false" title="Colour shapes and flows by their status checks (this browser only)"><i class="bi bi-activity me-2"></i>Live status<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            </ul></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-left" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar me-2"></i>Show left panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-right" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar-reverse me-2"></i>Show right panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-bottom" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-window-dock me-2"></i>Show bottom panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
@@ -3593,6 +3612,36 @@
                                     <textarea class="form-control form-control-sm shadow-none font-monospace" id="props-dg-erdRows" rows="4"></textarea></div>
                             </div>
 
+                            <!-- Live status check (renderLiveStatusProps) -->
+                            <div id="box-props-live-status" class="border rounded p-2 bg-light d-none">
+                                <div class="form-check form-switch mb-0">
+                                    <input class="form-check-input" type="checkbox" role="switch" id="props-live-enabled" aria-controls="props-live-details">
+                                    <label class="form-check-label small fw-bold text-dark" for="props-live-enabled"><i class="bi bi-activity me-1 text-primary" aria-hidden="true"></i>Status check</label>
+                                </div>
+                                <div id="props-live-details" class="d-none mt-2">
+                                    <div class="mb-2">
+                                        <label class="form-label extra-small text-muted fw-bold mb-1" for="props-live-kind">Check</label>
+                                        <select class="form-select form-select-sm shadow-none" id="props-live-kind"></select>
+                                    </div>
+                                    <div class="mb-2">
+                                        <label class="form-label extra-small text-muted fw-bold mb-1" for="props-live-key" id="props-live-key-lbl">Row name</label>
+                                        <input type="text" class="form-control form-control-sm shadow-none" id="props-live-key" maxlength="500" spellcheck="false">
+                                    </div>
+                                    <div class="mb-2 d-none" id="box-props-live-dns">
+                                        <label class="form-label extra-small text-muted fw-bold mb-1" for="props-live-dns">DNS provider</label>
+                                        <select class="form-select form-select-sm shadow-none" id="props-live-dns"></select>
+                                    </div>
+                                    <div class="extra-small text-muted mb-2" id="props-live-note"></div>
+                                    <div class="extra-small mb-2" id="props-live-result" role="status" aria-live="polite"></div>
+                                    <div class="extra-small fw-bold text-muted mb-1">Rules (the first that matches wins)</div>
+                                    <ol id="props-live-rules" class="list-unstyled d-flex flex-column gap-2 mb-2"></ol>
+                                    <div class="d-flex flex-wrap gap-2">
+                                        <button type="button" class="btn btn-sm btn-outline-primary" id="btn-live-add-rule"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add rule</button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-live-reset-rules">Default rules</button>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div id="box-props-notes">
                                 <label class="form-label small fw-semibold text-muted mb-1">Architectural Scope
                                     Notes</label>
@@ -4235,6 +4284,97 @@
                     </div>
                     </section>
                     <!-- /View profiles editor -->
+                    <hr class="my-3">
+                    <!-- Live status: sources, switch, interval, approvals (renderLiveSettings) -->
+                    <section id="settings-live" class="mb-3" aria-labelledby="settings-live-title">
+                        <h6 class="fw-bold mb-1" id="settings-live-title"><i class="bi bi-activity me-1" aria-hidden="true"></i>Live status</h6>
+                        <p class="small text-muted mb-2">Colour shapes and flows by live data: a Google Sheet, a CSV or JSON feed, or a check the browser runs itself
+                            (web address, reachability, DNS). Turn on <em>Status check</em> in a shape's or flow's Properties to choose its rules.
+                            Sources and rules are saved in the model; results stay in this tab. Nothing is contacted until you allow its host here.</p>
+                        <div class="d-flex flex-wrap align-items-end gap-3 mb-2">
+                            <div class="form-check form-switch mb-1">
+                                <input class="form-check-input" type="checkbox" role="switch" id="live-status-toggle">
+                                <label class="form-check-label small fw-semibold" for="live-status-toggle">Live status on (this browser)</label>
+                            </div>
+                            <div>
+                                <label class="form-label small text-muted mb-1" for="live-status-interval">Refresh every (seconds, 10 or more)</label>
+                                <input type="number" class="form-control form-control-sm shadow-none live-interval-input" id="live-status-interval" min="10" max="86400" step="1" inputmode="numeric">
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-live-refresh"><i class="bi bi-arrow-clockwise me-1" aria-hidden="true"></i>Refresh now</button>
+                        </div>
+                        <div class="alert alert-warning py-2 px-2 small d-none" id="live-approve-box" role="alertdialog" aria-labelledby="live-approve-title">
+                            <div class="fw-semibold mb-1" id="live-approve-title">Allow live status to contact these hosts?</div>
+                            <ul class="mb-1 ps-3" id="live-approve-hosts"></ul>
+                            <div class="mb-2">Your browser sends a request (with its IP address, but no cookies) to each host every refresh. A DNS check sends the host name to the DNS provider.
+                                Only allow hosts you trust; a model from someone else may name any host.</div>
+                            <div class="d-flex flex-wrap gap-2">
+                                <button type="button" class="btn btn-sm btn-warning" id="btn-live-approve">Allow these hosts</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-live-approve-cancel">Not now</button>
+                            </div>
+                        </div>
+                        <div class="small fw-semibold mb-1">Status sources in this model</div>
+                        <div id="live-sources-list" class="d-flex flex-column gap-1 mb-2" aria-live="polite"></div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary mb-2" id="btn-live-add-source"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Add a source</button>
+                        <form id="live-source-form" class="border rounded p-2 mb-2 d-none" autocomplete="off" novalidate>
+                            <div class="row g-2">
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label small text-muted mb-1" for="live-src-name">Name</label>
+                                    <input type="text" class="form-control form-control-sm shadow-none" id="live-src-name" maxlength="60" placeholder="Service status">
+                                </div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label small text-muted mb-1" for="live-src-kind">Type</label>
+                                    <select class="form-select form-select-sm shadow-none" id="live-src-kind">
+                                        <option value="sheet">Google Sheet or CSV</option>
+                                        <option value="json">JSON</option>
+                                    </select>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label small text-muted mb-1" for="live-src-url">Address (https)</label>
+                                    <input type="url" class="form-control form-control-sm shadow-none" id="live-src-url" maxlength="2000" spellcheck="false" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=0" aria-describedby="live-src-url-help">
+                                    <div class="form-text extra-small" id="live-src-url-help">Google Sheets: share it as "Anyone with the link can view" and paste that link (a "Publish to web" link redirects, and redirects are not followed). The first row is the header row.</div>
+                                </div>
+                                <div class="col-6 live-src-sheet">
+                                    <label class="form-label small text-muted mb-1" for="live-src-key-col">Name column</label>
+                                    <input type="text" class="form-control form-control-sm shadow-none" id="live-src-key-col" maxlength="60" placeholder="first column" spellcheck="false">
+                                </div>
+                                <div class="col-6 live-src-sheet">
+                                    <label class="form-label small text-muted mb-1" for="live-src-value-col">Value column</label>
+                                    <input type="text" class="form-control form-control-sm shadow-none" id="live-src-value-col" maxlength="60" placeholder="the next column" spellcheck="false">
+                                </div>
+                                <div class="col-12 live-src-sheet form-text extra-small mt-0">A column by its header, letter (B) or number (2). A column called "latency" is used by latency rules.</div>
+                                <div class="col-6 col-sm-4 live-src-json">
+                                    <label class="form-label small text-muted mb-1" for="live-src-key-field">Name field</label>
+                                    <input type="text" class="form-control form-control-sm shadow-none" id="live-src-key-field" maxlength="60" placeholder="name" spellcheck="false">
+                                </div>
+                                <div class="col-6 col-sm-4 live-src-json">
+                                    <label class="form-label small text-muted mb-1" for="live-src-value-field">Value field</label>
+                                    <input type="text" class="form-control form-control-sm shadow-none" id="live-src-value-field" maxlength="60" placeholder="status" spellcheck="false">
+                                </div>
+                                <div class="col-12 col-sm-4 live-src-json">
+                                    <label class="form-label small text-muted mb-1" for="live-src-path">Path to the list (optional)</label>
+                                    <input type="text" class="form-control form-control-sm shadow-none" id="live-src-path" maxlength="200" placeholder="data.services" spellcheck="false">
+                                </div>
+                                <div class="col-12 live-src-json form-text extra-small mt-0">A list like [{"name": "API", "status": "up", "latency": 120}] or a map like {"API": "up"}.</div>
+                                <div class="col-12 col-sm-6">
+                                    <label class="form-label small text-muted mb-1" for="live-src-interval">Own refresh interval (seconds, optional)</label>
+                                    <input type="number" class="form-control form-control-sm shadow-none" id="live-src-interval" min="0" max="86400" step="1" inputmode="numeric" placeholder="use the global one">
+                                </div>
+                            </div>
+                            <div class="small text-danger mt-2" id="live-src-error" role="alert"></div>
+                            <div class="d-flex gap-2 mt-2">
+                                <button type="submit" class="btn btn-sm btn-primary" id="btn-live-src-save">Save source</button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-live-src-cancel">Cancel</button>
+                            </div>
+                        </form>
+                        <details class="small">
+                            <summary class="text-muted">Allowed hosts in this browser</summary>
+                            <div id="live-approved-list" class="mt-1 text-muted"></div>
+                            <button type="button" class="btn btn-sm btn-outline-danger mt-1" id="btn-live-forget-approvals">Forget all allowed hosts</button>
+                        </details>
+                        <p class="form-text extra-small mb-0 mt-2">Browsers cannot ping (ICMP): <em>Reachability</em> sends a small HTTPS request and times the reply. Without CORS on the
+                            server a web check can only tell that the host answered, not its status code. Plain http:// addresses are blocked by the app's security policy.</p>
+                    </section>
+                    <!-- /Live status -->
                     <hr class="my-3">
                     <h6 class="fw-bold mb-1"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Git sync (GitHub / GitLab)</h6>
                     <p class="small text-muted mb-2">Save this model to a file in a repository and load it from there with the sync button next to ☰.
@@ -6459,6 +6599,7 @@
             if (Array.isArray(raw.stencilTags)) el.stencilTags = raw.stencilTags.map(toText).filter(t => Object.prototype.hasOwnProperty.call(SUBTYPE_LABELS, t)).slice(0, 6);
             if (TT_DECOR_TYPES.includes(el.type)) normalizeDecorElement(el, raw);   // table and lane containers
             normalizeNodeDisplay(el, raw);   // display: card / icon / badge, badge colours
+            delete el.liveStatus; if (liveCheckable(el)) { const ls = normalizeLiveStatus(raw.liveStatus); if (ls) el.liveStatus = ls; }   // live status check
             return el;
         }
 
@@ -6523,6 +6664,7 @@
             if ('curveStyle' in raw) { if (CURVE_STYLES.includes(raw.curveStyle)) f.curveStyle = raw.curveStyle; else delete f.curveStyle; }
             if ('dismissedSuggestions' in raw) f.dismissedSuggestions = normalizeDismissed(raw.dismissedSuggestions);
             if ('traffic' in raw) { const tr = normalizeTraffic(raw.traffic); if (tr) f.traffic = tr; else delete f.traffic; }   // traffic animation
+            delete f.liveStatus; { const ls = normalizeLiveStatus(raw.liveStatus); if (ls) f.liveStatus = ls; }   // live status check
             return f;
         }
 
@@ -6818,6 +6960,216 @@
             }
         };
 
+        // ── Live status: model validation, parsing and rules ─────────────────────────────
+        // The model stores where status comes from (state.statusSources) and, per shape or flow, what to check and how
+        // to colour it (liveStatus). Results stay in memory (app.live); hosts are only contacted after the user approves
+        // them in this browser (LIVE_APPROVED_KEY). The keys start with threat_tiger_, so "Clear all data" removes them.
+        const LIVE_PREF_KEY = 'threat_tiger_live_status', LIVE_INTERVAL_KEY = 'threat_tiger_live_interval', LIVE_APPROVED_KEY = 'threat_tiger_live_approved';
+        const LIVE_KINDS = ['source', 'http', 'reach', 'dns'];
+        const LIVE_KIND_LABELS = { http: 'Web (HTTPS)', reach: 'Reachability (HTTPS)', dns: 'DNS lookup' };
+        const LIVE_WHEN = { eq: 'equals', neq: 'not equals', contains: 'contains', lt: '< number', gt: '> number', latency_gt: 'latency > ms', latency_lt: 'latency < ms', nodata: 'no data / error', else: 'anything else' };
+        const LIVE_DNS = { cloudflare: { label: 'Cloudflare', url: 'https://cloudflare-dns.com/dns-query' }, google: { label: 'Google', url: 'https://dns.google/resolve' } };
+        const LIVE_LIMITS = { sources: 20, rules: 20, name: 60, key: 500, value: 200, label: 60, column: 60, path: 200, url: 2000, minInterval: 10, maxInterval: 86400, rows: 5000, bytes: 2000000, jobs: 100 };
+        const LIVE_ID = /^[A-Za-z0-9_-]{1,40}$/;
+        /** A rule colour: #rrggbb (a #rgb value is expanded), or '' for none. */
+        function liveColor(v) {
+            const t = toText(v).trim().toLowerCase();
+            if (/^#[0-9a-f]{6}$/.test(t)) return t;
+            if (/^#[0-9a-f]{3}$/.test(t)) return '#' + t.slice(1).split('').map(c => c + c).join('');
+            return '';
+        }
+        /** An https address without credentials (at most 2000 characters), as a normalised href, or ''. */
+        function liveSafeUrl(v) {
+            const t = toText(v).trim();
+            if (!t || t.length > LIVE_LIMITS.url) return '';
+            try {
+                const u = new URL(t);
+                if (u.protocol !== 'https:' || u.username || u.password || !u.hostname) return '';
+                return u.href;
+            } catch { return ''; }
+        }
+        /** The CSV address for a Google Sheets share link (gviz CSV export, works for "anyone with the link"); other https addresses as they are. */
+        function liveSheetCsvUrl(v) {
+            const href = liveSafeUrl(v);
+            if (!href) return '';
+            const u = new URL(href);
+            const m = u.hostname === 'docs.google.com' && /^\/spreadsheets\/d\/([A-Za-z0-9_-]{10,})(?:\/(?:edit|view|htmlview|copy)?)?$/.exec(u.pathname);
+            if (!m) return href;
+            const gid = (/(?:^#|[#&])gid=(\d+)/.exec(u.hash) || /[?&]gid=(\d+)/.exec(u.search) || [])[1];
+            return `https://docs.google.com/spreadsheets/d/${m[1]}/gviz/tq?tqx=out:csv${gid ? `&gid=${gid}` : ''}`;
+        }
+        /** The address a Web or Reachability check contacts for `key` (a URL, or a host name: https:// is added), or ''. */
+        function liveCheckUrl(key) {
+            let t = toText(key).trim();
+            if (!t) return '';
+            if (!/^[a-z][a-z0-9+.-]*:/i.test(t)) t = 'https://' + t;
+            return liveSafeUrl(t);
+        }
+        /** The host name a DNS check looks up (from a host name or a URL), or ''. */
+        function liveDnsHost(key) {
+            let t = toText(key).trim();
+            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(t)) { try { t = new URL(t).hostname; } catch { return ''; } }
+            t = t.replace(/\.$/, '').toLowerCase();
+            return t.length <= 253 && /^([a-z0-9_](?:[a-z0-9_-]{0,61}[a-z0-9])?\.)+[a-z0-9-]{2,63}$/.test(t) ? t : '';
+        }
+        function liveClip(v, max) { return toText(v).replace(/\s+/g, ' ').trim().slice(0, max); }
+        /** The status sources of a model: valid entries only (https, no credentials), at most 20, unique ids. */
+        function normalizeStatusSources(raw) {
+            if (!Array.isArray(raw)) return [];
+            const out = [], seen = new Set();
+            raw.filter(isPlainObject).forEach(s => {
+                if (out.length >= LIVE_LIMITS.sources) return;
+                const id = toText(s.id).trim(), kind = s.kind === 'json' ? 'json' : (s.kind === 'sheet' ? 'sheet' : '');
+                if (!LIVE_ID.test(id) || seen.has(id) || !kind) return;
+                const url = liveSafeUrl(s.url);
+                if (!url) return;
+                const n = Math.round(toNumber(s.intervalSec, 0));
+                const src = { id, name: liveClip(s.name, LIVE_LIMITS.name), kind, url };
+                if (kind === 'sheet') { src.keyColumn = liveClip(s.keyColumn, LIVE_LIMITS.column); src.valueColumn = liveClip(s.valueColumn, LIVE_LIMITS.column); }
+                else { src.keyField = liveClip(s.keyField, LIVE_LIMITS.column) || 'name'; src.valueField = liveClip(s.valueField, LIVE_LIMITS.column) || 'status'; src.path = toText(s.path).trim().slice(0, LIVE_LIMITS.path); }
+                src.intervalSec = n > 0 ? Math.min(LIVE_LIMITS.maxInterval, Math.max(LIVE_LIMITS.minInterval, n)) : 0;
+                seen.add(id); out.push(src);
+            });
+            return out;
+        }
+        function normalizeLiveRule(r) {
+            if (!isPlainObject(r) || typeof r.when !== 'string' || !Object.prototype.hasOwnProperty.call(LIVE_WHEN, r.when)) return null;
+            const out = { when: r.when };
+            if (r.when !== 'nodata' && r.when !== 'else') out.value = toText(r.value).trim().slice(0, LIVE_LIMITS.value);
+            ['fill', 'stroke'].forEach(k => { const c = liveColor(r[k]); if (c) out[k] = c; });
+            const icon = safeIcon(r.icon, '');
+            if (icon && icon.length <= 60) out.icon = icon;
+            const label = liveClip(r.label, LIVE_LIMITS.label);
+            if (label) out.label = label;
+            return out;
+        }
+        /** A shape's or flow's status check { enabled, check, rules }, or undefined when it is not an object. */
+        function normalizeLiveStatus(raw) {
+            if (!isPlainObject(raw)) return undefined;
+            const c = isPlainObject(raw.check) ? raw.check : {};
+            const kind = LIVE_KINDS.includes(c.kind) ? c.kind : 'source';
+            const check = { kind };
+            if (kind === 'source') check.sourceId = LIVE_ID.test(toText(c.sourceId)) ? toText(c.sourceId) : '';
+            check.key = toText(c.key).trim().slice(0, LIVE_LIMITS.key);
+            if (kind === 'dns') check.dnsProvider = Object.prototype.hasOwnProperty.call(LIVE_DNS, c.dnsProvider) ? c.dnsProvider : 'cloudflare';
+            const rules = (Array.isArray(raw.rules) ? raw.rules : []).map(normalizeLiveRule).filter(Boolean).slice(0, LIVE_LIMITS.rules);
+            return { enabled: raw.enabled === true, check, rules };
+        }
+        /** Default rules when a check is switched on: green / amber / red. */
+        function liveDefaultRules(kind, isFlow) {
+            const red = '#dc3545', amber = '#ffc107', green = '#198754';
+            const fx = (c, label) => Object.assign(isFlow ? { stroke: c } : { fill: c, stroke: c }, label ? { label } : {});
+            if (kind === 'dns') return [{ when: 'eq', value: 'resolves', ...fx(green) }, { when: 'eq', value: 'nxdomain', ...fx(red, 'NXDOMAIN') }, { when: 'else', ...fx(red, 'DNS error') }];
+            if (kind === 'http' || kind === 'reach') return [{ when: 'eq', value: 'down', ...fx(red, 'down') }, { when: 'gt', value: '399', ...fx(red, 'HTTP error') }, { when: 'latency_gt', value: isFlow ? '500' : '1000', ...fx(amber, 'slow') }, { when: 'eq', value: 'up', ...fx(green) }];
+            return [{ when: 'eq', value: 'down|error|offline|fail', ...fx(red, 'down') }, { when: 'nodata', ...fx(red, 'no data') }, { when: 'eq', value: 'degraded|slow|warning', ...fx(amber) }, { when: 'latency_gt', value: '500', ...fx(amber, 'slow') }, { when: 'eq', value: 'up|ok|200|online', ...fx(green) }];
+        }
+        /** RFC 4180 CSV: quoted fields with commas, doubled quotes and line breaks; CRLF or LF; a leading BOM. */
+        function parseCsv(text) {
+            const s = toText(text).replace(/^\uFEFF/, ''), rows = [];
+            let row = [], field = '', q = false, i = 0;
+            while (i < s.length) {
+                const ch = s[i];
+                if (q) {
+                    if (ch === '"') { if (s[i + 1] === '"') { field += '"'; i += 2; continue; } q = false; i++; continue; }
+                    field += ch; i++; continue;
+                }
+                if (ch === '"' && field === '') { q = true; i++; continue; }
+                if (ch === ',') { row.push(field); field = ''; i++; continue; }
+                if (ch === '\r' || ch === '\n') {
+                    row.push(field); rows.push(row); row = []; field = '';
+                    i += (ch === '\r' && s[i + 1] === '\n') ? 2 : 1;
+                    if (rows.length >= LIVE_LIMITS.rows) return rows;
+                    continue;
+                }
+                field += ch; i++;
+            }
+            if (field !== '' || row.length) { row.push(field); rows.push(row); }
+            return rows;
+        }
+        const liveNorm = (v) => toText(v).trim().toLowerCase();
+        function liveNum(v) { const n = parseFloat(toText(v).trim().replace(',', '.')); return Number.isFinite(n) ? n : null; }
+        /** A column by header name, letter (A, B, … AA) or 1-based number; null when not given or not found. */
+        function liveColumnIndex(spec, header) {
+            const t = liveNorm(spec);
+            if (!t) return null;
+            const byName = (header || []).findIndex(h => liveNorm(h) === t);
+            if (byName >= 0) return byName;
+            if (/^[a-z]{1,3}$/.test(t)) return t.split('').reduce((n, c) => n * 26 + c.charCodeAt(0) - 96, 0) - 1;
+            if (/^\d{1,4}$/.test(t) && Number(t) > 0) return Number(t) - 1;
+            return null;
+        }
+        /** The row (after the header row) whose key column equals `key` → the value column (default: the one right of the key). */
+        function liveCsvLookup(rows, key, src) {
+            const header = rows[0] || [], k = liveNorm(key);
+            const kc = liveColumnIndex(src.keyColumn, header) ?? 0;
+            const vc = src.valueColumn ? liveColumnIndex(src.valueColumn, header) : kc + 1;
+            if (!k || vc === null) return { found: false };
+            const row = rows.slice(1).find(r => liveNorm(r[kc]) === k);
+            if (!row) return { found: false };
+            const lc = header.findIndex(h => /^latency(\s*\(?ms\)?|_ms|ms)?$/i.test(toText(h).trim()));
+            return { found: true, value: toText(row[vc]).trim(), latency: lc >= 0 ? liveNum(row[lc]) : null };
+        }
+        /** An array of objects (key/value fields) or an object map ({ "API": "up" } / { "API": { "status": "up" } }), after an optional dotted path. */
+        function liveJsonLookup(data, key, src) {
+            let d = data;
+            const path = toText(src.path).trim();
+            if (path) for (const p of path.split('.')) {
+                if (d !== null && typeof d === 'object' && Object.prototype.hasOwnProperty.call(d, p)) d = d[p]; else return { found: false };
+            }
+            const k = liveNorm(key), kf = src.keyField || 'name', vf = src.valueField || 'status';
+            const fromObj = (o) => ({ found: true, value: toText(o[vf]).trim(), latency: liveNum(o.latency ?? o.latencyMs ?? o.latency_ms) });
+            if (!k) return { found: false };
+            if (Array.isArray(d)) {
+                const item = d.find(o => isPlainObject(o) && liveNorm(o[kf]) === k);
+                return item ? fromObj(item) : { found: false };
+            }
+            if (isPlainObject(d)) {
+                const name = Object.keys(d).find(n => liveNorm(n) === k);
+                if (name === undefined) return { found: false };
+                const v = d[name];
+                return isPlainObject(v) ? fromObj(v) : { found: true, value: toText(v).trim(), latency: null };
+            }
+            return { found: false };
+        }
+        /**
+         * The first rule that matches a result { value, state?, latency?, error? } (null: no result yet), or null.
+         * equals / not equals / contains take several values separated by |; for direct checks "up" / "down" also match the state.
+         */
+        function liveMatchRule(rules, res) {
+            const value = res ? toText(res.value).trim() : '';
+            const has = value !== '', v = value.toLowerCase(), st = res && res.state ? String(res.state).toLowerCase() : '';
+            const alts = (s) => toText(s).split('|').map(x => x.trim().toLowerCase()).filter(Boolean);
+            const lat = res && !res.error && Number.isFinite(res.latency) ? res.latency : null;
+            const x = liveNum(value);
+            for (const r of (rules || [])) {
+                const a = alts(r.value), t = toText(r.value).trim(), rv = t !== '' && Number.isFinite(Number(t)) ? Number(t) : null;
+                switch (r.when) {
+                    case 'eq': if (has && (a.includes(v) || (st && a.includes(st)))) return r; break;
+                    case 'neq': if (has && a.length && !a.includes(v) && !(st && a.includes(st))) return r; break;
+                    case 'contains': if (has && a.some(p => v.includes(p))) return r; break;
+                    case 'lt': if (has && rv !== null && x !== null && x < rv) return r; break;
+                    case 'gt': if (has && rv !== null && x !== null && x > rv) return r; break;
+                    case 'latency_gt': if (lat !== null && rv !== null && lat > rv) return r; break;
+                    case 'latency_lt': if (lat !== null && rv !== null && lat < rv) return r; break;
+                    case 'nodata': if (!has || (res && res.error)) return r; break;
+                    case 'else': return r;
+                }
+            }
+            return null;
+        }
+        /** Shapes and flows that can have a status check (not zones, boundary lines, swimlanes, text or containers). */
+        function liveCheckable(item) {
+            if (!item) return false;
+            if (!item.type) return true;   // a flow
+            return !['boundary', 'boundary_line', 'swimlane', 'textbox', 'headline'].includes(item.type) && !TT_DECOR_TYPES.includes(item.type);
+        }
+        /** Dark or white text for a #rrggbb background. */
+        function liveInk(hex) {
+            const c = liveColor(hex) || '#ffffff', r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16);
+            return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#0f172a' : '#ffffff';
+        }
+        // ── end live status: model validation ──
+
         function normalizeSession(raw) {
             if (!isPlainObject(raw)) throw new Error('The file does not contain a Threat Tiger model.');
             const warnings = [];
@@ -6913,6 +7265,7 @@
                 reviewMode: raw.reviewMode === true, diagramInfo: normalizeDiagramInfo(raw.diagramInfo),
                 legend: normalizeLegend(raw.legend),   // title block & legend settings
                 gitSync: normalizeGitSync(raw.gitSync),
+                statusSources: normalizeStatusSources(raw.statusSources),   // live status sources
                 selectedElementIds: [], selectedFlowId: null
             };
             return { session, warnings };
@@ -6961,6 +7314,7 @@
                 this.pages = [{ ...DEFAULT_PAGE }]; this.activePageId = 'p1';
                 this.reviewMode = false; this.diagramInfo = emptyDiagramInfo(); this.gitSync = null;
                 this.legend = defaultLegend();   // title block & legend settings
+                this.statusSources = [];   // live status sources
                 this.selectedElementIds = []; this.selectedFlowId = null;
             }
 
@@ -7610,7 +7964,7 @@
             // Every logged model change is one undo step. The activity log itself is not rewound.
             serializeModel() {
                 const s = this.state;
-                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [], layers: s.layers || [{ ...DEFAULT_LAYER }], activeLayerId: s.activeLayerId, pages: s.pages || [{ ...DEFAULT_PAGE }], diagramInfo: s.diagramInfo || emptyDiagramInfo(), gitSync: s.gitSync || null, legend: s.legend || defaultLegend() });
+                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [], layers: s.layers || [{ ...DEFAULT_LAYER }], activeLayerId: s.activeLayerId, pages: s.pages || [{ ...DEFAULT_PAGE }], diagramInfo: s.diagramInfo || emptyDiagramInfo(), gitSync: s.gitSync || null, legend: s.legend || defaultLegend(), statusSources: s.statusSources || [] });
             }
 
             // New elements and flows go to the active layer (runs before every undo point and render).
@@ -8894,6 +9248,7 @@
                 document.getElementById('btn-menu-line-jumps').addEventListener('click', () => this.toggleLineJumps());
                 document.getElementById('btn-menu-review-mode').addEventListener('click', () => this.toggleReviewMode());
                 this.setupGitSync();
+                this.setupLiveStatus();   // live status
                 document.getElementById('review-mode-badge').addEventListener('click', () => this.toggleReviewMode(false));
                 this.setupLegendDialog();   // ☰ → View → Title block & legend…
                 document.getElementById('btn-flow-clear-points').addEventListener('click', () => this.clearFlowBendPoints());
@@ -10569,6 +10924,707 @@
                 }
             }
 
+            // ── Live status: runtime ──────────────────────────────────────────────────
+            // Results live in this.live only (never in the model, its exports, undo or localStorage). The switch, the
+            // refresh interval and the hosts the user allowed are per browser (LIVE_*_KEY). A host is only contacted
+            // after the user allowed it in Settings → Live status, so a model from someone else cannot make the browser
+            // reach out on its own. Shapes and flows keep their stored look: the renderer draws a recoloured copy
+            // (liveNodeView, liveFlowStroke) and applyLiveStatusOverlay adds the indicator, label and stale ring.
+            setupLiveStatus() {
+                this.live = { sourceData: new Map(), results: new Map(), lastRun: new Map(), lastState: new Map(), noCors: new Set(),
+                    busy: false, busyPromise: null, timer: null, pendingAction: null, approveHosts: [], notifiedHosts: '', editingSourceId: null, approvedRaw: null, approved: new Set() };
+                this.liveTimeoutMs = 8000;
+                let on = false;
+                try { on = localStorage.getItem(LIVE_PREF_KEY) === 'on'; } catch { /* off */ }
+                this.liveOn = on;
+                const $ = (id) => document.getElementById(id);
+                $('btn-menu-live-status').addEventListener('click', () => this.setLiveStatus(!this.liveOn));
+                $('live-status-toggle').addEventListener('change', (ev) => this.setLiveStatus(ev.target.checked));
+                $('live-status-interval').addEventListener('change', (ev) => this.setLiveInterval(ev.target.value));
+                $('btn-live-refresh').addEventListener('click', () => this.refreshLiveStatus({ manual: true }));
+                $('btn-live-approve').addEventListener('click', () => this.approvePendingLiveHosts());
+                $('btn-live-approve-cancel').addEventListener('click', () => { this.live.pendingAction = null; this.live.approveHosts = []; this.renderLiveSettings(); });
+                $('btn-live-add-source').addEventListener('click', () => this.editLiveSource(null));
+                $('btn-live-src-cancel').addEventListener('click', () => this.closeLiveSourceForm());
+                $('live-source-form').addEventListener('submit', (ev) => { ev.preventDefault(); this.saveLiveSourceFromForm(); });
+                $('live-src-kind').addEventListener('change', () => this.syncLiveSourceFormKind());
+                $('btn-live-forget-approvals').addEventListener('click', () => { this.safeSetItem(LIVE_APPROVED_KEY, '[]'); this.renderLiveSettings(); this.renderSvgDiagramElements(); });
+                $('modal-settings').addEventListener('show.bs.modal', () => this.renderLiveSettings());
+                $('props-live-enabled').addEventListener('change', (ev) => this.setItemLiveEnabled(ev.target.checked));
+                $('props-live-kind').addEventListener('change', (ev) => this.setItemLiveCheck({ kindValue: ev.target.value }));
+                $('props-live-key').addEventListener('change', (ev) => this.setItemLiveCheck({ key: ev.target.value }));
+                $('props-live-dns').addEventListener('change', (ev) => this.setItemLiveCheck({ dnsProvider: ev.target.value }));
+                $('btn-live-add-rule').addEventListener('click', () => this.editLiveRules((rules, isFlow) => rules.push(isFlow ? { when: 'eq', value: '', stroke: '#0d6efd' } : { when: 'eq', value: '', fill: '#0d6efd', stroke: '#0d6efd' }), 'Added a status rule'));
+                $('btn-live-reset-rules').addEventListener('click', () => this.editLiveRules((rules, isFlow, item) => rules.splice(0, rules.length, ...liveDefaultRules(item.liveStatus.check.kind, isFlow)), 'Reset the status rules'));
+                document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && this.liveOn && !this.live.timer) this.scheduleLiveTick(500); });
+                this.syncLiveControls();
+                if (this.liveOn) this.scheduleLiveTick(1500);
+            }
+
+            liveIntervalSec() {
+                let n = NaN;
+                try { n = Number(localStorage.getItem(LIVE_INTERVAL_KEY)); } catch { /* default */ }
+                return Number.isFinite(n) && n > 0 ? Math.min(LIVE_LIMITS.maxInterval, Math.max(LIVE_LIMITS.minInterval, Math.round(n))) : 60;
+            }
+
+            setLiveInterval(v) {
+                const raw = Math.round(Number(v));
+                const n = Number.isFinite(raw) && raw > 0 ? Math.min(LIVE_LIMITS.maxInterval, Math.max(LIVE_LIMITS.minInterval, raw)) : 60;
+                try { localStorage.setItem(LIVE_INTERVAL_KEY, String(n)); } catch { /* browser setting only */ }
+                document.getElementById('live-status-interval').value = String(n);
+            }
+
+            /** Live status on or off in this browser. Off: no requests, and every shape looks as it is stored. */
+            setLiveStatus(on, { refresh = true } = {}) {
+                this.liveOn = !!on;
+                try { localStorage.setItem(LIVE_PREF_KEY, this.liveOn ? 'on' : 'off'); } catch { /* browser setting only */ }
+                this.syncLiveControls();
+                if (this.liveOn) { this.scheduleLiveTick(); if (refresh) this.refreshLiveStatus({ manual: true }); }
+                else { clearTimeout(this.live.timer); this.live.timer = null; }
+                this.renderSvgDiagramElements();
+                this.renderLiveStatusProps();
+            }
+
+            syncLiveControls() {
+                const item = document.getElementById('btn-menu-live-status');
+                if (item) item.setAttribute('aria-checked', String(!!this.liveOn));
+                const t = document.getElementById('live-status-toggle');
+                if (t) t.checked = !!this.liveOn;
+            }
+
+            scheduleLiveTick(delay = 5000) {
+                clearTimeout(this.live.timer); this.live.timer = null;
+                if (!this.liveOn) return;
+                this.live.timer = setTimeout(() => { this.live.timer = null; this.liveTick(); }, delay);
+            }
+
+            /** Every few seconds: refresh what is due (each check at its interval); nothing while the tab is hidden. */
+            async liveTick() {
+                if (!this.liveOn) return;
+                if (document.visibilityState === 'hidden') return;   // resumes on visibilitychange
+                try { await this.refreshLiveStatus(); } catch (err) { console.warn('[ThreatTiger] Live status refresh failed', err); }
+                this.scheduleLiveTick();
+            }
+
+            /** The hosts the user allowed in this browser (re-read when storage changes). */
+            readLiveApproved() {
+                let raw = '[]';
+                try { raw = localStorage.getItem(LIVE_APPROVED_KEY) || '[]'; } catch { /* none */ }
+                if (raw !== this.live.approvedRaw) {
+                    this.live.approvedRaw = raw;
+                    try { const v = JSON.parse(raw); this.live.approved = new Set(Array.isArray(v) ? v.filter(x => typeof x === 'string') : []); } catch { this.live.approved = new Set(); }
+                }
+                return this.live.approved;
+            }
+
+            approveLiveHosts(hosts) {
+                const all = new Set(this.readLiveApproved());
+                hosts.forEach(h => { if (typeof h === 'string' && h) all.add(h); });
+                this.safeSetItem(LIVE_APPROVED_KEY, JSON.stringify([...all].slice(-200)));
+                this.renderLiveSettings();
+            }
+
+            approvePendingLiveHosts() {
+                const hosts = this.live.approveHosts || [], next = this.live.pendingAction;
+                this.live.pendingAction = null; this.live.approveHosts = []; this.live.notifiedHosts = '';
+                this.approveLiveHosts(hosts);
+                if (hosts.length) this.logEvent('CONFIGURE', `Allowed live status to contact ${hosts.join(', ')} in this browser`, { undoable: false });
+                if (next) next();
+            }
+
+            /** Shows Settings → Live status with the hosts to allow; `next` runs once they are allowed. */
+            askLiveApproval(hosts, next) {
+                this.live.approveHosts = hosts.slice();
+                this.live.pendingAction = next;
+                this.openLiveSettings();
+            }
+
+            openLiveSettings() {
+                const el = document.getElementById('modal-settings');
+                const scroll = () => { const s = document.getElementById(this.live.pendingAction ? 'live-approve-box' : 'settings-live'); if (s) s.scrollIntoView({ block: 'nearest' }); };
+                if (el.classList.contains('show')) { this.renderLiveSettings(); scroll(); return; }
+                el.addEventListener('shown.bs.modal', scroll, { once: true });
+                this.openGitSettings();
+            }
+
+            liveItems() {
+                return [...this.state.elements.filter(e => liveCheckable(e)), ...this.state.flows].filter(it => it.liveStatus && it.liveStatus.enabled && !it.isDisabled);
+            }
+
+            liveItemById(id) { return this.state.elements.find(e => e.id === id) || this.state.flows.find(f => f.id === id) || null; }
+
+            liveSourceById(id) { return (this.state.statusSources || []).find(s => s.id === id) || null; }
+
+            /** What a check contacts: { key, kind, url, host, intervalSec, source? }, or { error } when it is not set up. */
+            liveJobFor(item) {
+                const c = item.liveStatus.check, key = c.key || toText(item.name).trim();
+                const job = (kind, url, extra = {}) => ({ kind, url, host: new URL(url).host, key: `${kind}|${extra.source ? extra.source.id + '|' : ''}${url}`, intervalSec: 0, ...extra });
+                if (c.kind === 'source') {
+                    const src = this.liveSourceById(c.sourceId);
+                    if (!src) return { error: 'Choose a status source (Settings → Live status).' };
+                    const url = src.kind === 'sheet' ? liveSheetCsvUrl(src.url) : liveSafeUrl(src.url);
+                    return url ? job('source', url, { source: src, intervalSec: src.intervalSec }) : { error: 'The source has no valid https address.' };
+                }
+                if (c.kind === 'dns') {
+                    const host = liveDnsHost(key);
+                    if (!host) return { error: 'Enter a host name to look up.' };
+                    const p = LIVE_DNS[c.dnsProvider] || LIVE_DNS.cloudflare;
+                    // Approval is per provider AND looked-up name: the name itself is what is disclosed to the provider.
+                    const url = `${p.url}?name=${encodeURIComponent(host)}&type=A`;
+                    return job('dns', url, { host: `${new URL(p.url).host}/${host}` });
+                }
+                const url = liveCheckUrl(key);
+                return url ? job(c.kind, url) : { error: 'Enter an https:// address to check.' };
+            }
+
+            /** The latest result for a shape or flow ({ value, state?, latency?, ip?, cors?, error?, at }), or null. */
+            liveResultFor(item) {
+                if (!item || !item.liveStatus) return null;
+                const job = this.liveJobFor(item);
+                if (job.error) return { value: '', error: job.error, at: Date.now() };
+                if (job.kind !== 'source') return this.live.results.get(job.key) || null;
+                const d = this.live.sourceData.get(job.source.id);
+                if (!d || d.url !== job.url) return null;
+                if (d.error) return { value: '', error: d.error, at: d.at };
+                const key = item.liveStatus.check.key || toText(item.name).trim();
+                const r = job.source.kind === 'sheet' ? liveCsvLookup(d.rows, key, job.source) : liveJsonLookup(d.json, key, job.source);
+                if (!r.found) return { value: '', error: `"${key}" is not in ${job.source.name || 'the source'}`, at: d.at };
+                return { value: r.value, latency: r.latency, at: d.at };
+            }
+
+            /** How a shape or flow looks now: null (live off / no check) or { state: match | nomatch | pending | stale, rule?, result?, text }. */
+            liveLookFor(item) {
+                if (!this.live || !this.liveOn || !item || !item.liveStatus || !item.liveStatus.enabled || item.isDisabled || !liveCheckable(item)) return null;
+                const job = this.liveJobFor(item), name = toText(item.name).trim() || 'unnamed';
+                if (!job.error && !this.readLiveApproved().has(job.host)) return { state: 'pending', text: `${name}: waiting for your approval to contact ${job.host} (Settings → Live status).` };
+                const res = this.liveResultFor(item);
+                if (!res) return { state: 'pending', text: `${name}: waiting for the first result…` };
+                const time = new Date(res.at).toLocaleTimeString();
+                const interval = (job.intervalSec || this.liveIntervalSec()) * 1000;
+                if (Date.now() - res.at > Math.max(2 * interval, 120000)) return { state: 'stale', result: res, text: `${name}: stale, the last result (${res.value || 'no data'}) is from ${time}.` };
+                const rule = liveMatchRule(item.liveStatus.rules, res);
+                const bits = [res.value || 'no data'];
+                if (Number.isFinite(res.latency)) bits.push(`${Math.round(res.latency)} ms`);
+                if (res.ip) bits.push(res.ip);
+                let text = `${name}: ${bits.join(', ')}${res.error ? ` (${res.error})` : ''}, checked ${time}`;
+                if (rule && rule.label) text += `. ${rule.label}`;
+                if (job.kind === 'reach' || res.cors === false) text += '. Reachability only: without CORS the browser cannot read the reply.';
+                return { state: rule ? 'match' : 'nomatch', rule, result: res, text };
+            }
+
+            /** The shape as the renderer should draw it: the stored shape, or a copy recoloured by the matched rule. */
+            liveNodeView(node) {
+                if (!this.liveOn || !node.liveStatus || !node.liveStatus.enabled) return node;
+                const look = this.liveLookFor(node), r = look && look.state === 'match' ? look.rule : null;
+                if (!r || (!r.fill && !r.stroke && !r.icon)) return node;
+                const v = Object.assign({}, node);
+                if (isFcLikeType(node.type)) { if (r.fill) v.fcFillColor = r.fill; if (r.stroke) v.fcStrokeColor = r.stroke; return v; }
+                const display = nodeDisplay(node);
+                if (display === 'badge') { if (r.fill) v.badgeFill = r.fill; if (r.stroke) v.badgeStroke = r.stroke; if (r.fill) v.iconColor = liveInk(r.fill); }
+                else if (display === 'icon') { if (r.fill || r.stroke) v.iconColor = r.fill || r.stroke; }
+                if (r.icon && display) { v.icon = r.icon; delete v.stencilIcon; }
+                return v;
+            }
+
+            /** A flow's line colour from its matched rule, or '' (its own colour). */
+            liveFlowStroke(f) {
+                if (!this.liveOn || !f.liveStatus || !f.liveStatus.enabled) return '';
+                const look = this.liveLookFor(f);
+                return look && look.state === 'match' && look.rule.stroke ? look.rule.stroke : '';
+            }
+
+            liveNodeSize(node) {
+                const t = node.type;
+                return { w: node.width || (t === 'custom_image' ? 120 : (t === 'infrastructure' ? 80 : (t === 'step_activity' ? 260 : 240))),
+                    h: node.height || (t === 'custom_image' ? 120 : (t === 'infrastructure' ? 70 : (t === 'step_activity' ? 50 : 80))) };
+            }
+
+            /** After each render: card colours, the status dot (tooltip: value, latency, time), the rule's label and the stale ring. */
+            applyLiveStatusOverlay() {
+                const svg = this.dom && this.dom.svg;
+                if (!svg || !this.live) return;
+                svg.querySelectorAll('.live-status-ind, .live-status-label-pill, .live-status-stale, .live-status-icon').forEach(n => n.remove());
+                if (!this.liveOn) return;
+                const ns = 'http://www.w3.org/2000/svg';
+                const mk = (tag, attrs) => { const n = document.createElementNS(ns, tag); Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, String(v))); return n; };
+                const indicator = (look, x, y) => {
+                    const r = look.state === 'match' ? look.rule : null;
+                    const g = mk('g', { class: 'live-status-ind', 'data-live-state': look.state, transform: `translate(${x}, ${y})` });
+                    const title = document.createElementNS(ns, 'title'); title.textContent = look.text;
+                    const colour = r ? (r.fill || r.stroke || '#0d6efd') : (look.state === 'nomatch' ? '#6c757d' : '#adb5bd');
+                    g.append(title, mk('circle', { r: 7, fill: colour, stroke: '#ffffff', 'stroke-width': 2 }));
+                    if (look.state === 'pending') g.append(mk('circle', { r: 2.5, fill: '#ffffff' }));
+                    if (look.state === 'stale') g.append(mk('path', { d: 'M -3 0 L 3 0', stroke: '#ffffff', 'stroke-width': 2, 'stroke-linecap': 'round' }));
+                    return g;
+                };
+                const label = (text, colour, x, y) => {
+                    const g = mk('g', { class: 'live-status-label-pill', transform: `translate(${x}, ${y})`, 'pointer-events': 'none' });
+                    const w = Math.min(220, 12 + text.length * 6.4);
+                    const t = mk('text', { class: 'live-status-label', x: 0, y: 0, 'text-anchor': 'middle', 'dominant-baseline': 'central', 'font-size': 10, 'font-weight': 700, fill: liveInk(colour), 'font-family': 'Inter, system-ui, sans-serif' });
+                    t.textContent = text;
+                    g.append(mk('rect', { class: 'live-status-label-bg', x: -w / 2, y: -8, width: w, height: 16, rx: 8, fill: colour, stroke: '#ffffff', 'stroke-width': 1 }), t);
+                    return g;
+                };
+                this.state.elements.forEach(el => {
+                    if (!el.liveStatus || !el.liveStatus.enabled) return;
+                    const look = this.liveLookFor(el);
+                    if (!look) return;
+                    const g = this.dom.layerNodes.querySelector(`:scope > g[data-id="${CSS.escape(el.id)}"]`);
+                    if (!g) return;
+                    const { w, h } = this.liveNodeSize(el), r = look.state === 'match' ? look.rule : null;
+                    if (r && !isFcLikeType(el.type) && nodeDisplay(el) === 'card') {
+                        const card = g.querySelector('.canvas-card'), stripe = g.querySelector('.card-icon-stripe');
+                        if (card && r.stroke) card.style.setProperty('border-color', r.stroke, 'important');
+                        if (stripe && r.fill) { stripe.style.setProperty('background-color', r.fill, 'important'); stripe.style.setProperty('color', liveInk(r.fill), 'important'); }
+                    }
+                    if (r && r.icon && !nodeDisplay(el)) {   // flowchart and other shapes without an icon: the rule's icon in the corner
+                        const fo = mk('foreignObject', { class: 'live-status-icon', x: 4, y: 4, width: 20, height: 20, 'pointer-events': 'none' });
+                        const i = document.createElementNS('http://www.w3.org/1999/xhtml', 'i');
+                        i.className = `bi ${safeIcon(r.icon)}`;
+                        i.style.cssText = `font-size: 15px; line-height: 20px; color: ${liveInk(r.fill || '#ffffff') === '#ffffff' ? '#ffffff' : '#0f172a'};`;
+                        fo.appendChild(i); g.appendChild(fo);
+                    }
+                    if (look.state === 'stale') g.appendChild(mk('rect', { class: 'live-status-stale', x: -5, y: -5, width: w + 10, height: h + 10, rx: 10, fill: 'none', stroke: '#9ca3af', 'stroke-width': 2, 'stroke-dasharray': '5 4', 'pointer-events': 'none' }));
+                    g.appendChild(indicator(look, w - 4, h - 4));
+                    if (r && r.label) g.appendChild(label(r.label, r.fill || r.stroke || '#495057', w / 2, -12));
+                });
+                this.state.flows.forEach(f => {
+                    if (!f.liveStatus || !f.liveStatus.enabled) return;
+                    const look = this.liveLookFor(f);
+                    if (!look) return;
+                    const g = svg.querySelector(`g[data-flow-id="${CSS.escape(f.id)}"]`), path = g && g.querySelector('path.flow-line');
+                    if (!path) return;
+                    const r = look.state === 'match' ? look.rule : null;
+                    if (r && r.stroke) g.querySelectorAll('path.flow-traffic').forEach(p => p.setAttribute('stroke', r.stroke));   // traffic animation follows the line
+                    let pt;
+                    try { const len = path.getTotalLength(); pt = path.getPointAtLength(len * (toNumber(f.textOffset, 0.5) < 0.45 ? 0.72 : 0.28)); } catch { return; }
+                    if (r && r.label) g.appendChild(label(r.label, r.stroke || r.fill || '#495057', pt.x, pt.y + 17));   // below the line: the flow's own label sits on it
+                    g.appendChild(indicator(look, pt.x, pt.y));
+                });
+            }
+
+            /**
+             * One refresh cycle. Timed: only what is due. manual (Refresh now, the switch, a changed check): everything, and
+             * hosts that are not allowed yet open Settings → Live status to ask. Concurrency 6, one request per address.
+             */
+            async refreshLiveStatus({ manual = false, only = null } = {}) {
+                if (!this.live || !this.state) return;
+                if (!this.liveOn && !only) return;
+                if (this.live.busy) { try { await this.live.busyPromise; } catch { /* ignore */ } return this.refreshLiveStatus({ manual, only }); }
+                const approved = this.readLiveApproved(), now = Date.now(), jobs = new Map();
+                (only ? [only] : this.liveItems().map(it => this.liveJobFor(it))).forEach(j => { if (!j.error && !jobs.has(j.key) && jobs.size < LIVE_LIMITS.jobs) jobs.set(j.key, j); });
+                const list = [...jobs.values()];
+                const pending = [...new Set(list.filter(j => !approved.has(j.host)).map(j => j.host))];
+                if (pending.length) {
+                    if (manual) this.askLiveApproval(pending, () => this.refreshLiveStatus({ manual: true, only }));
+                    else if (pending.join(' ') !== this.live.notifiedHosts) {
+                        this.live.notifiedHosts = pending.join(' ');
+                        this.notify(`Live status: ${pending.length === 1 ? 'a host waits' : `${pending.length} hosts wait`} for your approval before anything is checked.`, 'warning', { label: 'Review', onClick: () => this.askLiveApproval(pending, () => this.refreshLiveStatus({ manual: true })) });
+                    }
+                }
+                const due = list.filter(j => approved.has(j.host) && (manual || only || now - (this.live.lastRun.get(j.key) || 0) >= (j.intervalSec || this.liveIntervalSec()) * 1000 - 500));
+                this.live.busy = true;
+                this.live.busyPromise = (async () => {
+                    try {
+                        const byUrl = new Map();   // the same address once per cycle
+                        await this.liveParallel(due, 6, (j) => {
+                            const k = `${j.kind === 'source' ? 'get' : j.kind}|${j.url}`;
+                            if (!byUrl.has(k)) byUrl.set(k, this.liveRequest(j));
+                            return byUrl.get(k).then(res => this.storeLiveResult(j, res));
+                        });
+                    } finally { this.live.busy = false; }
+                    this.afterLiveResults();
+                })();
+                return this.live.busyPromise;
+            }
+
+            async liveParallel(items, limit, fn) {
+                let next = 0;
+                const worker = async () => { while (next < items.length) { const it = items[next++]; try { await fn(it); } catch (err) { console.warn('[ThreatTiger] Live status check failed', err); } } };
+                await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+            }
+
+            /** fetch with a timeout, no cookies, no referrer and no cache; latency is the time to the response headers. */
+            async liveFetch(url, { method = 'GET', mode = 'cors', headers = undefined, readBody = true } = {}) {
+                const ctl = new AbortController(), ms = this.liveTimeoutMs;
+                const timer = setTimeout(() => ctl.abort(), ms);
+                const start = performance.now();
+                try {
+                    // redirect: 'manual': a redirect is never followed, so no readable request reaches a host that was not
+                    // approved. Browsers require 'follow' for no-cors (reachability only): that reply is opaque and sends no cookies.
+                    const redirect = mode === 'no-cors' ? 'follow' : 'manual';
+                    const r = await fetch(url, { method, mode, headers, credentials: 'omit', cache: 'no-store', referrerPolicy: 'no-referrer', redirect, signal: ctl.signal });
+                    const latency = performance.now() - start;
+                    if (r.type === 'opaqueredirect') return { ok: false, status: 0, type: r.type, redirected: true, text: '', latency };
+                    let text = '';
+                    if (readBody && r.type !== 'opaque') {
+                        text = await r.text();
+                        if (text.length > LIVE_LIMITS.bytes) throw new Error('the reply is larger than 2 MB');
+                    }
+                    return { ok: r.ok, status: r.status, type: r.type, text, latency };
+                } catch (err) {
+                    if (err && err.name === 'AbortError') throw new Error(`timed out after ${Math.round(ms / 100) / 10} s`);
+                    throw new Error(err && err.message && !/^Failed to fetch$/i.test(err.message) ? err.message : 'no reply (network error, or the server does not allow this)');
+                } finally { clearTimeout(timer); }
+            }
+
+            /** Runs one job and returns its raw outcome (shared between jobs with the same address). */
+            async liveRequest(j) {
+                const at = Date.now();
+                if (j.kind === 'source') {
+                    try {
+                        const r = await this.liveFetch(j.url);
+                        if (r.redirected) return { at, error: 'the address redirects to another address, which is not followed; use the final address (for a Google Sheet, its share link)' };
+                        if (!r.ok) return { at, error: `HTTP ${r.status}` };
+                        return { at, text: r.text, latency: r.latency };
+                    } catch (err) { return { at, error: err.message }; }
+                }
+                if (j.kind === 'http') {
+                    if (!this.live.noCors.has(j.url)) {
+                        try {
+                            const r = await this.liveFetch(j.url, { readBody: false });
+                            if (r.redirected) return { value: 'redirect', state: 'up', latency: r.latency, cors: true, at };   // it answered (3xx); not followed
+                            return { value: String(r.status), state: r.status < 400 ? 'up' : 'down', latency: r.latency, cors: true, at };
+                        } catch (err) {
+                            if (/^timed out/.test(err.message)) return { value: 'down', state: 'down', error: err.message, at };
+                            this.live.noCors.add(j.url);   // not readable here: from now on only ask whether it answers
+                        }
+                    }
+                    return this.liveReach(j.url, 'GET');
+                }
+                if (j.kind === 'reach') return this.liveReach(j.url, 'HEAD');
+                try {   // DNS over HTTPS (JSON API)
+                    const r = await this.liveFetch(j.url, { headers: { Accept: 'application/dns-json' } });
+                    if (r.redirected) return { value: 'error', error: 'the DNS provider redirected; not followed', at };
+                    if (!r.ok) return { value: 'error', error: `HTTP ${r.status}`, at };
+                    const d = JSON.parse(r.text), st = toNumber(d && d.Status, -1);
+                    if (st === 0) {
+                        const a = (Array.isArray(d.Answer) ? d.Answer : []).find(x => isPlainObject(x) && x.type === 1);
+                        return a ? { value: 'resolves', ip: toText(a.data).slice(0, 64), latency: r.latency, at } : { value: 'noanswer', latency: r.latency, at };
+                    }
+                    if (st === 3) return { value: 'nxdomain', latency: r.latency, at };
+                    return { value: 'error', error: `DNS status ${st}`, latency: r.latency, at };
+                } catch (err) { return { value: '', error: err.message, at }; }
+            }
+
+            async liveReach(url, method) {
+                const at = Date.now();
+                try {
+                    const r = await this.liveFetch(url, { method, mode: 'no-cors', readBody: false });
+                    return { value: 'up', state: 'up', latency: r.latency, cors: false, at };
+                } catch (err) { return { value: 'down', state: 'down', error: err.message, cors: false, at }; }
+            }
+
+            storeLiveResult(j, res) {
+                this.live.lastRun.set(j.key, res.at);
+                if (j.kind !== 'source') { this.live.results.set(j.key, res); return; }
+                const src = j.source, d = { url: j.url, at: Date.now(), latency: res.latency };
+                if (res.error) d.error = res.error;
+                else if (src.kind === 'sheet') {
+                    if (/^\s*</.test(res.text)) d.error = 'the address returned a web page, not CSV (is the sheet shared with "anyone with the link"?)';
+                    else { d.rows = parseCsv(res.text); d.count = Math.max(0, d.rows.length - 1); }
+                } else {
+                    try { d.json = JSON.parse(res.text); const list = (() => { let x = d.json; for (const p of (src.path ? src.path.split('.') : [])) x = x && typeof x === 'object' ? x[p] : undefined; return x; })(); d.count = Array.isArray(list) ? list.length : (isPlainObject(list) ? Object.keys(list).length : 0); }
+                    catch { d.error = 'the reply is not valid JSON'; }
+                }
+                this.live.sourceData.set(src.id, d);
+            }
+
+            /** Redraws, and logs a change of state (the matched rule) for each shape and flow, once per change. */
+            afterLiveResults() {
+                const changes = [];
+                this.liveItems().forEach(it => {
+                    const look = this.liveLookFor(it);
+                    if (!look || look.state === 'pending' || look.state === 'stale') return;
+                    const r = look.rule, name = r ? (r.label || look.result.value || 'no data') : (look.result.value || 'no data');
+                    const sig = r ? `${it.liveStatus.rules.indexOf(r)}|${r.label || ''}|${r.fill || ''}|${r.stroke || ''}` : 'none';
+                    const prev = this.live.lastState.get(it.id);
+                    this.live.lastState.set(it.id, { sig, name });
+                    if (prev && prev.sig !== sig) changes.push(`"${toText(it.name).trim() || 'unnamed'}" changed from ${prev.name} to ${name}`);
+                });
+                changes.slice(0, 20).forEach(m => this.logEvent('STATUS', `Live status: ${m}`, { undoable: false }));
+                if (!this.isDraggingElements && !this.activeFlowDragMode && !this.resizingElementId) this.renderSvgDiagramElements();
+                this.renderLiveSettings();
+                this.renderLiveResultLine();
+            }
+
+            // ── Live status: Settings ──
+            renderLiveSettings() {
+                if (!this.live || !this.state) return;
+                const $ = (id) => document.getElementById(id);
+                this.syncLiveControls();
+                $('live-status-interval').value = String(this.liveIntervalSec());
+                const box = $('live-approve-box'), hosts = this.live.pendingAction ? this.live.approveHosts : [];
+                box.classList.toggle('d-none', !hosts.length);
+                $('live-approve-hosts').replaceChildren(...hosts.map(h => { const li = document.createElement('li'); li.textContent = h; return li; }));
+                const list = $('live-sources-list'), sources = this.state.statusSources || [];
+                const rows = sources.map(src => {
+                    const row = document.createElement('div');
+                    row.className = 'live-source-row border rounded px-2 py-1 d-flex flex-wrap align-items-center gap-2 small';
+                    row.dataset.sourceId = src.id;
+                    const name = document.createElement('span'); name.className = 'fw-semibold text-break'; name.textContent = src.name || '(no name)';
+                    const kind = document.createElement('span'); kind.className = 'badge text-bg-secondary'; kind.textContent = src.kind === 'sheet' ? 'Sheet / CSV' : 'JSON';
+                    const host = document.createElement('span'); host.className = 'text-muted text-break'; host.textContent = (() => { try { return new URL(src.url).host; } catch { return ''; } })();
+                    const state = document.createElement('span'); state.className = 'live-source-state';
+                    const d = this.live.sourceData.get(src.id);
+                    if (!d) state.textContent = 'Not fetched yet';
+                    else if (d.error) { state.className += ' text-danger'; state.textContent = `Error: ${d.error} (${new Date(d.at).toLocaleTimeString()})`; }
+                    else { state.className += ' text-success'; state.textContent = `OK · ${d.count} ${src.kind === 'sheet' ? (d.count === 1 ? 'row' : 'rows') : (d.count === 1 ? 'item' : 'items')} · ${new Date(d.at).toLocaleTimeString()}`; }
+                    const btn = (cls, text, label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = `btn btn-sm ${cls}`; b.textContent = text; b.setAttribute('aria-label', `${label} ${src.name || 'source'}`); b.addEventListener('click', fn); return b; };
+                    const actions = document.createElement('span'); actions.className = 'ms-auto d-flex gap-1';
+                    actions.append(btn('btn-outline-primary live-source-test', 'Test', 'Test', () => this.testLiveSource(src.id)),
+                        btn('btn-outline-secondary live-source-edit', 'Edit', 'Edit', () => this.editLiveSource(src.id)),
+                        btn('btn-outline-danger live-source-remove', 'Remove', 'Remove', () => this.removeLiveSource(src.id)));
+                    row.append(name, kind, host, state, actions);
+                    return row;
+                });
+                if (!rows.length) { const p = document.createElement('div'); p.className = 'small text-muted'; p.textContent = 'No sources yet. Direct checks (web, reachability, DNS) need none.'; rows.push(p); }
+                list.replaceChildren(...rows);
+                const approved = [...this.readLiveApproved()];
+                $('live-approved-list').textContent = approved.length ? approved.join(', ') : 'None yet.';
+            }
+
+            testLiveSource(id) {
+                const src = this.liveSourceById(id);
+                if (!src) return;
+                const job = this.liveJobFor({ name: '', liveStatus: { check: { kind: 'source', sourceId: id, key: '' } } });
+                if (job.error) return;
+                if (!this.readLiveApproved().has(job.host)) { this.askLiveApproval([job.host], () => this.testLiveSource(id)); return; }
+                this.refreshLiveStatus({ manual: true, only: job });
+            }
+
+            editLiveSource(id) {
+                const src = id ? this.liveSourceById(id) : null, $ = (x) => document.getElementById(x);
+                this.live.editingSourceId = src ? src.id : null;
+                $('live-src-name').value = src ? src.name : '';
+                $('live-src-kind').value = src ? src.kind : 'sheet';
+                $('live-src-url').value = src ? src.url : '';
+                $('live-src-key-col').value = src && src.keyColumn || '';
+                $('live-src-value-col').value = src && src.valueColumn || '';
+                $('live-src-key-field').value = src && src.kind === 'json' && src.keyField !== 'name' ? src.keyField : '';
+                $('live-src-value-field').value = src && src.kind === 'json' && src.valueField !== 'status' ? src.valueField : '';
+                $('live-src-path').value = src && src.path || '';
+                $('live-src-interval').value = src && src.intervalSec ? String(src.intervalSec) : '';
+                $('live-src-error').textContent = '';
+                $('live-source-form').classList.remove('d-none');
+                $('btn-live-add-source').classList.add('d-none');
+                this.syncLiveSourceFormKind();
+                $('live-src-name').focus();
+            }
+
+            closeLiveSourceForm() {
+                this.live.editingSourceId = null;
+                document.getElementById('live-source-form').classList.add('d-none');
+                document.getElementById('btn-live-add-source').classList.remove('d-none');
+            }
+
+            syncLiveSourceFormKind() {
+                const json = document.getElementById('live-src-kind').value === 'json';
+                document.querySelectorAll('#live-source-form .live-src-sheet').forEach(n => n.classList.toggle('d-none', json));
+                document.querySelectorAll('#live-source-form .live-src-json').forEach(n => n.classList.toggle('d-none', !json));
+                document.getElementById('live-src-url').placeholder = json ? 'https://status.example.com/services.json' : 'https://docs.google.com/spreadsheets/d/…/edit#gid=0';
+            }
+
+            saveLiveSourceFromForm() {
+                const v = (id) => document.getElementById(id).value, err = document.getElementById('live-src-error');
+                const url = v('live-src-url').trim();
+                if (!liveSafeUrl(url)) { err.textContent = 'Enter an https:// address without a user name or password.'; return; }
+                const list = (this.state.statusSources || []).slice(), editing = this.live.editingSourceId;
+                if (!editing && list.length >= LIVE_LIMITS.sources) { err.textContent = `A model can have up to ${LIVE_LIMITS.sources} sources.`; return; }
+                const id = editing || `src-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+                const [src] = normalizeStatusSources([{ id, name: v('live-src-name').trim() || new URL(url).host, kind: v('live-src-kind'), url,
+                    keyColumn: v('live-src-key-col'), valueColumn: v('live-src-value-col'), keyField: v('live-src-key-field'), valueField: v('live-src-value-field'), path: v('live-src-path'), intervalSec: v('live-src-interval') }]);
+                if (!src) { err.textContent = 'Check the address and the other fields.'; return; }
+                const at = list.findIndex(s => s.id === id);
+                if (at >= 0) list[at] = src; else list.push(src);
+                this.state.statusSources = list;
+                this.live.sourceData.delete(id);
+                this.logEvent('CONFIGURE', `${at >= 0 ? 'Changed' : 'Added'} the status source "${src.name}"`);
+                this.closeLiveSourceForm();
+                this.renderLiveSettings();
+                this.renderLiveStatusProps();
+                this.renderSvgDiagramElements();
+            }
+
+            removeLiveSource(id) {
+                const src = this.liveSourceById(id);
+                if (!src) return;
+                this.state.statusSources = this.state.statusSources.filter(s => s.id !== id);
+                this.live.sourceData.delete(id);
+                this.logEvent('CONFIGURE', `Removed the status source "${src.name}"`);
+                if (this.live.editingSourceId === id) this.closeLiveSourceForm();
+                this.renderLiveSettings();
+                this.renderLiveStatusProps();
+                this.renderSvgDiagramElements();
+            }
+
+            // ── Live status: Properties ──
+            liveSelectedItem() {
+                const ids = this.state.selectedElementIds || [];
+                const item = ids.length === 1 && !this.state.selectedFlowId ? this.state.elements.find(e => e.id === ids[0])
+                    : (!ids.length && this.state.selectedFlowId ? this.state.flows.find(f => f.id === this.state.selectedFlowId) : null);
+                return item && liveCheckable(item) ? item : null;
+            }
+
+            renderLiveStatusProps() {
+                const $ = (id) => document.getElementById(id), box = $('box-props-live-status');
+                if (!box || !this.live) return;
+                const item = this.liveSelectedItem();
+                box.classList.toggle('d-none', !item);
+                if (!item) return;
+                const ls = item.liveStatus, on = !!(ls && ls.enabled), isFlow = !item.type;
+                $('props-live-enabled').checked = on;
+                $('props-live-details').classList.toggle('d-none', !on);
+                if (!on) return;
+                const c = ls.check, sources = this.state.statusSources || [];
+                const sel = $('props-live-kind'), groupS = document.createElement('optgroup'), groupB = document.createElement('optgroup');
+                groupS.label = 'Status sources'; groupB.label = 'Checks from this browser';
+                sources.forEach(s => groupS.append(new Option(`${s.name || s.url} (${s.kind === 'sheet' ? 'sheet' : 'JSON'})`, `source:${s.id}`)));
+                if (c.kind === 'source' && !this.liveSourceById(c.sourceId)) groupS.append(new Option(sources.length ? 'Choose a source…' : 'No sources yet (Settings → Live status)', `source:${c.sourceId}`));
+                Object.entries(LIVE_KIND_LABELS).forEach(([k, label]) => groupB.append(new Option(label, k)));
+                sel.replaceChildren(...(groupS.children.length ? [groupS] : []), groupB);
+                sel.value = c.kind === 'source' ? `source:${c.sourceId}` : c.kind;
+                const key = $('props-live-key'), lbl = $('props-live-key-lbl');
+                const spec = { source: ['Row name', `${toText(item.name).trim() || 'the name'} (default: the name)`], http: ['Address', 'https://example.com/health'], reach: ['Host or address', 'example.com'], dns: ['Host name', 'example.com'] }[c.kind];
+                lbl.textContent = spec[0]; key.placeholder = spec[1];
+                if (document.activeElement !== key) key.value = c.key;
+                $('box-props-live-dns').classList.toggle('d-none', c.kind !== 'dns');
+                if (c.kind === 'dns') { $('props-live-dns').replaceChildren(...Object.entries(LIVE_DNS).map(([k, p]) => new Option(p.label, k))); $('props-live-dns').value = c.dnsProvider; }
+                const src = c.kind === 'source' ? this.liveSourceById(c.sourceId) : null;
+                $('props-live-note').textContent = {
+                    source: src ? `Reads the value for "${c.key || toText(item.name).trim()}" from ${src.name || 'the source'}${src.kind === 'sheet' ? ' (its row, the next column unless the source names one)' : ''}.` : 'Add a Google Sheet, CSV or JSON source in Settings → Live status, or use a check from this browser.',
+                    http: 'Requests the address. If the server allows CORS the value is the HTTP status code (e.g. 200; "up"/"down" also match); without CORS only reachability is known and the value is up or down.',
+                    reach: 'Browsers cannot ping (ICMP). This sends a small HTTPS HEAD request and times the reply: the value is up or down, with the latency.',
+                    dns: `Looks up the A record with DNS over HTTPS. The host name is sent to ${(LIVE_DNS[c.dnsProvider] || LIVE_DNS.cloudflare).label}. The value is resolves, nxdomain or error.`,
+                }[c.kind];
+                this.renderLiveResultLine();
+                this.renderLiveRules(item, isFlow);
+            }
+
+            renderLiveResultLine() {
+                const el = document.getElementById('props-live-result'), item = this.liveSelectedItem();
+                if (!el || !item || !item.liveStatus || !item.liveStatus.enabled) return;
+                if (!this.liveOn) { el.className = 'extra-small mb-2 text-muted'; el.textContent = 'Live status is off: turn it on in ☰ → View → Live status.'; return; }
+                const look = this.liveLookFor(item);
+                el.className = `extra-small mb-2 ${look && look.state === 'match' ? 'text-success-emphasis' : 'text-muted'}`;
+                el.textContent = look ? `Now: ${look.text}${look.state === 'nomatch' ? ' (no rule matches)' : ''}` : '';
+            }
+
+            renderLiveRules(item, isFlow) {
+                const list = document.getElementById('props-live-rules');
+                const active = document.activeElement, focus = active && list.contains(active) && active.closest('.live-rule-row')
+                    ? { i: active.closest('.live-rule-row').dataset.index, cls: [...active.classList].find(c => c.startsWith('live-rule-')) } : null;
+                const rules = item.liveStatus.rules;
+                const field = (tag, cls, attrs = {}) => { const n = document.createElement(tag); n.className = cls; Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v)); return n; };
+                const rows = rules.map((r, i) => {
+                    const li = field('li', 'live-rule-row border rounded bg-white p-2'); li.dataset.index = String(i);
+                    const set = (patch) => this.editLiveRules(rs => { rs[i] = Object.assign({}, rs[i], patch); Object.keys(patch).forEach(k => { if (patch[k] === undefined) delete rs[i][k]; }); });
+                    const head = field('div', 'd-flex align-items-center gap-1 mb-1');
+                    const num = field('span', 'extra-small text-muted fw-bold live-rule-num me-auto'); num.textContent = `Rule ${i + 1}`;
+                    const top = field('div', 'd-flex flex-wrap gap-1 align-items-center mb-1');
+                    const when = field('select', 'form-select form-select-sm shadow-none live-rule-when', { 'aria-label': `Rule ${i + 1}: condition` });
+                    Object.entries(LIVE_WHEN).forEach(([k, label]) => when.append(new Option(label, k)));
+                    when.value = r.when;
+                    when.addEventListener('change', () => set({ when: when.value, value: ['nodata', 'else'].includes(when.value) ? undefined : (r.value || '') }));
+                    const value = field('input', 'form-control form-control-sm shadow-none live-rule-value', { type: 'text', maxlength: String(LIVE_LIMITS.value), 'aria-label': `Rule ${i + 1}: value`, spellcheck: 'false' });
+                    value.value = r.value || '';
+                    value.placeholder = ['lt', 'gt', 'latency_gt', 'latency_lt'].includes(r.when) ? 'number' : 'up|ok';
+                    value.classList.toggle('d-none', r.when === 'nodata' || r.when === 'else');
+                    value.addEventListener('change', () => set({ value: value.value }));
+                    const btn = (cls, icon, label, fn, disabled) => { const b = field('button', `btn btn-sm btn-outline-secondary live-rule-btn ${cls}`, { type: 'button', 'aria-label': `${label} rule ${i + 1}`, title: label }); const ic = field('i', `bi ${icon}`, { 'aria-hidden': 'true' }); b.append(ic); b.disabled = !!disabled; b.addEventListener('click', fn); return b; };
+                    top.append(when, value);
+                    head.append(num,
+                        btn('live-rule-up', 'bi-arrow-up', 'Move up', () => this.editLiveRules(rs => { [rs[i - 1], rs[i]] = [rs[i], rs[i - 1]]; }), i === 0),
+                        btn('live-rule-down', 'bi-arrow-down', 'Move down', () => this.editLiveRules(rs => { [rs[i + 1], rs[i]] = [rs[i], rs[i + 1]]; }), i === rules.length - 1),
+                        btn('live-rule-delete', 'bi-trash', 'Delete', () => this.editLiveRules(rs => { rs.splice(i, 1); }, 'Deleted a status rule')));
+                    const fx = field('div', 'd-flex flex-wrap gap-2 align-items-center');
+                    const colour = (k, label) => {
+                        const wrap = field('label', 'extra-small text-muted d-flex align-items-center gap-1 live-rule-colour');
+                        const onBox = field('input', `form-check-input mt-0 live-rule-${k}-on`, { type: 'checkbox', 'aria-label': `Rule ${i + 1}: use a ${label.toLowerCase()} colour` });
+                        onBox.checked = !!r[k];
+                        const input = field('input', `form-control form-control-color form-control-sm live-rule-${k}`, { type: 'color', 'aria-label': `Rule ${i + 1}: ${label.toLowerCase()} colour` });
+                        input.value = r[k] || (k === 'fill' ? '#198754' : '#0d6efd');
+                        input.disabled = !r[k];
+                        onBox.addEventListener('change', () => set({ [k]: onBox.checked ? input.value : undefined }));
+                        input.addEventListener('change', () => set({ [k]: liveColor(input.value) || undefined }));
+                        const t = document.createElement('span'); t.textContent = label;
+                        wrap.append(onBox, t, input);
+                        return wrap;
+                    };
+                    if (!isFlow) fx.append(colour('fill', 'Fill'));
+                    fx.append(colour('stroke', isFlow ? 'Line' : 'Border'));
+                    if (!isFlow) {
+                        const iconWrap = field('span', 'd-flex align-items-center gap-1');
+                        const prev = field('i', `bi ${safeIcon(r.icon, 'bi-dash')} live-rule-icon-preview`, { 'aria-hidden': 'true' });
+                        const icon = field('input', 'form-control form-control-sm shadow-none live-rule-icon', { type: 'text', maxlength: '60', list: 'live-icon-options', placeholder: 'icon: bi-…', 'aria-label': `Rule ${i + 1}: icon (Bootstrap icon name, optional)`, spellcheck: 'false' });
+                        icon.value = r.icon || '';
+                        icon.addEventListener('change', () => { const t = icon.value.trim(); const ok = safeIcon(t.startsWith('bi-') ? t : (t ? `bi-${t}` : ''), ''); if (t && !ok) { icon.classList.add('is-invalid'); return; } set({ icon: ok || undefined }); });
+                        iconWrap.append(prev, icon);
+                        fx.append(iconWrap);
+                    }
+                    const label = field('input', 'form-control form-control-sm shadow-none live-rule-label', { type: 'text', maxlength: String(LIVE_LIMITS.label), placeholder: 'label (optional)', 'aria-label': `Rule ${i + 1}: label shown on the canvas (optional)` });
+                    label.value = r.label || '';
+                    label.addEventListener('change', () => set({ label: label.value.trim() || undefined }));
+                    fx.append(label);
+                    li.append(head, top, fx);
+                    return li;
+                });
+                list.replaceChildren(...rows);
+                if (!document.getElementById('live-icon-options')) {
+                    const dl = document.createElement('datalist'); dl.id = 'live-icon-options';
+                    ['bi-check-circle-fill', 'bi-x-octagon-fill', 'bi-exclamation-triangle-fill', 'bi-hourglass-split', 'bi-wifi-off', 'bi-cloud-slash', 'bi-lightning-fill', 'bi-tools', 'bi-shield-exclamation', 'bi-question-circle'].forEach(v => { const o = document.createElement('option'); o.value = v; dl.append(o); });
+                    document.body.append(dl);
+                }
+                document.getElementById('btn-live-add-rule').disabled = rules.length >= LIVE_LIMITS.rules;
+                if (focus) { const n = list.querySelector(`.live-rule-row[data-index="${focus.i}"] .${focus.cls}`); if (n && !n.disabled) n.focus({ preventScroll: true }); }
+            }
+
+            /** Changes the selected item's status check (one undo step; a property edit, so allowed in review mode). */
+            updateItemLiveStatus(mutate, message) {
+                const item = this.liveSelectedItem();
+                if (!item) return;
+                const next = JSON.parse(JSON.stringify(item.liveStatus || { enabled: false, check: { kind: 'source', sourceId: '', key: '' }, rules: [] }));
+                mutate(next, !item.type, item);
+                item.liveStatus = normalizeLiveStatus(next);
+                this.logEvent('CHANGE', `${message} of "${toText(item.name).trim() || 'unnamed'}"`);
+                this.renderSvgDiagramElements();
+                this.renderLiveStatusProps();
+                return item;
+            }
+
+            setItemLiveEnabled(on) {
+                const sources = this.state.statusSources || [];
+                const item = this.updateItemLiveStatus((ls, isFlow) => {
+                    ls.enabled = !!on;
+                    if (on && !ls.rules.length) {
+                        if (ls.check.kind === 'source' && !ls.check.sourceId) { if (sources.length) ls.check.sourceId = sources[0].id; else ls.check = { kind: 'http', key: '' }; }
+                        ls.rules = liveDefaultRules(ls.check.kind, isFlow);
+                    }
+                }, on ? 'Turned on the status check' : 'Turned off the status check');
+                if (on && item && this.liveOn) this.refreshLiveStatus({ manual: true });
+            }
+
+            setItemLiveCheck({ kindValue, key, dnsProvider }) {
+                const item = this.updateItemLiveStatus((ls, isFlow) => {
+                    if (kindValue !== undefined) {
+                        const kind = kindValue.startsWith('source:') ? 'source' : kindValue;
+                        const untouched = JSON.stringify(ls.rules) === JSON.stringify(normalizeLiveStatus({ rules: liveDefaultRules(ls.check.kind, isFlow) }).rules);
+                        ls.check = { kind, key: kind === ls.check.kind ? ls.check.key : '' };
+                        if (kind === 'source') ls.check.sourceId = kindValue.slice(7);
+                        if (kind === 'dns') ls.check.dnsProvider = 'cloudflare';
+                        if (untouched) ls.rules = liveDefaultRules(kind, isFlow);
+                    }
+                    if (key !== undefined) ls.check.key = key;
+                    if (dnsProvider !== undefined) ls.check.dnsProvider = dnsProvider;
+                }, 'Changed the status check');
+                if (item && this.liveOn) this.refreshLiveStatus({ manual: true });
+            }
+
+            editLiveRules(fn, message = 'Changed the status rules') {
+                this.updateItemLiveStatus((ls, isFlow, item) => { fn(ls.rules, isFlow, item); }, message);
+            }
+            // ── end live status: runtime ──
+
             // ── Review mode: the layout is frozen; properties, threats and mitigations stay editable ──
             // Saved with the model (no undo step), so whoever opens it next sees it frozen too.
             toggleReviewMode(on = !this.state.reviewMode) {
@@ -12147,6 +13203,7 @@
                 set('btn-menu-minimap', this.minimapVisible);
                 set('btn-menu-line-jumps', this.lineJumps);
                 set('btn-menu-traffic', this.trafficAnimation !== false);
+                set('btn-menu-live-status', this.liveOn);   // live status
                 set('btn-menu-review-mode', this.state && this.state.reviewMode);
                 set('btn-menu-panel-left', !this.isLeftCollapsed);
                 set('btn-menu-panel-right', !this.isRightCollapsed);
@@ -14373,6 +15430,7 @@
                 this.applyLayerVisibility();
                 this.applyAttackPathHighlight();
                 this.applyPageLinkBadges();
+                this.applyLiveStatusOverlay();   // live status: indicators, labels, card colours
                 this.applyCanvasAccessibility();
                 this.renderMinimap();
                 // The legend follows every redraw (a flow made dashed, two-way or recoloured), but not each mouse move of a
@@ -14742,7 +15800,7 @@
                         black: '#212529'
                     };
                     const customColorHex = colorMap[f.color] || (isDark ? '#cbd5e1' : '#212529');
-                    const lineColor = f.isDisabled ? '#ced4da' : ((f.secProps && f.secProps.encrypted === 'true') ? '#212529' : customColorHex);
+                    const lineColor = this.liveFlowStroke(f) || (f.isDisabled ? '#ced4da' : ((f.secProps && f.secProps.encrypted === 'true') ? '#212529' : customColorHex));   // live status first
 
                     let markerColor = lineColor;
                     if (isSelected) {
@@ -14979,7 +16037,8 @@
                 });
 
                 this.hideQuickAddGhost();   // anchor dots are recreated, so their hover state is lost
-                this.state.elements.filter(e => e.type !== 'boundary' && e.type !== 'boundary_line' && e.type !== 'swimlane' && !TT_DECOR_TYPES.includes(e.type)).forEach(node => {
+                this.state.elements.filter(e => e.type !== 'boundary' && e.type !== 'boundary_line' && e.type !== 'swimlane' && !TT_DECOR_TYPES.includes(e.type)).forEach(rawNode => {
+                    const node = this.liveNodeView(rawNode);   // live status: a recoloured copy to draw; rawNode is the stored shape
                     const isSelected = this.state.selectedElementIds.includes(node.id);
                     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                     g.setAttribute('class', `node-element ${isSelected ? 'selected' : ''} ${node.isDisabled ? 'disabled' : ''}`);
@@ -15270,8 +16329,8 @@
                         });
                     }
 
-                    if (isSelected && this.state.selectedElementIds.length === 1 && !node.hideTextAndBox && !this.state.reviewMode) g.appendChild(this.createResizeHandleSvgDOMItem(node));
-                    this.attachNodeEventHandlersLayers(node, g); this.dom.layerNodes.appendChild(g);
+                    if (isSelected && this.state.selectedElementIds.length === 1 && !node.hideTextAndBox && !this.state.reviewMode) g.appendChild(this.createResizeHandleSvgDOMItem(rawNode));
+                    this.attachNodeEventHandlersLayers(rawNode, g); this.dom.layerNodes.appendChild(g);
 
                 });
                 this.ttRenderTables();   // table items
@@ -16274,6 +17333,7 @@
                     ['box-props-node-type', 'box-props-icon-customization', 'box-props-security'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('d-none'); });
                 }
                 this.renderFlowTrafficProps();
+                this.renderLiveStatusProps();   // live status check
                 this.applyReviewModeToControls();
             }
 
@@ -17806,6 +18866,7 @@
                 };
                 const git = normalizeGitSync(s.gitSync);
                 if (git) payload.gitSync = canon(git);
+                const liveSources = normalizeStatusSources(s.statusSources); if (liveSources.length) payload.statusSources = canon(liveSources);   // live status sources
                 if (includeLog) payload.activityLog = s.activityLog;
                 return payload;
             }

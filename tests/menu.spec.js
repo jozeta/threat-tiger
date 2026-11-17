@@ -59,7 +59,7 @@ test('hovering opens a flyout; hovering another item closes it', async ({ page }
   await expect(page.locator('#menu-view-items')).toBeVisible();
   await page.hover('#btn-menu-icon-sets');
   await expect(page.locator('#menu-icon-sets')).toBeVisible();
-  await page.hover('#btn-menu-minimap');
+  await page.hover('#btn-menu-panel-left');
   await expect(page.locator('#menu-icon-sets')).toBeHidden();
   await expect(page.locator('#menu-view-items')).toBeVisible();
   await page.hover('#btn-help-trigger');
