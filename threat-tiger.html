@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YQ51vvEzsy0AkA2Wi0bDxYzdJUflQokBADCnEmLfmyw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Lad91kcPUbfr0SD6/a/W0YR8EbKIZuP+dCdHdFuYQX4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1547,6 +1547,12 @@
             fill: #f8fafc !important;
         }
 
+        /* Attack-tree tag line (tactic · technique, outcome) keeps its colour on the pale fill in dark mode */
+        .dark-theme-canvas text.at-shape-tag { fill: #7f1d1d !important; }
+        .dark-theme-canvas text.at-shape-tag.at-tone-success { fill: #166534 !important; }
+        .dark-theme-canvas text.at-shape-tag.at-tone-fail { fill: #991b1b !important; }
+        .dark-theme-canvas text.at-shape-tag[data-dark-fill="true"] { fill: #f8fafc !important; }
+
         .dark-theme-canvas text[fill="#b70918"] {
             fill: #ff8787 !important;
         }
@@ -1893,6 +1899,160 @@
                             aria-labelledby="headingAttackPaths">
                             <div class="accordion-body d-flex flex-column gap-1" id="palette-attack-body">
                                 <!-- Attack-path and attack-tree shapes -->
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="interactor" data-preset="attacker" id="pal-at-attacker">
+                                        <i class="bi bi-incognito text-danger fs-5 me-3" aria-hidden="true"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Threat actor</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title" style="color:#fca5a5;">Threat actor (external entity)</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Attack-path entry:</div>
+                                        <div class="small text-light opacity-75 mb-2">An external entity preset for the attacker. Like every external entity it is an entry point for Insights &rarr; Attack paths, and it gets threats and suggestions as usual.</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="datastore" data-preset="crown-jewel" id="pal-at-crown-jewel">
+                                        <i class="bi bi-gem text-warning fs-5 me-3" aria-hidden="true"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Crown jewel</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title" style="color:#fca5a5;">Crown jewel (data store)</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Attack-path target:</div>
+                                        <div class="small text-light opacity-75 mb-2">A data store marked as a crown jewel: the asset an attacker is after. Insights &rarr; Attack paths ranks the routes that reach it.</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="at_entry" id="pal-at-entry">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0" aria-hidden="true"><polygon points="1,2 19,2 27,10 19,18 1,18" fill="#ffedd5" stroke="#c2410c" stroke-width="1.8"/></svg>
+                                        <div>
+                                            <div class="fw-semibold small">Entry point</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title" style="color:#fca5a5;">Entry point</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Attack tree / flow:</div>
+                                        <div class="small text-light opacity-75 mb-2">Where the attacker gets in: an exposed service, a phishing mail, a stolen laptop. A diagram shape, not a system component.</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="at_step" id="pal-at-step">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0" aria-hidden="true"><rect x="1" y="2" width="26" height="16" rx="4" fill="#fee2e2" stroke="#b91c1c" stroke-width="1.8"/></svg>
+                                        <div>
+                                            <div class="fw-semibold small">Attack step</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title" style="color:#fca5a5;">Attack step (action)</div>
+                                        <div class="small fw-bold text-white-50 mb-1">MITRE Attack Flow action:</div>
+                                        <div class="small text-light opacity-75 mb-2">One thing the attacker does. Pick its ATT&amp;CK tactic and, optionally, a technique ID such as T1566 in Properties; both are shown on the shape.</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="at_asset" id="pal-at-asset">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0" aria-hidden="true"><rect x="1" y="2" width="26" height="16" fill="#e0f2fe" stroke="#0369a1" stroke-width="1.8"/><rect x="4" y="5" width="20" height="10" fill="none" stroke="#0369a1" stroke-width="1"/></svg>
+                                        <div>
+                                            <div class="fw-semibold small">Asset / target</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title" style="color:#fca5a5;">Asset / target</div>
+                                        <div class="small fw-bold text-white-50 mb-1">MITRE Attack Flow asset:</div>
+                                        <div class="small text-light opacity-75 mb-2">Something an attack step acts on or gains: an account, a host, a secret, a data set.</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="at_condition" id="pal-at-condition">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0" aria-hidden="true"><polygon points="1,2 27,2 23,10 27,18 1,18 5,10" fill="#f1f5f9" stroke="#475569" stroke-width="1.8"/></svg>
+                                        <div>
+                                            <div class="fw-semibold small">Condition / outcome</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title" style="color:#fca5a5;">Condition / outcome</div>
+                                        <div class="small fw-bold text-white-50 mb-1">MITRE Attack Flow condition:</div>
+                                        <div class="small text-light opacity-75 mb-2">A state the attack depends on or produces. Mark it as success or fail in Properties.</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="at_and" id="pal-at-and">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0" aria-hidden="true"><path d="M6,19 V10 A8,8 0 0 1 22,10 V19 Z" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.8"/></svg>
+                                        <div>
+                                            <div class="fw-semibold small">AND gate</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title" style="color:#fca5a5;">AND gate</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Attack tree operator:</div>
+                                        <div class="small text-light opacity-75 mb-2">The parent goal is reached only when ALL child steps succeed. Connect the children to the gate and the gate to its parent.</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="at_or" id="pal-at-or">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0" aria-hidden="true"><path d="M6,19 Q14,14 22,19 Q21,8 14,1 Q7,8 6,19 Z" fill="#ede9fe" stroke="#6d28d9" stroke-width="1.8"/></svg>
+                                        <div>
+                                            <div class="fw-semibold small">OR gate</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title" style="color:#fca5a5;">OR gate</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Attack tree operator:</div>
+                                        <div class="small text-light opacity-75 mb-2">The parent goal is reached when ANY one of the child steps succeeds.</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="at_goal" id="pal-at-goal">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0" aria-hidden="true"><rect x="2" y="2" width="24" height="16" rx="2" fill="#ffe4e6" stroke="#9f1239" stroke-width="3"/><polygon points="7,5 13,7 7,9" fill="#9f1239"/></svg>
+                                        <div>
+                                            <div class="fw-semibold small">Goal</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title" style="color:#fca5a5;">Goal (attack-tree root)</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Attack tree root:</div>
+                                        <div class="small text-light opacity-75 mb-2">What the attacker ultimately wants, at the top of the tree: &ldquo;Read customer data&rdquo;, &ldquo;Stop payments&rdquo;.</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="at_countermeasure" id="pal-at-countermeasure">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0" aria-hidden="true"><path d="M14,1 L25,4 V10 Q25,16 14,19 Q3,16 3,10 V4 Z" fill="#dcfce7" stroke="#15803d" stroke-width="1.8"/></svg>
+                                        <div>
+                                            <div class="fw-semibold small">Countermeasure</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title" style="color:#fca5a5;">Countermeasure / defence</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Attack-defence tree:</div>
+                                        <div class="small text-light opacity-75 mb-2">A defence that stops or detects a step. Connect it to the step it counters.</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="at_choke" id="pal-at-choke">
+                                        <svg width="28" height="20" class="me-3 flex-shrink-0" aria-hidden="true"><polygon points="8,1 20,1 27,6 27,14 20,19 8,19 1,14 1,6" fill="#fef9c3" stroke="#a16207" stroke-width="1.8"/></svg>
+                                        <div>
+                                            <div class="fw-semibold small">Choke point</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title" style="color:#fca5a5;">Choke point</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Attack-path marker:</div>
+                                        <div class="small text-light opacity-75 mb-2">A place many attack paths pass through: one control here cuts several routes.</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2992,6 +3152,33 @@
                                 </div>
                             </div>
 
+                            <!-- Attack-tree fields (attack step, condition) -->
+                            <div id="box-props-attack" class="card card-body p-2 bg-light border d-none">
+                                <h6 class="small fw-bold text-dark border-bottom pb-1 mb-2"><i
+                                        class="bi bi-crosshair me-1 text-danger" aria-hidden="true"></i>Attack Tree</h6>
+                                <div id="props-at-step-fields">
+                                    <div class="mb-2">
+                                        <label class="extra-small text-muted fw-bold mb-1" for="props-at-tactic">ATT&amp;CK tactic</label>
+                                        <select class="form-select form-select-sm shadow-none" id="props-at-tactic"></select>
+                                    </div>
+                                    <div class="mb-1">
+                                        <label class="extra-small text-muted fw-bold mb-1" for="props-at-technique">Technique ID (optional)</label>
+                                        <input type="text" class="form-control form-control-sm shadow-none" id="props-at-technique"
+                                            placeholder="T1566 or T1566.001" maxlength="9" autocomplete="off" spellcheck="false"
+                                            aria-describedby="props-at-technique-error">
+                                        <div class="invalid-feedback extra-small" id="props-at-technique-error">Use an ATT&amp;CK technique ID: T and four digits, optionally a dot and three more (T1566.001).</div>
+                                    </div>
+                                </div>
+                                <div id="props-at-condition-fields" class="mb-1">
+                                    <label class="extra-small text-muted fw-bold mb-1" for="props-at-outcome">Outcome</label>
+                                    <select class="form-select form-select-sm shadow-none" id="props-at-outcome">
+                                        <option value="">Not set</option>
+                                        <option value="success">Success</option>
+                                        <option value="fail">Fail</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <div id="box-props-notes">
                                 <label class="form-label small fw-semibold text-muted mb-1">Architectural Scope
                                     Notes</label>
@@ -4000,6 +4187,121 @@
             fc_database:     { label: 'Database (cylinder)',    name: 'Database',     w: 120, h: 100, fill: '#ecfccb', stroke: '#65a30d' },
             fc_cube:         { label: 'Cube (3D box)',          name: 'Cube',         w: 140, h: 100, fill: '#e0e7ff', stroke: '#4f46e5' },
         };
+        // ── Attack paths & trees (palette group "attack") ────────────────────────────
+        // Shapes after MITRE Attack Flow (action, asset, condition, AND/OR operator), attack-defence trees (gates, goal,
+        // countermeasure) and attack-path tools (entry point, choke point). They reuse the flowchart machinery: drawn by
+        // renderFlowchartShapeSvg, styled with fcFillColor / fcStrokeColor / fcStrokeWidth, anchors, Properties style box.
+        //
+        // Semantics (deliberate): an at_* shape is a diagram of HOW an attack unfolds, not a part of the system being
+        // modelled. So at_* types are NOT in MODEL_COMPONENT_TYPES: they get no STRIDE threats or suggestions, are not
+        // counted as uncovered in Insights, are not data-flow nodes for computeAttackPaths and are left out of reports.
+        // Flows can connect them; a flow with an at_* shape at either end is an attack-tree link (isAttackLink), not a
+        // data flow, so it gets no suggestions and is not counted as uncovered either. The "Threat actor" and "Crown
+        // jewel" palette items are presets of ordinary components (interactor, datastore) and DO take part in attack paths.
+        const ATTACK_SHAPE_DEFAULTS = {
+            at_entry:          { label: 'Entry point',          name: 'Entry point',    w: 160, h: 70,  fill: '#ffedd5', stroke: '#c2410c' },
+            at_step:           { label: 'Attack step',          name: 'Attack step',    w: 180, h: 80,  fill: '#fee2e2', stroke: '#b91c1c' },
+            at_asset:          { label: 'Asset / target',       name: 'Asset',          w: 160, h: 70,  fill: '#e0f2fe', stroke: '#0369a1' },
+            at_condition:      { label: 'Condition / outcome',  name: 'Condition',      w: 180, h: 70,  fill: '#f1f5f9', stroke: '#475569' },
+            at_and:            { label: 'AND gate',             name: 'AND',            w: 90,  h: 80,  fill: '#ede9fe', stroke: '#6d28d9' },
+            at_or:             { label: 'OR gate',              name: 'OR',             w: 90,  h: 80,  fill: '#ede9fe', stroke: '#6d28d9' },
+            at_goal:           { label: 'Goal (attack-tree root)', name: 'Attacker goal', w: 200, h: 80, fill: '#ffe4e6', stroke: '#9f1239' },
+            at_countermeasure: { label: 'Countermeasure / defence', name: 'Countermeasure', w: 170, h: 90, fill: '#dcfce7', stroke: '#15803d' },
+            at_choke:          { label: 'Choke point',          name: 'Choke point',    w: 130, h: 80,  fill: '#fef9c3', stroke: '#a16207' },
+        };
+        const ATTACK_SHAPE_TYPES = Object.keys(ATTACK_SHAPE_DEFAULTS);
+        // The 14 MITRE ATT&CK Enterprise tactics in matrix order; an attack step stores the tactic ID.
+        const ATTACK_TACTICS = [['TA0043', 'Reconnaissance'], ['TA0042', 'Resource Development'], ['TA0001', 'Initial Access'], ['TA0002', 'Execution'],
+            ['TA0003', 'Persistence'], ['TA0004', 'Privilege Escalation'], ['TA0005', 'Defense Evasion'], ['TA0006', 'Credential Access'], ['TA0007', 'Discovery'],
+            ['TA0008', 'Lateral Movement'], ['TA0009', 'Collection'], ['TA0011', 'Command and Control'], ['TA0010', 'Exfiltration'], ['TA0040', 'Impact']];
+        const ATTACK_TACTIC_NAMES = new Map(ATTACK_TACTICS);
+        const ATTACK_TECHNIQUE = /^T\d{4}(\.\d{3})?$/;
+        const ATTACK_OUTCOMES = { success: 'Success', fail: 'Fail' };
+        // Palette presets: ordinary components with an attack-path role.
+        const ATTACK_PRESETS = {
+            attacker: { type: 'interactor', name: 'Threat actor', icon: 'bi-incognito', secProps: { unauthAccess: 'true' } },
+            'crown-jewel': { type: 'datastore', name: 'Crown jewel', icon: 'bi-gem', secProps: { isCrownJewel: 'true', handlesSensitiveData: 'true' } },
+        };
+        const ATTACK_PRESET_DRAG_TYPE = 'application/x-threat-tiger-preset';
+        function isAttackShapeType(t) { return typeof t === 'string' && Object.prototype.hasOwnProperty.call(ATTACK_SHAPE_DEFAULTS, t); }
+        // Shapes drawn by the flowchart renderer: flowchart (fc_*) and attack-tree (at_*) shapes.
+        function isFcLikeType(t) { return typeof t === 'string' && (t.startsWith('fc_') || isAttackShapeType(t)); }
+        function fcLikeDefaults(t) { return FLOWCHART_DEFAULTS[t] || (isAttackShapeType(t) ? ATTACK_SHAPE_DEFAULTS[t] : null); }
+        // "T1566.001" from user or file input, or '' when it is not a technique ID.
+        function normalizeTechniqueId(v) { const t = toText(v).trim().toUpperCase(); return ATTACK_TECHNIQUE.test(t) ? t : ''; }
+        // Import: attack fields only on the shapes that have them and only with valid values.
+        function normalizeAttackFields(el, raw, ctx) {
+            ['atTactic', 'atTechnique', 'atOutcome'].forEach(k => delete el[k]);
+            if (el.type === 'at_step') {
+                if (ATTACK_TACTIC_NAMES.has(toText(raw.atTactic))) el.atTactic = toText(raw.atTactic);
+                else if (raw.atTactic) ctx.warn(`Dropped an unknown ATT&CK tactic on "${toText(raw.name).slice(0, 60) || el.id}".`);
+                const tech = normalizeTechniqueId(raw.atTechnique);
+                if (tech) el.atTechnique = tech;
+                else if (raw.atTechnique) ctx.warn(`Dropped an invalid ATT&CK technique ID on "${toText(raw.name).slice(0, 60) || el.id}".`);
+            }
+            if (el.type === 'at_condition' && Object.prototype.hasOwnProperty.call(ATTACK_OUTCOMES, toText(raw.atOutcome))) el.atOutcome = toText(raw.atOutcome);
+            if (isAttackShapeType(el.type)) {
+                const d = ATTACK_SHAPE_DEFAULTS[el.type];
+                if (!(toNumber(raw.width, 0) > 0)) el.width = d.w;
+                if (!(toNumber(raw.height, 0) > 0)) el.height = d.h;
+            }
+        }
+        // The small tag line drawn on a step (tactic · technique) or condition (outcome); plain text, set via textContent.
+        function attackShapeTag(el) {
+            if (el.type === 'at_step') return [ATTACK_TACTIC_NAMES.get(el.atTactic), el.atTechnique && ATTACK_TECHNIQUE.test(el.atTechnique) ? el.atTechnique : ''].filter(Boolean).join(' · ');
+            if (el.type === 'at_condition' && ATTACK_OUTCOMES[el.atOutcome]) return `${el.atOutcome === 'success' ? '✓' : '✗'} ${ATTACK_OUTCOMES[el.atOutcome]}`;
+            return '';
+        }
+        // Outline of an at_* shape (fill and stroke are set by the caller, so they are inherited by a group's parts).
+        function buildAttackShapeOutline(type, w, h, sw) {
+            const ns = 'http://www.w3.org/2000/svg';
+            const mk = (tag, attrs) => { const n = document.createElementNS(ns, tag); Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v)); return n; };
+            let el;
+            if (type === 'at_entry') {            // arrow pointing in
+                const p = Math.min(h * 0.45, w * 0.3);
+                el = mk('polygon', { points: `0,0 ${w - p},0 ${w},${h / 2} ${w - p},${h} 0,${h}` });
+            } else if (type === 'at_step') {      // rounded action box
+                el = mk('rect', { x: 0, y: 0, width: w, height: h, rx: 12, ry: 12 });
+            } else if (type === 'at_asset') {     // box with a double border
+                el = mk('g', {});
+                el.append(mk('rect', { x: 0, y: 0, width: w, height: h, rx: 2 }), mk('rect', { x: 5, y: 5, width: Math.max(0, w - 10), height: Math.max(0, h - 10), rx: 1, fill: 'none', 'stroke-width': Math.max(1, sw / 2) }));
+            } else if (type === 'at_condition') { // ribbon banner, notched at both ends
+                const p = Math.min(h * 0.3, w * 0.15);
+                el = mk('polygon', { points: `0,0 ${w},0 ${w - p},${h / 2} ${w},${h} 0,${h} ${p},${h / 2}` });
+            } else if (type === 'at_and') {       // AND gate: flat bottom, dome top (the inputs come from below)
+                el = mk('path', { d: `M0,${h} V${h / 2} A${w / 2},${h / 2} 0 0 1 ${w},${h / 2} V${h} Z` });
+            } else if (type === 'at_or') {        // OR gate: curved bottom, pointed top
+                el = mk('path', { d: `M0,${h} Q${w / 2},${h * 0.6} ${w},${h} Q${w * 0.95},${h * 0.3} ${w / 2},0 Q${w * 0.05},${h * 0.3} 0,${h} Z` });
+            } else if (type === 'at_goal') {      // bold box with a flag
+                el = mk('g', {});
+                el.append(mk('rect', { x: 0, y: 0, width: w, height: h, rx: 4, 'stroke-width': sw * 2 }),
+                    mk('line', { x1: 12, y1: 8, x2: 12, y2: 30, 'stroke-width': 2 }),
+                    mk('polygon', { points: '12,8 28,13 12,18', 'stroke-width': 1 }));
+                el.lastChild.setAttribute('class', 'at-goal-flag');
+            } else if (type === 'at_countermeasure') {   // shield
+                el = mk('path', { d: `M${w / 2},0 L${w},${h * 0.14} V${h * 0.48} Q${w},${h * 0.82} ${w / 2},${h} Q0,${h * 0.82} 0,${h * 0.48} V${h * 0.14} Z` });
+            } else {                              // at_choke: octagon
+                const c = Math.min(w, h) * 0.29;
+                el = mk('polygon', { points: `${c},0 ${w - c},0 ${w},${c} ${w},${h - c} ${w - c},${h} ${c},${h} 0,${h - c} 0,${c}` });
+            }
+            el.setAttribute('data-at-shape', type);
+            el.setAttribute('stroke-linejoin', 'round');
+            return el;
+        }
+        // Anchors on the visible outline (getFcAnchorPoints delegates here).
+        function attackShapeAnchors(type, w, h) {
+            const a = (top, bottom, left, right) => [{ id: 'top', cx: top[0], cy: top[1] }, { id: 'bottom', cx: bottom[0], cy: bottom[1] }, { id: 'left', cx: left[0], cy: left[1] }, { id: 'right', cx: right[0], cy: right[1] }];
+            if (type === 'at_or') return a([w / 2, 0], [w / 2, h * 0.8], [w * 0.2, h * 0.6], [w * 0.8, h * 0.6]);
+            if (type === 'at_and') return a([w / 2, 0], [w / 2, h], [0, h * 0.75], [w, h * 0.75]);
+            if (type === 'at_condition') { const p = Math.min(h * 0.3, w * 0.15); return a([w / 2, 0], [w / 2, h], [p, h / 2], [w - p, h / 2]); }
+            return a([w / 2, 0], [w / 2, h], [0, h / 2], [w, h / 2]);
+        }
+        // Vertical centre of the name inside an at_* shape.
+        function attackLabelY(el, w, h) {
+            if (el.type === 'at_and' || el.type === 'at_or') return h * 0.68;
+            if (el.type === 'at_countermeasure') return h * 0.45;
+            return attackShapeTag(el) ? h / 2 + 8 : h / 2;
+        }
         // Every shape type the palette can add; imported or dropped types outside this list are not trusted.
         const ELEMENT_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'boundary', 'boundary_line', 'step_activity', 'textbox', 'headline',
             'custom_image', 'swimlane', ...Object.keys(FLOWCHART_DEFAULTS)]);
@@ -4011,6 +4313,7 @@
         // ── Align and distribute ─────────────────────────────────────────────────────
         // Shapes the align toolbar moves (flows, boundary lines, swimlanes and text are left alone).
         const ALIGNABLE_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'custom_image', 'step_activity', 'boundary', ...Object.keys(FLOWCHART_DEFAULTS)]);
+        ATTACK_SHAPE_TYPES.forEach(t => { ELEMENT_TYPES.add(t); ALIGNABLE_TYPES.add(t); });   // attack-tree shapes: never MODEL_COMPONENT_TYPES (see ATTACK_SHAPE_DEFAULTS)
         // An element's box in model coordinates; missing sizes use the renderer's per-type defaults.
         function alignableBox(e) {
             if (!e || !ALIGNABLE_TYPES.has(e.type)) return null;
@@ -4367,7 +4670,7 @@
         function styleFamily(e) {
             const t = e && toText(e.type);
             if (!t) return null;
-            if (t.startsWith('fc_')) return 'flowchart';
+            if (isFcLikeType(t)) return 'flowchart';
             if (t === 'step_activity') return 'step';
             if (['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(t)) return 'component';
             if (t === 'textbox' || t === 'headline') return 'text';
@@ -4378,7 +4681,7 @@
             if (!fam || styleFamily(dst) !== fam) return {};
             // A key the source leaves at its default gives the target the default too: the source type's own
             // default for flowchart shapes (types differ in colour), otherwise undefined (the key is removed).
-            const def = fam === 'flowchart' ? { fcFillColor: FLOWCHART_DEFAULTS[src.type].fill, fcStrokeColor: FLOWCHART_DEFAULTS[src.type].stroke, fcStrokeWidth: 2 } : {};
+            const def = fam === 'flowchart' ? { fcFillColor: fcLikeDefaults(src.type).fill, fcStrokeColor: fcLikeDefaults(src.type).stroke, fcStrokeWidth: 2 } : {};
             const out = {};
             STYLE_FAMILIES[fam].forEach(k => { out[k] = src[k] !== undefined ? src[k] : def[k]; });
             return out;
@@ -5263,6 +5566,7 @@
             const el = copyPlain(raw);
             el.id = id;
             el.type = toText(raw.type) || 'process';
+            if (el.type.startsWith('at_') && !ELEMENT_TYPES.has(el.type)) el.type = 'at_step';   // unknown attack-tree shape
             if (el.type.startsWith('fc_') && !ELEMENT_TYPES.has(el.type)) el.type = 'fc_process';   // unknown flowchart shape
             else if (!ELEMENT_TYPES.has(el.type)) {
                 ctx.warn(`Changed the unknown component type "${el.type.slice(0, 40)}" of "${toText(raw.name) || id}" to a process.`);
@@ -5276,6 +5580,7 @@
             ['width', 'height', 'x2', 'y2', 'bendX', 'bendY', 'textOffset', 'fontSize', 'stepNumber', 'zIndex'].forEach(k => {
                 if (k in raw) el[k] = toNumber(raw[k], undefined);
             });
+            normalizeAttackFields(el, raw, ctx);   // atTactic / atTechnique / atOutcome
             if ('notes' in raw) el.notes = toText(raw.notes);
             if ('secProps' in raw) el.secProps = normalizeSecProps(raw.secProps);
             if ('icon' in raw) el.icon = safeIcon(ICON_ALIASES[raw.icon] || raw.icon);
@@ -6007,7 +6312,7 @@
                 } else if (el.type === 'custom_image') {
                     w = el.width || 120;
                     h = el.height || 120;
-                } else if (el.type && el.type.startsWith('fc_')) {
+                } else if (isFcLikeType(el.type)) {
                     w = el.width || 160;
                     h = el.height || 80;
                     // For fc shapes, anchor exactly on the shape-geometry edge.
@@ -7644,6 +7949,7 @@
                 this.setupViewMenu();
                 this.setupStencils();
                 this.setupPaletteVisibility();
+                this.setupAttackPalette();
                 try { this.lineJumps = localStorage.getItem('line_jumps') !== 'false'; } catch { this.lineJumps = true; }
                 document.getElementById('btn-menu-line-jumps').setAttribute('aria-checked', String(this.lineJumps));
                 document.getElementById('btn-menu-line-jumps').addEventListener('click', () => this.toggleLineJumps());
@@ -8112,7 +8418,7 @@
                     const id = this.state.selectedElementIds[0];
                     if (!id) return null;
                     const node = this.state.elements.find(e => e.id === id);
-                    return (node && node.type && node.type.startsWith('fc_')) ? node : null;
+                    return (node && isFcLikeType(node.type)) ? node : null;
                 };
 
                 // Fill color swatches
@@ -8341,6 +8647,7 @@
                     const coords = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
                     const stencil = ev.dataTransfer.getData(STENCIL_DRAG_TYPE);
                     if (stencil) { this.dropStencilNode(stencil, coords.x, coords.y); return; }
+                    const preset = ev.dataTransfer.getData(ATTACK_PRESET_DRAG_TYPE); if (preset) { this.addAttackPreset(preset, coords.x, coords.y); return; }
                     const type = ev.dataTransfer.getData('text/plain');
                     // Only palette items: text dragged in from elsewhere (another page, a file) is not a shape type.
                     if (ELEMENT_TYPES.has(type)) this.instantiateNewCanvasElementNode(type, coords.x, coords.y);
@@ -9729,6 +10036,92 @@
                 })));
             }
 
+            // ── Attack paths & trees (palette group "attack"; constants next to ATTACK_SHAPE_DEFAULTS) ──────────
+            // True for an at_* shape and for a flow with an at_* shape at either end (an attack-tree link, not a data flow).
+            isAttackTreeItem(item) {
+                if (!item) return false;
+                if (!this.isFlowItem(item)) return isAttackShapeType(item.type);
+                return this.state.elements.some(e => (e.id === item.sourceId || e.id === item.targetId) && isAttackShapeType(e.type));
+            }
+            // Palette items (click, Enter/Space via role=button, drag) and the Properties fields of steps and conditions.
+            setupAttackPalette() {
+                document.querySelectorAll('#palette-attack-body .palette-item').forEach(el => {
+                    el.setAttribute('draggable', 'true');
+                    el.addEventListener('click', (ev) => {
+                        if (ev.detail > 1) return;   // the 2nd click of a double-click adds nothing
+                        const preset = el.dataset.preset;
+                        if (preset) this.addAttackPreset(preset); else if (isAttackShapeType(el.dataset.type)) this.instantiateNewCanvasElementNode(el.dataset.type);
+                    });
+                    el.addEventListener('dragstart', (ev) => {
+                        ev.dataTransfer.setData('text/plain', el.dataset.type);
+                        if (el.dataset.preset) ev.dataTransfer.setData(ATTACK_PRESET_DRAG_TYPE, el.dataset.preset);
+                        ev.dataTransfer.effectAllowed = 'copy';
+                    });
+                });
+                const tactic = document.getElementById('props-at-tactic'), tech = document.getElementById('props-at-technique'), outcome = document.getElementById('props-at-outcome');
+                tactic.replaceChildren(new Option('None', ''), ...ATTACK_TACTICS.map(([id, name]) => new Option(name, id)));
+                const selected = (type) => {
+                    const e = this.state.selectedElementIds.length === 1 && this.state.elements.find(x => x.id === this.state.selectedElementIds[0]);
+                    return e && e.type === type ? e : null;
+                };
+                const commit = (node, key, value, text) => {
+                    if (value) node[key] = value; else delete node[key];
+                    this.logEvent('CHANGE', `Set the ${text} of "${node.name}" to ${value || 'none'}`);
+                    this.renderSvgDiagramElements(); this.saveSessionToLocalStorage();
+                };
+                tactic.addEventListener('change', () => {
+                    const node = selected('at_step'); if (!node) return;
+                    commit(node, 'atTactic', ATTACK_TACTIC_NAMES.has(tactic.value) ? tactic.value : '', 'ATT&CK tactic');
+                });
+                tech.addEventListener('change', () => {
+                    const node = selected('at_step'); if (!node) return;
+                    const raw = tech.value.trim(), id = normalizeTechniqueId(raw);
+                    const bad = !!raw && !id;
+                    tech.classList.toggle('is-invalid', bad); tech.setAttribute('aria-invalid', String(bad));
+                    if (bad) return;   // rejected: the stored technique stays
+                    tech.value = id;
+                    if (id !== (node.atTechnique || '')) commit(node, 'atTechnique', id, 'ATT&CK technique');
+                });
+                outcome.addEventListener('change', () => {
+                    const node = selected('at_condition'); if (!node) return;
+                    commit(node, 'atOutcome', Object.prototype.hasOwnProperty.call(ATTACK_OUTCOMES, outcome.value) ? outcome.value : '', 'outcome');
+                });
+            }
+            // Adds a palette preset (threat actor, crown jewel): an ordinary component with preset fields.
+            addAttackPreset(key, x = null, y = null) {
+                const p = Object.prototype.hasOwnProperty.call(ATTACK_PRESETS, key) ? ATTACK_PRESETS[key] : null;
+                if (!p) return null;
+                const def = this.elementDefaults(p.type);
+                return this.instantiateNewCanvasElementNode(p.type, x, y, { name: p.name, icon: p.icon, secProps: { ...def.props.secProps, ...p.secProps } });
+            }
+            // Shows the step's tactic and technique or the condition's outcome in Properties.
+            renderAttackShapeProps(item) {
+                const step = item.type === 'at_step', cond = item.type === 'at_condition';
+                document.getElementById('box-props-attack').classList.toggle('d-none', !step && !cond);
+                document.getElementById('props-at-step-fields').classList.toggle('d-none', !step);
+                document.getElementById('props-at-condition-fields').classList.toggle('d-none', !cond);
+                const tech = document.getElementById('props-at-technique');
+                document.getElementById('props-at-tactic').value = ATTACK_TACTIC_NAMES.has(item.atTactic) ? item.atTactic : '';
+                tech.value = item.atTechnique || ''; tech.classList.remove('is-invalid'); tech.setAttribute('aria-invalid', 'false');
+                document.getElementById('props-at-outcome').value = ATTACK_OUTCOMES[item.atOutcome] ? item.atOutcome : '';
+            }
+            // The tactic · technique (step) or outcome (condition) line above the name; plain text via textContent.
+            renderAttackShapeTag(g, node, w, h, textColor) {
+                const tag = attackShapeTag(node);
+                if (!tag) return;
+                const t = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                t.setAttribute('x', w / 2); t.setAttribute('y', h / 2 - 12);
+                t.setAttribute('dominant-baseline', 'middle'); t.setAttribute('text-anchor', 'middle');
+                t.setAttribute('font-size', '10px'); t.setAttribute('font-weight', '600'); t.setAttribute('font-family', 'Inter, system-ui, sans-serif');
+                const tone = node.type === 'at_condition' ? node.atOutcome : 'step';
+                t.setAttribute('class', `at-shape-tag at-tone-${tone}`);
+                if (textColor === '#f8fafc') t.setAttribute('data-dark-fill', 'true');
+                t.setAttribute('fill', textColor === '#f8fafc' ? textColor : ({ success: '#166534', fail: '#991b1b' }[tone] || '#7f1d1d'));
+                t.setAttribute('pointer-events', 'none');
+                t.textContent = tag;
+                g.appendChild(t);
+            }
+
             // Loads vendor/stencils/<id>.js once (a <script>, so it also works from file://).
             loadStencilSet(id) {
                 if (this.stencilLoads.has(id)) return this.stencilLoads.get(id);
@@ -9994,6 +10387,7 @@
                 else if (type === 'custom_image') name = 'Custom Graphic Image';
                 else if (type === 'swimlane') name = 'Swimlane Grid Layout';
                 else if (FLOWCHART_DEFAULTS[type]) name = FLOWCHART_DEFAULTS[type].name;
+                else if (isAttackShapeType(type)) name = ATTACK_SHAPE_DEFAULTS[type].name;
 
                 let w = 240, h = 80;
                 if (type === 'boundary') { w = 320; h = 240; }
@@ -10002,6 +10396,7 @@
                 else if (type === 'custom_image') { w = 120; h = 120; }
                 else if (type === 'swimlane') { w = 680; h = 480; }
                 else if (FLOWCHART_DEFAULTS[type]) { w = FLOWCHART_DEFAULTS[type].w; h = FLOWCHART_DEFAULTS[type].h; }
+                else if (isAttackShapeType(type)) { w = ATTACK_SHAPE_DEFAULTS[type].w; h = ATTACK_SHAPE_DEFAULTS[type].h; }
 
                 const props = {
                     ...((type === 'textbox' || type === 'headline') && { width: 240, height: 80 }),
@@ -10013,6 +10408,7 @@
                     ...(type === 'custom_image' && { width: w, height: h, imageUrl: '' }),
                     ...(type === 'swimlane' && { width: w, height: h, columns: ['Column 1', 'Column 2'], rows: ['Row 1', 'Row 2'] }),
                     ...(FLOWCHART_DEFAULTS[type] && { width: w, height: h, fcFillColor: FLOWCHART_DEFAULTS[type].fill, fcStrokeColor: FLOWCHART_DEFAULTS[type].stroke, fcStrokeWidth: 2 }),
+                    ...(isAttackShapeType(type) && { width: w, height: h, fcFillColor: ATTACK_SHAPE_DEFAULTS[type].fill, fcStrokeColor: ATTACK_SHAPE_DEFAULTS[type].stroke, fcStrokeWidth: 2 }),
                 };
                 return { name, width: w, height: h, props };
             }
@@ -10862,6 +11258,7 @@
              * source 'recognised': the component's icon or name matches one of the template's subtypes.
              */
             evaluateRules(item, analysis = this.computeTrustAnalysis()) {
+                if (this.isAttackTreeItem(item)) return [];   // attack-tree shapes and their links are not system parts
                 const libraryKey = this.libraryKeyFor(item);
                 const m = this.ruleHelpers(analysis);
                 return (this.threatSuggestions[libraryKey] || []).filter(t => t.when || (t.subtypes && t.subtypes.length))
@@ -10981,7 +11378,7 @@
                 const names = new Map();
                 this.state.elements.filter(e => modelTypes.includes(e.type)).forEach(e => { const k = toText(e.name).trim().toLowerCase(); if (k) names.set(k, [...(names.get(k) || []), e]); });
                 names.forEach(list => { if (list.length > 1) w.push({ level: 'info', text: `${list.length} components are named "${list[0].name}" — threats and reports are easier to read with unique names.`, id: list[0].id }); });
-                this.state.flows.filter(f => !toText(f.name).trim()).forEach(f => {
+                this.state.flows.filter(f => !toText(f.name).trim() && !this.isAttackTreeItem(f)).forEach(f => {
                     const a = this.state.elements.find(e => e.id === f.sourceId), b = this.state.elements.find(e => e.id === f.targetId);
                     w.push({ level: 'info', text: `A data flow from "${a ? a.name : '?'}" to "${b ? b.name : '?'}" has no name.`, id: f.id });
                 });
@@ -11061,7 +11458,7 @@
                 const critHigh = open.filter(t => ['Critical', 'High'].includes(risk(t).label));
                 const modelEls = this.modelComponents();
                 const withThreats = new Set(threats.map(t => t.elementId));
-                const uncovered = [...modelEls, ...this.state.flows].filter(x => !withThreats.has(x.id));
+                const uncovered = [...modelEls, ...this.state.flows].filter(x => !withThreats.has(x.id) && !this.isAttackTreeItem(x));
                 const findings = this.evaluateAllRules();
                 const pending = findings.filter(f => !f.added && !f.dismissed);
                 const mits = this.state.mitigations || [];
@@ -11645,7 +12042,7 @@
                     g.setAttribute('tabindex', '0');
                     g.setAttribute('role', 'button');
                     g.setAttribute('aria-pressed', this.state.selectedElementIds.includes(el.id) ? 'true' : 'false');
-                    g.setAttribute('aria-label', `${typeLabel[el.type] || el.type.replace(/^fc_/, 'Shape ').replace(/_/g, ' ')}: ${el.name || 'unnamed'}${n ? `, ${n} threat${n === 1 ? '' : 's'}` : ''}`);
+                    g.setAttribute('aria-label', `${typeLabel[el.type] || (ATTACK_SHAPE_DEFAULTS[el.type] && ATTACK_SHAPE_DEFAULTS[el.type].label) || el.type.replace(/^fc_/, 'Shape ').replace(/_/g, ' ')}: ${el.name || 'unnamed'}${n ? `, ${n} threat${n === 1 ? '' : 's'}` : ''}`);
                 });
                 this.dom.svg.querySelectorAll('g[data-flow-id]').forEach(g => {
                     const f = this.state.flows.find(x => x.id === g.getAttribute('data-flow-id'));
@@ -12246,7 +12643,7 @@
                     const w = node.width || (node.type === 'custom_image' ? 120 : (node.type === 'infrastructure' ? 80 : (node.type === 'step_activity' ? 260 : 240)));
                     const h = node.height || (node.type === 'custom_image' ? 120 : (node.type === 'infrastructure' ? 70 : (node.type === 'step_activity' ? 50 : 80)));
 
-                    if (node.type && node.type.startsWith('fc_')) {
+                    if (isFcLikeType(node.type)) {
                         const fill = node.fcFillColor || '#f5f3ff';
                         const stroke = node.fcStrokeColor || '#2563eb';
                         const sw = node.fcStrokeWidth || 2;  // absolute, not scaled
@@ -12269,7 +12666,7 @@
                         } else if (node.type === 'fc_manual_input') {
                             // Top-left corner is at sl=h*0.2, top-right at 0; avg top edge = h*0.1
                             lblY = (h * 0.1 + h) / 2;
-                        }
+                        } else if (isAttackShapeType(node.type)) lblY = attackLabelY(node, w, h);
                         lbl.setAttribute('y', lblY);
                         lbl.setAttribute('dominant-baseline', 'middle');
                         lbl.setAttribute('text-anchor', 'middle');
@@ -12288,6 +12685,7 @@
                         lbl.setAttribute('pointer-events', 'none');
                         lbl.textContent = node.name || '';
                         g.appendChild(lbl);
+                        if (isAttackShapeType(node.type)) this.renderAttackShapeTag(g, node, w, h, textColor);
 
                     } else if (node.type === 'custom_image') {
                         const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
@@ -12468,7 +12866,7 @@
                         }
 
                         // For fc_* shapes, use shape-aware anchor positions
-                        const anchors = node.type && node.type.startsWith('fc_')
+                        const anchors = isFcLikeType(node.type)
                             ? this.getFcAnchorPoints(node.type, w, h)
                             : [
                                 { id: 'top',    cx: 0.5 * w, cy: 0 },
@@ -12568,6 +12966,7 @@
              * Each anchor lies exactly on the visible geometry edge.
              */
             getFcAnchorPoints(type, w, h) {
+                if (isAttackShapeType(type)) return attackShapeAnchors(type, w, h);
                 // Simplified: one center anchor per side for all fc_* shapes
                 if (type === 'fc_decision') {
                     // Diamond: cardinal points exactly at the 4 tips
@@ -12776,6 +13175,9 @@
                     });
                     g.appendChild(g2);
                     return;
+                } else if (isAttackShapeType(type)) {
+                    el = buildAttackShapeOutline(type, w, h, sw);
+                    el.querySelectorAll('.at-goal-flag').forEach(f => f.setAttribute('fill', stroke));
                 } else if (type === 'fc_database') {
                     const ey = h * 0.15;
                     const g2 = document.createElementNS(ns, 'g');
@@ -12949,6 +13351,7 @@
                 this.updateFormatPainterButton();
                 const boxIds = ['box-props-node-type', 'box-props-standard-name', 'box-props-status-state', 'box-props-icon-customization', 'box-props-flow-routing', 'box-props-step-activity', 'box-props-text-offset', 'box-props-textbox-textarea', 'box-props-headline-customization', 'box-props-security', 'box-props-zdepth', 'box-props-custom-image', 'box-props-isometric-toggle', 'box-props-swimlane', 'box-props-flowchart'];
                 boxIds.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('d-none'); });
+                document.getElementById('box-props-attack').classList.add('d-none');   // attack-tree fields (renderAttackShapeProps)
 
                 const textContentInput = document.getElementById('props-input-text-content');
                 if (textContentInput) textContentInput.disabled = false;
@@ -12986,8 +13389,9 @@
                     return;
                 }
 
-                if (targetItem.type && targetItem.type.startsWith('fc_')) {
+                if (isFcLikeType(targetItem.type)) {
                     document.getElementById('box-props-flowchart').classList.remove('d-none');
+                    if (isAttackShapeType(targetItem.type)) this.renderAttackShapeProps(targetItem);
                     document.getElementById('box-props-zdepth').classList.remove('d-none');
                     // Populate label
                     const fcLabel = document.getElementById('props-fc-label');
@@ -13439,7 +13843,7 @@
                 const count = this.state.selectedElementIds.length;
                 let item = count === 1 ? this.state.elements.find(e => e.id === this.state.selectedElementIds[0]) : (this.state.selectedFlowId ? this.state.flows.find(f => f.id === this.state.selectedFlowId) : null);
 
-                if (!item || ['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(item.type)) {
+                if (!item || ['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(item.type) || this.isAttackTreeItem(item)) {
                     this.dom.suggestEmpty.classList.remove('d-none'); this.dom.suggestContent.classList.add('d-none'); return;
                 }
                 this.dom.suggestEmpty.classList.add('d-none'); this.dom.suggestContent.classList.remove('d-none');
