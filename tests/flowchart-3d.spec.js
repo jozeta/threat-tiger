@@ -292,3 +292,279 @@ test('the 3D checkbox is only for flowchart shapes: attack-tree and diagram shap
   await page.evaluate(() => { const m = JSON.parse(JSON.stringify(app.state)); m.elements[0].threeD = true; app.importWorkspaceJsonText(JSON.stringify(m), 'x.json'); });
   await expect.poll(() => page.evaluate(() => 'threeD' in (app.state.elements.find(e => e.type === 'at_step') || {}))).toBe(false);
 });
+
+// ── 1.19.x: 3D height, stacked-layer count and thickness, softer solids, legible labels, the flat 3D decision ──
+// Screen offset (model → canvas projection) between a node's footprint centre and the centre of one of its caps.
+const capLift = (page, id, idx = -1) => page.evaluate(([i, k]) => {
+  const el = app.state.elements.find((e) => e.id === i);
+  const caps = [...document.querySelectorAll(`#layers-nodes-group [data-id="${i}"] [data-fc3d="cap"]`)];
+  const cap = caps[k < 0 ? caps.length + k : k];
+  const pts = cap.getAttribute('points').split(' ').map((s) => s.split(',').map(Number));
+  const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length;
+  const a = app.projectCoordinates(el.x + el.width / 2, el.y + el.height / 2), b = app.projectCoordinates(el.x + cx, el.y + cy);
+  return a.y - b.y;
+}, [id, idx]);
+const capPoints = (page, id) => node(page, id).locator('[data-fc3d="cap"]').evaluateAll((els) => els.map((e) => e.getAttribute('points')));
+
+test('the 3D height control shows for 3D shapes, cones and pyramids; the layer controls only for stacked layers', async ({ page }) => {
+  await setup(page, [
+    { id: 'p3', type: 'fc_process', threeD: true, name: 'P3', x: 0, y: 0, width: 160, height: 100 },
+    { id: 'p2', type: 'fc_process', name: 'P2', x: 200, y: 0, width: 160, height: 100 },
+    { id: 'co', type: 'fc_cone', name: 'Co', x: 400, y: 0, width: 160, height: 100 },
+    { id: 'py', type: 'fc_pyramid', name: 'Py', x: 600, y: 0, width: 160, height: 100 },
+    { id: 'sp', type: 'fc_sphere', name: 'Sp', x: 800, y: 0, width: 100, height: 100 },
+    { id: 'la', type: 'fc_layers', name: 'La', x: 0, y: 200, width: 160, height: 100 },
+    { id: 'at', type: 'at_step', name: 'At', x: 200, y: 200, width: 160, height: 80 },
+  ]);
+  for (const [id, height, layers] of [['p3', true, false], ['p2', false, false], ['co', true, false], ['py', true, false], ['sp', false, false], ['la', false, true], ['at', false, false]]) {
+    await select(page, [id]);
+    await (height ? expect(page.locator('#props-fc-depth3d'), id).toBeVisible() : expect(page.locator('#props-fc-depth3d'), id).toBeHidden());
+    await (layers ? expect(page.locator('#props-fc-layer-count'), id).toBeVisible() : expect(page.locator('#props-fc-layer-count'), id).toBeHidden());
+    await (layers ? expect(page.locator('#props-fc-layer-thickness'), id).toBeVisible() : expect(page.locator('#props-fc-layer-thickness'), id).toBeHidden());
+  }
+  // Ticking 3D shows the height control at once.
+  await select(page, ['p2']);
+  await page.locator('#props-fc-3d').check();
+  await expect(page.locator('#props-fc-depth3d')).toBeVisible();
+});
+
+test('the 3D height drives the isometric top face and the flat depth proportionally', async ({ page }) => {
+  await setup(page, [{ id: 'c', type: 'fc_process', threeD: true, name: 'Server', x: 400, y: 300, width: 140, height: 100 }]);
+  const setDepth = (v) => page.evaluate(([val]) => { const e = app.state.elements[0]; if (val === null) delete e.depth3d; else e.depth3d = val; app.refreshAppViewVisualWorkspace(); }, [v]);
+  // Automatic: iso height 50, flat depth 20 (the old cube).
+  await expect(node(page, 'c').locator('[data-fc3d="cap"]')).toHaveAttribute('points', '0,20 120,20 120,100 0,100');
+  await setDepth(25);
+  await expect(node(page, 'c').locator('[data-fc3d="cap"]')).toHaveAttribute('points', '0,10 130,10 130,100 0,100');
+  await setDepth(100);
+  await expect(node(page, 'c').locator('[data-fc3d="cap"]')).toHaveAttribute('points', '0,40 100,40 100,100 0,100');
+  // Flat depth is clamped, so the front face never collapses.
+  await setDepth(400);
+  const pts = (await capPoints(page, 'c'))[0].split(' ').map((s) => s.split(',').map(Number));
+  expect(pts[1][0]).toBeGreaterThanOrEqual(140 * 0.5);
+  expect(pts[2][1] - pts[1][1]).toBeGreaterThanOrEqual(100 * 0.5);
+  for (const mode of ['ne-isometric', 'nw-isometric']) {
+    await view(page, mode);
+    await setDepth(null);
+    expect(await capLift(page, 'c')).toBeCloseTo(50, 0);
+    await setDepth(30);
+    expect(await capLift(page, 'c')).toBeCloseTo(30, 0);
+    await setDepth(120);
+    expect(await capLift(page, 'c')).toBeCloseTo(120, 0);
+  }
+  // Labels and anchors follow the height.
+  await setDepth(120);
+  await view(page, 'flat');
+  const a = await page.evaluate(() => app.getFcAnchorPoints('fc_process', 140, 100, true, app.state.elements[0]));
+  expect(a.find((p) => p.id === 'left').cy).toBeGreaterThan(60);
+});
+
+test('the 3D height control: slider and number, one undo step per change, Auto clears it', async ({ page }) => {
+  await setup(page, [{ id: 'c', type: 'fc_cone', name: 'Cone', x: 400, y: 300, width: 160, height: 100 }]);
+  await select(page, ['c']);
+  const undo0 = await page.evaluate(() => app.undoStack.length);
+  // A drag: several input events, one change.
+  await page.evaluate(() => {
+    const r = document.getElementById('props-fc-depth3d');
+    for (const v of [100, 120, 150]) { r.value = String(v); r.dispatchEvent(new Event('input', { bubbles: true })); }
+    r.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  expect((await get(page, 'c')).depth3d).toBe(150);
+  expect(await page.evaluate(() => app.undoStack.length)).toBe(undo0 + 1);
+  await expect(page.locator('#props-fc-depth3d-num')).toHaveValue('150');
+  // The number box, clamped.
+  await page.locator('#props-fc-depth3d-num').fill('9999');
+  await page.locator('#props-fc-depth3d-num').press('Enter');
+  expect((await get(page, 'c')).depth3d).toBe(400);
+  expect(await page.evaluate(() => app.undoStack.length)).toBe(undo0 + 2);
+  // Auto removes the field.
+  await page.locator('#props-fc-depth3d-auto').click();
+  expect('depth3d' in (await get(page, 'c'))).toBe(false);
+  expect(await page.evaluate(() => app.undoStack.length)).toBe(undo0 + 3);
+  await page.evaluate(() => app.undo());
+  expect((await get(page, 'c')).depth3d).toBe(400);
+});
+
+test('review mode blocks the 3D height and the layer controls', async ({ page }) => {
+  await setup(page, [
+    { id: 'c', type: 'fc_process', threeD: true, name: 'Server', x: 400, y: 300, width: 160, height: 120 },
+    { id: 'l', type: 'fc_layers', name: 'Stack', x: 700, y: 300, width: 160, height: 120 },
+  ]);
+  await page.evaluate(() => app.toggleReviewMode(true));
+  await select(page, ['c']);
+  await expect(page.locator('#props-fc-depth3d')).toBeDisabled();
+  await expect(page.locator('#props-fc-depth3d-num')).toBeDisabled();
+  await page.evaluate(() => {
+    const r = document.getElementById('props-fc-depth3d'); r.disabled = false; r.value = '200';
+    r.dispatchEvent(new Event('input', { bubbles: true })); r.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  expect('depth3d' in (await get(page, 'c'))).toBe(false);
+  await select(page, ['l']);
+  await expect(page.locator('#props-fc-layer-count')).toBeDisabled();
+  await expect(page.locator('#props-fc-layer-thickness')).toBeDisabled();
+  await page.evaluate(() => {
+    for (const [id, v] of [['props-fc-layer-count', '7'], ['props-fc-layer-thickness', '30']]) {
+      const r = document.getElementById(id); r.disabled = false; r.value = v;
+      r.dispatchEvent(new Event('input', { bubbles: true })); r.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  });
+  const l = await get(page, 'l');
+  expect('layerCount' in l || 'layerThickness' in l).toBe(false);
+});
+
+test('the format painter and quick add carry the 3D height and the layer settings', async ({ page }) => {
+  await setup(page, [
+    { id: 'a', type: 'fc_layers', name: 'A', x: 400, y: 300, width: 160, height: 100, depth3d: 140, layerCount: 5, layerThickness: 12 },
+    { id: 'b', type: 'fc_layers', name: 'B', x: 100, y: 100, width: 160, height: 100 },
+    { id: 'c', type: 'fc_process', threeD: true, name: 'C', x: 100, y: 400, width: 160, height: 100, depth3d: 33 },
+  ]);
+  await select(page, ['a']);
+  await page.click('#btn-format-painter');
+  await node(page, 'b').click();
+  expect(await get(page, 'b')).toMatchObject({ depth3d: 140, layerCount: 5, layerThickness: 12 });
+  // A source on automatic height gives the target the automatic height too.
+  await page.evaluate(() => { delete app.state.elements.find((e) => e.id === 'b').depth3d; });
+  await select(page, ['b']);
+  await page.click('#btn-format-painter');
+  await node(page, 'a').click();
+  expect('depth3d' in (await get(page, 'a'))).toBe(false);
+  const id = await page.evaluate(() => app.quickAddFlowchartNode('c', 'right'));
+  expect((await get(page, id)).depth3d).toBe(33);
+});
+
+test('the normaliser clamps the 3D height and the layer settings and drops junk', async ({ page }) => {
+  await setup(page);
+  const r = await page.evaluate(() => {
+    const ctx = { warn() {} };
+    const n = (extra, type = 'fc_layers') => normalizeElement({ id: 'x', type, name: 'X', ...extra }, ctx);
+    const pick = (e) => ({ depth3d: e.depth3d, layerCount: e.layerCount, layerThickness: e.layerThickness });
+    return {
+      ok: pick(n({ depth3d: 120, layerCount: 4, layerThickness: 15 })),
+      low: pick(n({ depth3d: 1, layerCount: 0, layerThickness: 0.1 })),
+      high: pick(n({ depth3d: 1e9, layerCount: 99, layerThickness: 1e6 })),
+      round: pick(n({ layerCount: 3.6 })),
+      junk: ['depth3d', 'layerCount', 'layerThickness'].filter((k) => k in n({ depth3d: '<img src=x>', layerCount: { a: 1 }, layerThickness: [] })),
+      nan: 'depth3d' in n({ depth3d: NaN }),
+      other: ['depth3d', 'layerCount', 'layerThickness'].filter((k) => k in n({ depth3d: 50, layerCount: 2, layerThickness: 9 }, 'process')),
+    };
+  });
+  expect(r.ok).toEqual({ depth3d: 120, layerCount: 4, layerThickness: 15 });
+  expect(r.low).toEqual({ depth3d: 10, layerCount: 1, layerThickness: 2 });
+  expect(r.high).toEqual({ depth3d: 400, layerCount: 10, layerThickness: 100 });
+  expect(r.round.layerCount).toBe(4);
+  expect(r.junk).toEqual([]);
+  expect(r.nan).toBe(false);
+  expect(r.other).toEqual([]);
+});
+
+test('stacked layers: the count sets the number of slabs and the thickness their size, flat and isometric', async ({ page }) => {
+  await setup(page, [{ id: 'l', type: 'fc_layers', name: 'Stack', x: 400, y: 300, width: 160, height: 100 }]);
+  const set = (o) => page.evaluate((v) => { const e = app.state.elements[0]; delete e.layerCount; delete e.layerThickness; Object.assign(e, v); app.refreshAppViewVisualWorkspace(); }, o);
+  const slabHeights = async () => (await capPoints(page, 'l')).map((p) => { const ys = p.split(' ').map((s) => Number(s.split(',')[1])); return Math.max(...ys) - Math.min(...ys); });
+  await expect(node(page, 'l').locator('[data-fc3d="cap"]')).toHaveCount(3);   // default
+  for (const n of [1, 2, 6, 10]) { await set({ layerCount: n }); await expect(node(page, 'l').locator('[data-fc3d="cap"]'), `${n}`).toHaveCount(n); }
+  // Flat: each slab's front face is as thick as asked (when it fits) …
+  await set({ layerCount: 2, layerThickness: 10 });
+  expect((await slabHeights()).map((v) => Math.round(v))).toEqual([10, 10]);
+  await set({ layerCount: 2, layerThickness: 20 });
+  expect((await slabHeights()).map((v) => Math.round(v))).toEqual([20, 20]);
+  // … and the slabs shrink to fit the box when they would not.
+  await set({ layerCount: 6, layerThickness: 100 });
+  const hs = await slabHeights();
+  expect(hs.length).toBe(6);
+  expect(hs.reduce((a, b) => a + b, 0)).toBeLessThanOrEqual(100);
+  for (const mode of ['ne-isometric', 'nw-isometric']) {
+    await view(page, mode);
+    for (const n of [2, 6]) { await set({ layerCount: n }); await expect(node(page, 'l').locator('[data-fc3d="cap"]'), `${mode} ${n}`).toHaveCount(n); }
+    await set({ layerCount: 2, layerThickness: 10 });
+    const t10 = await capLift(page, 'l');
+    await set({ layerCount: 2, layerThickness: 20 });
+    const t20 = await capLift(page, 'l');
+    expect(t20 / t10, mode).toBeCloseTo(2, 1);
+    await set({ layerCount: 4, layerThickness: 10 });
+    expect(await capLift(page, 'l')).toBeGreaterThan(t10 * 1.8);
+  }
+  await view(page, 'flat');
+});
+
+test('stacked layers: the count and thickness controls, one undo step each', async ({ page }) => {
+  await setup(page, [{ id: 'l', type: 'fc_layers', name: 'Stack', x: 400, y: 300, width: 160, height: 100 }]);
+  await select(page, ['l']);
+  await expect(page.locator('#props-fc-layer-count-num')).toHaveValue('3');
+  const undo0 = await page.evaluate(() => app.undoStack.length);
+  await page.locator('#props-fc-layer-count-num').fill('6');
+  await page.locator('#props-fc-layer-count-num').press('Enter');
+  expect((await get(page, 'l')).layerCount).toBe(6);
+  await expect(node(page, 'l').locator('[data-fc3d="cap"]')).toHaveCount(6);
+  expect(await page.evaluate(() => app.undoStack.length)).toBe(undo0 + 1);
+  await page.evaluate(() => {
+    const r = document.getElementById('props-fc-layer-thickness');
+    for (const v of [6, 8, 9]) { r.value = String(v); r.dispatchEvent(new Event('input', { bubbles: true })); }
+    r.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  expect((await get(page, 'l')).layerThickness).toBe(9);
+  expect(await page.evaluate(() => app.undoStack.length)).toBe(undo0 + 2);
+  await page.locator('#props-fc-layer-thickness-auto').click();
+  expect('layerThickness' in (await get(page, 'l'))).toBe(false);
+  await page.evaluate(() => app.undo());
+  expect((await get(page, 'l')).layerThickness).toBe(9);
+});
+
+test('sphere: a soft gradient shadow (no hard black ellipse); sphere, cone and pyramid labels sit on a legible backdrop', async ({ page }) => {
+  await setup(page, [
+    { id: 'sp', type: 'fc_sphere', name: 'Ball', x: 100, y: 100, width: 120, height: 120 },
+    { id: 'co', type: 'fc_cone', name: 'Cone label', x: 400, y: 100, width: 140, height: 120 },
+    { id: 'py', type: 'fc_pyramid', name: 'Pyramid label', x: 700, y: 100, width: 160, height: 120 },
+  ]);
+  for (const mode of ['flat', 'ne-isometric', 'nw-isometric']) {
+    await view(page, mode);
+    for (const id of ['sp', 'co', 'py']) {
+      const g = node(page, id);
+      const bd = g.locator('[data-fc3d-label="backdrop"]');
+      await expect(bd, `${id} ${mode}`).toHaveCount(1);
+      // The backdrop sits right behind the label and covers it.
+      const [b, t] = await Promise.all([bd.boundingBox(), g.locator('text.fc-shape-label').boundingBox()]);
+      expect(b.x).toBeLessThanOrEqual(t.x + 1); expect(b.x + b.width).toBeGreaterThanOrEqual(t.x + t.width - 1);
+      expect(b.y).toBeLessThanOrEqual(t.y + 1); expect(b.y + b.height).toBeGreaterThanOrEqual(t.y + t.height - 1);
+      if (mode !== 'flat') {
+        // Iso: the solid's label is upright on screen (not sheared onto the ground).
+        const m = await g.locator('text.fc-shape-label').evaluate((el) => { const c = el.getScreenCTM(); return { b: c.b / c.a, c: c.c / c.d }; });
+        expect(Math.abs(m.b), `${id} ${mode}`).toBeLessThan(0.01); expect(Math.abs(m.c), `${id} ${mode}`).toBeLessThan(0.01);
+      }
+    }
+    if (mode !== 'flat') {
+      const sh = node(page, 'sp').locator('[data-fc3d="shadow"]');
+      await expect(sh).toHaveCount(1);
+      expect(await sh.getAttribute('fill')).toMatch(/^url\(#/);
+      expect(await node(page, 'sp').locator('[data-fc3d="shadow"][fill="#000"]').count()).toBe(0);
+    }
+  }
+  // Other 3D shapes keep their plain label.
+  await setup(page, [{ id: 'c', type: 'fc_process', threeD: true, name: 'Server', x: 400, y: 300, width: 160, height: 120 }]);
+  await expect(node(page, 'c').locator('[data-fc3d-label="backdrop"]')).toHaveCount(0);
+});
+
+test('cone: the body is one smooth gradient, not two hard halves', async ({ page }) => {
+  await setup(page, [{ id: 'co', type: 'fc_cone', name: 'Cone', x: 400, y: 300, width: 140, height: 120 }]);
+  for (const mode of ['flat', 'ne-isometric', 'nw-isometric']) {
+    await view(page, mode);
+    const g = node(page, 'co');
+    await expect(g.locator('linearGradient'), mode).toHaveCount(1);
+    const fills = await g.locator('[data-fc3d="wall"]').evaluateAll((els) => els.map((e) => e.getAttribute('fill')));
+    expect(fills.filter((f) => /^url\(#/.test(f)).length, mode).toBe(1);   // the body
+    expect(fills.length, mode).toBe(2);                                    // base ellipse + body
+  }
+});
+
+test('a flat 3D decision is a raised tile: the diamond on top, the side walls hanging straight down', async ({ page }) => {
+  await setup(page, [{ id: 'd', type: 'fc_decision', threeD: true, name: 'Ok?', x: 400, y: 300, width: 160, height: 100 }]);
+  const g = node(page, 'd');
+  await expect(g.locator('[data-fc3d="cap"]')).toHaveAttribute('points', '80,0 160,40 80,80 0,40');
+  const walls = await g.locator('[data-fc3d="wall"]').evaluateAll((els) => els.map((e) => e.getAttribute('points').split(' ').map((s) => s.split(',').map(Number))));
+  expect(walls.length).toBe(2);
+  for (const w of walls) for (const [x, y] of w) { expect(x).toBeGreaterThanOrEqual(0); expect(x).toBeLessThanOrEqual(160); expect(y).toBeGreaterThanOrEqual(40); expect(y).toBeLessThanOrEqual(100); }
+  await expect(g.locator('text.fc-shape-label')).toHaveAttribute('y', '40');
+  await expect(g.locator('text.fc-shape-label')).toHaveAttribute('x', '80');
+  expect(await page.evaluate(() => app.getFcAnchorPoints('fc_decision', 160, 100, true))).toEqual([
+    { id: 'top', cx: 80, cy: 0 }, { id: 'bottom', cx: 80, cy: 100 }, { id: 'left', cx: 0, cy: 40 }, { id: 'right', cx: 160, cy: 40 },
+  ]);
+});

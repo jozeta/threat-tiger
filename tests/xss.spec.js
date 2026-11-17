@@ -144,6 +144,8 @@ function attributeContextModel() {
     s.elements.push({ id: 'el-dg-erd', type: 'erd_entity', name: INJ[2], x: 4600, y: 3000, width: 200, height: 120, erdRows: `PK ${INJ[1]}\nFK ${INJ[0]}\n${INJ[3]}` });
     s.elements.push({ id: 'el-swim2', type: 'swimlane', name: INJ[1], x: 3000, y: 3000, width: 700, height: 500, columns: [INJ[1], INJ[2]], rows: [INJ[1], INJ[2]] });
     s.elements.push({ id: 'el-at-step2', type: 'at_step', name: INJ[1], x: 4000, y: 3000, width: INJ[3], height: 80, atTactic: INJ[2], atTechnique: INJ[1], fcFillColor: INJ[3], fcStrokeColor: INJ[1], fcStrokeWidth: INJ[3] });
+    s.elements.push({ id: 'el-fc-layers', type: 'fc_layers', name: INJ[2], x: 4900, y: 3000, width: 160, height: 100, depth3d: INJ[3], layerCount: INJ[1], layerThickness: INJ[0] });
+    s.elements.push({ id: 'el-fc-sphere', type: 'fc_sphere', name: INJ[0], x: 5100, y: 3000, width: 100, height: 100, depth3d: INJ[2] });
     s.elements.push({ id: 'el-at-cond2', type: 'at_condition', name: INJ[0], x: 4300, y: 3000, width: 180, height: 70, atOutcome: INJ[1] });
     s.elements.push({ id: 'el-at-and2', type: 'at_and', name: INJ[2], x: 4600, y: 3000, width: 90, height: 80 });
     s.elements.push({ id: 'el-table2', type: 'table', name: INJ[1], x: 4000, y: 3000, width: 400, height: 160, headerRow: true, headerCol: true, theme: INJ[3], cells: [[INJ[0], INJ[1]], [INJ[2], INJ[3]]] });
