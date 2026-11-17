@@ -161,6 +161,7 @@ function attributeContextModel() {
     s.legend = { showTitleBlock: true, showLegend: true, title: INJ[0], columns: INJ[3], position: INJ[1], x: INJ[3], y: INJ[2], locked: INJ[0],
       items: { 'type:process': { show: true, label: INJ[1] }, 'type:datastore': { show: INJ[2], label: INJ[2] }, flow: { show: true, label: INJ[3] }, [INJ[1]]: { show: false, label: INJ[0] } } };
     s.flows.forEach((f) => { f.name = INJ[1]; f.ports = INJ[2]; f.color = INJ[3]; f.thickness = INJ[3]; f.secProps = Object.assign({}, f.secProps, { [INJ[2]]: 'true' }); });
+    s.flows.forEach((f, i) => { f.traffic = i % 2 ? { on: true, speed: INJ[1], style: INJ[3] } : { on: INJ[0], speed: 'fast', style: INJ[2] }; });   // traffic animation
     s.mitigations = [
       { id: 'M-1', title: INJ[1], desc: INJ[2], owner: INJ[0], status: INJ[1], ticketUrl: 'https://example.test/" data-injected="url' },
       { id: 'M-2', title: INJ[0], desc: '', owner: '', status: 'Implemented', ticketUrl: 'javascript:void(0)' },

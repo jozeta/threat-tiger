@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bx5L/v+0Io/CWsRixezhp6F6y8i+W2r7qRnUbmBr87A='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-XGavLPWmN3fcD1sVz1TOhRlhISG9JLdRoGEF/SVg0jM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -694,6 +694,20 @@
         .zone-hit-label { fill: transparent; pointer-events: all; cursor: move; }
         .badge-fo > div { pointer-events: auto; }
         @media print { .flow-hit-area { display: none; } }
+
+        /* ── traffic animation ── an overlay path on a data flow's line; its dashes or dots move from source to target
+           (stroke-dashoffset runs down by one 24 px period; both patterns repeat every 24 px, so the loop is seamless). */
+        .flow-traffic { fill: none; pointer-events: none; stroke-linecap: round; animation: tt-traffic-run 0.8s linear infinite; }
+        .flow-traffic.tt-traffic-dashes { stroke-dasharray: 10 14; }
+        .flow-traffic.tt-traffic-dots { stroke-dasharray: 0 12; }
+        .flow-traffic.tt-traffic-slow { animation-duration: 1.6s; }
+        .flow-traffic.tt-traffic-fast { animation-duration: 0.4s; }
+        .flow-traffic.tt-traffic-back { animation-direction: reverse; opacity: .6; }   /* the return leg of a two-way flow */
+        @keyframes tt-traffic-run { from { stroke-dashoffset: 0; } to { stroke-dashoffset: -24px; } }
+        .tt-traffic-paused .flow-traffic { animation: none; }   /* View → Animate traffic off: a static dashed or dotted line */
+        @media (prefers-reduced-motion: reduce) { .flow-traffic { animation: none !important; } }
+        @media print { .flow-traffic { display: none; } }
+        /* ── end traffic animation ── */
 
         .node-element.valid-flow-target .node-shape-rect {
             stroke: #16a34a !important;
@@ -1817,6 +1831,7 @@
                             <li><button class="dropdown-item d-flex align-items-center" type="button" id="btn-menu-title-block" aria-haspopup="dialog"><i class="bi bi-card-heading me-2"></i>Title block &amp; legend…</button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-minimap" role="menuitemcheckbox" aria-checked="false"><i class="bi bi-map me-2"></i>Show minimap<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-line-jumps" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-bezier2 me-2"></i>Line jumps where flows cross<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-traffic" role="menuitemcheckbox" aria-checked="true" title="Play the traffic animation on the data flows that have it (off: they show a still dashed or dotted line)"><i class="bi bi-activity me-2"></i>Animate traffic<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-left" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar me-2"></i>Show left panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-right" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar-reverse me-2"></i>Show right panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-bottom" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-window-dock me-2"></i>Show bottom panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
@@ -3104,6 +3119,35 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- ── traffic animation: Properties for a data flow ── -->
+                            <div id="box-props-flow-traffic" class="card card-body p-2 bg-light border d-none">
+                                <h6 class="small fw-bold text-dark border-bottom pb-1 mb-2"><i
+                                        class="bi bi-activity me-1 text-primary"></i>Traffic animation</h6>
+                                <div class="form-check form-switch mb-2">
+                                    <input class="form-check-input" type="checkbox" id="props-flow-traffic-switch">
+                                    <label class="form-check-label extra-small text-dark fw-bold" for="props-flow-traffic-switch">Animate traffic</label>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <label class="extra-small text-muted fw-bold mb-1" for="props-flow-traffic-speed">Speed</label>
+                                        <select class="form-select form-select-sm shadow-none" id="props-flow-traffic-speed">
+                                            <option value="slow">Slow</option>
+                                            <option value="normal">Normal</option>
+                                            <option value="fast">Fast</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="extra-small text-muted fw-bold mb-1" for="props-flow-traffic-style">Style</label>
+                                        <select class="form-select form-select-sm shadow-none" id="props-flow-traffic-style">
+                                            <option value="dashes">Moving dashes</option>
+                                            <option value="dots">Moving dots</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="extra-small text-muted mt-1">Moves from source to destination (both ways on a two-way flow). Pause all in ☰ → View.</div>
+                            </div>
+                            <!-- ── end traffic animation ── -->
 
                             <div id="box-props-step-activity" class="card card-body p-2 bg-light border d-none">
                                 <h6 class="small fw-bold text-dark border-bottom pb-1 mb-2"><i
@@ -5017,6 +5061,15 @@
         // The flow leaves its source straight out of the anchor's side, turns only at right angles, passes through
         // the user's bend points, and enters the target straight into the anchor's side.
         const CURVE_STYLES = ['smooth', 'sharp', 'orthogonal'];
+        // ── traffic animation: model values ──
+        // A data flow's optional `traffic: { on, speed, style }`; only these enums are kept from an imported model.
+        const TRAFFIC_SPEEDS = ['slow', 'normal', 'fast'];
+        const TRAFFIC_STYLES = ['dashes', 'dots'];
+        function normalizeTraffic(raw) {
+            if (!isPlainObject(raw)) return null;
+            return { on: raw.on === true, speed: TRAFFIC_SPEEDS.includes(raw.speed) ? raw.speed : 'normal', style: TRAFFIC_STYLES.includes(raw.style) ? raw.style : 'dashes' };
+        }
+        // ── end traffic animation: model values ──
         const ELBOW_STUB = 20, ELBOW_DETOUR = 40;
         const SIDE_DIRS = { left: [-1, 0], right: [1, 0], top: [0, -1], bottom: [0, 1] };
         function anchorSide(anchorId, fallback) { const s = String(anchorId || '').split('-')[0]; return SIDE_DIRS[s] ? s : fallback; }
@@ -6469,6 +6522,7 @@
             if ('color' in raw) f.color = toText(raw.color).replace(/[^a-z]/gi, '');
             if ('curveStyle' in raw) { if (CURVE_STYLES.includes(raw.curveStyle)) f.curveStyle = raw.curveStyle; else delete f.curveStyle; }
             if ('dismissedSuggestions' in raw) f.dismissedSuggestions = normalizeDismissed(raw.dismissedSuggestions);
+            if ('traffic' in raw) { const tr = normalizeTraffic(raw.traffic); if (tr) f.traffic = tr; else delete f.traffic; }   // traffic animation
             return f;
         }
 
@@ -8339,6 +8393,7 @@
                     clone.classList.remove('ap-active');
                     clone.querySelectorAll('.ap-dim, .ap-on').forEach(n => n.classList.remove('ap-dim', 'ap-on'));
                     clone.querySelectorAll('.page-link-badge').forEach(n => n.remove());   // drill-down badges are controls, not content
+                    clone.querySelectorAll('.flow-traffic').forEach(n => n.remove());   // traffic animation is a live view, not content
 
                     // 5. Setup clone dimensions & viewbox
                     clone.setAttribute('width', width);
@@ -8833,6 +8888,7 @@
                 this.setupNodeDisplayProps();
                 this.setupPaletteVisibility();
                 this.setupAttackPalette();
+                this.setupTrafficAnimation();
                 try { this.lineJumps = localStorage.getItem('line_jumps') !== 'false'; } catch { this.lineJumps = true; }
                 document.getElementById('btn-menu-line-jumps').setAttribute('aria-checked', String(this.lineJumps));
                 document.getElementById('btn-menu-line-jumps').addEventListener('click', () => this.toggleLineJumps());
@@ -11128,6 +11184,90 @@
                 this.renderSvgDiagramElements();
             }
 
+            // ── traffic animation ──
+            // Per flow: f.traffic = { on, speed: slow|normal|fast, style: dashes|dots } (style, not layout: allowed in review
+            // mode). View: this.trafficAnimation (☰ → View → Animate traffic, per browser, default on) pauses every overlay
+            // by a class on the canvas, so toggling it needs no redraw. prefers-reduced-motion always shows the still form.
+            // Hook for live status: this.trafficOverride, an optional in-memory Map(flowId → { on?, speed?, style? }) laid
+            // over f.traffic when drawing (never saved or exported); set it, then call renderSvgDiagramElements().
+            setupTrafficAnimation() {
+                try { this.trafficAnimation = localStorage.getItem('traffic_animation') !== 'false'; } catch { this.trafficAnimation = true; }
+                if (this.trafficOverride === undefined) this.trafficOverride = null;
+                this.applyTrafficAnimationSetting();
+                document.getElementById('btn-menu-traffic').addEventListener('click', () => this.toggleTrafficAnimation());
+                const edit = (change, what) => {
+                    const flow = this.state.flows.find(f => f.id === this.state.selectedFlowId);
+                    if (!flow) return;
+                    flow.traffic = Object.assign(normalizeTraffic(flow.traffic) || { on: false, speed: 'normal', style: 'dashes' }, change);
+                    this.logEvent('CHANGE', `Traffic animation on data flow "${toText(flow.name)}": ${what}`);
+                    this.renderSvgDiagramElements();
+                    this.renderFlowTrafficProps();
+                };
+                document.getElementById('props-flow-traffic-switch').addEventListener('change', (ev) => edit({ on: ev.target.checked }, ev.target.checked ? 'on' : 'off'));
+                document.getElementById('props-flow-traffic-speed').addEventListener('change', (ev) => {
+                    if (TRAFFIC_SPEEDS.includes(ev.target.value)) edit({ speed: ev.target.value }, `speed ${ev.target.value}`);
+                });
+                document.getElementById('props-flow-traffic-style').addEventListener('change', (ev) => {
+                    if (TRAFFIC_STYLES.includes(ev.target.value)) edit({ style: ev.target.value }, `style ${ev.target.value}`);
+                });
+            }
+
+            applyTrafficAnimationSetting() {
+                const svg = document.getElementById('canvas-svg');
+                if (svg) svg.classList.toggle('tt-traffic-paused', this.trafficAnimation === false);
+                const item = document.getElementById('btn-menu-traffic');
+                if (item) item.setAttribute('aria-checked', String(this.trafficAnimation !== false));
+            }
+
+            // View setting (no undo step).
+            toggleTrafficAnimation() {
+                this.trafficAnimation = this.trafficAnimation === false;
+                try { localStorage.setItem('traffic_animation', String(this.trafficAnimation)); } catch { /* view setting only */ }
+                this.applyTrafficAnimationSetting();
+            }
+
+            /** The traffic to draw on a flow ({ speed, style }), or null: the model's choice with any live override on top. */
+            flowTraffic(f) {
+                const ov = this.trafficOverride && typeof this.trafficOverride.get === 'function' ? this.trafficOverride.get(f.id) : null;
+                const t = Object.assign({}, isPlainObject(f.traffic) ? f.traffic : null, isPlainObject(ov) ? ov : null);
+                if (t.on !== true || f.isDisabled) return null;   // a disabled flow carries no traffic
+                return { speed: TRAFFIC_SPEEDS.includes(t.speed) ? t.speed : 'normal', style: TRAFFIC_STYLES.includes(t.style) ? t.style : 'dashes' };
+            }
+
+            /**
+             * Adds the moving overlay(s) to a flow's group: the line's own path and colour, so it follows bend points,
+             * curves, elbows and line jumps in every view. A two-way flow gets a second, fainter one running backwards.
+             */
+            appendTrafficOverlays(g, f, pathD, line) {
+                const t = this.flowTraffic(f);
+                if (!t) return;
+                const w = parseFloat(line.getAttribute('stroke-width')) || 2;
+                const legs = f.isBidirectional ? ['', ' tt-traffic-back'] : [''];
+                legs.forEach(extra => {
+                    const p = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                    p.setAttribute('d', pathD);
+                    p.setAttribute('class', `flow-traffic tt-traffic-${t.style} tt-traffic-${t.speed}${extra}`);
+                    p.setAttribute('stroke', line.getAttribute('stroke'));
+                    p.setAttribute('stroke-width', String(t.style === 'dots' ? w + 3 : w + 2));
+                    p.setAttribute('aria-hidden', 'true');
+                    g.appendChild(p);
+                });
+            }
+
+            renderFlowTrafficProps() {
+                const box = document.getElementById('box-props-flow-traffic');
+                if (!box) return;
+                const flow = !(this.state.selectedElementIds || []).length && this.state.selectedFlowId ? this.state.flows.find(f => f.id === this.state.selectedFlowId) : null;
+                box.classList.toggle('d-none', !flow);
+                if (!flow) return;
+                const t = normalizeTraffic(flow.traffic) || { on: false, speed: 'normal', style: 'dashes' };
+                document.getElementById('props-flow-traffic-switch').checked = t.on;
+                const speed = document.getElementById('props-flow-traffic-speed'), style = document.getElementById('props-flow-traffic-style');
+                speed.value = t.speed; style.value = t.style;
+                speed.disabled = style.disabled = !t.on;
+            }
+            // ── end traffic animation ──
+
             // Removes every bend point of the selected flow (one undo step).
             clearFlowBendPoints() {
                 const flow = this.state.flows.find(f => f.id === this.state.selectedFlowId);
@@ -12006,6 +12146,7 @@
                 document.querySelectorAll('#menu-palette-sections [data-palette-toggle]').forEach(item => item.setAttribute('aria-checked', String(!(this.hiddenPaletteGroups && this.hiddenPaletteGroups.has(item.dataset.paletteToggle)))));
                 set('btn-menu-minimap', this.minimapVisible);
                 set('btn-menu-line-jumps', this.lineJumps);
+                set('btn-menu-traffic', this.trafficAnimation !== false);
                 set('btn-menu-review-mode', this.state && this.state.reviewMode);
                 set('btn-menu-panel-left', !this.isLeftCollapsed);
                 set('btn-menu-panel-right', !this.isRightCollapsed);
@@ -14654,6 +14795,7 @@
                     if (f.isBidirectional) line.setAttribute('marker-start', `url(#${markerStartId})`);
                     if (f.isDashed) line.setAttribute('stroke-dasharray', '6,4');
                     gLine.appendChild(line);
+                    this.appendTrafficOverlays(gLine, f, pathD, line);   // traffic animation
 
                     if (isSelected && !this.state.reviewMode) {
                         handlePoints.forEach((pt, index) => {
@@ -16131,6 +16273,7 @@
                 if (one && safeStencilIcon(one.stencilIcon)) {
                     ['box-props-node-type', 'box-props-icon-customization', 'box-props-security'].forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('d-none'); });
                 }
+                this.renderFlowTrafficProps();
                 this.applyReviewModeToControls();
             }
 
