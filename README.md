@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.20.1** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.20.2** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -46,7 +46,9 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 ## What's new 🆕
 
-**1.20.1** fixes a rare case where, with the model open in two tabs, a tab could refuse to save right after *Reload*.
+**1.20.2** fixes dialogs that stayed open when **Save** was clicked while they were still fading in.
+
+**1.20.1** fixed a rare case where, with the model open in two tabs, a tab could refuse to save right after *Reload*.
 
 **1.20.0** makes the screen fit the job:
 

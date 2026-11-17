@@ -302,3 +302,23 @@ test('A48: a new page never repeats an existing page name after a delete', async
   });
   expect(names).toEqual(['Page 1', 'Page 3', 'Page 2']);
 });
+
+test('A40: saving the threat dialog while it is still fading in closes it once it has opened', async ({ page }) => {
+  await H.openApp(page, { session: H.demoSession() });
+  // Open and save in the same tick: the dialog is mid fade-in, when Bootstrap ignores hide().
+  const state = await page.evaluate(() => new Promise((resolve) => {
+    const el = document.getElementById('modal-edit-threat');
+    let shown = false; el.addEventListener('shown.bs.modal', () => { shown = true; }, { once: true });
+    app.openThreatModalForCreation();
+    const tick = () => {
+      if (!el.classList.contains('show')) return requestAnimationFrame(tick);   // fading in: visible, not yet "shown"
+      document.getElementById('modal-threat-title').value = 'Saved during fade-in';
+      app.commitThreatModalFormEditorData();
+      resolve({ shownBeforeSave: shown });
+    };
+    tick();
+  }));
+  expect(state.shownBeforeSave).toBe(false);   // the save really happened mid fade-in
+  await expect(page.locator('#modal-edit-threat')).toBeHidden();
+  expect(await page.evaluate(() => app.state.threats.filter(t => t.title === 'Saved during fade-in').length)).toBe(1);
+});

@@ -5,6 +5,11 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.20.2
+
+### Fixed
+- **Dialogs:** pressing **Save** (or any button that closes a dialog) while the dialog was still fading in left it open, and a second Save did nothing; the threat was saved but the dialog stayed. Bootstrap ignores a close during the fade-in, so dialogs that are still opening now close as soon as they have opened. Seen as an intermittent CI failure of the CSV workflow test; regression test A40.
+
 ## 1.20.1
 
 ### Fixed
