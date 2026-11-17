@@ -5,6 +5,38 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.19.0
+
+### Added
+- **Settings → Palette:** switches to hide any palette section (and the C4, UML, BPMN and ERD sub-groups), any icon set and any icon-picker group. A view setting of this browser; shapes on the canvas are not affected. The icon-set switches stay in step with ☰ → View → Icon sets.
+- **Attack Paths & Trees** palette section (after MITRE Attack Flow and attack-defence trees):
+  - **Threat actor** and **Crown jewel** presets: ordinary components that Insights → Attack paths uses as entry point and target.
+  - New shapes: entry point, attack step, asset / target, condition / outcome, AND gate, OR gate, goal, countermeasure and choke point, each with its own outline.
+  - Attack steps take a MITRE ATT&CK tactic (the 14 Enterprise tactics) and an optional technique ID (`T1566`, `T1566.001`), shown on the shape; conditions can be marked success or fail.
+  - Attack-tree shapes and the links between them are diagram-only: no STRIDE threats or suggestions, not counted as uncovered, never data-flow steps in attack paths.
+- **Ready-made nodes** (Data Nodes & Icons): 32 one-click or drag-and-drop components in three groups (network, security tooling, platforms & devices), from firewall, WAF and API gateway to SIEM, secrets vault, HSM, Kubernetes, AI/LLM model and IoT device. Each carries its subtypes, so it gets tailored threat suggestions straight away.
+- **Icon picker:** three new groups, **Attack & threat** (exploit, ransomware, C2 server, botnet …), **Security artefacts** (CVE, IoC, SBOM, honeypot, scanner …) and **Identity & directory**, BloodHound-style (user, group, domain controller, OU, GPO, certificate template, service principal, managed identity …). The threat engine recognises the new icons.
+- **Architecture & Process Diagrams** palette section:
+  - **C4** person, software system, container, component and external system, with a technology line and a description. C4 shapes are model components (people and external systems as external entities, the rest as processes).
+  - **UML** actor, use case, note, package and class (name, attributes, operations); **BPMN** start, intermediate and end events, task, exclusive, parallel and inclusive gateways, data object; **ERD** entity table with PK/FK markers. These are notation: no threats.
+  - Their text is edited in the Properties panel's new Diagram Text box; classes and tables grow to fit.
+- **3D flowchart shapes:**
+  - Every flowchart shape has a **3D** checkbox in Properties. In the flat view a 3D shape is drawn as an extruded solid (a 3D process is the old cube, a 3D connector the old database cylinder); in the NE and NW isometric views it stands on the ground as a real isometric solid, redrawn at once when you switch views.
+  - New **3D shapes** group: sphere, cone, pyramid and stacked layers, drawn as solids in every view.
+  - The format painter and quick add carry the 3D look; PNG and print exports show the same drawing.
+- **Table** (Text Items): rows and columns (up to 30 × 12), optional header row and header column, the swimlane colour themes, cells edited in Properties (double-click a cell on the canvas to jump to it).
+- **Swimlane-family containers** next to the swimlane: **Pool** (horizontal lanes), **Vertical lanes**, **Group / frame** and **Phases / timeline**. Drawn behind shapes, resizable, themable with the swimlane colours, and they carry the shapes inside them when moved.
+
+### Changed
+- The **Database (cylinder)** and **Cube (3D box)** palette items are replaced by the 3D option. Older models load them as a 3D connector and a 3D process, keeping position, size, colours, name and notes. Mermaid cylinders (`[(…)]`, `cyl`, `db`, `database`) import as a 3D connector and export back as a cylinder.
+- The Settings dialog is wider and starts with the Palette section.
+
+### Security
+- Imported models: attack-tree fields (tactic, technique, outcome), diagram text (C4, class compartments, ERD rows), table cells, lane names, themes and the 3D flag are validated: plain text only, length and count limits, unknown values dropped with a warning. The XSS suite covers every new field.
+
+### Tests
+- New suites: `palette-visibility`, `palette-ready-nodes`, `attack-shapes`, `diagram-shapes`, `flowchart-3d`, `table-and-lanes` and `swimlane-dom` (a snapshot proving the swimlane drawing is unchanged).
+
 ## 1.18.0
 
 ### Added

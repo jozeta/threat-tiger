@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.18.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.19.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -15,6 +15,9 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 ## 🚀 Key Features
 
 *   **Interactive architecture canvas**: drag and drop processes, data stores, external entities, trust zones and trust boundary lines, infrastructure nodes, steps, text, flowchart shapes, swimlanes and your own images, align or space out a selection evenly, organise shapes on layers you can hide or lock, split big models over pages with drill-down links, copy a shape's look with a format painter, see line jumps where flows cross, find your way around big diagrams with a minimap, and use about 2,000 icons: devices and security symbols, security and DevOps brands, tech and OS logos, and official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons (see [their terms](vendor/stencils/README.md)). More than 200 icons (servers, code, web, infrastructure, databases, security, people). Change any node's type from **Properties** (for example process → data store, or rectangle → decision) without losing its name, flows or threats.
+*   **Attack trees, C4, UML, BPMN and ERD**: attack-tree and attack-flow shapes (ATT&CK tactics and techniques), ready-made security and platform nodes, and shapes for architecture and process diagrams; hide any palette section in Settings
+*   **3D shapes**: any flowchart shape can be 3D, drawn as a solid in the flat view and as a true isometric solid in the isometric views, plus sphere, cone, pyramid and stacked layers
+*   **Tables and containers**: a table with themed header rows and columns, pools, vertical lanes, frames and phase timelines
 *   **Flowcharts and swimlanes**: hover a connection point of a flowchart shape to preview the next step, click to add it (same shape and colours, already connected). Drop nodes into swimlane cells (the target cell is highlighted and grows to fit, with padding), drag column and row borders to resize them, and pick a colour theme per swimlane.
 *   **Trust-boundary analysis**: data flows that cross a trust zone or boundary line are detected live and marked on the canvas.
 *   **Threat suggestions**: a curated library of 601 concrete threats (OWASP, CWE, MITRE ATT&CK references; real-world incidents as examples; typical controls). Suggestions are ranked: **triggered by your model** (security switches, boundary crossings, connected flows — with the reason), **relevant for this component** (recognised from its icon and name, e.g. API, S3 bucket, administrator), then the rest. Every suggestion can be added (it then leaves the list), ignored, or marked **not applicable** with a reason, which is kept in the model and the report. The **Component Label** field suggests names that fit the component type. See [docs/threat-templates.md](docs/threat-templates.md).
@@ -43,7 +46,15 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 ## What's new 🆕
 
-**1.18.0** adds **git sync with GitHub and GitLab** (see [Syncing with GitHub or GitLab](#syncing-with-github-or-gitlab)), a **desktop-style ☰ menu** whose View, Icon sets and Panel tabs open as flyout windows, **basic touch support**, a warning when another tab changes the same model, and fixes for all 50 issues from the November 2026 bug check (see the [changelog](CHANGELOG.md)).
+**1.19.0** adds a lot to the palette, and a **Settings → Palette** section to hide what you don't need (see [Choosing what the palette shows](#choosing-what-the-palette-shows)):
+
+- **Attack Paths & Trees:** threat actor and crown jewel presets, plus attack-tree and attack-flow shapes (entry point, attack step with ATT&CK tactic and technique, asset, condition, AND / OR gates, goal, countermeasure, choke point). See [Drawing attack trees and attack flows](#drawing-attack-trees-and-attack-flows).
+- **Ready-made nodes:** 32 preconfigured components (firewall, WAF, API gateway, SIEM, secrets vault, Kubernetes, AI/LLM model …) with tailored threats from the start, and three new icon groups: Attack & threat, Security artefacts, Identity & directory.
+- **Architecture & Process Diagrams:** C4, UML, BPMN and ERD shapes.
+- **3D:** a 3D checkbox for every flowchart shape, real isometric solids in the NE and NW views, and new sphere, cone, pyramid and stacked-layer shapes. The old Database and Cube items are now a 3D connector and a 3D process (older models convert automatically).
+- **Table** in Text Items, and swimlane-style **Pool, Vertical lanes, Group / frame** and **Phases** containers, all with the swimlane colour themes.
+
+**1.18.0** added **git sync with GitHub and GitLab** (see [Syncing with GitHub or GitLab](#syncing-with-github-or-gitlab)), a **desktop-style ☰ menu** whose View, Icon sets and Panel tabs open as flyout windows, **basic touch support**, a warning when another tab changes the same model, and fixes for all 50 issues from the November 2026 bug check (see the [changelog](CHANGELOG.md)).
 
 **1.17.0:** elbow connectors find their own way around shapes. Move a shape onto an elbow line and the line detours; move it away and the line straightens again. A flow never runs through its own two shapes.
 

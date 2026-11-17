@@ -61,6 +61,12 @@ PW_BASE_URL=http://127.0.0.1:8080 npm test   # test the running container
   MIT. Placed stencils store their own icon in the model, so models do not depend on the packs.
 - 1z.nu no longer hosts a copy (removed 9 November 2026); don't copy releases there unless asked.
 
+## Shape families (where to look)
+
+- Flowchart shapes `fc_*` (`FLOWCHART_DEFAULTS`; `threeD` flag drawn by the `fc3d*` methods; `FC_LEGACY_3D` migrates old `fc_cube`/`fc_database`), attack-tree shapes `at_*` (`ATTACK_SHAPE_DEFAULTS`, diagram-only), diagram shapes `c4_/uml_/bpmn_/erd_` (`DIAGRAM_SHAPES`, merged into `FLOWCHART_DEFAULTS`; only C4 are model components), and `table` / lane containers (`TT_DECOR_TYPES`). `isFcLikeType()` is true for every shape drawn by `renderFlowchartShapeSvg`.
+- The swimlane is frozen: `tests/swimlane-dom.spec.js` compares its rendered DOM with a stored snapshot.
+- Palette sections carry `data-palette-group`; `PALETTE_GROUPS` lists what Settings → Palette can hide (localStorage `hidden_palette_groups`, `hidden_icon_groups`).
+
 ## App standards
 
 This repo follows the app standards in `~/Desktop/code/tools/standards/STANDARDS.md` (rule IDs,
