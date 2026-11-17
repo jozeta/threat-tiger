@@ -14,19 +14,29 @@ function trackPageErrors(page) {
   return errors;
 }
 
+// A view profile that shows everything (every palette section, icon set, tab and panel), seeded by openApp so the
+// suites that exercise those features see the full UI. Pass `viewProfiles: null` to start with the app's own defaults.
+const SHOW_EVERYTHING_PROFILES = { version: 1, active: 'test-all', profiles: [{ id: 'test-all', name: 'Everything (tests)', icon: 'bi-grid-3x3-gap',
+  hidden: { palette: [], stencils: [], icons: [], tabs: [] }, panels: { left: true, right: true, bottom: true } }] };
+
 /**
  * Opens the app in test mode: license pre-accepted, no operator prompt.
  * `session` (optional) is written to localStorage before the app boots.
+ * `viewProfiles` (optional) replaces the seeded view profiles ({ active, profiles }); null seeds none.
  */
-async function openApp(page, { session } = {}) {
-  await page.addInitScript(([key, value]) => {
+async function openApp(page, { session, viewProfiles = SHOW_EVERYTHING_PROFILES } = {}) {
+  await page.addInitScript(([key, value, profiles]) => {
     // Only seed once per test so reloads keep whatever the app persisted.
     if (sessionStorage.getItem('__seeded')) return;
     sessionStorage.setItem('__seeded', '1');
     localStorage.clear();
     localStorage.setItem('license_accepted', 'true');
     if (value) localStorage.setItem(key, value);
-  }, [SESSION_KEY, session ? JSON.stringify(session) : null]);
+    if (profiles) {
+      localStorage.setItem('view_profiles', JSON.stringify({ version: profiles.version || 1, profiles: profiles.profiles }));
+      localStorage.setItem('active_view_profile', profiles.active);
+    }
+  }, [SESSION_KEY, session ? JSON.stringify(session) : null, viewProfiles]);
   await page.goto('/threat-tiger.html?test=true');
   await page.waitForFunction(() => window.app && window.app.state);
 }
@@ -79,4 +89,4 @@ async function registerRows(page) {
   return page.locator('#threat-register-tbody tr:has(td:nth-child(2))');
 }
 
-module.exports = { clickControl, DEMO, SESSION_KEY, trackPageErrors, openApp, demoSession, importJson, downloadText, registerRows, expect };
+module.exports = { SHOW_EVERYTHING_PROFILES, clickControl, DEMO, SESSION_KEY, trackPageErrors, openApp, demoSession, importJson, downloadText, registerRows, expect };

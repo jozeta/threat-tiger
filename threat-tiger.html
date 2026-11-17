@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-g++8C7alvUVQRRGMCTWf3GmGjxSj0sK7nC+nfm/Ay5M='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-JFmrhOGhh7yu09z8jAX1wdeZspbzpDwCeKrTlwDq1gQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1696,6 +1696,28 @@
         @keyframes focus-pulse-kf { 0%, 100% { filter: none; } 40% { filter: drop-shadow(0 0 10px rgba(13, 110, 253, 0.95)); } }
         .focus-pulse { animation: focus-pulse-kf 0.8s ease-in-out 2; }
     
+        /* View profiles: the dropdown left of the menu button, and the collapsible Session Meta heading */
+        #btn-view-profile { min-height: 31px; max-width: 240px; }
+        #btn-view-profile .view-profile-label { max-width: 170px; font-size: 12px; }
+        #btn-view-profile .view-profile-chevron { font-size: 10px; }
+        #menu-view-profiles { min-width: 260px; max-width: calc(100vw - 16px); }
+        #menu-view-profiles .view-profile-item { min-height: 36px; }
+        #menu-view-profiles .view-profile-check { visibility: hidden; }
+        #menu-view-profiles .view-profile-item[aria-current="true"] { font-weight: 600; }
+        #menu-view-profiles .view-profile-item[aria-current="true"] .view-profile-check { visibility: visible; }
+        @media (max-width: 1100px) { #btn-view-profile .view-profile-label { max-width: 110px; } }
+        @media (max-width: 575.98px) {
+            #btn-view-profile .view-profile-label, #btn-view-profile .view-profile-chevron { display: none; }
+            #btn-view-profile { min-width: 44px; min-height: 44px; justify-content: center; }
+            #menu-view-profiles .view-profile-item { min-height: 44px; }
+            /* line the menu up with the right edge of ☰ (its width + the gap), so it fits the screen */
+            #menu-view-profiles.dropdown-menu-end { right: -46px !important; left: auto !important; max-width: calc(100vw - 16px); }
+        }
+        @media (pointer: coarse) { #settings-profiles .btn, #settings-profiles .form-select, #settings-profiles .form-control { min-height: 44px; } }
+        .session-meta-toggle { min-height: 28px; letter-spacing: inherit; }
+        @media (pointer: coarse) { .session-meta-toggle { min-height: 44px; } }
+        @media print { #view-profile-dropdown { display: none !important; } }
+
     /* Respect the system's "Reduce motion" setting: animations and transitions become instant. */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -1732,6 +1754,17 @@
             </div>
             <div class="d-flex align-items-center gap-2">
             <button class="btn btn-sm btn-outline-light px-2 d-none" type="button" id="btn-git-sync" aria-label="Sync with the repository" title="Sync with the repository"><i class="bi bi-arrow-repeat fs-5 lh-1" aria-hidden="true"></i></button>
+            <!-- View profiles: "what are you modelling?" (setupViewProfiles) -->
+            <div class="dropdown" id="view-profile-dropdown">
+                <button class="btn btn-sm btn-outline-light px-2 d-flex align-items-center gap-1" type="button" id="btn-view-profile" data-bs-toggle="dropdown"
+                    aria-expanded="false" aria-label="View profile" title="What are you modelling? Chooses the panels, palette sections and icon sets you see"><i class="bi bi-shield-exclamation fs-6 lh-1" id="view-profile-icon" aria-hidden="true"></i><span id="view-profile-label" class="view-profile-label text-truncate">Threat Modeling</span><i class="bi bi-chevron-down view-profile-chevron" aria-hidden="true"></i></button>
+                <ul class="dropdown-menu dropdown-menu-end shadow" id="menu-view-profiles" aria-labelledby="btn-view-profile">
+                    <li><h6 class="dropdown-header">What are you modelling?</h6></li>
+                    <li id="menu-view-profiles-end"><hr class="dropdown-divider"></li>
+                    <li><button class="dropdown-item" type="button" id="btn-edit-profiles"><i class="bi bi-sliders me-2" aria-hidden="true"></i>Edit profiles…</button></li>
+                </ul>
+            </div>
+            <!-- /View profiles -->
             <div class="dropdown">
                 <button class="btn btn-sm btn-outline-light px-2" type="button" id="btn-main-menu" data-bs-toggle="dropdown"
                     aria-expanded="false" aria-label="Main menu" title="Menu"><i class="bi bi-list fs-5 lh-1"></i></button>
@@ -1758,6 +1791,8 @@
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-right" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar-reverse me-2"></i>Show right panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-bottom" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-window-dock me-2"></i>Show bottom panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><hr class="dropdown-divider"></li>
+                            <li class="dropdown-submenu"><button class="dropdown-item d-flex align-items-center submenu-toggle" type="button" id="btn-menu-palette-sections" aria-haspopup="true" aria-expanded="false" aria-controls="menu-palette-sections"><i class="bi bi-grid-3x2-gap me-2"></i>Palette sections<i class="bi bi-chevron-right ms-auto submenu-chevron" aria-hidden="true"></i></button>
+                            <ul class="dropdown-menu submenu shadow" id="menu-palette-sections" aria-label="Palette sections"></ul></li>
                             <li class="dropdown-submenu"><button class="dropdown-item d-flex align-items-center submenu-toggle" type="button" id="btn-menu-icon-sets" aria-haspopup="true" aria-expanded="false" aria-controls="menu-icon-sets"><i class="bi bi-images me-2"></i>Icon sets<i class="bi bi-chevron-right ms-auto submenu-chevron" aria-hidden="true"></i></button>
                             <ul class="dropdown-menu submenu shadow" id="menu-icon-sets" aria-label="Icon sets">
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-fluent" data-stencil-toggle="fluent" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Devices &amp; security<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
@@ -1793,7 +1828,8 @@
 
         <aside class="sidebar-left pt-3 px-3 pb-0 d-flex flex-column gap-3">
             <div>
-                <h6 class="text-uppercase text-muted fw-bold small mb-2">1. Session Meta &amp; Context</h6>
+                <h6 class="text-uppercase text-muted fw-bold small mb-2"><button type="button" class="btn btn-link p-0 text-reset text-decoration-none text-uppercase fw-bold small d-flex align-items-center w-100 session-meta-toggle" id="btn-toggle-session-meta" aria-expanded="true" aria-controls="session-meta-body">Session Meta &amp; Context<i class="bi bi-chevron-up ms-auto" aria-hidden="true"></i></button></h6>
+                <div id="session-meta-body">
                 <button class="btn btn-sm btn-outline-secondary w-100 mb-2 text-start" id="btn-open-session-meta">
                     <i class="bi bi-pencil-square me-2"></i>Configure Session Metadata
                 </button>
@@ -1802,18 +1838,19 @@
                     <div><strong>Participants:</strong></div>
                     <div id="lbl-summary-parts" class="d-flex flex-wrap gap-1 mt-1"></div>
                 </div>
+                </div>
             </div>
 
             <hr class="my-1">
 
             <div>
-                <h6 class="text-uppercase text-muted fw-bold small mb-2">2. Diagram Component Palette</h6>
+                <h6 class="text-uppercase text-muted fw-bold small mb-2">Diagram Component Palette</h6>
                 <p class="text-muted small mb-3">Click elements to instantiate them onto the architecture canvas window.
                 </p>
 
                 <div class="accordion accordion-flush d-flex flex-column gap-2" id="paletteAccordion">
                     <!-- Threat Modeling -->
-                    <div class="accordion-item">
+                    <div class="accordion-item" data-palette-group="threat">
                         <h2 class="accordion-header" id="headingThreatModeling">
                             <button class="accordion-button" type="button" data-bs-toggle="collapse"
                                 data-bs-target="#collapseThreatModeling" aria-expanded="true"
@@ -3944,14 +3981,47 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-3">
-                    <h6 class="fw-bold mb-1"><i class="bi bi-palette me-1" aria-hidden="true"></i>Palette</h6>
-                    <p class="small text-muted mb-2">Choose what the palette and the icon picker show. Hiding something only tidies the palette in this browser:
-                        shapes already on the canvas stay as they are.</p>
-                    <div class="row g-2 mb-3" id="settings-palette">
-                        <fieldset class="col-12 col-sm-4"><legend class="small fw-semibold mb-1 fs-6">Palette sections</legend><div id="settings-palette-groups"></div></fieldset>
-                        <fieldset class="col-12 col-sm-4"><legend class="small fw-semibold mb-1 fs-6">Icon sets</legend><div id="settings-stencil-sets"></div></fieldset>
-                        <fieldset class="col-12 col-sm-4"><legend class="small fw-semibold mb-1 fs-6">Icon picker groups</legend><div id="settings-icon-groups"></div></fieldset>
+                    <!-- View profiles editor (renderPaletteSettings) -->
+                    <section id="settings-profiles" aria-labelledby="settings-profiles-title">
+                    <h6 class="fw-bold mb-1" id="settings-profiles-title"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Profiles</h6>
+                    <p class="small text-muted mb-2">A profile chooses which palette sections, icon sets, panels and tabs you see; pick one with the button left of ☰.
+                        Profiles are kept in this browser only. Hiding something only tidies the screen: shapes already on the canvas stay as they are.</p>
+                    <div class="row g-2 align-items-start mb-2">
+                        <div class="col-12 col-sm-5">
+                            <label class="form-label small text-muted mb-1" for="settings-profile-select">Profile to edit</label>
+                            <select class="form-select form-select-sm shadow-none" id="settings-profile-select"></select>
+                        </div>
+                        <div class="col-12 col-sm-7">
+                            <label class="form-label small text-muted mb-1" for="settings-profile-name">Name</label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control shadow-none" id="settings-profile-name" maxlength="40" autocomplete="off" spellcheck="false" aria-describedby="settings-profile-name-error">
+                                <button class="btn btn-outline-secondary" type="button" id="btn-profile-rename">Rename</button>
+                            </div>
+                            <div class="small text-danger mt-1" id="settings-profile-name-error" aria-live="polite"></div>
+                        </div>
                     </div>
+                    <div class="d-flex flex-wrap gap-1 mb-2 profile-actions">
+                        <button class="btn btn-sm btn-primary" type="button" id="btn-profile-activate"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i><span id="btn-profile-activate-label">Use this profile</span></button>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" id="btn-profile-new" title="A new profile that copies what you see now"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>New</button>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" id="btn-profile-duplicate"><i class="bi bi-copy me-1" aria-hidden="true"></i>Duplicate</button>
+                        <button class="btn btn-sm btn-outline-danger" type="button" id="btn-profile-delete"><i class="bi bi-trash me-1" aria-hidden="true"></i>Delete…</button>
+                        <button class="btn btn-sm btn-outline-secondary ms-sm-auto" type="button" id="btn-profile-restore" title="Bring back the built-in profiles with their original settings; your own profiles stay"><i class="bi bi-arrow-counterclockwise me-1" aria-hidden="true"></i>Restore default profiles…</button>
+                    </div>
+                    <div class="alert alert-warning py-2 px-2 small d-none align-items-center flex-wrap gap-2" id="settings-profile-confirm" role="alertdialog" aria-labelledby="settings-profile-confirm-text">
+                        <span id="settings-profile-confirm-text" class="me-auto"></span>
+                        <button class="btn btn-sm btn-danger" type="button" id="btn-profile-confirm-yes">Confirm</button>
+                        <button class="btn btn-sm btn-outline-secondary" type="button" id="btn-profile-confirm-no">Cancel</button>
+                    </div>
+                    <div class="row g-2 mb-3" id="settings-palette">
+                        <fieldset class="col-12 col-sm-6 col-lg-4"><legend class="small fw-semibold mb-1 fs-6">Left panel: palette sections</legend><div id="settings-palette-groups"></div></fieldset>
+                        <fieldset class="col-12 col-sm-6 col-lg-4"><legend class="small fw-semibold mb-1 fs-6">Icon sets</legend><div id="settings-stencil-sets"></div></fieldset>
+                        <fieldset class="col-12 col-sm-6 col-lg-4"><legend class="small fw-semibold mb-1 fs-6">Icon picker groups</legend><div id="settings-icon-groups"></div></fieldset>
+                        <fieldset class="col-12 col-sm-6 col-lg-4"><legend class="small fw-semibold mb-1 fs-6">Right panel tabs</legend><div id="settings-tabs-right"></div></fieldset>
+                        <fieldset class="col-12 col-sm-6 col-lg-4"><legend class="small fw-semibold mb-1 fs-6">Bottom panel tabs</legend><div id="settings-tabs-bottom"></div></fieldset>
+                        <fieldset class="col-12 col-sm-6 col-lg-4"><legend class="small fw-semibold mb-1 fs-6">Panels</legend><div id="settings-panels"></div></fieldset>
+                    </div>
+                    </section>
+                    <!-- /View profiles editor -->
                     <hr class="my-3">
                     <h6 class="fw-bold mb-1"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Git sync (GitHub / GitLab)</h6>
                     <p class="small text-muted mb-2">Save this model to a file in a repository and load it from there with the sync button next to ☰.
@@ -5927,6 +5997,64 @@
         const PALETTE_GROUPS = [['attack', 'Attack paths & trees'], ['text', 'Text items'], ['data-nodes', 'Data nodes & icons'], ['ready-nodes', 'Ready-made nodes'],
             ['flowchart', 'Flowchart items'], ['diagrams', 'Architecture & process diagrams'], ['c4', 'C4 model'], ['uml', 'UML'], ['bpmn', 'BPMN'], ['erd', 'Entity-relationship']];
         const STENCIL_SETS = [['fluent', 'Devices & security'], ['brands', 'Security & DevOps brands'], ['devicon', 'Tech & OS logos'], ['aws', 'AWS'], ['azure', 'Azure'], ['entra', 'Microsoft Entra'], ['gcp', 'Google Cloud'], ['k8s', 'Kubernetes']];
+        // ── View profiles: constants (setupViewProfiles) ────────────────────────────────
+        // A view profile is a named visibility configuration of this browser (never part of the model or its exports):
+        // { id, name, icon, hidden: { palette, stencils, icons, tabs }, panels: { left, right, bottom } }.
+        // Lists say what is HIDDEN, so a section added in a later version shows up in every existing profile.
+        PALETTE_GROUPS.unshift(['threat', 'Threat modeling']);   // the Threat Modeling section can be hidden too
+        const VIEW_TABS = [['tab-props-trigger', 'Properties', 'right'], ['tab-suggest-trigger', 'Threat Templates', 'right'], ['tab-layers-trigger', 'Layers', 'right'],
+            ['tab-register-trigger', 'Active Threat Register', 'bottom'], ['tab-mitigations-trigger', 'Mitigations', 'bottom'], ['tab-insights-trigger', 'Insights', 'bottom'],
+            ['tab-notes-trigger', 'Activity Log', 'bottom']];
+        const VIEW_PANELS = [['left', 'Left panel (palette)'], ['right', 'Right panel (properties, templates, layers)'], ['bottom', 'Bottom panel (register, insights, log)']];
+        const VIEW_PROFILE_ICONS = ['bi-shield-exclamation', 'bi-diagram-2', 'bi-diagram-3', 'bi-hdd-network', 'bi-bezier2', 'bi-easel', 'bi-grid-3x3-gap', 'bi-sliders', 'bi-person-gear'];
+        const VIEW_PROFILE_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
+        const VIEW_PROFILE_MAX = 50;
+        // The built-in profiles. The Threat Modeling palette section (process, store, entity, zones, lines) stays in every one
+        // except Flowcharts, where it makes no sense; Review & Presentation hides the whole left panel instead.
+        // The Activity Log is hidden in every one (View → Panel tabs or the profile editor brings it back).
+        function builtinViewProfiles() {
+            const make = (id, name, icon, palette, { stencils = [], tabs = [], panels = {} } = {}) => ({ id, name, icon,
+                hidden: { palette: [...palette], stencils: [...stencils], icons: [], tabs: ['tab-notes-trigger', ...tabs] },
+                panels: { left: true, right: true, bottom: true, ...panels } });
+            return [
+                make('threat', 'Threat Modeling', 'bi-shield-exclamation', ['attack', 'data-nodes', 'flowchart', 'diagrams']),
+                make('attack', 'Attack Path Modeling', 'bi-diagram-2', ['data-nodes', 'flowchart', 'diagrams']),
+                make('architecture', 'Architecture & Process Modeling', 'bi-diagram-3', ['attack', 'data-nodes'], { tabs: ['tab-suggest-trigger'], panels: { bottom: false } }),
+                make('infrastructure', 'Infrastructure & Network Modeling', 'bi-hdd-network', ['attack', 'flowchart', 'diagrams']),
+                make('flowchart', 'Flowcharts', 'bi-bezier2', ['threat', 'attack', 'data-nodes', 'diagrams'], { tabs: ['tab-suggest-trigger'], panels: { bottom: false } }),
+                make('review', 'Review & Presentation', 'bi-easel', [], { panels: { left: false } }),
+                make('all', 'Show All', 'bi-grid-3x3-gap', []),
+            ];
+        }
+        // A profile name: text without control characters, trimmed, at most 40 characters.
+        function cleanViewProfileName(v) {
+            return [...(typeof v === 'string' ? v : '')].map(c => (c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127 ? ' ' : c)).join('').trim().slice(0, 40).trim();
+        }
+        // Validates stored profiles: bad entries, unknown ids and duplicate ids or names are dropped. Returns [] when nothing usable.
+        function normalizeViewProfiles(raw) {
+            const list = isPlainObject(raw) && Array.isArray(raw.profiles) ? raw.profiles : [];
+            const known = {
+                palette: new Set(PALETTE_GROUPS.map(g => g[0])), stencils: new Set(STENCIL_SETS.map(g => g[0])),
+                icons: new Set(Object.keys(ICON_LIBRARY)), tabs: new Set(VIEW_TABS.map(t => t[0])),
+            };
+            const out = [], ids = new Set(), names = new Set();
+            for (const p of list) {
+                if (out.length >= VIEW_PROFILE_MAX) break;
+                if (!isPlainObject(p) || typeof p.id !== 'string' || !VIEW_PROFILE_ID.test(p.id) || ids.has(p.id)) continue;
+                const name = cleanViewProfileName(p.name);
+                if (!name || names.has(name.toLowerCase())) continue;
+                const h = isPlainObject(p.hidden) ? p.hidden : {};
+                const hidden = {};
+                Object.keys(known).forEach(k => { hidden[k] = [...new Set((Array.isArray(h[k]) ? h[k] : []).filter(x => typeof x === 'string' && known[k].has(x)))]; });
+                const pn = isPlainObject(p.panels) ? p.panels : {};
+                const panels = { left: pn.left !== false, right: pn.right !== false, bottom: pn.bottom !== false };
+                const icon = VIEW_PROFILE_ICONS.includes(p.icon) ? p.icon : 'bi-sliders';
+                ids.add(p.id); names.add(name.toLowerCase());
+                out.push({ id: p.id, name, icon, hidden, panels });
+            }
+            return out;
+        }
+        // ── /View profiles: constants ───────────────────────────────────────────────────
         const STENCIL_ID = /^[a-z0-9]+:[\w.-]{1,120}$/i;
         // Ready-made nodes (Palette → Data Nodes & Icons): normal components with a preset name, icon and subtypes.
         // The subtypes travel as stencilTags, so the tailored threats stay when the node is renamed.
@@ -7008,7 +7136,7 @@
             bindResponsiveLayout() {
                 const apply = () => {
                     const w = window.innerWidth;
-                    const wantRightOpen = w >= 1100, wantLeftOpen = w >= 760;
+                    const wantRightOpen = w >= 1100 && this.viewPanelWanted('right'), wantLeftOpen = w >= 760 && this.viewPanelWanted('left');
                     if (this.lastLayoutRight !== wantRightOpen) { if (this.isRightCollapsed === wantRightOpen) this.toggleRightPanel(); this.lastLayoutRight = wantRightOpen; }
                     if (this.lastLayoutLeft !== wantLeftOpen) { if (this.isLeftCollapsed === wantLeftOpen) this.toggleLeftPanel(); this.lastLayoutLeft = wantLeftOpen; }
                 };
@@ -10422,12 +10550,13 @@
             }
 
             setupViewMenu() {
+                this.buildPaletteSectionsMenu();
                 this.setupMenuFlyouts();
                 const list = document.getElementById('menu-view-items');
                 list.querySelectorAll('.menu-view-item').forEach(item => item.addEventListener('click', (ev) => { ev.stopPropagation(); }));
                 const panels = { left: () => this.toggleLeftPanel(), right: () => this.toggleRightPanel(), bottom: () => this.toggleBottomPanel() };
-                Object.entries(panels).forEach(([side, toggle]) => document.getElementById(`btn-menu-panel-${side}`).addEventListener('click', () => { toggle(); this.syncViewMenu(); }));
-                try { this.hiddenTabs = new Set(JSON.parse(localStorage.getItem('hidden_tabs') || '[]').filter(x => typeof x === 'string')); } catch { this.hiddenTabs = new Set(); }
+                Object.entries(panels).forEach(([side, toggle]) => document.getElementById(`btn-menu-panel-${side}`).addEventListener('click', () => { toggle(); this.rememberViewPanel(side); this.syncViewMenu(); }));
+                this.setupViewProfiles();   // loads the active profile into this.hiddenTabs and the other hidden sets
                 list.querySelectorAll('[data-tab-trigger]').forEach(item => item.addEventListener('click', () => {
                     const id = item.dataset.tabTrigger; this.setTabVisible(id, this.hiddenTabs.has(id));
                 }));
@@ -10438,7 +10567,7 @@
 
             // ── Cloud stencils ───────────────────────────────────────────────────────
             setupStencils() {
-                try { this.hiddenStencilSets = new Set(JSON.parse(localStorage.getItem('hidden_stencil_sets') || '[]').filter(x => typeof x === 'string')); } catch { this.hiddenStencilSets = new Set(); }
+                if (!this.hiddenStencilSets) this.hiddenStencilSets = new Set();   // from the active view profile (setupViewProfiles)
                 this.stencilLoads = new Map();
                 const root = document.getElementById('stencil-sets');
                 root.replaceChildren(...STENCIL_SETS.map(([id, title]) => {
@@ -10469,7 +10598,7 @@
             // Shows or hides one icon set in the palette (View menu and Settings → Palette).
             setStencilSetHidden(id, hidden) {
                 if (hidden) this.hiddenStencilSets.add(id); else this.hiddenStencilSets.delete(id);
-                try { localStorage.setItem('hidden_stencil_sets', JSON.stringify([...this.hiddenStencilSets])); } catch { /* view setting only */ }
+                this.saveViewFromSets();
                 const box = document.querySelector(`.stencil-set[data-stencil-set="${id}"]`);
                 if (box) box.classList.toggle('d-none', this.hiddenStencilSets.has(id));
                 this.syncViewMenu();
@@ -10477,38 +10606,339 @@
                 if (sw) sw.checked = !this.hiddenStencilSets.has(id);
             }
 
-            // ── Palette visibility (Settings → Palette) ─────────────────────────────
+            // ── Palette visibility (the active view profile) ────────────────────────────
             // Hidden palette groups and icon-picker groups are view settings of this browser, never part of the model.
             setupPaletteVisibility() {
-                const read = (key, valid) => { try { return new Set(JSON.parse(localStorage.getItem(key) || '[]').filter(x => typeof x === 'string' && valid.has(x))); } catch { return new Set(); } };
-                this.hiddenPaletteGroups = read('hidden_palette_groups', new Set(PALETTE_GROUPS.map(g => g[0])));
-                this.hiddenIconGroups = read('hidden_icon_groups', new Set(Object.keys(ICON_LIBRARY)));
-                this.applyPaletteVisibility();
+                this.applyViewProfile();   // palette, icon sets, tabs and panels as the active profile says
             }
             applyPaletteVisibility() {
                 document.querySelectorAll('#paletteAccordion [data-palette-group]').forEach(el => el.classList.toggle('d-none', this.hiddenPaletteGroups.has(el.dataset.paletteGroup)));
             }
-            // Fills the three switch lists in Settings → Palette; each switch applies at once.
+            // Settings → Profiles opens on the active profile.
             renderPaletteSettings() {
-                const sw = (id, label, on, data, onChange) => {
-                    const wrap = document.createElement('div'); wrap.className = 'form-check form-switch small mb-1';
+                this.profileEditId = this.activeViewProfileId;
+                this.hideProfileConfirm();
+                this.renderProfileEditor();
+            }
+
+            // ── View profiles (dropdown left of ☰, Settings → Profiles, View menu) ──────────
+            // The active profile is the one source of what is hidden: this.hiddenPaletteGroups, hiddenStencilSets,
+            // hiddenIconGroups and hiddenTabs are working copies of it, written back by saveViewFromSets().
+            setupViewProfiles() {
+                this.loadViewProfiles();
+                this.syncViewSets();
+                const menu = document.getElementById('menu-view-profiles');
+                menu.addEventListener('click', (ev) => {
+                    const item = ev.target.closest('[data-view-profile]');
+                    if (!item) return;
+                    this.setActiveViewProfile(item.dataset.viewProfile);
+                    document.getElementById('btn-view-profile').focus();
+                });
+                document.getElementById('btn-edit-profiles').addEventListener('click', () => this.openProfileEditor());
+                this.renderViewProfileMenu();
+                this.setupProfileEditor();
+                this.setupSessionMetaToggle();
+            }
+            loadViewProfiles() {
+                let raw = null, stored = false, active = null;
+                try { const t = localStorage.getItem('view_profiles'); stored = t !== null; raw = JSON.parse(t || 'null'); } catch { raw = null; }
+                try { active = localStorage.getItem('active_view_profile'); } catch { active = null; }
+                let list = normalizeViewProfiles(raw);
+                if (!stored) {
+                    // First visit with profiles: keep what the old hidden_* settings hid, as a profile of its own, then drop the old keys.
+                    list = builtinViewProfiles();
+                    const keys = { palette: 'hidden_palette_groups', stencils: 'hidden_stencil_sets', icons: 'hidden_icon_groups', tabs: 'hidden_tabs' };
+                    const old = {};
+                    Object.entries(keys).forEach(([k, key]) => { try { const v = JSON.parse(localStorage.getItem(key) || '[]'); old[k] = Array.isArray(v) ? v : []; } catch { old[k] = []; } });
+                    if (Object.values(old).some(a => a.length)) {
+                        const [mine] = normalizeViewProfiles({ profiles: [{ id: 'migrated', name: 'My previous view', icon: 'bi-person-gear', hidden: { ...old, tabs: [...old.tabs, 'tab-notes-trigger'] } }] });
+                        if (mine) { list.unshift(mine); active = mine.id; }
+                    }
+                    Object.values(keys).forEach(key => { try { localStorage.removeItem(key); } catch { /* view setting only */ } });
+                }
+                if (!list.length) list = builtinViewProfiles();
+                this.viewProfiles = list;
+                this.activeViewProfileId = list.some(p => p.id === active) ? active : (list.find(p => p.id === 'threat') || list[0]).id;
+                this.saveViewProfiles();
+            }
+            saveViewProfiles() {
+                if (this.clearingData) return;
+                try {
+                    localStorage.setItem('view_profiles', JSON.stringify({ version: 1, profiles: this.viewProfiles }));
+                    localStorage.setItem('active_view_profile', this.activeViewProfileId);
+                } catch { /* view setting only */ }
+            }
+            activeViewProfile() { return (this.viewProfiles || []).find(p => p.id === this.activeViewProfileId) || (this.viewProfiles || [])[0]; }
+            // Working copies of the active profile's hidden lists.
+            syncViewSets() {
+                const p = this.activeViewProfile();
+                this.hiddenPaletteGroups = new Set(p.hidden.palette);
+                this.hiddenStencilSets = new Set(p.hidden.stencils);
+                this.hiddenIconGroups = new Set(p.hidden.icons);
+                this.hiddenTabs = new Set(p.hidden.tabs);
+            }
+            // The View menu and app.setTabVisible() change the working copies; this writes them into the active profile.
+            saveViewFromSets() {
+                const p = this.activeViewProfile();
+                if (!p || !this.hiddenPaletteGroups) return;
+                p.hidden = { palette: [...this.hiddenPaletteGroups], stencils: [...this.hiddenStencilSets], icons: [...this.hiddenIconGroups], tabs: [...this.hiddenTabs] };
+                this.saveViewProfiles();
+            }
+            // Shows exactly what the active profile says. `panels: false` leaves the panels as they are (a switch of another kind).
+            applyViewProfile({ panels = true } = {}) {
+                const p = this.activeViewProfile();
+                this.syncViewSets();
+                this.applyPaletteVisibility();
+                document.querySelectorAll('.stencil-set[data-stencil-set]').forEach(box => box.classList.toggle('d-none', this.hiddenStencilSets.has(box.dataset.stencilSet)));
+                const hide = new Set(p.hidden.tabs);
+                VIEW_TABS.forEach(([id]) => { if (!hide.has(id)) this.setTabVisible(id, true, { save: false }); });
+                VIEW_TABS.forEach(([id]) => { if (hide.has(id)) this.setTabVisible(id, false, { save: false }); });
+                if (panels) this.applyViewPanels();
+                this.renderViewProfileMenu();
+                this.syncViewMenu();
+            }
+            // Opens or closes the panels as the profile says; a narrow window still keeps the side panels closed (UI-008).
+            applyViewPanels() {
+                const p = this.activeViewProfile(), w = window.innerWidth;
+                const want = { left: p.panels.left && w >= 760, right: p.panels.right && w >= 1100, bottom: p.panels.bottom };
+                if (this.isLeftCollapsed === want.left) this.toggleLeftPanel();
+                if (this.isRightCollapsed === want.right) this.toggleRightPanel();
+                if (this.isBottomCollapsed === want.bottom) this.toggleBottomPanel();
+                this.lastLayoutLeft = want.left; this.lastLayoutRight = want.right;
+                this.syncViewMenu();
+            }
+            // bindResponsiveLayout: whether the active profile wants this side panel (true before the profiles are loaded).
+            viewPanelWanted(side) { const p = this.activeViewProfile(); return !p || p.panels[side] !== false; }
+            // View → Show left/right/bottom panel: remember the choice in the active profile.
+            rememberViewPanel(side) {
+                const p = this.activeViewProfile();
+                if (!p) return;
+                p.panels[side] = !{ left: this.isLeftCollapsed, right: this.isRightCollapsed, bottom: this.isBottomCollapsed }[side];
+                this.saveViewProfiles();
+            }
+            setActiveViewProfile(id) {
+                if (!this.viewProfiles.some(p => p.id === id)) return;
+                this.activeViewProfileId = id;
+                this.saveViewProfiles();
+                this.applyViewProfile();
+            }
+            setPaletteGroupHidden(id, hidden) {
+                if (hidden) this.hiddenPaletteGroups.add(id); else this.hiddenPaletteGroups.delete(id);
+                this.applyPaletteVisibility();
+                this.saveViewFromSets();
+                this.syncViewMenu();
+            }
+            // The palette group a sub-group sits in (null for a top-level section).
+            paletteGroupParent(id) {
+                const el = document.querySelector(`#paletteAccordion [data-palette-group="${id}"]`);
+                const parent = el && el.parentElement && el.parentElement.closest('[data-palette-group]');
+                return parent ? parent.dataset.paletteGroup : null;
+            }
+            // ☰ → View → Palette sections: one switch per palette section and sub-group (built before setupMenuFlyouts).
+            buildPaletteSectionsMenu() {
+                document.getElementById('menu-palette-sections').replaceChildren(...PALETTE_GROUPS.map(([id, title]) => {
+                    const li = document.createElement('li');
+                    const b = document.createElement('button');
+                    b.type = 'button'; b.className = 'dropdown-item d-flex align-items-center menu-view-item'; b.id = `btn-menu-palette-${id}`;
+                    b.dataset.paletteToggle = id; b.setAttribute('role', 'menuitemcheckbox'); b.setAttribute('aria-checked', 'true');
+                    const icon = document.createElement('i'); icon.setAttribute('aria-hidden', 'true');
+                    icon.className = this.paletteGroupParent(id) ? 'bi bi-arrow-return-right ms-3 me-2' : 'bi bi-grid-3x2-gap me-2';
+                    const label = document.createElement('span'); label.textContent = title;
+                    const check = document.createElement('i'); check.className = 'bi bi-check2 ms-auto menu-check'; check.setAttribute('aria-hidden', 'true');
+                    b.append(icon, label, check);
+                    b.addEventListener('click', () => this.setPaletteGroupHidden(id, !this.hiddenPaletteGroups.has(id)));
+                    li.append(b);
+                    return li;
+                }));
+            }
+            // The dropdown left of ☰: the active profile's icon and name, and one item per profile.
+            renderViewProfileMenu() {
+                const p = this.activeViewProfile();
+                const btn = document.getElementById('btn-view-profile');
+                document.getElementById('view-profile-label').textContent = p.name;
+                document.getElementById('view-profile-icon').className = `bi ${p.icon} fs-6 lh-1`;
+                btn.setAttribute('aria-label', `View profile: ${p.name}`);
+                btn.title = `View profile: ${p.name}. What are you modelling? Chooses the panels, palette sections and icon sets you see.`;
+                const menu = document.getElementById('menu-view-profiles'), end = document.getElementById('menu-view-profiles-end');
+                menu.querySelectorAll('li.view-profile-li').forEach(li => li.remove());
+                this.viewProfiles.forEach(x => {
+                    const li = document.createElement('li'); li.className = 'view-profile-li';
+                    const b = document.createElement('button');
+                    b.type = 'button'; b.className = 'dropdown-item d-flex align-items-center view-profile-item'; b.dataset.viewProfile = x.id;
+                    if (x.id === p.id) b.setAttribute('aria-current', 'true');
+                    const icon = document.createElement('i'); icon.className = `bi ${x.icon} me-2`; icon.setAttribute('aria-hidden', 'true');
+                    const label = document.createElement('span'); label.className = 'text-truncate'; label.textContent = x.name;
+                    const check = document.createElement('i'); check.className = 'bi bi-check2 ms-auto ps-2 view-profile-check'; check.setAttribute('aria-hidden', 'true');
+                    b.append(icon, label, check);
+                    li.append(b);
+                    end.before(li);
+                });
+            }
+            // Session Meta & Context: collapsible, remembered in this browser.
+            setupSessionMetaToggle() {
+                const btn = document.getElementById('btn-toggle-session-meta'), body = document.getElementById('session-meta-body');
+                const set = (collapsed, save) => {
+                    body.classList.toggle('d-none', collapsed);
+                    btn.setAttribute('aria-expanded', String(!collapsed));
+                    btn.querySelector('i').className = `bi ${collapsed ? 'bi-chevron-down' : 'bi-chevron-up'} ms-auto`;
+                    if (save) { try { localStorage.setItem('session_meta_collapsed', String(collapsed)); } catch { /* view setting only */ } }
+                };
+                let collapsed = false;
+                try { collapsed = localStorage.getItem('session_meta_collapsed') === 'true'; } catch { collapsed = false; }
+                set(collapsed, false);
+                btn.addEventListener('click', () => set(btn.getAttribute('aria-expanded') === 'true', true));
+            }
+
+            // ── Settings → Profiles (the editor) ────────────────────────────────────
+            openProfileEditor() {
+                const modal = document.getElementById('modal-settings');
+                modal.addEventListener('shown.bs.modal', () => {
+                    document.getElementById('settings-profiles').scrollIntoView({ block: 'nearest' });
+                    document.getElementById('settings-profile-select').focus();
+                }, { once: true });
+                this.openGitSettings();
+            }
+            setupProfileEditor() {
+                const select = document.getElementById('settings-profile-select'), name = document.getElementById('settings-profile-name');
+                select.addEventListener('change', () => { this.profileEditId = select.value; this.hideProfileConfirm(); this.renderProfileEditor(); });
+                document.getElementById('btn-profile-rename').addEventListener('click', () => this.renameEditedProfile());
+                name.addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); this.renameEditedProfile(); } });
+                document.getElementById('btn-profile-activate').addEventListener('click', () => { this.setActiveViewProfile(this.editedProfile().id); this.renderProfileEditor(); });
+                document.getElementById('btn-profile-new').addEventListener('click', () => this.addViewProfile(this.activeViewProfile(), 'New profile'));
+                document.getElementById('btn-profile-duplicate').addEventListener('click', () => { const p = this.editedProfile(); this.addViewProfile(p, `${p.name.slice(0, 35)} copy`); });
+                document.getElementById('btn-profile-delete').addEventListener('click', () => {
+                    const p = this.editedProfile();
+                    if (this.viewProfiles.length <= 1) return;
+                    this.showProfileConfirm(`Delete the profile “${p.name}”?`, 'Delete', () => this.deleteViewProfile(p.id));
+                });
+                document.getElementById('btn-profile-restore').addEventListener('click', () => this.showProfileConfirm(
+                    'Restore the built-in profiles with their original settings? Your own profiles stay.', 'Restore', () => this.restoreViewProfiles()));
+                document.getElementById('btn-profile-confirm-yes').addEventListener('click', () => { const run = this.profileConfirmAction; this.hideProfileConfirm(); if (run) run(); });
+                document.getElementById('btn-profile-confirm-no').addEventListener('click', () => { this.hideProfileConfirm(); document.getElementById('settings-profile-select').focus(); });
+            }
+            editedProfile() { return this.viewProfiles.find(p => p.id === this.profileEditId) || this.activeViewProfile(); }
+            showProfileConfirm(text, label, onYes) {
+                const box = document.getElementById('settings-profile-confirm');
+                document.getElementById('settings-profile-confirm-text').textContent = text;
+                document.getElementById('btn-profile-confirm-yes').textContent = label;
+                this.profileConfirmAction = onYes;
+                box.classList.remove('d-none'); box.classList.add('d-flex');
+                document.getElementById('btn-profile-confirm-yes').focus();
+            }
+            hideProfileConfirm() {
+                const box = document.getElementById('settings-profile-confirm');
+                box.classList.add('d-none'); box.classList.remove('d-flex');
+                this.profileConfirmAction = null;
+            }
+            // Empty string when `name` is fine for the profile `exceptId`, otherwise why not.
+            viewProfileNameError(name, exceptId) {
+                if (!name) return 'Enter a name.';
+                const other = this.viewProfiles.find(p => p.id !== exceptId && p.name.toLowerCase() === name.toLowerCase());
+                return other ? `Another profile is already called “${other.name}”.` : '';
+            }
+            uniqueViewProfileName(base) {
+                const taken = new Set(this.viewProfiles.map(p => p.name.toLowerCase()));
+                if (!taken.has(base.toLowerCase())) return base;
+                for (let i = 2; ; i++) { const n = `${base.slice(0, 36)} ${i}`; if (!taken.has(n.toLowerCase())) return n; }
+            }
+            renameEditedProfile() {
+                const p = this.editedProfile(), input = document.getElementById('settings-profile-name');
+                const name = cleanViewProfileName(input.value);
+                const error = this.viewProfileNameError(name, p.id);
+                document.getElementById('settings-profile-name-error').textContent = error;
+                input.classList.toggle('is-invalid', !!error);
+                if (error) { input.focus(); return; }
+                p.name = name;
+                this.saveViewProfiles();
+                this.renderViewProfileMenu();
+                this.renderProfileEditor();
+            }
+            addViewProfile(from, name) {
+                if (this.viewProfiles.length >= VIEW_PROFILE_MAX) { document.getElementById('settings-profile-name-error').textContent = `At most ${VIEW_PROFILE_MAX} profiles.`; return; }
+                let id;
+                do { id = `p-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`; } while (this.viewProfiles.some(p => p.id === id));
+                const copy = JSON.parse(JSON.stringify(from));
+                this.viewProfiles.push({ ...copy, id, name: this.uniqueViewProfileName(name), icon: copy.icon || 'bi-sliders' });
+                this.saveViewProfiles();
+                this.profileEditId = id;
+                this.hideProfileConfirm();
+                this.renderViewProfileMenu();
+                this.renderProfileEditor();
+                const input = document.getElementById('settings-profile-name');
+                input.focus(); input.select();
+            }
+            deleteViewProfile(id) {
+                if (this.viewProfiles.length <= 1) return;
+                this.viewProfiles = this.viewProfiles.filter(p => p.id !== id);
+                if (this.activeViewProfileId === id) {
+                    this.activeViewProfileId = (this.viewProfiles.find(p => p.id === 'threat') || this.viewProfiles[0]).id;
+                    this.applyViewProfile();
+                }
+                this.saveViewProfiles();
+                this.profileEditId = this.activeViewProfileId;
+                this.renderViewProfileMenu();
+                this.renderProfileEditor();
+                document.getElementById('settings-profile-select').focus();
+            }
+            // Built-ins come back with their original settings, in their usual order; the user's own profiles follow.
+            restoreViewProfiles() {
+                const builtins = builtinViewProfiles(), ids = new Set(builtins.map(p => p.id));
+                const names = new Set(builtins.map(p => p.name.toLowerCase()));
+                const own = this.viewProfiles.filter(p => !ids.has(p.id));
+                this.viewProfiles = builtins;
+                own.forEach(p => { if (names.has(p.name.toLowerCase())) p.name = this.uniqueViewProfileName(`${p.name.slice(0, 33)} (mine)`); this.viewProfiles.push(p); });
+                this.viewProfiles = this.viewProfiles.slice(0, VIEW_PROFILE_MAX);
+                if (!this.viewProfiles.some(p => p.id === this.activeViewProfileId)) this.activeViewProfileId = 'threat';
+                this.saveViewProfiles();
+                this.applyViewProfile();
+                this.renderProfileEditor();
+            }
+            // Fills the profile editor for the profile being edited; each switch applies at once (live when it is the active profile).
+            renderProfileEditor() {
+                const p = this.editedProfile();
+                this.profileEditId = p.id;
+                const active = p.id === this.activeViewProfileId;
+                const select = document.getElementById('settings-profile-select');
+                select.replaceChildren(...this.viewProfiles.map(x => { const o = document.createElement('option'); o.value = x.id; o.textContent = x.id === this.activeViewProfileId ? `${x.name} (in use)` : x.name; return o; }));
+                select.value = p.id;
+                const name = document.getElementById('settings-profile-name');
+                name.value = p.name; name.classList.remove('is-invalid');
+                document.getElementById('settings-profile-name-error').textContent = '';
+                const use = document.getElementById('btn-profile-activate');
+                use.disabled = active; use.title = active ? 'This profile is in use' : 'Show the app as this profile says';
+                document.getElementById('btn-profile-activate-label').textContent = active ? 'In use' : 'Use this profile';
+                document.getElementById('btn-profile-delete').disabled = this.viewProfiles.length <= 1;
+                const sw = (id, label, on, data, onChange, indent = false) => {
+                    const wrap = document.createElement('div'); wrap.className = `form-check form-switch small mb-1${indent ? ' ms-3' : ''}`;
                     const input = document.createElement('input'); input.type = 'checkbox'; input.className = 'form-check-input'; input.id = id; input.checked = on;
                     Object.assign(input.dataset, data);
                     input.addEventListener('change', () => onChange(input.checked));
                     const lab = document.createElement('label'); lab.className = 'form-check-label'; lab.htmlFor = id; lab.textContent = label;
                     wrap.append(input, lab); return wrap;
                 };
-                const saveSet = (key, set) => { try { localStorage.setItem(key, JSON.stringify([...set])); } catch { /* view setting only */ } };
-                document.getElementById('settings-palette-groups').replaceChildren(...PALETTE_GROUPS.map(([id, title], i) => sw(`set-pal-group-${i}`, title, !this.hiddenPaletteGroups.has(id), { paletteGroup: id }, on => {
-                    if (on) this.hiddenPaletteGroups.delete(id); else this.hiddenPaletteGroups.add(id);
-                    saveSet('hidden_palette_groups', this.hiddenPaletteGroups); this.applyPaletteVisibility();
-                })));
-                document.getElementById('settings-stencil-sets').replaceChildren(...STENCIL_SETS.map(([id, title], i) => sw(`set-pal-stencil-${i}`, title, !this.hiddenStencilSets.has(id), { settingsStencil: id }, on => this.setStencilSetHidden(id, !on))));
-                document.getElementById('settings-icon-groups').replaceChildren(...Object.keys(ICON_LIBRARY).map((name, i) => sw(`set-pal-icons-${i}`, name, !this.hiddenIconGroups.has(name), { iconGroup: name }, on => {
-                    if (on) this.hiddenIconGroups.delete(name); else this.hiddenIconGroups.add(name);
-                    saveSet('hidden_icon_groups', this.hiddenIconGroups);
+                const live = () => { if (p.id === this.activeViewProfileId) this.applyViewProfile({ panels: false }); };
+                const toggle = (cat, key) => (on) => {
+                    const set = new Set(p.hidden[cat]);
+                    if (on) set.delete(key); else set.add(key);
+                    p.hidden[cat] = [...set];
+                    this.saveViewProfiles(); live();
+                };
+                const shown = (cat, key) => !p.hidden[cat].includes(key);
+                document.getElementById('settings-palette-groups').replaceChildren(...PALETTE_GROUPS.map(([id, title], i) =>
+                    sw(`set-pal-group-${i}`, title, shown('palette', id), { paletteGroup: id }, toggle('palette', id), !!this.paletteGroupParent(id))));
+                document.getElementById('settings-stencil-sets').replaceChildren(...STENCIL_SETS.map(([id, title], i) =>
+                    sw(`set-pal-stencil-${i}`, title, shown('stencils', id), { settingsStencil: id }, toggle('stencils', id))));
+                document.getElementById('settings-icon-groups').replaceChildren(...Object.keys(ICON_LIBRARY).map((n, i) =>
+                    sw(`set-pal-icons-${i}`, n, shown('icons', n), { iconGroup: n }, toggle('icons', n))));
+                ['right', 'bottom'].forEach(side => document.getElementById(`settings-tabs-${side}`).replaceChildren(...VIEW_TABS.filter(t => t[2] === side).map(([id, title]) =>
+                    sw(`set-tab-${id}`, title, shown('tabs', id), { settingsTab: id }, toggle('tabs', id)))));
+                document.getElementById('settings-panels').replaceChildren(...VIEW_PANELS.map(([side, title]) => sw(`set-panel-${side}`, title, p.panels[side], { settingsPanel: side }, (on) => {
+                    p.panels[side] = on;
+                    this.saveViewProfiles();
+                    if (p.id === this.activeViewProfileId) this.applyViewPanels();
                 })));
             }
+            // ── /View profiles ──────────────────────────────────────────────────────
 
             // ── Attack paths & trees (palette group "attack"; constants next to ATTACK_SHAPE_DEFAULTS) ──────────
             // True for an at_* shape and for a flow with an at_* shape at either end (an attack-tree link, not a data flow).
@@ -10740,7 +11170,7 @@
                 const content = pane && pane.closest('.tab-content');
                 if (content) content.classList.toggle('d-none', shown.length === 0);
                 if (visible && shown.length === 1 && window.bootstrap) bootstrap.Tab.getOrCreateInstance(trigger).show();   // the first tab back
-                if (save) { try { localStorage.setItem('hidden_tabs', JSON.stringify([...this.hiddenTabs])); } catch { /* view setting only */ } }
+                if (save) this.saveViewFromSets();
                 this.syncViewMenu();
             }
 
@@ -10748,6 +11178,7 @@
                 const set = (id, on) => { const el = document.getElementById(id); if (el) el.setAttribute('aria-checked', String(!!on)); };
                 document.querySelectorAll('#menu-view-items [data-stencil-toggle]').forEach(item => item.setAttribute('aria-checked', String(!(this.hiddenStencilSets && this.hiddenStencilSets.has(item.dataset.stencilToggle)))));
                 document.querySelectorAll('#menu-view-items [data-tab-trigger]').forEach(item => item.setAttribute('aria-checked', String(!(this.hiddenTabs && this.hiddenTabs.has(item.dataset.tabTrigger)))));
+                document.querySelectorAll('#menu-palette-sections [data-palette-toggle]').forEach(item => item.setAttribute('aria-checked', String(!(this.hiddenPaletteGroups && this.hiddenPaletteGroups.has(item.dataset.paletteToggle)))));
                 set('btn-menu-minimap', this.minimapVisible);
                 set('btn-menu-line-jumps', this.lineJumps);
                 set('btn-menu-title-block', this.titleBlockVisible);
@@ -15947,7 +16378,7 @@
                 clearTimeout(this.saveTimer); this.saveTimer = null;
                 clearTimeout(this.viewSaveTimer); this.viewSaveTimer = null;   // a pending view save would write canvas_view back
                 const prefixes = ['stride_workbench_', 'threat_tiger_', 'canvas_'];
-                const prefs = ['license_accepted', 'hidden_tabs', 'hidden_stencil_sets', 'hidden_palette_groups', 'hidden_icon_groups', 'line_jumps', 'minimap_visible', 'title_block', GIT_SECRETS_KEY, GIT_STATE_KEY, GIT_APPROVED_KEY];
+                const prefs = ['license_accepted', 'hidden_tabs', 'hidden_stencil_sets', 'hidden_palette_groups', 'hidden_icon_groups', 'view_profiles', 'active_view_profile', 'session_meta_collapsed', 'line_jumps', 'minimap_visible', 'title_block', GIT_SECRETS_KEY, GIT_STATE_KEY, GIT_APPROVED_KEY];
                 if (this.gitTokens) this.gitTokens.clear();
                 Object.keys(localStorage).filter(k => prefixes.some(p => k.startsWith(p)) || prefs.includes(k)).forEach(k => localStorage.removeItem(k));
                 if (SnapshotStore.db) { SnapshotStore.db.close(); SnapshotStore.db = null; }

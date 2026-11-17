@@ -1,7 +1,13 @@
-// Settings → Palette: hide palette sections, icon sets and icon-picker groups (a view setting in this browser).
+// Settings → Profiles: hide palette sections, icon sets and icon-picker groups in the active view profile (a view setting in this browser).
 const { test } = require('@playwright/test');
 const H = require('./helpers');
 const { expect } = H;
+
+// What the active view profile hides, as stored in localStorage.
+const activeHidden = (page, key) => page.evaluate((k) => {
+  const all = JSON.parse(localStorage.getItem('view_profiles')), id = localStorage.getItem('active_view_profile');
+  return all.profiles.find(p => p.id === id).hidden[k];
+}, key);
 
 const openSettings = async (page) => {
   await H.clickControl(page, '#btn-settings');
@@ -45,7 +51,7 @@ test('the icon-set switch in Settings and the View menu stay in step', async ({ 
   await page.locator('#settings-stencil-sets input[data-settings-stencil="aws"]').uncheck();
   expect(await page.locator('[data-stencil-set="aws"].stencil-set').evaluate(e => e.classList.contains('d-none'))).toBe(true);
   await expect(page.locator('#btn-menu-stencil-aws')).toHaveAttribute('aria-checked', 'false');
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('hidden_stencil_sets')))).toEqual(['aws']);
+  expect(await activeHidden(page, 'stencils')).toEqual(['aws']);
 });
 
 test('a hidden icon group is left out of the icon picker, but a shape keeps its current icon', async ({ page }) => {
@@ -55,7 +61,7 @@ test('a hidden icon group is left out of the icon picker, but a shape keeps its 
   await page.locator('#settings-icon-groups input[data-icon-group="Databases & storage"]').uncheck();
   await page.keyboard.press('Escape');
   await expect(page.locator('#modal-settings')).toBeHidden();
-  expect(await page.evaluate(() => JSON.parse(localStorage.getItem('hidden_icon_groups')))).toEqual(['Databases & storage']);
+  expect(await activeHidden(page, 'icons')).toEqual(['Databases & storage']);
   await page.evaluate(() => app.handleElementSelectionEvent('n1'));
   const pick = await page.evaluate(() => {
     const sel = document.getElementById('props-input-icon');
