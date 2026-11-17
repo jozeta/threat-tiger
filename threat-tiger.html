@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-JFmrhOGhh7yu09z8jAX1wdeZspbzpDwCeKrTlwDq1gQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-DWyozTn85eDCtgRKKiq/vx+5u0na68JFzqSTmpSjujI='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1560,6 +1560,7 @@
             fill: #f8fafc !important;
         }
 
+        .fc3d-num { width: 4.75rem; flex: none; } .fc3d-auto { flex: none; }   /* Properties: 3D height and layer controls */
         /* Attack-tree tag line (tactic · technique, outcome) keeps its colour on the pale fill in dark mode */
         .dark-theme-canvas text.at-shape-tag { fill: #7f1d1d !important; }
         .dark-theme-canvas text.at-shape-tag.at-tone-success { fill: #166534 !important; }
@@ -3414,6 +3415,42 @@
                                     <label class="form-check-label extra-small text-dark fw-bold" for="props-fc-3d"
                                         title="Draw the shape as a solid; in the isometric views it stands up from the ground">3D</label>
                                 </div>
+                                <div id="box-props-fc-3d-settings">
+                                    <div class="mb-1" id="box-props-fc-depth3d">
+                                        <label class="extra-small text-muted fw-bold mb-1" for="props-fc-depth3d"><i
+                                                class="bi bi-arrows-vertical me-1"></i>3D height: <span id="props-fc-depth3d-lbl">Auto</span></label>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input type="range" class="form-range flex-grow-1" id="props-fc-depth3d" min="10" max="400" step="1"
+                                                title="How tall the shape stands in the isometric views, in pixels (in the flat view: how deep it looks)">
+                                            <input type="number" class="form-control form-control-sm shadow-none fc3d-num" id="props-fc-depth3d-num"
+                                                min="10" max="400" step="1" aria-label="3D height" title="How tall the shape stands in the isometric views, in pixels (in the flat view: how deep it looks)">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary fc3d-auto" id="props-fc-depth3d-auto"
+                                                title="Back to the automatic value, worked out from the shape's size">Auto</button>
+                                        </div>
+                                    </div>
+                                    <div class="mb-1" id="box-props-fc-layer-count">
+                                        <label class="extra-small text-muted fw-bold mb-1" for="props-fc-layer-count"><i
+                                                class="bi bi-layers me-1"></i>Layers: <span id="props-fc-layer-count-lbl">Auto</span></label>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input type="range" class="form-range flex-grow-1" id="props-fc-layer-count" min="1" max="10" step="1"
+                                                title="Number of layers in the stack">
+                                            <input type="number" class="form-control form-control-sm shadow-none fc3d-num" id="props-fc-layer-count-num"
+                                                min="1" max="10" step="1" aria-label="Layers" title="Number of layers in the stack">
+                                        </div>
+                                    </div>
+                                    <div class="mb-1" id="box-props-fc-layer-thickness">
+                                        <label class="extra-small text-muted fw-bold mb-1" for="props-fc-layer-thickness"><i
+                                                class="bi bi-distribute-vertical me-1"></i>Layer thickness: <span id="props-fc-layer-thickness-lbl">Auto</span></label>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <input type="range" class="form-range flex-grow-1" id="props-fc-layer-thickness" min="2" max="100" step="1"
+                                                title="Thickness of each layer, in pixels; the gaps scale with it">
+                                            <input type="number" class="form-control form-control-sm shadow-none fc3d-num" id="props-fc-layer-thickness-num"
+                                                min="2" max="100" step="1" aria-label="Layer thickness" title="Thickness of each layer, in pixels; the gaps scale with it">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary fc3d-auto" id="props-fc-layer-thickness-auto"
+                                                title="Back to the automatic value, worked out from the shape's size">Auto</button>
+                                        </div>
+                                    </div>
+                                </div>
                                 <div class="mb-1">
                                     <label class="extra-small text-muted fw-bold mb-1">Label</label>
                                     <input type="text" class="form-control form-control-sm shadow-none"
@@ -4707,6 +4744,8 @@
         // ── 3D flowchart shapes ──────────────────────────────────────────────────────
         // Always drawn as solids (no 3D checkbox); every other flowchart shape can be made 3D with `threeD: true`.
         const FC_SOLID_TYPES = new Set(['fc_sphere', 'fc_cone', 'fc_pyramid', 'fc_layers']);
+        // Per-shape 3D settings, [min, max] in model pixels (layerCount: a whole number); absent = automatic.
+        const FC3D_LIMITS = { depth3d: [10, 400], layerCount: [1, 10], layerThickness: [2, 100] };
         // Shapes of older versions that are now a flowchart shape with the 3D option (migrated on load and import).
         const FC_LEGACY_3D = { fc_cube: 'fc_process', fc_database: 'fc_connector' };
         // Mermaid's cylinder: a 3D connector (resolved by the parser's define()).
@@ -5090,6 +5129,7 @@
             return null;
         }
         STYLE_FAMILIES.themed = ['theme'];
+        STYLE_FAMILIES.flowchart.push(...Object.keys(FC3D_LIMITS));   // 3D height and stacked-layer settings
         function paintableStyle(src, dst) {
             const fam = styleFamily(src);
             if (!fam || styleFamily(dst) !== fam) return {};
@@ -6124,6 +6164,8 @@
             // Diagram-shape text (C4 technology, class compartments, ERD rows): plain strings within their limits, or dropped.
             Object.keys(DIAGRAM_TEXT_FIELDS).forEach(k => { if (k in raw) { const v = normalizeDiagramText(raw[k], k); if (v === undefined) delete el[k]; else el[k] = v; } });
             if (!el.type.startsWith('fc_')) delete el.threeD;
+            // 3D height and stacked-layer settings: finite numbers clamped to their limits, on flowchart shapes only.
+            Object.entries(FC3D_LIMITS).forEach(([k, [lo, hi]]) => { const v = typeof raw[k] === 'number' ? toNumber(raw[k], NaN) : NaN; if (Number.isFinite(v) && el.type.startsWith('fc_')) el[k] = Math.round(Math.min(hi, Math.max(lo, v))); else delete el[k]; });
             el.name = toText(raw.name);
             el.x = toNumber(raw.x, 0); el.y = toNumber(raw.y, 0);
             ['width', 'height', 'x2', 'y2', 'bendX', 'bendY', 'textOffset', 'fontSize', 'stepNumber', 'zIndex'].forEach(k => {
@@ -6902,7 +6944,7 @@
                     h = el.height || 80;
                     // For fc shapes, anchor exactly on the shape-geometry edge.
                     // Try exact match first, then direction-prefix match (legacy 'right-2' → 'right')
-                    const anchors = this.getFcAnchorPoints(el.type, w, h, !!el.threeD);
+                    const anchors = this.getFcAnchorPoints(el.type, w, h, !!el.threeD, el);
                     const dirPrefix = anchorId ? anchorId.split('-')[0] : '';
                     const found = anchors.find(a => a.id === anchorId)
                                || anchors.find(a => a.id === dirPrefix);
@@ -7779,7 +7821,7 @@
                 const pick = (o, keys) => keys.map(k => o[k] === undefined ? null : o[k]);
                 const lanes = (e) => e.type === 'swimlane' ? [(e.columns || []).length, (e.rows || []).length, e.colWidths, e.rowHeights] : ttLayoutOf(e);
                 return JSON.stringify([
-                    (m.elements || []).map(e => [...pick(e, ['id', 'type', 'x', 'y', 'x2', 'y2', 'width', 'height', 'bendX', 'bendY', 'pageId', 'threeD']), lanes(e)]),
+                    (m.elements || []).map(e => [...pick(e, ['id', 'type', 'x', 'y', 'x2', 'y2', 'width', 'height', 'bendX', 'bendY', 'pageId', 'threeD', ...Object.keys(FC3D_LIMITS)]), lanes(e)]),
                     (m.flows || []).map(f => pick(f, ['id', 'sourceId', 'targetId', 'sourceAnchor', 'targetAnchor', 'points', 'bendX', 'bendY'])),
                     (m.pages || []).map(p => pick(p, ['id', 'offset']))
                 ]);
@@ -9081,6 +9123,7 @@
                     this.logEvent('CHANGE', `${ev.target.checked ? 'Turned on' : 'Turned off'} 3D for flowchart shape "${node.name}"`);
                     this.refreshAppViewVisualWorkspace(); this.saveSessionToLocalStorage();
                 });
+                this.bindFc3dSettingControls(getFcNode);   // 3D height, number and thickness of stacked layers
 
                 // Label input
                 document.getElementById('props-fc-label').addEventListener('change', (ev) => {
@@ -11494,7 +11537,7 @@
                 line.setAttribute('d', `M ${from.x} ${from.y} L ${to.x} ${to.y}`); line.setAttribute('class', 'quick-add-line');
                 const g = document.createElementNS(ns, 'g');
                 g.setAttribute('transform', `translate(${p.x}, ${p.y})`); g.setAttribute('data-ghost-type', src.type);
-                this.renderFlowchartShapeSvg(g, src.type, p.w, p.h, src.fcFillColor || FLOWCHART_DEFAULTS[src.type].fill, src.fcStrokeColor || FLOWCHART_DEFAULTS[src.type].stroke, src.fcStrokeWidth || 2, false, null, !!src.threeD);
+                this.renderFlowchartShapeSvg(g, src.type, p.w, p.h, src.fcFillColor || FLOWCHART_DEFAULTS[src.type].fill, src.fcStrokeColor || FLOWCHART_DEFAULTS[src.type].stroke, src.fcStrokeWidth || 2, false, src, !!src.threeD);
                 layer.append(line, g);
                 layer.dataset.dir = p.dir;
             }
@@ -11512,6 +11555,7 @@
                 const node = { id, type: src.type, name: def.name, x: p.x, y: p.y, notes: '', ...def.props, width: p.w, height: p.h, pageId: src.pageId };
                 Object.keys(src).filter(k => /^fc[A-Z]/.test(k)).forEach(k => { node[k] = src[k]; });   // same colours and line style
                 if (src.threeD) node.threeD = true;
+                Object.keys(FC3D_LIMITS).forEach(k => { if (src[k] !== undefined) node[k] = src[k]; });   // 3D height, layers
                 this.state.elements.push(node);
                 this.state.flows.push({
                     id: `fl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: '', sourceId: src.id, sourceAnchor: p.dir,
@@ -14038,7 +14082,7 @@
                         const stroke = node.fcStrokeColor || '#2563eb';
                         const sw = node.fcStrokeWidth || 2;  // absolute, not scaled
                         const isDarkCanvas = (this.canvasTheme === 'dark');
-                        this.renderFlowchartShapeSvg(g, node.type, w, h, fill, stroke, sw, isSelected, null, !!node.threeD);
+                        this.renderFlowchartShapeSvg(g, node.type, w, h, fill, stroke, sw, isSelected, node, !!node.threeD);
 
                         // Label text — centered within the visible shape area
                         const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -14053,7 +14097,7 @@
                             lblY = (h * 0.1 + h) / 2;
                         } else if (isAttackShapeType(node.type)) lblY = attackLabelY(node, w, h);
                         lbl.setAttribute('y', lblY);
-                        const lbl3d = this.fc3dLabelPoint(node.type, w, h, !!node.threeD, w / 2, lblY); if (lbl3d) { lbl.setAttribute('x', lbl3d.x); lbl.setAttribute('y', lbl3d.y); }   // 3D: on the front / top face
+                        const lbl3d = this.fc3dLabelPoint(node.type, w, h, !!node.threeD, w / 2, lblY, node); if (lbl3d) { lbl.setAttribute('x', lbl3d.x); lbl.setAttribute('y', lbl3d.y); }   // 3D: on the front / top face
                         lbl.setAttribute('dominant-baseline', 'middle');
                         lbl.setAttribute('text-anchor', 'middle');
                         lbl.setAttribute('font-size', '12px');
@@ -14071,6 +14115,7 @@
                         lbl.setAttribute('pointer-events', 'none');
                         lbl.textContent = node.name || '';
                         g.appendChild(lbl);
+                        this.fc3dLabelBackdrop(g, lbl, node, isDarkFill);   // sphere, cone, pyramid: a legible label
                         if (isAttackShapeType(node.type)) this.renderAttackShapeTag(g, node, w, h, textColor);
 
                     } else if (node.type === 'custom_image') {
@@ -14253,7 +14298,7 @@
 
                         // For fc_* shapes, use shape-aware anchor positions
                         const anchors = isFcLikeType(node.type)
-                            ? this.getFcAnchorPoints(node.type, w, h, !!node.threeD)
+                            ? this.getFcAnchorPoints(node.type, w, h, !!node.threeD, node)
                             : [
                                 { id: 'top',    cx: 0.5 * w, cy: 0 },
                                 { id: 'bottom', cx: 0.5 * w, cy: h },
@@ -14353,9 +14398,9 @@
              * Returns shape-aware anchor points for fc_* shapes.
              * Each anchor lies exactly on the visible geometry edge.
              */
-            getFcAnchorPoints(type, w, h, threeD = false) {
+            getFcAnchorPoints(type, w, h, threeD = false, el = null) {
                 if (isAttackShapeType(type)) return attackShapeAnchors(type, w, h);
-                const a3d = this.fc3dAnchorPoints(type, w, h, threeD); if (a3d) return a3d;   // 3D shapes in the flat view
+                const a3d = this.fc3dAnchorPoints(type, w, h, threeD, el); if (a3d) return a3d;   // 3D shapes in the flat view
                 // Simplified: one center anchor per side for all fc_* shapes
                 if (type === 'fc_decision') {
                     // Diamond: cardinal points exactly at the 4 tips
@@ -14726,7 +14771,7 @@
                     ? `filter: drop-shadow(0 8px 22px rgba(${gr},${gg},${gb},0.75)) drop-shadow(0 0 10px rgba(${gr},${gg},${gb},0.60));`
                     : ambientGlow;
                 if (isDiagramShape(type)) { this.renderDiagramShapeSvg(g, type, w, h, fill, stroke, sw, selRingStyle, node); return; }
-                if (threeD || FC_SOLID_TYPES.has(type)) { this.renderFc3dShape(g, type, w, h, fill, stroke, sw, selRingStyle); return; }   // 3D: own block below
+                if (threeD || FC_SOLID_TYPES.has(type)) { this.renderFc3dShape(g, type, w, h, fill, stroke, sw, selRingStyle, node); return; }   // 3D: own block below
 
                 let el;
 
@@ -14801,10 +14846,13 @@
             }
 
             // ── 3D flowchart shapes (drawing, labels, anchors) ───────────────────────────────
-            // Flat view: the outline is the front face in (0, d)…(w − d, h), extruded back by (d, −d) like the old cube.
+            // Flat view: the outline is the front face in (0, d)…(w − d, h), extruded back by (d, −d) like the old cube
+            // (the decision is a raised tile instead: the diamond on top, its walls hanging down by d).
             // Isometric views: the outline is the footprint on the ground (full w × h) and the shape is extruded
             // screen-up. The canvas is drawn in model coordinates inside #isometric-wrapper, whose matrix M maps the
             // model vector (−1, −1) (NE) or (1, −1) (NW) to (0, −1) on screen, so a height of H pixels is H · up.
+            // Per shape (FC3D_LIMITS): depth3d sets H (the apex of cones and pyramids) and scales d; layerCount and
+            // layerThickness shape the stacked layers. Absent: worked out from the shape's size.
             fc3dView() { return this.viewMode === 'ne-isometric' ? 'ne' : this.viewMode === 'nw-isometric' ? 'nw' : 'flat'; }
             fc3dUp(view) { return view === 'ne' ? { x: -1, y: -1 } : { x: 1, y: -1 }; }
             /** Model → screen direction of the isometric wrapper (only the linear part matters here). */
@@ -14813,10 +14861,53 @@
                 if (view === 'nw') return { x: 0.8660254 * (p.x + p.y), y: 0.5 * (p.y - p.x) };
                 return { x: p.x, y: p.y };
             }
-            fc3dDepth(w, h) { return Math.min(w, h) * 0.2; }                    // flat: extrusion depth (old cube)
-            fc3dHeight(w, h) { return Math.min(Math.min(w, h) * 0.5, 90); }     // iso: prism height in screen pixels
-            fc3dLayersHeight(w, h) { return Math.min(Math.min(w, h) * 0.75, 120); }
-            fc3dApexHeight(w, h) { return Math.min(Math.max(w, h) * 0.9, 220); } // iso: cone and pyramid apex
+            /** The inverse of the wrapper's matrix: content in a group with this transform is upright on screen. */
+            fc3dUnskew(view) { return view === 'ne' ? 'matrix(0.57735027, -0.57735027, 1.0, 1.0, 0, 0)' : 'matrix(0.57735027, 0.57735027, -1.0, 1.0, 0, 0)'; }
+            /** Whether an element's 3D setting `key` means anything for it (the Properties controls show only then). */
+            fc3dSettingApplies(el, key) {
+                const t = el && toText(el.type);
+                if (!t || !t.startsWith('fc_')) return false;
+                if (key === 'depth3d') return t === 'fc_cone' || t === 'fc_pyramid' || (!!el.threeD && !FC_SOLID_TYPES.has(t));
+                return t === 'fc_layers';
+            }
+            /** The element's own value for `key` (clamped), or undefined when it is automatic or does not apply. */
+            fc3dSetting(el, key) {
+                if (!this.fc3dSettingApplies(el, key)) return undefined;
+                const v = el[key];
+                if (typeof v !== 'number' || !Number.isFinite(v)) return undefined;
+                const [lo, hi] = FC3D_LIMITS[key];
+                return Math.round(Math.min(hi, Math.max(lo, v)));
+            }
+            /** Iso: the automatic height of a shape (prism height, apex of cones and pyramids, stack of layers). */
+            fc3dAutoHeight(type, w, h) {
+                if (type === 'fc_cone' || type === 'fc_pyramid') return Math.min(Math.max(w, h) * 0.9, 220);
+                if (type === 'fc_layers') return Math.min(Math.min(w, h) * 0.75, 120);
+                return Math.min(Math.min(w, h) * 0.5, 90);
+            }
+            /** Flat: extrusion depth (the old cube's), scaled by the shape's 3D height and kept so the front face never collapses. */
+            fc3dDepth(w, h, el = null) {
+                const d = Math.min(w, h) * 0.2, v = this.fc3dSetting(el, 'depth3d');
+                if (v === undefined) return d;
+                return Math.max(2, Math.min(Math.min(w, h) * 0.45, d * v / this.fc3dAutoHeight(el.type, w, h)));
+            }
+            fc3dHeight(w, h, el = null) { const v = this.fc3dSetting(el, 'depth3d'); return v !== undefined ? v : this.fc3dAutoHeight('fc_process', w, h); }   // iso: prism height in screen pixels
+            fc3dApexHeight(w, h, el = null) { const v = this.fc3dSetting(el, 'depth3d'); return v !== undefined ? v : this.fc3dAutoHeight('fc_cone', w, h); }  // iso: cone and pyramid apex
+            /**
+             * Stacked layers: n slabs of thickness t with gaps between them. Iso: the gap is 0.375 t and the automatic stack is
+             * fc3dAutoHeight high. Flat (avail = the front-face height): slabs that do not fit shrink; thinner ones keep their
+             * thickness and the stack spreads (gaps up to 1.5 t) and is centred; top/bottom: the front-face top and bottom.
+             */
+            fc3dLayers(w, h, el, avail, flat) {
+                const n = this.fc3dSetting(el, 'layerCount') || 3, k = n + 0.375 * (n - 1);
+                const fitT = avail / k, own = this.fc3dSetting(el, 'layerThickness');
+                let t = own !== undefined ? own : fitT, gap = t * 0.375;
+                if (flat) {
+                    if (own === undefined || t * k > avail) { t = fitT; gap = t * 0.375; }
+                    else if (n > 1) gap = Math.min((avail - n * t) / (n - 1), Math.max(t * 1.5, 8));
+                }
+                const total = n * t + (n - 1) * gap;
+                return { n, t, gap, total, top: (h - avail) + (avail - total) / 2, bottom: (h - avail) + (avail + total) / 2 };
+            }
             /** Iso sphere: screen radius = half the footprint's screen width; its centre sits 0.8 radius above the ground. */
             fc3dSphereRadius(w, h) { return 0.8660254 * Math.hypot(w / 2, h / 2); }
             fc3dSphereLift(w, h) { return this.fc3dSphereRadius(w, h) * 0.8; }
@@ -14844,37 +14935,74 @@
                 // Drop repeated points (where two arcs meet), so every edge has a length.
                 return pts.filter((p, i) => { const q = pts[(i + 1) % pts.length]; return Math.hypot(p.x - q.x, p.y - q.y) > 1e-6; });
             }
+            /** Flat: shapes drawn as a raised tile (top face, walls hanging straight down) instead of the oblique cube extrusion. */
+            fc3dIsTile(type) { return type === 'fc_decision' || type === 'fc_terminator'; }
 
             /** Label position for a 3D shape ({x, y} in the node's box), or null to keep the flat position. */
-            fc3dLabelPoint(type, w, h, threeD, x, y) {
+            fc3dLabelPoint(type, w, h, threeD, x, y, el = null) {
                 if (!threeD && !FC_SOLID_TYPES.has(type)) return null;
-                const view = this.fc3dView(), d = this.fc3dDepth(w, h);
+                const view = this.fc3dView(), d = this.fc3dDepth(w, h, el);
                 if (view === 'flat') {
                     if (type === 'fc_connector' || type === 'fc_sphere') return null;   // the cylinder and the ball: centred
-                    if (type === 'fc_cone') return { x: w / 2, y: h * 0.62 };
-                    if (type === 'fc_pyramid') return { x: (w * 1.5 - d) / 3, y: h * 2 / 3 };   // front face
+                    if (type === 'fc_cone') return { x: w / 2, y: h * 0.66 };
+                    if (type === 'fc_pyramid') {   // on the front face, low down where it is widest
+                        const ly = h * 0.74, xl = (w / 2) * (1 - ly / h), xr = w / 2 + (w / 2 - d) * (ly / h);
+                        return { x: (xl + xr) / 2, y: ly };
+                    }
+                    if (this.fc3dIsTile(type)) return { x, y: y * (h - d) / h };   // on the top face
                     return { x: x * (w - d) / w, y: d + y * (h - d) / h };   // the same spot on the front face
                 }
                 const u = this.fc3dUp(view);
-                const lift = type === 'fc_sphere' ? this.fc3dSphereLift(w, h) : (type === 'fc_cone' || type === 'fc_pyramid') ? this.fc3dApexHeight(w, h) * 0.3
-                    : type === 'fc_layers' ? this.fc3dLayersHeight(w, h) : this.fc3dHeight(w, h);
+                const lift = type === 'fc_sphere' ? this.fc3dSphereLift(w, h) : (type === 'fc_cone' || type === 'fc_pyramid') ? this.fc3dApexHeight(w, h, el) * 0.3
+                    : type === 'fc_layers' ? this.fc3dLayers(w, h, el, this.fc3dAutoHeight(type, w, h), false).total : this.fc3dHeight(w, h, el);
                 if (FC_SOLID_TYPES.has(type)) { x = w / 2; y = h / 2; }
                 return { x: x + lift * u.x, y: y + lift * u.y };   // on the top face
             }
 
+            /**
+             * Sphere, cone, pyramid and stacked layers: the label sits on a soft rounded backdrop so it reads over the shading,
+             * face edges and slabs; in the isometric views it is turned upright on screen like the ball. lbl is already in g (x, y set, middle-aligned).
+             */
+            fc3dLabelBackdrop(g, lbl, el, isDarkFill) {
+                if (!el || !['fc_sphere', 'fc_cone', 'fc_pyramid', 'fc_layers'].includes(el.type) || !lbl.textContent) return;
+                const ns = 'http://www.w3.org/2000/svg', view = this.fc3dView();
+                const x = Number(lbl.getAttribute('x')), y = Number(lbl.getAttribute('y'));
+                let tw = lbl.textContent.length * 7;
+                try {
+                    this.fc3dMeasure = this.fc3dMeasure || document.createElement('canvas').getContext('2d');
+                    this.fc3dMeasure.font = '600 12px Inter, system-ui, sans-serif';
+                    tw = this.fc3dMeasure.measureText(lbl.textContent).width;
+                } catch { /* keep the estimate */ }
+                const bw = tw + 14, bh = 19;
+                const rect = document.createElementNS(ns, 'rect');
+                Object.entries({
+                    x: Math.round((x - bw / 2) * 100) / 100, y: Math.round((y - bh / 2) * 100) / 100, width: Math.round(bw * 100) / 100, height: bh, rx: bh / 2,
+                    fill: isDarkFill ? 'rgba(15,23,42,0.5)' : 'rgba(255,255,255,0.72)', stroke: isDarkFill ? 'rgba(255,255,255,0.18)' : 'rgba(15,23,42,0.12)',
+                    'stroke-width': 1, 'pointer-events': 'none', 'data-fc3d-label': 'backdrop'
+                }).forEach(([k, v]) => rect.setAttribute(k, v));
+                g.insertBefore(rect, lbl);
+                if (view !== 'flat') {
+                    const tf = `translate(${x}, ${y}) ${this.fc3dUnskew(view)} translate(${-x}, ${-y})`;
+                    rect.setAttribute('transform', tf); lbl.setAttribute('transform', tf);
+                }
+            }
+
             /** Flat view: anchors on the visible faces of a 3D shape (null: the shape's usual anchors). Iso: on the footprint. */
-            fc3dAnchorPoints(type, w, h, threeD) {
+            fc3dAnchorPoints(type, w, h, threeD, el = null) {
                 if ((!threeD && !FC_SOLID_TYPES.has(type)) || this.fc3dView() !== 'flat') return null;
                 if (type === 'fc_connector' || type === 'fc_sphere') return null;
-                const d = this.fc3dDepth(w, h);
+                const d = this.fc3dDepth(w, h, el);
                 if (type === 'fc_cone') {
                     const ey = h * 0.15;
                     return [{ id: 'top', cx: w / 2, cy: 0 }, { id: 'bottom', cx: w / 2, cy: h }, { id: 'left', cx: 0, cy: h - ey }, { id: 'right', cx: w, cy: h - ey }];
                 }
                 if (type === 'fc_pyramid') return [{ id: 'top', cx: w / 2, cy: 0 }, { id: 'bottom', cx: (w - d) / 2, cy: h }, { id: 'left', cx: w / 4, cy: h / 2 }, { id: 'right', cx: w * 0.75, cy: (h - d) / 2 }];
-                const base = type === 'fc_layers'
-                    ? [{ id: 'top', cx: w / 2, cy: 0 }, { id: 'bottom', cx: w / 2, cy: h }, { id: 'left', cx: 0, cy: h / 2 }, { id: 'right', cx: w, cy: h / 2 }]
-                    : this.getFcAnchorPoints(type, w, h, false);
+                if (type === 'fc_layers') {   // on the stack: top face, bottom slab, front and right sides
+                    const L = this.fc3dLayers(w, h, el, h - d, true), mid = (L.top + L.bottom) / 2;
+                    return [{ id: 'top', cx: w / 2, cy: L.top - d / 2 }, { id: 'bottom', cx: (w - d) / 2, cy: L.bottom }, { id: 'left', cx: 0, cy: mid }, { id: 'right', cx: w - d / 2, cy: mid - d / 2 }];
+                }
+                const base = this.getFcAnchorPoints(type, w, h, false);
+                if (this.fc3dIsTile(type)) return base.map(a => ({ id: a.id, cx: a.cx, cy: a.id === 'bottom' ? h : a.cy * (h - d) / h }));   // the top face; bottom: under the walls
                 // Onto the front face; top and right move half-way onto the receding faces (as the old cube's).
                 return base.map(a => {
                     const p = { id: a.id, cx: a.cx * (w - d) / w, cy: d + a.cy * (h - d) / h };
@@ -14901,8 +15029,8 @@
                 return `rgb(${ch(1)},${ch(3)},${ch(5)})`;
             }
 
-            /** Draws a 3D flowchart shape into g (the node's group, in its w × h box) for the current view. */
-            renderFc3dShape(g, type, w, h, fill, stroke, sw, selRingStyle) {
+            /** Draws a 3D flowchart shape into g (the node's group, in its w × h box) for the current view; el: the element (its 3D settings). */
+            renderFc3dShape(g, type, w, h, fill, stroke, sw, selRingStyle, el = null) {
                 const ns = 'http://www.w3.org/2000/svg', view = this.fc3dView();
                 const r2 = (v) => Math.round(v * 100) / 100;
                 const pstr = (pts) => pts.map(p => `${r2(p.x)},${r2(p.y)}`).join(' ');
@@ -14913,8 +15041,9 @@
                 // Shade of a side face from its outward normal (model coordinates): lighter to the left, darker to the right on screen.
                 const sideShade = (n) => 0.12 + 0.07 * unit(this.fc3dScreen(view, n)).x;
                 const g2 = add(g, 'g', { style: selRingStyle, class: 'fc3d' });
+                const gradId = () => `fc3d-grad-${(this.fc3dGradSeq = (this.fc3dGradSeq || 0) + 1)}`;
                 const gradient = () => {
-                    const id = `fc3d-grad-${(this.fc3dGradSeq = (this.fc3dGradSeq || 0) + 1)}`;
+                    const id = gradId();
                     const rg = add(add(g2, 'defs', {}), 'radialGradient', { id, cx: '0.5', cy: '0.5', r: '0.5', fx: '0.35', fy: '0.3' });
                     add(rg, 'stop', { offset: '0', 'stop-color': this.fc3dShade(fill, 0, 0.7) });
                     add(rg, 'stop', { offset: '0.55', 'stop-color': this.fc3dShade(fill, 0) });
@@ -14952,20 +15081,23 @@
                 };
 
                 // A cone: base ellipse (centre c, radii a, b) and apex; the silhouette lines touch the ellipse (tangents are
-                // affine-invariant, so they are found on the unit circle).
+                // affine-invariant, so they are found on the unit circle). The body is one smooth gradient, lit from the left on screen.
                 const cone = (c, a, b, apex) => {
                     const A = { x: (apex.x - c.x) / a, y: (apex.y - c.y) / b }, r = Math.hypot(A.x, A.y);
                     const at = (t) => ({ x: c.x + a * Math.cos(t), y: c.y + b * Math.sin(t) });
                     add(g2, 'ellipse', { cx: r2(c.x), cy: r2(c.y), rx: r2(a), ry: r2(b), fill: this.fc3dShade(fill, 0.2), stroke, 'stroke-width': sw, 'data-fc3d': 'wall' });
                     if (r <= 1.001) return;   // apex over the base: only the base shows
                     const phi = Math.atan2(A.y, A.x), al = Math.acos(1 / r);
-                    const t1 = phi + al, t2 = phi + 2 * Math.PI - al, tm = phi + Math.PI;   // the far arc runs t1 → tm → t2
-                    const arcPts = (from, to) => { const out = []; for (let i = 0; i <= 24; i++) out.push(at(from + (to - from) * i / 24)); return out; };
-                    const firstIsRight = this.fc3dScreen(view, at(t1)).x > this.fc3dScreen(view, at(t2)).x;
-                    [[[apex, ...arcPts(t1, tm)], firstIsRight], [[apex, ...arcPts(tm, t2)], !firstIsRight]].forEach(([pts, isRight]) => {
-                        const col = this.fc3dShade(fill, isRight ? 0.18 : 0.03);
-                        add(g2, 'polygon', { points: pstr(pts), fill: col, stroke: col, 'stroke-width': 0.5, 'data-fc3d': 'wall' });
-                    });
+                    const t1 = phi + al, t2 = phi + 2 * Math.PI - al;   // the near arc runs t1 → t2
+                    const arcPts = (from, to) => { const out = []; for (let i = 0; i <= 48; i++) out.push(at(from + (to - from) * i / 48)); return out; };
+                    // Gradient along the model direction that is horizontal on screen, spanning the ellipse's screen width
+                    // (its iso-lines are perpendicular in model space, which the wrapper turns into vertical lines on screen).
+                    const sx = view === 'ne' ? { x: 1, y: -1 } : view === 'nw' ? { x: 1, y: 1 } : { x: 1, y: 0 };
+                    const L = this.fc3dScreen(view, sx).x, half = Math.hypot(this.fc3dScreen(view, { x: a, y: 0 }).x, this.fc3dScreen(view, { x: 0, y: b }).x) / L;
+                    const id = gradId();
+                    const lg = add(add(g2, 'defs', {}), 'linearGradient', { id, gradientUnits: 'userSpaceOnUse', x1: r2(c.x - sx.x * half), y1: r2(c.y - sx.y * half), x2: r2(c.x + sx.x * half), y2: r2(c.y + sx.y * half) });
+                    [[0, 0.04, 0.22], [0.3, 0, 0.12], [0.62, 0.06, 0], [1, 0.3, 0]].forEach(([o, sh, li]) => add(lg, 'stop', { offset: String(o), 'stop-color': this.fc3dShade(fill, sh, li) }));
+                    add(g2, 'polygon', { points: pstr([apex, ...arcPts(t1, t2)]), fill: `url(#${id})`, stroke: 'none', 'data-fc3d': 'wall' });
                     add(g2, 'polygon', { points: pstr([apex, ...arcPts(t1, t2)]), fill: 'none', stroke, 'stroke-width': sw, 'stroke-linejoin': 'round', 'pointer-events': 'none', 'data-fc3d': 'cap' });
                 };
 
@@ -14981,7 +15113,7 @@
                 };
 
                 if (view === 'flat') {
-                    const d = this.fc3dDepth(w, h), e = { x: d, y: -d };
+                    const d = this.fc3dDepth(w, h, el), e = { x: d, y: -d };
                     if (type === 'fc_connector') {
                         // The upright cylinder (the old database shape): body, bottom cap, sides, top cap.
                         const ey = h * 0.15;
@@ -14998,11 +15130,13 @@
                     } else if (type === 'fc_pyramid') {
                         pyramid([{ x: 0, y: h }, { x: w - d, y: h }, { x: w, y: h - d }, { x: d, y: h - d }], { x: w / 2, y: 0 });
                     } else if (type === 'fc_layers') {
-                        const gap = (h - d) * 0.1, t = (h - d - gap * 2) / 3;
-                        for (let k = 2; k >= 0; k--) {   // bottom slab first: the slab above hides the back of its top
-                            const y0 = d + k * (t + gap);
-                            prism([{ x: 0, y: y0 }, { x: w - d, y: y0 }, { x: w - d, y: y0 + t }, { x: 0, y: y0 + t }], e, false);
+                        const L = this.fc3dLayers(w, h, el, h - d, true);
+                        for (let k = L.n - 1; k >= 0; k--) {   // bottom slab first: the slab above hides the back of its top
+                            const y0 = L.top + k * (L.t + L.gap);
+                            prism([{ x: 0, y: y0 }, { x: w - d, y: y0 }, { x: w - d, y: y0 + L.t }, { x: 0, y: y0 + L.t }], e, false);
                         }
+                    } else if (this.fc3dIsTile(type)) {
+                        prism(this.fc3dOutline(type, w, h).map(p => ({ x: p.x, y: p.y * (h - d) / h })), { x: 0, y: d }, false);
                     } else {
                         prism(this.fc3dOutline(type, w, h).map(p => ({ x: p.x * (w - d) / w, y: d + p.y * (h - d) / h })), e, false);
                     }
@@ -15012,22 +15146,79 @@
                 // Isometric: the footprint on the ground, extruded screen-up.
                 const u = this.fc3dUp(view), c = { x: w / 2, y: h / 2 };
                 if (type === 'fc_sphere') {
-                    add(g2, 'ellipse', { cx: c.x, cy: c.y, rx: w / 2, ry: h / 2, fill: '#000', 'fill-opacity': 0.16, stroke: 'none', 'data-fc3d': 'shadow' });
+                    // A soft ground shadow: a blurred-looking radial fade, a little stronger on the dark canvas so it still shows.
+                    const id = gradId(), a0 = this.canvasTheme === 'dark' ? 0.6 : 0.3;
+                    const rg = add(add(g2, 'defs', {}), 'radialGradient', { id, cx: '0.5', cy: '0.5', r: '0.5' });
+                    [[0, a0], [0.5, a0 * 0.55], [0.8, a0 * 0.18], [1, 0]].forEach(([o, op]) => add(rg, 'stop', { offset: String(o), 'stop-color': '#000', 'stop-opacity': String(Math.round(op * 1000) / 1000) }));
+                    add(g2, 'ellipse', { cx: c.x, cy: c.y, rx: r2(w * 0.66), ry: r2(h * 0.66), fill: `url(#${id})`, stroke: 'none', 'pointer-events': 'none', 'data-fc3d': 'shadow' });
                     const lift = this.fc3dSphereLift(w, h);
-                    const inv = view === 'ne' ? 'matrix(0.57735027, -0.57735027, 1.0, 1.0, 0, 0)' : 'matrix(0.57735027, 0.57735027, -1.0, 1.0, 0, 0)';
-                    const ball = add(g2, 'g', { transform: `translate(${r2(c.x + lift * u.x)}, ${r2(c.y + lift * u.y)}) ${inv}` });   // undoes the wrapper: round on screen
+                    const ball = add(g2, 'g', { transform: `translate(${r2(c.x + lift * u.x)}, ${r2(c.y + lift * u.y)}) ${this.fc3dUnskew(view)}` });   // undoes the wrapper: round on screen
                     add(ball, 'circle', { cx: 0, cy: 0, r: r2(this.fc3dSphereRadius(w, h)), fill: gradient(), stroke, 'stroke-width': sw, 'data-fc3d': 'cap' });
                 } else if (type === 'fc_cone') {
-                    cone(c, w / 2, h / 2, mv(c, u, this.fc3dApexHeight(w, h)));
+                    cone(c, w / 2, h / 2, mv(c, u, this.fc3dApexHeight(w, h, el)));
                 } else if (type === 'fc_pyramid') {
-                    pyramid(this.fc3dOutline(type, w, h), mv(c, u, this.fc3dApexHeight(w, h)));
+                    pyramid(this.fc3dOutline(type, w, h), mv(c, u, this.fc3dApexHeight(w, h, el)));
                 } else if (type === 'fc_layers') {
-                    const H = this.fc3dLayersHeight(w, h), gap = H * 0.1, t = (H - gap * 2) / 3, base = this.fc3dOutline(type, w, h);
-                    for (let k = 0; k < 3; k++) prism(base.map(p => mv(p, u, k * (t + gap))), { x: u.x * t, y: u.y * t }, true);   // bottom slab first
+                    const L = this.fc3dLayers(w, h, el, this.fc3dAutoHeight(type, w, h), false), base = this.fc3dOutline(type, w, h);
+                    for (let k = 0; k < L.n; k++) prism(base.map(p => mv(p, u, k * (L.t + L.gap))), { x: u.x * L.t, y: u.y * L.t }, true);   // bottom slab first
                 } else {
-                    const H = this.fc3dHeight(w, h);
+                    const H = this.fc3dHeight(w, h, el);
                     prism(this.fc3dOutline(type, w, h), { x: u.x * H, y: u.y * H }, true);
                 }
+            }
+
+            /** Properties: shows the 3D height and stacked-layer controls that apply to el, with its values (automatic ones too). */
+            updateFc3dSettingControls(el) {
+                const w = (el && el.width) || 160, h = (el && el.height) || 80, ro = !!this.state.reviewMode;
+                const auto = {
+                    depth3d: () => this.fc3dAutoHeight(el.type, w, h),
+                    layerCount: () => 3,
+                    layerThickness: () => this.fc3dLayers(w, h, { ...el, layerThickness: undefined }, this.fc3dAutoHeight('fc_layers', w, h), false).t,
+                };
+                let any = false;
+                [['depth3d', 'depth3d'], ['layerCount', 'layer-count'], ['layerThickness', 'layer-thickness']].forEach(([key, id]) => {
+                    const box = document.getElementById(`box-props-fc-${id}`); if (!box) return;
+                    const on = this.fc3dSettingApplies(el, key); any = any || on;
+                    box.classList.toggle('d-none', !on);
+                    if (!on) return;
+                    const own = this.fc3dSetting(el, key), v = Math.round(own !== undefined ? own : auto[key]());
+                    const range = document.getElementById(`props-fc-${id}`), num = document.getElementById(`props-fc-${id}-num`), btn = document.getElementById(`props-fc-${id}-auto`);
+                    range.value = String(v); num.value = String(v);
+                    document.getElementById(`props-fc-${id}-lbl`).textContent = key === 'layerCount' ? String(v) : own !== undefined ? `${v}px` : `Auto (${v}px)`;
+                    [range, num, btn].forEach(c => { if (c) { c.disabled = ro; if (c.dataset.title === undefined) c.dataset.title = c.title; c.title = ro ? 'Review mode is on: the layout is frozen' : c.dataset.title; } });
+                    if (btn) btn.disabled = ro || own === undefined;
+                });
+                const all = document.getElementById('box-props-fc-3d-settings'); if (all) all.classList.toggle('d-none', !any);
+            }
+
+            /** Properties: the 3D height and stacked-layer controls. Slider: live while dragging, one undo step on release;
+             *  number box and Auto: one undo step each. Review mode blocks them (the shape's look and anchors change). */
+            bindFc3dSettingControls(getFcNode) {
+                const names = { depth3d: '3D height', layerCount: 'number of layers', layerThickness: 'layer thickness' };
+                [['depth3d', 'depth3d'], ['layerCount', 'layer-count'], ['layerThickness', 'layer-thickness']].forEach(([key, id]) => {
+                    let start;   // the value when a slider drag began (undefined: no drag going on)
+                    const apply = (raw, commit) => {
+                        const node = getFcNode();
+                        if (!node || !this.fc3dSettingApplies(node, key)) return;
+                        if (this.state.reviewMode) { if (commit) this.blockedByReviewMode('change 3D shapes'); start = undefined; this.updateFc3dSettingControls(node); return; }
+                        const before = start !== undefined ? start.v : node[key];
+                        if (!commit && start === undefined) start = { v: node[key] };
+                        if (raw === null) delete node[key];
+                        else {
+                            const [lo, hi] = FC3D_LIMITS[key], v = Number(raw);
+                            if (raw === '' || !Number.isFinite(v)) { this.updateFc3dSettingControls(node); return; }
+                            node[key] = Math.round(Math.min(hi, Math.max(lo, v)));
+                        }
+                        if (!commit) { this.updateFc3dSettingControls(node); this.renderSvgDiagramElements(); return; }
+                        start = undefined;
+                        if (node[key] !== before) this.logEvent('CHANGE', node[key] === undefined ? `Set the ${names[key]} of flowchart shape "${node.name}" back to automatic` : `Changed the ${names[key]} of flowchart shape "${node.name}" to ${node[key]}`);
+                        this.refreshAppViewVisualWorkspace(); this.saveSessionToLocalStorage();
+                    };
+                    const range = document.getElementById(`props-fc-${id}`), num = document.getElementById(`props-fc-${id}-num`), btn = document.getElementById(`props-fc-${id}-auto`);
+                    if (range) { range.addEventListener('input', (ev) => apply(ev.target.value, false)); range.addEventListener('change', (ev) => apply(ev.target.value, true)); }
+                    if (num) num.addEventListener('change', (ev) => apply(ev.target.value, true));
+                    if (btn) btn.addEventListener('click', () => apply(null, true));
+                });
             }
             // ── end 3D flowchart shapes ──────────────────────────────────────────────────────
 
@@ -15211,6 +15402,7 @@
                     document.getElementById('box-props-fc-3d').classList.toggle('d-none', !targetItem.type.startsWith('fc_') || FC_SOLID_TYPES.has(targetItem.type));   // flowchart shapes only
                     fc3d.checked = !!targetItem.threeD; fc3d.disabled = !!this.state.reviewMode;
                     fc3d.title = this.state.reviewMode ? 'Review mode is on: the layout is frozen' : '';
+                    this.updateFc3dSettingControls(targetItem);   // 3D height, stacked layers
                     // Fill color swatches
                     const activeFill = targetItem.fcFillColor || '#ffffff';
                     document.querySelectorAll('#props-fc-fill-grid .color-swatch-btn').forEach(btn => {
