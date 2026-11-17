@@ -37,7 +37,7 @@ test('alignableBox uses type default sizes and ignores non-alignable types', asy
   await setup(page);
   const r = await page.evaluate(() => [
     alignableBox({ id: 'i', type: 'infrastructure', x: 1, y: 2 }),
-    alignableBox({ id: 'f', type: 'fc_cube', x: 0, y: 0, width: 140, height: 100 }),
+    alignableBox({ id: 'f', type: 'fc_pyramid', x: 0, y: 0, width: 140, height: 100 }),
     alignableBox({ id: 's', type: 'swimlane', x: 0, y: 0 }),
     alignableBox({ id: 't', type: 'textbox', x: 0, y: 0 }),
   ]);

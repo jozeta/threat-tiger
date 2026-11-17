@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ObR6+AG8eMilhLTMf3eZF5FhktnrNN4ofeslA0uRAmg='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-63P3CGLe6TKv6aJbTzYEdYsuBxebJDHMM+kYt0fmB+A='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -2535,53 +2535,91 @@
                                         </div>
                                     </div>
                                 </div>
-                                <!-- FC: Database (Cylinder) -->
-                                <div class="palette-item-container">
-                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
-                                        data-type="fc_database" id="pal-fc-database">
-                                        <svg width="28" height="20" class="me-3 flex-shrink-0">
-                                            <rect x="3" y="5" width="22" height="12" fill="#fff" stroke="#495057"
-                                                stroke-width="1.8" />
-                                            <ellipse cx="14" cy="5" rx="11" ry="4" fill="#fff" stroke="#495057"
-                                                stroke-width="1.8" />
-                                            <ellipse cx="14" cy="17" rx="11" ry="4" fill="#f8f9fa" stroke="#495057"
-                                                stroke-width="1.2" />
-                                        </svg>
-                                        <div>
-                                            <div class="fw-semibold small">Database (Cylinder)</div>
+                                <!-- FC: 3D shapes (always drawn as solids; any other flowchart shape gets a 3D checkbox in Properties) -->
+                                <div class="palette-subgroup d-flex flex-column gap-1" id="palette-fc-3d" role="group" aria-label="3D shapes">
+                                    <div class="palette-subgroup-title small fw-bold text-muted">3D shapes</div>
+                                    <div class="palette-item-container">
+                                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                            data-type="fc_sphere" id="pal-fc-sphere">
+                                            <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                                <circle cx="14" cy="10" r="9" fill="#fff" stroke="#495057" stroke-width="1.6" />
+                                                <path d="M7,13 A9,9 0 0 0 21,13 A9,4 0 0 1 7,13 Z" fill="#dee2e6" stroke="none" />
+                                                <circle cx="11" cy="7" r="2.5" fill="#f8f9fa" stroke="none" />
+                                            </svg>
+                                            <div>
+                                                <div class="fw-semibold small">Sphere</div>
+                                            </div>
+                                        </div>
+                                        <div class="palette-popover-panel">
+                                            <div class="popover-header-title" style="color:#adb5bd;">Sphere</div>
+                                            <div class="small fw-bold text-white-50 mb-1">3D shape:</div>
+                                            <div class="small text-light opacity-75 mb-2">A shaded ball, for a node, a
+                                                cluster, a planet-style overview or anything that should stand out. Drawn
+                                                as a solid in the flat and isometric views.</div>
                                         </div>
                                     </div>
-                                    <div class="palette-popover-panel">
-                                        <div class="popover-header-title" style="color:#adb5bd;">&#128445; Database
-                                            (Cylinder)</div>
-                                        <div class="small fw-bold text-white-50 mb-1">Flowchart Definition:</div>
-                                        <div class="small text-light opacity-75 mb-2">Represents a database or
-                                            structured data store with a 3D cylindrical appearance. Common in
-                                            system/architecture diagrams.</div>
-                                    </div>
-                                </div>
-                                <!-- FC: Cube (3D box) -->
-                                <div class="palette-item-container">
-                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
-                                        data-type="fc_cube" id="pal-fc-cube">
-                                        <svg width="28" height="20" class="me-3 flex-shrink-0">
-                                            <polygon points="3,7 19,7 19,18 3,18" fill="#fff" stroke="#495057"
-                                                stroke-width="1.6" stroke-linejoin="round" />
-                                            <polygon points="3,7 8,2 24,2 19,7" fill="#f1f3f5" stroke="#495057"
-                                                stroke-width="1.6" stroke-linejoin="round" />
-                                            <polygon points="19,7 24,2 24,13 19,18" fill="#dee2e6" stroke="#495057"
-                                                stroke-width="1.6" stroke-linejoin="round" />
-                                        </svg>
-                                        <div>
-                                            <div class="fw-semibold small">Cube (3D Box)</div>
+                                    <div class="palette-item-container">
+                                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                            data-type="fc_cone" id="pal-fc-cone">
+                                            <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                                <path d="M14,1 L4,16 A10,3 0 0 0 24,16 Z" fill="#fff" stroke="#495057"
+                                                    stroke-width="1.6" stroke-linejoin="round" />
+                                                <path d="M14,1 L14,19 A10,3 0 0 0 24,16 Z" fill="#dee2e6" stroke="none" />
+                                            </svg>
+                                            <div>
+                                                <div class="fw-semibold small">Cone</div>
+                                            </div>
+                                        </div>
+                                        <div class="palette-popover-panel">
+                                            <div class="popover-header-title" style="color:#adb5bd;">Cone</div>
+                                            <div class="small fw-bold text-white-50 mb-1">3D shape:</div>
+                                            <div class="small text-light opacity-75 mb-2">A cone on a round base, for a
+                                                funnel, a filter or an entry point. Drawn as a solid in the flat and
+                                                isometric views.</div>
                                         </div>
                                     </div>
-                                    <div class="palette-popover-panel">
-                                        <div class="popover-header-title" style="color:#adb5bd;">Cube (3D Box)</div>
-                                        <div class="small fw-bold text-white-50 mb-1">Flowchart Definition:</div>
-                                        <div class="small text-light opacity-75 mb-2">A three-dimensional box, for a
-                                            server, a container, a package or any other physical or deployable unit.
-                                            Common in system/architecture diagrams.</div>
+                                    <div class="palette-item-container">
+                                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                            data-type="fc_pyramid" id="pal-fc-pyramid">
+                                            <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                                <polygon points="13,1 3,18 19,18" fill="#fff" stroke="#495057"
+                                                    stroke-width="1.6" stroke-linejoin="round" />
+                                                <polygon points="13,1 19,18 25,13" fill="#dee2e6" stroke="#495057"
+                                                    stroke-width="1.6" stroke-linejoin="round" />
+                                            </svg>
+                                            <div>
+                                                <div class="fw-semibold small">Pyramid</div>
+                                            </div>
+                                        </div>
+                                        <div class="palette-popover-panel">
+                                            <div class="popover-header-title" style="color:#adb5bd;">Pyramid</div>
+                                            <div class="small fw-bold text-white-50 mb-1">3D shape:</div>
+                                            <div class="small text-light opacity-75 mb-2">A square pyramid, for a
+                                                hierarchy, a privilege level or a tiered model. Drawn as a solid in the
+                                                flat and isometric views.</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-item-container">
+                                        <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                            data-type="fc_layers" id="pal-fc-layers">
+                                            <svg width="28" height="20" class="me-3 flex-shrink-0">
+                                                <polygon points="2,4 22,4 22,7 2,7" fill="#fff" stroke="#495057" stroke-width="1.2" />
+                                                <polygon points="2,4 5,1 25,1 22,4" fill="#f1f3f5" stroke="#495057" stroke-width="1.2" />
+                                                <polygon points="2,11 22,11 22,14 2,14" fill="#fff" stroke="#495057" stroke-width="1.2" />
+                                                <polygon points="2,11 5,8 25,8 22,11" fill="#f1f3f5" stroke="#495057" stroke-width="1.2" />
+                                                <polygon points="2,16 22,16 22,19 2,19" fill="#fff" stroke="#495057" stroke-width="1.2" />
+                                            </svg>
+                                            <div>
+                                                <div class="fw-semibold small">Stacked layers</div>
+                                            </div>
+                                        </div>
+                                        <div class="palette-popover-panel">
+                                            <div class="popover-header-title" style="color:#adb5bd;">Stacked layers</div>
+                                            <div class="small fw-bold text-white-50 mb-1">3D shape:</div>
+                                            <div class="small text-light opacity-75 mb-2">Three stacked slabs, for
+                                                platform layers, a technology stack or defence in depth. Drawn as a solid
+                                                in the flat and isometric views.</div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -3333,6 +3371,11 @@
                                             id="props-fc-stroke-width-lbl">2</span>px</label>
                                     <input type="range" class="form-range" id="props-fc-stroke-width" min="1" max="10"
                                         step="0.5" value="2">
+                                </div>
+                                <div class="form-check mb-1" id="box-props-fc-3d">
+                                    <input class="form-check-input" type="checkbox" id="props-fc-3d">
+                                    <label class="form-check-label extra-small text-dark fw-bold" for="props-fc-3d"
+                                        title="Draw the shape as a solid; in the isometric views it stands up from the ground">3D</label>
                                 </div>
                                 <div class="mb-1">
                                     <label class="extra-small text-muted fw-bold mb-1">Label</label>
@@ -4388,8 +4431,10 @@
             fc_preparation:  { label: 'Preparation (hexagon)',  name: 'Preparation',  w: 160, h: 80,  fill: '#d1d5db', stroke: '#6b7280' },
             fc_connector:    { label: 'Connector (circle)',     name: 'Connector',    w: 80,  h: 80,  fill: '#fef9c3', stroke: '#ca8a04' },
             fc_stored_data:  { label: 'Stored data',            name: 'Stored Data',  w: 160, h: 80,  fill: '#dbeafe', stroke: '#2563eb' },
-            fc_database:     { label: 'Database (cylinder)',    name: 'Database',     w: 120, h: 100, fill: '#ecfccb', stroke: '#65a30d' },
-            fc_cube:         { label: 'Cube (3D box)',          name: 'Cube',         w: 140, h: 100, fill: '#e0e7ff', stroke: '#4f46e5' },
+            fc_sphere:       { label: 'Sphere (3D)',            name: 'Sphere',       w: 100, h: 100, fill: '#e0f2fe', stroke: '#0284c7' },
+            fc_cone:         { label: 'Cone (3D)',              name: 'Cone',         w: 110, h: 120, fill: '#fef3c7', stroke: '#d97706' },
+            fc_pyramid:      { label: 'Pyramid (3D)',           name: 'Pyramid',      w: 130, h: 120, fill: '#ede9fe', stroke: '#7c3aed' },
+            fc_layers:       { label: 'Stacked layers (3D)',    name: 'Layers',       w: 160, h: 120, fill: '#e0e7ff', stroke: '#4f46e5' },
         };
         // ── Attack paths & trees (palette group "attack") ────────────────────────────
         // Shapes after MITRE Attack Flow (action, asset, condition, AND/OR operator), attack-defence trees (gates, goal,
@@ -4589,6 +4634,14 @@
         // Decorative shapes: left out of threats, flow ends, swimlane layout, elbow routing, quick add and Mermaid.
         const TT_DECOR_TYPES = ['table', ...LANE_CONTAINER_TYPES];
         // ── end table and containers ──
+        // ── 3D flowchart shapes ──────────────────────────────────────────────────────
+        // Always drawn as solids (no 3D checkbox); every other flowchart shape can be made 3D with `threeD: true`.
+        const FC_SOLID_TYPES = new Set(['fc_sphere', 'fc_cone', 'fc_pyramid', 'fc_layers']);
+        // Shapes of older versions that are now a flowchart shape with the 3D option (migrated on load and import).
+        const FC_LEGACY_3D = { fc_cube: 'fc_process', fc_database: 'fc_connector' };
+        // Mermaid's cylinder: a 3D connector (resolved by the parser's define()).
+        const MERMAID_CYLINDER = 'fc_connector+3d';
+        // ── end 3D flowchart shapes ──────────────────────────────────────────────────
         // Every shape type the palette can add; imported or dropped types outside this list are not trusted.
         const ELEMENT_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'boundary', 'boundary_line', 'step_activity', 'textbox', 'headline',
             'custom_image', 'swimlane', ...Object.keys(FLOWCHART_DEFAULTS)]);
@@ -4955,7 +5008,7 @@
         // ── Format painter ───────────────────────────────────────────────────────────
         // Look-only properties per kind of shape; the painter copies them between shapes of the same kind.
         // Numbered steps store their colour differently from components, so they are their own kind.
-        const STYLE_FAMILIES = { flowchart: ['fcFillColor', 'fcStrokeColor', 'fcStrokeWidth'], component: ['iconColor'], step: ['circleColor'], text: ['fontSize'] };
+        const STYLE_FAMILIES = { flowchart: ['fcFillColor', 'fcStrokeColor', 'fcStrokeWidth', 'threeD'], component: ['iconColor'], step: ['circleColor'], text: ['fontSize'] };
         function styleFamily(e) {
             const t = e && toText(e.type);
             if (!t) return null;
@@ -5021,7 +5074,7 @@
         const MERMAID_LIMITS = { chars: 200000, nodes: 500, edges: 2000, subgraphs: 100, depth: 10, label: 200 };
         // [opener, closer, flowchart type], longest opener first. '[/' and '[\' are resolved by their closer (see below).
         const MERMAID_SHAPES = [
-            ['(((', ')))', 'fc_connector'], ['([', '])', 'fc_terminator'], ['[[', ']]', 'fc_process'], ['[(', ')]', 'fc_database'],
+            ['(((', ')))', 'fc_connector'], ['([', '])', 'fc_terminator'], ['[[', ']]', 'fc_process'], ['[(', ')]', MERMAID_CYLINDER],
             ['((', '))', 'fc_connector'], ['{{', '}}', 'fc_preparation'], ['[/', null, null], ['[\\', null, null],
             ['(', ')', 'fc_process'], ['[', ']', 'fc_process'], ['{', '}', 'fc_decision'], ['>', ']', 'fc_document'],
         ];
@@ -5029,7 +5082,7 @@
         const MERMAID_SHAPE_NAMES = {
             rect: 'fc_process', process: 'fc_process', proc: 'fc_process', rounded: 'fc_process', event: 'fc_process', subproc: 'fc_process', subprocess: 'fc_process',
             stadium: 'fc_terminator', pill: 'fc_terminator', terminal: 'fc_terminator', diam: 'fc_decision', diamond: 'fc_decision', decision: 'fc_decision', question: 'fc_decision',
-            hex: 'fc_preparation', hexagon: 'fc_preparation', prepare: 'fc_preparation', cyl: 'fc_database', cylinder: 'fc_database', db: 'fc_database', database: 'fc_database',
+            hex: 'fc_preparation', hexagon: 'fc_preparation', prepare: 'fc_preparation', cyl: MERMAID_CYLINDER, cylinder: MERMAID_CYLINDER, db: MERMAID_CYLINDER, database: MERMAID_CYLINDER,
             circle: 'fc_connector', circ: 'fc_connector', 'sm-circ': 'fc_connector', 'dbl-circ': 'fc_connector', 'lean-r': 'fc_data', 'lean-l': 'fc_data', 'in-out': 'fc_data', 'out-in': 'fc_data',
             'trap-t': 'fc_manual_input', 'manual-input': 'fc_manual_input', 'trap-b': 'fc_manual_input', priority: 'fc_manual_input', doc: 'fc_document', document: 'fc_document',
             docs: 'fc_document', documents: 'fc_document', das: 'fc_stored_data', 'stored-data': 'fc_stored_data', 'sl-rect': 'fc_manual_input', 'manual-file': 'fc_manual_input',
@@ -5098,7 +5151,7 @@
                     if (p === n.sub) n.sub = cur;
                 }
                 if (label !== undefined) { n.label = label; n.explicit = true; }
-                if (type) { n.type = type; n.explicit = true; }
+                if (type) { n.threeD = type === MERMAID_CYLINDER; n.type = n.threeD ? 'fc_connector' : type; n.explicit = true; }
             };
 
             // Reads a label up to `closer` at s[i]; returns [label, nextIndex] or null.
@@ -5250,8 +5303,8 @@
             const horizontal = g.direction === 'LR' || g.direction === 'RL';
             const PAD = 30, LABEL = 34, CROSS_GAP = 50, RANK_GAP = horizontal ? 110 : 90;
             const size = new Map(ids.map(id => {
-                const n = g.nodes.get(id), d = FLOWCHART_DEFAULTS[n.type] || FLOWCHART_DEFAULTS.fc_process, len = n.label.length;
-                if (n.type === 'fc_connector') { const s = Math.min(140, Math.max(d.w, Math.ceil((len * 7 + 30) / 20) * 20)); return [id, { w: s, h: s }]; }
+                const n = g.nodes.get(id), d = n.threeD ? { w: 120, h: 100 } : FLOWCHART_DEFAULTS[n.type] || FLOWCHART_DEFAULTS.fc_process, len = n.label.length;
+                if (n.type === 'fc_connector' && !n.threeD) { const s = Math.min(140, Math.max(d.w, Math.ceil((len * 7 + 30) / 20) * 20)); return [id, { w: s, h: s }]; }
                 return [id, { w: Math.min(320, Math.max(d.w, Math.ceil((len * 7.5 + 50) / 20) * 20)), h: d.h }];
             }));
             const cross = (id) => horizontal ? size.get(id).h : size.get(id).w;
@@ -5930,6 +5983,8 @@
             el.id = id;
             el.type = toText(raw.type) || 'process';
             if (el.type.startsWith('at_') && !ELEMENT_TYPES.has(el.type)) el.type = 'at_step';   // unknown attack-tree shape
+            if (typeof raw.threeD === 'boolean') el.threeD = raw.threeD; else delete el.threeD;   // 3D flowchart shape: true/false only
+            if (Object.hasOwn(FC_LEGACY_3D, el.type)) { el.type = FC_LEGACY_3D[el.type]; el.threeD = true; }   // old cube / database shapes
             if (el.type.startsWith('fc_') && !ELEMENT_TYPES.has(el.type)) el.type = 'fc_process';   // unknown flowchart shape
             else if (!ELEMENT_TYPES.has(el.type)) {
                 ctx.warn(`Changed the unknown component type "${el.type.slice(0, 40)}" of "${toText(raw.name) || id}" to a process.`);
@@ -5940,6 +5995,7 @@
             if ('fcStrokeWidth' in raw) { const w = toNumber(raw.fcStrokeWidth, undefined); if (w > 0) el.fcStrokeWidth = Math.min(20, w); else delete el.fcStrokeWidth; }
             // Diagram-shape text (C4 technology, class compartments, ERD rows): plain strings within their limits, or dropped.
             Object.keys(DIAGRAM_TEXT_FIELDS).forEach(k => { if (k in raw) { const v = normalizeDiagramText(raw[k], k); if (v === undefined) delete el[k]; else el[k] = v; } });
+            if (!el.type.startsWith('fc_')) delete el.threeD;
             el.name = toText(raw.name);
             el.x = toNumber(raw.x, 0); el.y = toNumber(raw.y, 0);
             ['width', 'height', 'x2', 'y2', 'bendX', 'bendY', 'textOffset', 'fontSize', 'stepNumber', 'zIndex'].forEach(k => {
@@ -6718,7 +6774,7 @@
                     h = el.height || 80;
                     // For fc shapes, anchor exactly on the shape-geometry edge.
                     // Try exact match first, then direction-prefix match (legacy 'right-2' → 'right')
-                    const anchors = this.getFcAnchorPoints(el.type, w, h);
+                    const anchors = this.getFcAnchorPoints(el.type, w, h, !!el.threeD);
                     const dirPrefix = anchorId ? anchorId.split('-')[0] : '';
                     const found = anchors.find(a => a.id === anchorId)
                                || anchors.find(a => a.id === dirPrefix);
@@ -7595,7 +7651,7 @@
                 const pick = (o, keys) => keys.map(k => o[k] === undefined ? null : o[k]);
                 const lanes = (e) => e.type === 'swimlane' ? [(e.columns || []).length, (e.rows || []).length, e.colWidths, e.rowHeights] : ttLayoutOf(e);
                 return JSON.stringify([
-                    (m.elements || []).map(e => [...pick(e, ['id', 'type', 'x', 'y', 'x2', 'y2', 'width', 'height', 'bendX', 'bendY', 'pageId']), lanes(e)]),
+                    (m.elements || []).map(e => [...pick(e, ['id', 'type', 'x', 'y', 'x2', 'y2', 'width', 'height', 'bendX', 'bendY', 'pageId', 'threeD']), lanes(e)]),
                     (m.flows || []).map(f => pick(f, ['id', 'sourceId', 'targetId', 'sourceAnchor', 'targetAnchor', 'points', 'bendX', 'bendY'])),
                     (m.pages || []).map(p => pick(p, ['id', 'offset']))
                 ]);
@@ -8456,7 +8512,7 @@
                     this.sessionMetaModal.show();
                 });
 
-                const paletteIds = ['pal-process', 'pal-datastore', 'pal-interactor', 'pal-boundary', 'pal-boundary-line', 'pal-step-activity', 'pal-textbox', 'pal-headline', 'pal-infrastructure', 'pal-custom-image', 'pal-swimlane', 'pal-fc-process', 'pal-fc-decision', 'pal-fc-terminator', 'pal-fc-data', 'pal-fc-document', 'pal-fc-manual-input', 'pal-fc-preparation', 'pal-fc-connector', 'pal-fc-stored-data', 'pal-fc-database', 'pal-fc-cube'];
+                const paletteIds = ['pal-process', 'pal-datastore', 'pal-interactor', 'pal-boundary', 'pal-boundary-line', 'pal-step-activity', 'pal-textbox', 'pal-headline', 'pal-infrastructure', 'pal-custom-image', 'pal-swimlane', 'pal-fc-process', 'pal-fc-decision', 'pal-fc-terminator', 'pal-fc-data', 'pal-fc-document', 'pal-fc-manual-input', 'pal-fc-preparation', 'pal-fc-connector', 'pal-fc-stored-data', 'pal-fc-sphere', 'pal-fc-cone', 'pal-fc-pyramid', 'pal-fc-layers'];
                 paletteIds.push('pal-table', 'pal-pool', 'pal-vlanes', 'pal-group-frame', 'pal-phases');   // table and lane containers
                 this.ttBindDecorControls();
                 paletteIds.forEach(id => {
@@ -8887,6 +8943,15 @@
                 // One undo step when the slider is released, not one per pixel of the drag.
                 document.getElementById('props-fc-stroke-width').addEventListener('change', () => {
                     const node = getFcNode(); if (node) this.logEvent('CHANGE', `Changed the border width of flowchart shape "${node.name}" to ${node.fcStrokeWidth}`);
+                });
+
+                // 3D checkbox: one undo step; the shape's look (and its anchors in the flat view) change, so review mode blocks it.
+                document.getElementById('props-fc-3d').addEventListener('change', (ev) => {
+                    const node = getFcNode(); if (!node || !node.type.startsWith('fc_') || FC_SOLID_TYPES.has(node.type)) return;   // flowchart shapes only
+                    if (this.blockedByReviewMode('change 3D shapes')) { ev.target.checked = !!node.threeD; return; }
+                    if (ev.target.checked) node.threeD = true; else delete node.threeD;
+                    this.logEvent('CHANGE', `${ev.target.checked ? 'Turned on' : 'Turned off'} 3D for flowchart shape "${node.name}"`);
+                    this.refreshAppViewVisualWorkspace(); this.saveSessionToLocalStorage();
                 });
 
                 // Label input
@@ -10998,7 +11063,7 @@
                 line.setAttribute('d', `M ${from.x} ${from.y} L ${to.x} ${to.y}`); line.setAttribute('class', 'quick-add-line');
                 const g = document.createElementNS(ns, 'g');
                 g.setAttribute('transform', `translate(${p.x}, ${p.y})`); g.setAttribute('data-ghost-type', src.type);
-                this.renderFlowchartShapeSvg(g, src.type, p.w, p.h, src.fcFillColor || FLOWCHART_DEFAULTS[src.type].fill, src.fcStrokeColor || FLOWCHART_DEFAULTS[src.type].stroke, src.fcStrokeWidth || 2, false);
+                this.renderFlowchartShapeSvg(g, src.type, p.w, p.h, src.fcFillColor || FLOWCHART_DEFAULTS[src.type].fill, src.fcStrokeColor || FLOWCHART_DEFAULTS[src.type].stroke, src.fcStrokeWidth || 2, false, null, !!src.threeD);
                 layer.append(line, g);
                 layer.dataset.dir = p.dir;
             }
@@ -11015,6 +11080,7 @@
                 const def = this.elementDefaults(src.type);
                 const node = { id, type: src.type, name: def.name, x: p.x, y: p.y, notes: '', ...def.props, width: p.w, height: p.h, pageId: src.pageId };
                 Object.keys(src).filter(k => /^fc[A-Z]/.test(k)).forEach(k => { node[k] = src[k]; });   // same colours and line style
+                if (src.threeD) node.threeD = true;
                 this.state.elements.push(node);
                 this.state.flows.push({
                     id: `fl-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`, name: '', sourceId: src.id, sourceAnchor: p.dir,
@@ -13541,7 +13607,7 @@
                         const stroke = node.fcStrokeColor || '#2563eb';
                         const sw = node.fcStrokeWidth || 2;  // absolute, not scaled
                         const isDarkCanvas = (this.canvasTheme === 'dark');
-                        this.renderFlowchartShapeSvg(g, node.type, w, h, fill, stroke, sw, isSelected);
+                        this.renderFlowchartShapeSvg(g, node.type, w, h, fill, stroke, sw, isSelected, null, !!node.threeD);
 
                         // Label text — centered within the visible shape area
                         const lbl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
@@ -13551,16 +13617,12 @@
                         if (node.type === 'fc_document') {
                             // Visible area is top 72% of bounding box; center within that
                             lblY = (h * 0.72) / 2;
-                        } else if (node.type === 'fc_cube') {
-                            // Centre on the front face (the top and right faces take d = 20% of the shorter side)
-                            const d = Math.min(w, h) * 0.2;
-                            lbl.setAttribute('x', (w - d) / 2);
-                            lblY = (h + d) / 2;
                         } else if (node.type === 'fc_manual_input') {
                             // Top-left corner is at sl=h*0.2, top-right at 0; avg top edge = h*0.1
                             lblY = (h * 0.1 + h) / 2;
                         } else if (isAttackShapeType(node.type)) lblY = attackLabelY(node, w, h);
                         lbl.setAttribute('y', lblY);
+                        const lbl3d = this.fc3dLabelPoint(node.type, w, h, !!node.threeD, w / 2, lblY); if (lbl3d) { lbl.setAttribute('x', lbl3d.x); lbl.setAttribute('y', lbl3d.y); }   // 3D: on the front / top face
                         lbl.setAttribute('dominant-baseline', 'middle');
                         lbl.setAttribute('text-anchor', 'middle');
                         lbl.setAttribute('font-size', '12px');
@@ -13760,7 +13822,7 @@
 
                         // For fc_* shapes, use shape-aware anchor positions
                         const anchors = isFcLikeType(node.type)
-                            ? this.getFcAnchorPoints(node.type, w, h)
+                            ? this.getFcAnchorPoints(node.type, w, h, !!node.threeD)
                             : [
                                 { id: 'top',    cx: 0.5 * w, cy: 0 },
                                 { id: 'bottom', cx: 0.5 * w, cy: h },
@@ -13860,8 +13922,9 @@
              * Returns shape-aware anchor points for fc_* shapes.
              * Each anchor lies exactly on the visible geometry edge.
              */
-            getFcAnchorPoints(type, w, h) {
+            getFcAnchorPoints(type, w, h, threeD = false) {
                 if (isAttackShapeType(type)) return attackShapeAnchors(type, w, h);
+                const a3d = this.fc3dAnchorPoints(type, w, h, threeD); if (a3d) return a3d;   // 3D shapes in the flat view
                 // Simplified: one center anchor per side for all fc_* shapes
                 if (type === 'fc_decision') {
                     // Diamond: cardinal points exactly at the 4 tips
@@ -13905,23 +13968,6 @@
                         { id: 'bottom', cx: w / 2, cy: h },
                         { id: 'left',   cx: 0,     cy: sl + (h - sl) * 0.5 },
                         { id: 'right',  cx: w,     cy: h / 2 },
-                    ];
-                } else if (type === 'fc_database') {
-                    // Cylinder: top center of cap, bottom center, mid left/right
-                    return [
-                        { id: 'top',    cx: w / 2, cy: 0 },
-                        { id: 'bottom', cx: w / 2, cy: h },
-                        { id: 'left',   cx: 0,     cy: h / 2 },
-                        { id: 'right',  cx: w,     cy: h / 2 },
-                    ];
-                } else if (type === 'fc_cube') {
-                    // 3D box: front face bottom-left, top and right faces recede up-right by d (see renderFlowchartShapeSvg)
-                    const d = Math.min(w, h) * 0.2;
-                    return [
-                        { id: 'top',    cx: w / 2,     cy: d / 2 },
-                        { id: 'bottom', cx: (w - d) / 2, cy: h },
-                        { id: 'left',   cx: 0,         cy: (h + d) / 2 },
-                        { id: 'right',  cx: w - d / 2, cy: h / 2 },
                     ];
                 } else if (type === 'fc_stored_data') {
                     // D-shape: top/bottom center, left/right mid
@@ -14214,7 +14260,7 @@
                 block(this.wrapDiagramText(name, w - (type === 'uml_usecase' ? 30 : 16), 12).map(l => [l, 12, '600', 'name']), top, h);
             }
 
-            renderFlowchartShapeSvg(g, type, w, h, fill, stroke, sw, isSelected, node = null) {
+            renderFlowchartShapeSvg(g, type, w, h, fill, stroke, sw, isSelected, node = null, threeD = false) {
                 const ns = 'http://www.w3.org/2000/svg';
 
                 // ── Always-on fill-hue glow ───────────────────────────────────────────
@@ -14249,6 +14295,7 @@
                     ? `filter: drop-shadow(0 8px 22px rgba(${gr},${gg},${gb},0.75)) drop-shadow(0 0 10px rgba(${gr},${gg},${gb},0.60));`
                     : ambientGlow;
                 if (isDiagramShape(type)) { this.renderDiagramShapeSvg(g, type, w, h, fill, stroke, sw, selRingStyle, node); return; }
+                if (threeD || FC_SOLID_TYPES.has(type)) { this.renderFc3dShape(g, type, w, h, fill, stroke, sw, selRingStyle); return; }   // 3D: own block below
 
                 let el;
 
@@ -14306,75 +14353,9 @@
                     el = document.createElementNS(ns, 'path');
                     el.setAttribute('d', `M${rx},0 H${w - rx} A${rx},${h / 2} 0 0 1 ${w - rx},${h} H${rx} A${rx},${h / 2} 0 0 1 ${rx},0 Z`);
 
-                } else if (type === 'fc_cube') {
-                    // 3D box: a front face plus a top and a right face receding by d; the side faces are shaded
-                    const d = Math.min(w, h) * 0.2;
-                    const g2 = document.createElementNS(ns, 'g');
-                    g2.setAttribute('style', selRingStyle);
-                    const faces = [
-                        [`0,${d} ${w - d},${d} ${w - d},${h} 0,${h}`, 0],                 // front
-                        [`0,${d} ${d},0 ${w},0 ${w - d},${d}`, 0.08],                    // top
-                        [`${w - d},${d} ${w},0 ${w},${h - d} ${w - d},${h}`, 0.18],      // right
-                    ];
-                    faces.forEach(([points, shade]) => {
-                        const face = document.createElementNS(ns, 'polygon');
-                        face.setAttribute('points', points);
-                        face.setAttribute('fill', fill);
-                        face.setAttribute('stroke', stroke); face.setAttribute('stroke-width', sw);
-                        face.setAttribute('stroke-linejoin', 'round');
-                        g2.appendChild(face);
-                        if (shade) {
-                            const tint = document.createElementNS(ns, 'polygon');
-                            tint.setAttribute('points', points);
-                            tint.setAttribute('fill', '#000'); tint.setAttribute('fill-opacity', shade);
-                            tint.setAttribute('stroke', 'none'); tint.setAttribute('pointer-events', 'none');
-                            g2.appendChild(tint);
-                        }
-                    });
-                    g.appendChild(g2);
-                    return;
                 } else if (isAttackShapeType(type)) {
                     el = buildAttackShapeOutline(type, w, h, sw);
                     el.querySelectorAll('.at-goal-flag').forEach(f => f.setAttribute('fill', stroke));
-                } else if (type === 'fc_database') {
-                    const ey = h * 0.15;
-                    const g2 = document.createElementNS(ns, 'g');
-                    g2.setAttribute('style', selRingStyle);
-
-                    const body = document.createElementNS(ns, 'rect');
-                    body.setAttribute('x', 0); body.setAttribute('y', ey);
-                    body.setAttribute('width', w); body.setAttribute('height', h - ey * 2);
-                    body.setAttribute('fill', fill); body.setAttribute('stroke', 'none');
-                    g2.appendChild(body);
-
-                    const bottomEl = document.createElementNS(ns, 'ellipse');
-                    bottomEl.setAttribute('cx', w / 2); bottomEl.setAttribute('cy', h - ey);
-                    bottomEl.setAttribute('rx', w / 2); bottomEl.setAttribute('ry', ey);
-                    bottomEl.setAttribute('fill', fill);
-                    bottomEl.setAttribute('stroke', stroke); bottomEl.setAttribute('stroke-width', sw);
-                    g2.appendChild(bottomEl);
-
-                    const sideL = document.createElementNS(ns, 'line');
-                    sideL.setAttribute('x1', 0); sideL.setAttribute('y1', ey);
-                    sideL.setAttribute('x2', 0); sideL.setAttribute('y2', h - ey);
-                    sideL.setAttribute('stroke', stroke); sideL.setAttribute('stroke-width', sw);
-                    g2.appendChild(sideL);
-
-                    const sideR = document.createElementNS(ns, 'line');
-                    sideR.setAttribute('x1', w); sideR.setAttribute('y1', ey);
-                    sideR.setAttribute('x2', w); sideR.setAttribute('y2', h - ey);
-                    sideR.setAttribute('stroke', stroke); sideR.setAttribute('stroke-width', sw);
-                    g2.appendChild(sideR);
-
-                    const topEl = document.createElementNS(ns, 'ellipse');
-                    topEl.setAttribute('cx', w / 2); topEl.setAttribute('cy', ey);
-                    topEl.setAttribute('rx', w / 2); topEl.setAttribute('ry', ey);
-                    topEl.setAttribute('fill', fill);
-                    topEl.setAttribute('stroke', stroke); topEl.setAttribute('stroke-width', sw);
-                    g2.appendChild(topEl);
-
-                    g.appendChild(g2);
-                    return;
                 } else {
                     el = document.createElementNS(ns, 'rect');
                     el.setAttribute('x', 0); el.setAttribute('y', 0);
@@ -14387,6 +14368,237 @@
                 el.setAttribute('style', selRingStyle);
                 g.appendChild(el);
             }
+
+            // ── 3D flowchart shapes (drawing, labels, anchors) ───────────────────────────────
+            // Flat view: the outline is the front face in (0, d)…(w − d, h), extruded back by (d, −d) like the old cube.
+            // Isometric views: the outline is the footprint on the ground (full w × h) and the shape is extruded
+            // screen-up. The canvas is drawn in model coordinates inside #isometric-wrapper, whose matrix M maps the
+            // model vector (−1, −1) (NE) or (1, −1) (NW) to (0, −1) on screen, so a height of H pixels is H · up.
+            fc3dView() { return this.viewMode === 'ne-isometric' ? 'ne' : this.viewMode === 'nw-isometric' ? 'nw' : 'flat'; }
+            fc3dUp(view) { return view === 'ne' ? { x: -1, y: -1 } : { x: 1, y: -1 }; }
+            /** Model → screen direction of the isometric wrapper (only the linear part matters here). */
+            fc3dScreen(view, p) {
+                if (view === 'ne') return { x: 0.8660254 * (p.x - p.y), y: 0.5 * (p.x + p.y) };
+                if (view === 'nw') return { x: 0.8660254 * (p.x + p.y), y: 0.5 * (p.y - p.x) };
+                return { x: p.x, y: p.y };
+            }
+            fc3dDepth(w, h) { return Math.min(w, h) * 0.2; }                    // flat: extrusion depth (old cube)
+            fc3dHeight(w, h) { return Math.min(Math.min(w, h) * 0.5, 90); }     // iso: prism height in screen pixels
+            fc3dLayersHeight(w, h) { return Math.min(Math.min(w, h) * 0.75, 120); }
+            fc3dApexHeight(w, h) { return Math.min(Math.min(w, h) * 0.9, 150); } // iso: cone and pyramid apex
+            /** Iso sphere: screen radius = half the footprint's screen width; its centre sits 0.8 radius above the ground. */
+            fc3dSphereRadius(w, h) { return 0.8660254 * Math.hypot(w / 2, h / 2); }
+            fc3dSphereLift(w, h) { return this.fc3dSphereRadius(w, h) * 0.8; }
+
+            /** The shape's outline as a polygon in its w × h box (curves sampled), for extrusion. */
+            fc3dOutline(type, w, h) {
+                const pts = [];
+                const arc = (cx, cy, rx, ry, a0, a1, n) => { for (let i = 0; i <= n; i++) { const a = a0 + (a1 - a0) * i / n; pts.push({ x: cx + rx * Math.cos(a), y: cy + ry * Math.sin(a) }); } };
+                const quad = (p0, c, p1, n) => { for (let i = 1; i <= n; i++) { const t = i / n, u = 1 - t; pts.push({ x: u * u * p0.x + 2 * u * t * c.x + t * t * p1.x, y: u * u * p0.y + 2 * u * t * c.y + t * t * p1.y }); } };
+                const P = (...xy) => { for (let i = 0; i < xy.length; i += 2) pts.push({ x: xy[i], y: xy[i + 1] }); };
+                if (type === 'fc_decision') P(w / 2, 0, w, h / 2, w / 2, h, 0, h / 2);
+                else if (type === 'fc_terminator') { const r = Math.min(h / 2, w / 2); arc(w - r, h / 2, r, h / 2, -Math.PI / 2, Math.PI / 2, 12); arc(r, h / 2, r, h / 2, Math.PI / 2, Math.PI * 1.5, 12); }
+                else if (type === 'fc_data') { const s = h * 0.2; P(s, 0, w, 0, w - s, h, 0, h); }
+                else if (type === 'fc_document') {
+                    const wy = h * 0.72, amp = h * 0.14;
+                    P(0, 0, w, 0, w, wy);
+                    quad({ x: w, y: wy }, { x: w * 0.75, y: wy + amp * 2 }, { x: w / 2, y: wy }, 12);
+                    quad({ x: w / 2, y: wy }, { x: w * 0.25, y: wy - amp }, { x: 0, y: wy }, 12);
+                }
+                else if (type === 'fc_manual_input') { const sl = h * 0.2; P(0, sl, w, 0, w, h, 0, h); }
+                else if (type === 'fc_preparation') { const px = w * 0.15; P(px, 0, w - px, 0, w, h / 2, w - px, h, px, h, 0, h / 2); }
+                else if (type === 'fc_connector' || type === 'fc_sphere' || type === 'fc_cone') { arc(w / 2, h / 2, w / 2, h / 2, 0, Math.PI * 2, 48); pts.pop(); }
+                else if (type === 'fc_stored_data') { const rx = w * 0.15; arc(w - rx, h / 2, rx, h / 2, -Math.PI / 2, Math.PI / 2, 12); arc(rx, h / 2, rx, h / 2, Math.PI / 2, Math.PI * 1.5, 12); }
+                else P(0, 0, w, 0, w, h, 0, h);   // process, layers, pyramid and anything else: the box
+                // Drop repeated points (where two arcs meet), so every edge has a length.
+                return pts.filter((p, i) => { const q = pts[(i + 1) % pts.length]; return Math.hypot(p.x - q.x, p.y - q.y) > 1e-6; });
+            }
+
+            /** Label position for a 3D shape ({x, y} in the node's box), or null to keep the flat position. */
+            fc3dLabelPoint(type, w, h, threeD, x, y) {
+                if (!threeD && !FC_SOLID_TYPES.has(type)) return null;
+                const view = this.fc3dView(), d = this.fc3dDepth(w, h);
+                if (view === 'flat') {
+                    if (type === 'fc_connector' || type === 'fc_sphere') return null;   // the cylinder and the ball: centred
+                    if (type === 'fc_cone') return { x: w / 2, y: h * 0.62 };
+                    if (type === 'fc_pyramid') return { x: (w * 1.5 - d) / 3, y: h * 2 / 3 };   // front face
+                    return { x: x * (w - d) / w, y: d + y * (h - d) / h };   // the same spot on the front face
+                }
+                const u = this.fc3dUp(view);
+                const lift = type === 'fc_sphere' ? this.fc3dSphereLift(w, h) : (type === 'fc_cone' || type === 'fc_pyramid') ? this.fc3dApexHeight(w, h) * 0.3
+                    : type === 'fc_layers' ? this.fc3dLayersHeight(w, h) : this.fc3dHeight(w, h);
+                if (FC_SOLID_TYPES.has(type)) { x = w / 2; y = h / 2; }
+                return { x: x + lift * u.x, y: y + lift * u.y };   // on the top face
+            }
+
+            /** Flat view: anchors on the visible faces of a 3D shape (null: the shape's usual anchors). Iso: on the footprint. */
+            fc3dAnchorPoints(type, w, h, threeD) {
+                if ((!threeD && !FC_SOLID_TYPES.has(type)) || this.fc3dView() !== 'flat') return null;
+                if (type === 'fc_connector' || type === 'fc_sphere') return null;
+                const d = this.fc3dDepth(w, h);
+                if (type === 'fc_cone') {
+                    const ey = h * 0.15;
+                    return [{ id: 'top', cx: w / 2, cy: 0 }, { id: 'bottom', cx: w / 2, cy: h }, { id: 'left', cx: 0, cy: h - ey }, { id: 'right', cx: w, cy: h - ey }];
+                }
+                if (type === 'fc_pyramid') return [{ id: 'top', cx: w / 2, cy: 0 }, { id: 'bottom', cx: (w - d) / 2, cy: h }, { id: 'left', cx: w / 4, cy: h / 2 }, { id: 'right', cx: w * 0.75, cy: (h - d) / 2 }];
+                const base = type === 'fc_layers'
+                    ? [{ id: 'top', cx: w / 2, cy: 0 }, { id: 'bottom', cx: w / 2, cy: h }, { id: 'left', cx: 0, cy: h / 2 }, { id: 'right', cx: w, cy: h / 2 }]
+                    : this.getFcAnchorPoints(type, w, h, false);
+                // Onto the front face; top and right move half-way onto the receding faces (as the old cube's).
+                return base.map(a => {
+                    const p = { id: a.id, cx: a.cx * (w - d) / w, cy: d + a.cy * (h - d) / h };
+                    if (a.id === 'top' || a.id === 'right') { p.cx += d / 2; p.cy -= d / 2; }
+                    return p;
+                });
+            }
+
+            /** A colour (#rgb, #rrggbb or a name) darkened towards black by `shade` (0…1) and lightened towards white by `light`, as rgb(). */
+            fc3dShade(color, shade, light = 0) {
+                let hex = toText(color);
+                if (!/^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(hex)) {
+                    this.fc3dColorCache = this.fc3dColorCache || new Map();
+                    if (!this.fc3dColorCache.has(hex)) {
+                        let v = '#cccccc';
+                        try { const c = document.createElement('canvas').getContext('2d'); c.fillStyle = hex; if (/^#[0-9a-f]{6}$/i.test(c.fillStyle)) v = c.fillStyle; } catch { /* keep grey */ }
+                        this.fc3dColorCache.set(hex, v);
+                    }
+                    hex = this.fc3dColorCache.get(hex);
+                }
+                if (hex.length === 4) hex = '#' + [...hex.slice(1)].map(c => c + c).join('');
+                const k = 1 - Math.max(0, Math.min(1, shade));
+                const ch = (i) => { const v = parseInt(hex.slice(i, i + 2), 16) * k; return Math.round(v + (255 - v) * light); };
+                return `rgb(${ch(1)},${ch(3)},${ch(5)})`;
+            }
+
+            /** Draws a 3D flowchart shape into g (the node's group, in its w × h box) for the current view. */
+            renderFc3dShape(g, type, w, h, fill, stroke, sw, selRingStyle) {
+                const ns = 'http://www.w3.org/2000/svg', view = this.fc3dView();
+                const r2 = (v) => Math.round(v * 100) / 100;
+                const pstr = (pts) => pts.map(p => `${r2(p.x)},${r2(p.y)}`).join(' ');
+                const add = (parent, tag, attrs) => { const e = document.createElementNS(ns, tag); Object.entries(attrs).forEach(([k, v]) => e.setAttribute(k, v)); parent.appendChild(e); return e; };
+                const area = (pts) => pts.reduce((a, p, i) => { const q = pts[(i + 1) % pts.length]; return a + p.x * q.y - q.x * p.y; }, 0);
+                const mv = (p, v, k = 1) => ({ x: p.x + v.x * k, y: p.y + v.y * k });
+                const unit = (v) => { const l = Math.hypot(v.x, v.y) || 1; return { x: v.x / l, y: v.y / l }; };
+                // Shade of a side face from its outward normal (model coordinates): lighter to the left, darker to the right on screen.
+                const sideShade = (n) => 0.12 + 0.07 * unit(this.fc3dScreen(view, n)).x;
+                const g2 = add(g, 'g', { style: selRingStyle, class: 'fc3d' });
+                const gradient = () => {
+                    const id = `fc3d-grad-${(this.fc3dGradSeq = (this.fc3dGradSeq || 0) + 1)}`;
+                    const rg = add(add(g2, 'defs', {}), 'radialGradient', { id, cx: '0.5', cy: '0.5', r: '0.5', fx: '0.35', fy: '0.3' });
+                    add(rg, 'stop', { offset: '0', 'stop-color': this.fc3dShade(fill, 0, 0.7) });
+                    add(rg, 'stop', { offset: '0.55', 'stop-color': this.fc3dShade(fill, 0) });
+                    add(rg, 'stop', { offset: '1', 'stop-color': this.fc3dShade(fill, 0.3) });
+                    return `url(#${id})`;
+                };
+
+                // A prism: base polygon extruded by e. capIsMoved: the cap is base + e (iso: the top) or the base itself (flat: the front).
+                // Walls turned to the viewer are drawn back to front (screen y), shaded by direction; lines only at corners and the silhouette.
+                const prism = (base, e, capIsMoved) => {
+                    const n = base.length, s0 = Math.sign(area(base)) || 1;
+                    const corner = base.map((p, i) => {
+                        const a = base[(i + n - 1) % n], b = base[(i + 1) % n];
+                        const v1 = unit({ x: p.x - a.x, y: p.y - a.y }), v2 = unit({ x: b.x - p.x, y: b.y - p.y });
+                        return Math.acos(Math.max(-1, Math.min(1, v1.x * v2.x + v1.y * v2.y))) > 0.42;   // turns by more than ~24°
+                    });
+                    const walls = base.map((p, i) => {
+                        const q = base[(i + 1) % n], quad = [p, q, mv(q, e), mv(p, e)], a = area(quad);
+                        // Facing the viewer: the same winding as the base when the cap is the moved copy (seen from above), else the opposite.
+                        return { i, p, q, quad, visible: capIsMoved ? a * s0 > 1e-6 : a * s0 < -1e-6, nrm: unit({ x: s0 * (q.y - p.y), y: -s0 * (q.x - p.x) }) };
+                    });
+                    const crease = (i) => corner[i] || walls[i].visible !== walls[(i + n - 1) % n].visible;
+                    const depth = (wl) => this.fc3dScreen(view, { x: (wl.p.x + wl.q.x) / 2 + e.x / 2, y: (wl.p.y + wl.q.y) / 2 + e.y / 2 }).y;
+                    walls.filter(wl => wl.visible).sort((a, b) => depth(a) - depth(b)).forEach(wl => {
+                        const shade = view === 'flat' ? 0.13 + 0.05 * (wl.nrm.x + wl.nrm.y) : sideShade(wl.nrm);   // flat: top 0.08, right 0.18 (old cube)
+                        const col = this.fc3dShade(fill, shade);
+                        add(g2, 'polygon', { points: pstr(wl.quad), fill: col, stroke: col, 'stroke-width': 0.5, 'stroke-linejoin': 'round', 'data-fc3d': 'wall' });
+                        const edge = capIsMoved ? [wl.p, wl.q] : [mv(wl.p, e), mv(wl.q, e)];
+                        let d = `M${r2(edge[0].x)},${r2(edge[0].y)} L${r2(edge[1].x)},${r2(edge[1].y)}`;
+                        if (crease(wl.i)) d += ` M${r2(wl.p.x)},${r2(wl.p.y)} L${r2(wl.p.x + e.x)},${r2(wl.p.y + e.y)}`;
+                        if (crease((wl.i + 1) % n)) d += ` M${r2(wl.q.x)},${r2(wl.q.y)} L${r2(wl.q.x + e.x)},${r2(wl.q.y + e.y)}`;
+                        add(g2, 'path', { d, fill: 'none', stroke, 'stroke-width': sw, 'stroke-linejoin': 'round', 'stroke-linecap': 'round', 'pointer-events': 'none' });
+                    });
+                    add(g2, 'polygon', { points: pstr(capIsMoved ? base.map(p => mv(p, e)) : base), fill, stroke, 'stroke-width': sw, 'stroke-linejoin': 'round', 'data-fc3d': 'cap' });
+                };
+
+                // A cone: base ellipse (centre c, radii a, b) and apex; the silhouette lines touch the ellipse (tangents are
+                // affine-invariant, so they are found on the unit circle).
+                const cone = (c, a, b, apex) => {
+                    const A = { x: (apex.x - c.x) / a, y: (apex.y - c.y) / b }, r = Math.hypot(A.x, A.y);
+                    const at = (t) => ({ x: c.x + a * Math.cos(t), y: c.y + b * Math.sin(t) });
+                    add(g2, 'ellipse', { cx: r2(c.x), cy: r2(c.y), rx: r2(a), ry: r2(b), fill: this.fc3dShade(fill, 0.2), stroke, 'stroke-width': sw, 'data-fc3d': 'wall' });
+                    if (r <= 1.001) return;   // apex over the base: only the base shows
+                    const phi = Math.atan2(A.y, A.x), al = Math.acos(1 / r);
+                    const t1 = phi + al, t2 = phi + 2 * Math.PI - al, tm = phi + Math.PI;   // the far arc runs t1 → tm → t2
+                    const arcPts = (from, to) => { const out = []; for (let i = 0; i <= 24; i++) out.push(at(from + (to - from) * i / 24)); return out; };
+                    const firstIsRight = this.fc3dScreen(view, at(t1)).x > this.fc3dScreen(view, at(t2)).x;
+                    [[[apex, ...arcPts(t1, tm)], firstIsRight], [[apex, ...arcPts(tm, t2)], !firstIsRight]].forEach(([pts, isRight]) => {
+                        const col = this.fc3dShade(fill, isRight ? 0.18 : 0.03);
+                        add(g2, 'polygon', { points: pstr(pts), fill: col, stroke: col, 'stroke-width': 0.5, 'data-fc3d': 'wall' });
+                    });
+                    add(g2, 'polygon', { points: pstr([apex, ...arcPts(t1, t2)]), fill: 'none', stroke, 'stroke-width': sw, 'stroke-linejoin': 'round', 'pointer-events': 'none', 'data-fc3d': 'cap' });
+                };
+
+                // A pyramid: base polygon and apex; only the faces turned to the viewer, shaded by direction.
+                const pyramid = (base, apex) => {
+                    const s0 = Math.sign(area(base)) || 1;
+                    base.forEach((p, i) => {
+                        const q = base[(i + 1) % base.length], tri = [p, q, apex];
+                        if (area(tri) * s0 <= 1e-6) return;
+                        const col = this.fc3dShade(fill, sideShade({ x: s0 * (q.y - p.y), y: -s0 * (q.x - p.x) }));
+                        add(g2, 'polygon', { points: pstr(tri), fill: col, stroke, 'stroke-width': sw, 'stroke-linejoin': 'round', 'data-fc3d': 'wall' });
+                    });
+                };
+
+                if (view === 'flat') {
+                    const d = this.fc3dDepth(w, h), e = { x: d, y: -d };
+                    if (type === 'fc_connector') {
+                        // The upright cylinder (the old database shape): body, bottom cap, sides, top cap.
+                        const ey = h * 0.15;
+                        add(g2, 'rect', { x: 0, y: ey, width: w, height: h - ey * 2, fill, stroke: 'none', 'data-fc3d': 'body' });
+                        add(g2, 'ellipse', { cx: w / 2, cy: h - ey, rx: w / 2, ry: ey, fill, stroke, 'stroke-width': sw, 'data-fc3d': 'wall' });
+                        add(g2, 'line', { x1: 0, y1: ey, x2: 0, y2: h - ey, stroke, 'stroke-width': sw, 'data-fc3d': 'edge' });
+                        add(g2, 'line', { x1: w, y1: ey, x2: w, y2: h - ey, stroke, 'stroke-width': sw, 'data-fc3d': 'edge' });
+                        add(g2, 'ellipse', { cx: w / 2, cy: ey, rx: w / 2, ry: ey, fill, stroke, 'stroke-width': sw, 'data-fc3d': 'cap' });
+                    } else if (type === 'fc_sphere') {
+                        add(g2, 'ellipse', { cx: w / 2, cy: h / 2, rx: Math.max(1, w / 2 - sw / 2), ry: Math.max(1, h / 2 - sw / 2), fill: gradient(), stroke, 'stroke-width': sw, 'data-fc3d': 'cap' });
+                    } else if (type === 'fc_cone') {
+                        const ey = h * 0.15;
+                        cone({ x: w / 2, y: h - ey }, w / 2, ey, { x: w / 2, y: 0 });
+                    } else if (type === 'fc_pyramid') {
+                        pyramid([{ x: 0, y: h }, { x: w - d, y: h }, { x: w, y: h - d }, { x: d, y: h - d }], { x: w / 2, y: 0 });
+                    } else if (type === 'fc_layers') {
+                        const gap = (h - d) * 0.1, t = (h - d - gap * 2) / 3;
+                        for (let k = 2; k >= 0; k--) {   // bottom slab first: the slab above hides the back of its top
+                            const y0 = d + k * (t + gap);
+                            prism([{ x: 0, y: y0 }, { x: w - d, y: y0 }, { x: w - d, y: y0 + t }, { x: 0, y: y0 + t }], e, false);
+                        }
+                    } else {
+                        prism(this.fc3dOutline(type, w, h).map(p => ({ x: p.x * (w - d) / w, y: d + p.y * (h - d) / h })), e, false);
+                    }
+                    return;
+                }
+
+                // Isometric: the footprint on the ground, extruded screen-up.
+                const u = this.fc3dUp(view), c = { x: w / 2, y: h / 2 };
+                if (type === 'fc_sphere') {
+                    add(g2, 'ellipse', { cx: c.x, cy: c.y, rx: w / 2, ry: h / 2, fill: '#000', 'fill-opacity': 0.16, stroke: 'none', 'data-fc3d': 'shadow' });
+                    const lift = this.fc3dSphereLift(w, h);
+                    const inv = view === 'ne' ? 'matrix(0.57735027, -0.57735027, 1.0, 1.0, 0, 0)' : 'matrix(0.57735027, 0.57735027, -1.0, 1.0, 0, 0)';
+                    const ball = add(g2, 'g', { transform: `translate(${r2(c.x + lift * u.x)}, ${r2(c.y + lift * u.y)}) ${inv}` });   // undoes the wrapper: round on screen
+                    add(ball, 'circle', { cx: 0, cy: 0, r: r2(this.fc3dSphereRadius(w, h)), fill: gradient(), stroke, 'stroke-width': sw, 'data-fc3d': 'cap' });
+                } else if (type === 'fc_cone') {
+                    cone(c, w / 2, h / 2, mv(c, u, this.fc3dApexHeight(w, h)));
+                } else if (type === 'fc_pyramid') {
+                    pyramid(this.fc3dOutline(type, w, h), mv(c, u, this.fc3dApexHeight(w, h)));
+                } else if (type === 'fc_layers') {
+                    const H = this.fc3dLayersHeight(w, h), gap = H * 0.1, t = (H - gap * 2) / 3, base = this.fc3dOutline(type, w, h);
+                    for (let k = 0; k < 3; k++) prism(base.map(p => mv(p, u, k * (t + gap))), { x: u.x * t, y: u.y * t }, true);   // bottom slab first
+                } else {
+                    const H = this.fc3dHeight(w, h);
+                    prism(this.fc3dOutline(type, w, h), { x: u.x * H, y: u.y * H }, true);
+                }
+            }
+            // ── end 3D flowchart shapes ──────────────────────────────────────────────────────
 
             // Selected elements the align toolbar can move.
             alignableSelection() {
@@ -14563,6 +14775,11 @@
                     const fcSwLbl = document.getElementById('props-fc-stroke-width-lbl');
                     if (fcSwInput) { fcSwInput.value = targetItem.fcStrokeWidth || 2; }
                     if (fcSwLbl) { fcSwLbl.textContent = targetItem.fcStrokeWidth || 2; }
+                    // 3D checkbox (not for the shapes that are always 3D)
+                    const fc3d = document.getElementById('props-fc-3d');
+                    document.getElementById('box-props-fc-3d').classList.toggle('d-none', !targetItem.type.startsWith('fc_') || FC_SOLID_TYPES.has(targetItem.type));   // flowchart shapes only
+                    fc3d.checked = !!targetItem.threeD; fc3d.disabled = !!this.state.reviewMode;
+                    fc3d.title = this.state.reviewMode ? 'Review mode is on: the layout is frozen' : '';
                     // Fill color swatches
                     const activeFill = targetItem.fcFillColor || '#ffffff';
                     document.querySelectorAll('#props-fc-fill-grid .color-swatch-btn').forEach(btn => {
@@ -15566,12 +15783,12 @@
                     const text = e.type === 'step_activity' ? `${e.stepNumber || ''}. ${e.name}` : e.name;
                     const l = label(text || e.type);
                     switch (e.type) {
-                        case 'datastore': case 'fc_database': case 'fc_stored_data': return `[(${l})]`;
+                        case 'datastore': case 'fc_stored_data': return `[(${l})]`;
                         case 'interactor': return `[${l}]`;
                         case 'infrastructure': return `{{${l}}}`;
                         case 'fc_decision': return `{${l}}`;
                         case 'fc_terminator': return `([${l}])`;
-                        case 'fc_connector': return `((${l}))`;
+                        case 'fc_connector': return e.threeD ? `[(${l})]` : `((${l}))`;
                         case 'fc_data': case 'fc_manual_input': return `[/${l}/]`;
                         case 'step_activity': return `>${l}]`;
                         default: return `(${l})`;   // processes and other shapes: rounded box
@@ -15688,7 +15905,7 @@
                 g.nodes.forEach((n, key) => {
                     const box = lay.nodes.get(key), def = this.elementDefaults(n.type), id = `el-mm${stamp}-${k++}`;
                     elementIds.set(key, id);
-                    s.elements.push({ id, type: n.type, name: n.label, x: ox + box.x, y: oy + box.y, notes: '', ...def.props, width: box.w, height: box.h, pageId: s.activePageId });
+                    s.elements.push({ id, type: n.type, name: n.label, x: ox + box.x, y: oy + box.y, notes: '', ...def.props, width: box.w, height: box.h, pageId: s.activePageId, ...(n.threeD && { threeD: true }) });
                 });
                 const anchors = g.direction === 'LR' ? ['right', 'left'] : g.direction === 'RL' ? ['left', 'right'] : g.direction === 'BT' ? ['top', 'bottom'] : ['bottom', 'top'];
                 // Edges that point back against the direction (loops) leave and enter from the side, so they don't

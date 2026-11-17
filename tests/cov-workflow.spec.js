@@ -170,8 +170,9 @@ test('workflow: Mermaid export, then Mermaid import (replace) rebuilds the same 
   const name = (id) => m.elements.find((e) => e.id === id).name;
   expect(m.elements.map((e) => e.name).sort()).toEqual(['Customer', 'Orders API', 'Orders DB']);
   expect(m.flows.map((f) => `${name(f.sourceId)}>${f.name}>${name(f.targetId)}`).sort()).toEqual(['Customer>HTTPS order>Orders API', 'Orders API>SQL>Orders DB']);
-  // Documented: Mermaid import makes flowchart shapes; the data store's cylinder becomes a database shape.
-  expect(Object.fromEntries(m.elements.map((e) => [e.name, e.type]))).toEqual({ Customer: 'fc_process', 'Orders API': 'fc_process', 'Orders DB': 'fc_database' });
+  // Documented: Mermaid import makes flowchart shapes; the data store's cylinder becomes a 3D connector (the database cylinder).
+  expect(Object.fromEntries(m.elements.map((e) => [e.name, e.type]))).toEqual({ Customer: 'fc_process', 'Orders API': 'fc_process', 'Orders DB': 'fc_connector' });
+  expect(m.elements.find((e) => e.name === 'Orders DB').threeD).toBe(true);
   await expect(page.locator('#layers-nodes-group [data-id]').filter({ hasText: 'Orders DB' }).first()).toBeVisible();
 });
 
