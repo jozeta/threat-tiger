@@ -56,6 +56,9 @@ function poisonedModel() {
     // 1.16.0: title block fields and review mode (the block is shown by exerciseUi).
     s.diagramInfo = { level: P('level')[0], version: P('version')[0], status: P('status')[1], author: P('author')[0], date: P('date')[0] };
     s.reviewMode = true;
+    // Title block & legend settings: the legend title and per-item labels (drawn free-floating on the canvas).
+    s.legend = { showTitleBlock: true, showLegend: true, title: P('legendTitle')[0], columns: 1, position: 'free', x: 0, y: 0, locked: false,
+      items: { 'type:process': { show: true, label: P('legendLabel')[1] }, flow: { show: true, label: P('legendFlow')[2] }, [P('legendKey')[0]]: { show: false, label: 'x' } } };
     // Diagram shapes (C4, UML class, ERD, BPMN): name and every multi-line text field.
     s.elements.push({ id: 'el-c4', type: 'c4_container', name: P('c4name')[0], x: 4000, y: 0, width: 200, height: 120, c4Technology: P('c4tech')[1], c4Description: P('c4desc')[0] });
     s.elements.push({ id: 'el-cls', type: 'uml_class', name: P('clsname')[2], x: 4300, y: 0, width: 200, height: 160, umlAttributes: `${P('attr')[0]}\n${P('attr2')[1]}`, umlOperations: P('op')[2] });
@@ -155,6 +158,8 @@ function attributeContextModel() {
     s.elements.push({ id: 'el-table2', type: 'table', name: INJ[1], x: 4000, y: 3000, width: 400, height: 160, headerRow: true, headerCol: true, theme: INJ[3], cells: [[INJ[0], INJ[1]], [INJ[2], INJ[3]]] });
     s.elements.push({ id: 'el-vlanes2', type: 'vlanes', name: INJ[2], x: 4000, y: 3400, width: INJ[3], height: 300, lanes: [INJ[0], INJ[1], INJ[2]], theme: INJ[1] });
     s.elements.push({ id: 'el-frame2', type: 'group_frame', name: INJ[1], x: 4600, y: 3400, width: 300, height: 200, theme: INJ[3] });
+    s.legend = { showTitleBlock: true, showLegend: true, title: INJ[0], columns: INJ[3], position: INJ[1], x: INJ[3], y: INJ[2], locked: INJ[0],
+      items: { 'type:process': { show: true, label: INJ[1] }, 'type:datastore': { show: INJ[2], label: INJ[2] }, flow: { show: true, label: INJ[3] }, [INJ[1]]: { show: false, label: INJ[0] } } };
     s.flows.forEach((f) => { f.name = INJ[1]; f.ports = INJ[2]; f.color = INJ[3]; f.thickness = INJ[3]; f.secProps = Object.assign({}, f.secProps, { [INJ[2]]: 'true' }); });
     s.mitigations = [
       { id: 'M-1', title: INJ[1], desc: INJ[2], owner: INJ[0], status: INJ[1], ticketUrl: 'https://example.test/" data-injected="url' },
@@ -195,6 +200,7 @@ test('payloads in attribute, style and SVG contexts never inject markup (SEC-DOM
       cards += document.querySelectorAll('#box-threat-suggestions-list .template-card').length;
     }
     app.renderActivityLedgerTable(true);
+    app.openLegendDialog();   // the legend's item list: labels as input values
     app.renderMitigationTable();
     app.buildPrintThreatReport();
     document.querySelectorAll('.threat-bug-badge').forEach((b) => b.dispatchEvent(new MouseEvent('mouseenter', { clientX: 10, clientY: 10 })));
@@ -211,6 +217,9 @@ test('payloads in attribute, style and SVG contexts never inject markup (SEC-DOM
   expect(checked.tableInputs).toBe(4);
   expect(checked.laneInputs).toBe(3);
   expect(checked.mitRows).toBe(2);
+  // The legend and its dialog rendered the payloads as text.
+  await expect(page.locator('#canvas-title-block .legend-title')).toHaveText(INJ[0]);
+  await expect(page.locator('#legend-items .legend-item-row[data-key="type:process"] input.legend-item-label')).toHaveValue(INJ[1]);
   expect(await injectedNodes(page)).toEqual([]);
   // Diagram-shape text is drawn as literal text (so the payloads really reached the renderer).
   await expect(page.locator('[data-id="el-dg-cls"] text[data-dg-text="attr"]').first()).toHaveText(/^<b data-injected/);
