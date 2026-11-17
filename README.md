@@ -118,19 +118,19 @@ The sync settings (not the token) are part of the model and its exports, so a co
 
 The button left of **☰** asks *What are you modelling?* and switches between **profiles**. A profile decides which palette sections, icon sets, icon-picker groups, right-panel tabs, bottom-panel tabs and panels you see. Your choice is remembered in this browser.
 
-| Profile | Shows |
-|---|---|
-| **Threat Modeling** (default) | The threat-modelling palette, text items, templates, register, mitigations and insights |
-| **Attack Path Modeling** | Adds Attack Paths & Trees |
-| **Architecture & Process Modeling** | Flowchart, C4, UML, BPMN and ERD shapes; no threat templates or bottom panel |
-| **Infrastructure & Network Modeling** | Data Nodes & Icons, ready-made nodes and every icon set |
-| **Flowcharts** | Flowchart shapes only |
-| **Review & Presentation** | The canvas without the palette |
-| **Show All** | Everything |
+| Profile | Shows | Opens |
+|---|---|---|
+| **Threat Modeling** (default) | The threat-modelling palette, text items, templates, register, mitigations and insights | Threat Modeling |
+| **Attack Path Modeling** | Attack Paths & Trees and text items; register, no templates, mitigations or insights | Attack Paths & Trees |
+| **Architecture & Process Modeling** | Flowchart, C4, UML, BPMN and ERD shapes; no threat templates or bottom panel | Architecture & Process Diagrams |
+| **Infrastructure & Network Modeling** | Data Nodes & Icons, ready-made nodes and every icon set; register, no templates, mitigations or insights | Data Nodes & Icons |
+| **Flowcharts** | Flowchart shapes only | Flowchart Diagram Items |
+| **Review & Presentation** | The canvas only (no left, right or bottom panel) | — |
+| **Show All** | Everything | — |
 
 The Activity Log tab is hidden in every built-in profile; show it with **☰ → View → Panel tabs** or in the profile editor.
 
-- **Edit profiles:** **☰ → Settings… → Profiles** (or *Edit profiles…* in the profile menu). Pick a profile, rename it, switch any palette section or sub-group, icon set, icon-picker group, tab or panel on or off, and use **New**, **Duplicate**, **Delete…** or **Restore default profiles…**. Changes to the profile in use apply at once.
+- **Edit profiles:** **☰ → Settings… → Profiles** (or *Edit profiles…* in the profile menu). Pick a profile, rename it, choose which palette section it opens, switch any palette section or sub-group, icon set, icon-picker group, tab or panel on or off, and use **New**, **Duplicate**, **Delete…** or **Restore default profiles…**. Changes to the profile in use apply at once.
 - **☰ → View** also edits the profile in use: *Palette sections*, *Icon sets*, *Panel tabs* and the panels.
 - Profiles live in this browser only, not in the model; hiding something never changes shapes already on the canvas. Sections you hid in 1.19.0 carry over as a *My previous view* profile.
 

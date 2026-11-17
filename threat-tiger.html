@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-hGdLKevWGSfqug4YBGBB5XBLsQaqzH0aS64cGqaBWsA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-GGZilZiJxMfzbZtJ90EseVn4e/DQ3IyfxvwkLUEKut8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4164,6 +4164,10 @@
                             </div>
                             <div class="small text-danger mt-1" id="settings-profile-name-error" aria-live="polite"></div>
                         </div>
+                        <div class="col-12 col-sm-5">
+                            <label class="form-label small text-muted mb-1" for="settings-profile-expand">Open this palette section</label>
+                            <select class="form-select form-select-sm shadow-none" id="settings-profile-expand"></select>
+                        </div>
                     </div>
                     <div class="d-flex flex-wrap gap-1 mb-2 profile-actions">
                         <button class="btn btn-sm btn-primary" type="button" id="btn-profile-activate"><i class="bi bi-check2-circle me-1" aria-hidden="true"></i><span id="btn-profile-activate-label">Use this profile</span></button>
@@ -6185,20 +6189,35 @@
         const VIEW_PROFILE_ICONS = ['bi-shield-exclamation', 'bi-diagram-2', 'bi-diagram-3', 'bi-hdd-network', 'bi-bezier2', 'bi-easel', 'bi-grid-3x3-gap', 'bi-sliders', 'bi-person-gear'];
         const VIEW_PROFILE_ID = /^[a-z0-9][a-z0-9-]{0,39}$/;
         const VIEW_PROFILE_MAX = 50;
+        // Top-level palette sections a profile can open when it is chosen ('' = leave the palette as it is).
+        const VIEW_PROFILE_SECTIONS = ['threat', 'attack', 'text', 'data-nodes', 'flowchart', 'diagrams'];
+        const VIEW_PROFILES_VERSION = 2;
+        // The built-ins as format 1 stored them (hidden lists and panels): a stored built-in still equal to this was never
+        // edited, so it may take the newer default (migrateViewProfiles).
+        const VIEW_PROFILES_V1 = {
+            threat: [['attack', 'data-nodes', 'flowchart', 'diagrams'], [], { left: true, right: true, bottom: true }],
+            attack: [['data-nodes', 'flowchart', 'diagrams'], [], { left: true, right: true, bottom: true }],
+            architecture: [['attack', 'data-nodes'], ['tab-suggest-trigger'], { left: true, right: true, bottom: false }],
+            infrastructure: [['attack', 'flowchart', 'diagrams'], [], { left: true, right: true, bottom: true }],
+            flowchart: [['threat', 'attack', 'data-nodes', 'diagrams'], ['tab-suggest-trigger'], { left: true, right: true, bottom: false }],
+            review: [[], [], { left: false, right: true, bottom: true }],
+            all: [[], [], { left: true, right: true, bottom: true }],
+        };
         // The built-in profiles. The Threat Modeling palette section (process, store, entity, zones, lines) stays in every one
         // except Flowcharts, where it makes no sense; Review & Presentation hides the whole left panel instead.
         // The Activity Log is hidden in every one (View → Panel tabs or the profile editor brings it back).
         function builtinViewProfiles() {
-            const make = (id, name, icon, palette, { stencils = [], tabs = [], panels = {} } = {}) => ({ id, name, icon,
+            const make = (id, name, icon, palette, { stencils = [], tabs = [], panels = {}, expand = '' } = {}) => ({ id, name, icon,
                 hidden: { palette: [...palette], stencils: [...stencils], icons: [], tabs: ['tab-notes-trigger', ...tabs] },
-                panels: { left: true, right: true, bottom: true, ...panels } });
+                panels: { left: true, right: true, bottom: true, ...panels }, expand });
+            const noThreatWork = ['tab-suggest-trigger', 'tab-mitigations-trigger', 'tab-insights-trigger'];   // templates, mitigations, insights
             return [
-                make('threat', 'Threat Modeling', 'bi-shield-exclamation', ['attack', 'data-nodes', 'flowchart', 'diagrams']),
-                make('attack', 'Attack Path Modeling', 'bi-diagram-2', ['data-nodes', 'flowchart', 'diagrams']),
-                make('architecture', 'Architecture & Process Modeling', 'bi-diagram-3', ['attack', 'data-nodes'], { tabs: ['tab-suggest-trigger'], panels: { bottom: false } }),
-                make('infrastructure', 'Infrastructure & Network Modeling', 'bi-hdd-network', ['attack', 'flowchart', 'diagrams']),
-                make('flowchart', 'Flowcharts', 'bi-bezier2', ['threat', 'attack', 'data-nodes', 'diagrams'], { tabs: ['tab-suggest-trigger'], panels: { bottom: false } }),
-                make('review', 'Review & Presentation', 'bi-easel', [], { panels: { left: false } }),
+                make('threat', 'Threat Modeling', 'bi-shield-exclamation', ['attack', 'data-nodes', 'flowchart', 'diagrams'], { expand: 'threat' }),
+                make('attack', 'Attack Path Modeling', 'bi-diagram-2', ['threat', 'data-nodes', 'flowchart', 'diagrams'], { tabs: noThreatWork, expand: 'attack' }),
+                make('architecture', 'Architecture & Process Modeling', 'bi-diagram-3', ['threat', 'attack', 'data-nodes'], { tabs: ['tab-suggest-trigger'], panels: { bottom: false }, expand: 'diagrams' }),
+                make('infrastructure', 'Infrastructure & Network Modeling', 'bi-hdd-network', ['threat', 'attack', 'flowchart', 'diagrams'], { tabs: noThreatWork, expand: 'data-nodes' }),
+                make('flowchart', 'Flowcharts', 'bi-bezier2', ['threat', 'attack', 'data-nodes', 'diagrams'], { tabs: ['tab-suggest-trigger'], panels: { bottom: false }, expand: 'flowchart' }),
+                make('review', 'Review & Presentation', 'bi-easel', [], { panels: { left: false, right: false, bottom: false } }),
                 make('all', 'Show All', 'bi-grid-3x3-gap', []),
             ];
         }
@@ -6225,10 +6244,25 @@
                 const pn = isPlainObject(p.panels) ? p.panels : {};
                 const panels = { left: pn.left !== false, right: pn.right !== false, bottom: pn.bottom !== false };
                 const icon = VIEW_PROFILE_ICONS.includes(p.icon) ? p.icon : 'bi-sliders';
+                const expand = VIEW_PROFILE_SECTIONS.includes(p.expand) ? p.expand : '';
                 ids.add(p.id); names.add(name.toLowerCase());
-                out.push({ id: p.id, name, icon, hidden, panels });
+                out.push({ id: p.id, name, icon, hidden, panels, expand });
             }
             return out;
+        }
+        // Profiles stored by the first version (format 1): a built-in profile the user never changed takes the new default; an edited one keeps its
+        // settings and only learns which palette section to open.
+        function migrateViewProfiles(list, version) {
+            if (version >= VIEW_PROFILES_VERSION) return list;
+            const defaults = Object.fromEntries(builtinViewProfiles().map(p => [p.id, p]));
+            const same = (a, b) => JSON.stringify([...a].sort()) === JSON.stringify([...b].sort());
+            return list.map(p => {
+                const d = defaults[p.id], old = VIEW_PROFILES_V1[p.id];
+                if (!d || !old) return p;
+                const untouched = p.name === d.name && p.icon === d.icon && same(p.hidden.palette, old[0]) && same(p.hidden.tabs, ['tab-notes-trigger', ...old[1]])
+                    && !p.hidden.stencils.length && !p.hidden.icons.length && JSON.stringify(p.panels) === JSON.stringify(old[2]);
+                return untouched ? JSON.parse(JSON.stringify(d)) : { ...p, expand: p.expand || d.expand };
+            });
         }
         // ── /View profiles: constants ───────────────────────────────────────────────────
         const STENCIL_ID = /^[a-z0-9]+:[\w.-]{1,120}$/i;
@@ -11235,6 +11269,7 @@
             // Hidden palette groups and icon-picker groups are view settings of this browser, never part of the model.
             setupPaletteVisibility() {
                 this.applyViewProfile();   // palette, icon sets, tabs and panels as the active profile says
+                this.expandProfileSection();
             }
             applyPaletteVisibility() {
                 document.querySelectorAll('#paletteAccordion [data-palette-group]').forEach(el => el.classList.toggle('d-none', this.hiddenPaletteGroups.has(el.dataset.paletteGroup)));
@@ -11268,7 +11303,7 @@
                 let raw = null, stored = false, active = null;
                 try { const t = localStorage.getItem('view_profiles'); stored = t !== null; raw = JSON.parse(t || 'null'); } catch { raw = null; }
                 try { active = localStorage.getItem('active_view_profile'); } catch { active = null; }
-                let list = normalizeViewProfiles(raw);
+                let list = migrateViewProfiles(normalizeViewProfiles(raw), isPlainObject(raw) ? (Number(raw.version) || 1) : VIEW_PROFILES_VERSION);
                 if (!stored) {
                     // First visit with profiles: keep what the old hidden_* settings hid, as a profile of its own, then drop the old keys.
                     list = builtinViewProfiles();
@@ -11289,7 +11324,7 @@
             saveViewProfiles() {
                 if (this.clearingData) return;
                 try {
-                    localStorage.setItem('view_profiles', JSON.stringify({ version: 1, profiles: this.viewProfiles }));
+                    localStorage.setItem('view_profiles', JSON.stringify({ version: VIEW_PROFILES_VERSION, profiles: this.viewProfiles }));
                     localStorage.setItem('active_view_profile', this.activeViewProfileId);
                 } catch { /* view setting only */ }
             }
@@ -11346,6 +11381,19 @@
                 this.activeViewProfileId = id;
                 this.saveViewProfiles();
                 this.applyViewProfile();
+                this.expandProfileSection();
+            }
+            // Opens the palette section the active profile names (and closes the other top-level sections), so the
+            // shapes for the job are in view. Runs when a profile is chosen and at start-up, not on every edit.
+            expandProfileSection() {
+                const p = this.activeViewProfile(), id = p && p.expand;
+                if (!id || this.hiddenPaletteGroups.has(id) || !window.bootstrap) return;
+                document.querySelectorAll('#paletteAccordion > .accordion-item[data-palette-group]').forEach(item => {
+                    const body = item.querySelector(':scope > .accordion-collapse');
+                    if (!body) return;
+                    const want = item.dataset.paletteGroup === id;
+                    if (want !== body.classList.contains('show')) bootstrap.Collapse.getOrCreateInstance(body, { toggle: false })[want ? 'show' : 'hide']();
+                });
             }
             setPaletteGroupHidden(id, hidden) {
                 if (hidden) this.hiddenPaletteGroups.add(id); else this.hiddenPaletteGroups.delete(id);
@@ -11533,6 +11581,10 @@
                 use.disabled = active; use.title = active ? 'This profile is in use' : 'Show the app as this profile says';
                 document.getElementById('btn-profile-activate-label').textContent = active ? 'In use' : 'Use this profile';
                 document.getElementById('btn-profile-delete').disabled = this.viewProfiles.length <= 1;
+                const expandSel = document.getElementById('settings-profile-expand');
+                expandSel.replaceChildren(new Option('None (leave as it is)', ''), ...VIEW_PROFILE_SECTIONS.map(id => new Option((PALETTE_GROUPS.find(g => g[0] === id) || [id, id])[1], id)));
+                expandSel.value = p.expand || '';
+                expandSel.onchange = () => { p.expand = VIEW_PROFILE_SECTIONS.includes(expandSel.value) ? expandSel.value : ''; this.saveViewProfiles(); };
                 const sw = (id, label, on, data, onChange, indent = false) => {
                     const wrap = document.createElement('div'); wrap.className = `form-check form-switch small mb-1${indent ? ' ms-3' : ''}`;
                     const input = document.createElement('input'); input.type = 'checkbox'; input.className = 'form-check-input'; input.id = id; input.checked = on;

@@ -321,3 +321,82 @@ test('Clear all data forgets the profiles and the panel state', async ({ page })
   const keys = await page.evaluate(() => document.querySelector('script:not([src]):not([type])').textContent.match(/const prefs = \[[^\]]*\]/)[0]);
   for (const k of ['view_profiles', 'active_view_profile', 'session_meta_collapsed']) expect(keys).toContain(k);
 });
+
+// ── per-profile palette and panels, and the section each profile opens ─────────────────
+const isOpen = (page, group) => page.locator(`#paletteAccordion [data-palette-group="${group}"] .accordion-collapse`).first().evaluate(e => e.classList.contains('show'));
+const tabHidden = (page, id) => page.locator(`#${id}`).evaluate(e => e.classList.contains('d-none') || !!e.closest('.d-none'));
+
+test('Attack Path Modeling hides Threat Modeling, templates, mitigations and insights, and opens Attack Paths', async ({ page }) => {
+  await fresh(page);
+  await chooseProfile(page, 'attack');
+  expect(await hidden(page, '#paletteAccordion [data-palette-group="threat"]')).toBe(true);
+  expect(await hidden(page, '#paletteAccordion [data-palette-group="attack"]')).toBe(false);
+  await expect.poll(() => isOpen(page, 'attack')).toBe(true);
+  for (const t of ['tab-suggest-trigger', 'tab-mitigations-trigger', 'tab-insights-trigger']) expect(await tabHidden(page, t), t).toBe(true);
+  expect(await tabHidden(page, 'tab-register-trigger')).toBe(false);
+});
+
+test('Architecture & Process hides Threat Modeling and opens Architecture & Process Diagrams', async ({ page }) => {
+  await fresh(page);
+  await chooseProfile(page, 'architecture');
+  expect(await hidden(page, '#paletteAccordion [data-palette-group="threat"]')).toBe(true);
+  await expect.poll(() => isOpen(page, 'diagrams')).toBe(true);
+});
+
+test('Infrastructure & Network hides Threat Modeling, templates, mitigations and insights, and opens Data Nodes', async ({ page }) => {
+  await fresh(page);
+  await chooseProfile(page, 'infrastructure');
+  expect(await hidden(page, '#paletteAccordion [data-palette-group="threat"]')).toBe(true);
+  for (const t of ['tab-suggest-trigger', 'tab-mitigations-trigger', 'tab-insights-trigger']) expect(await tabHidden(page, t), t).toBe(true);
+  await expect.poll(() => isOpen(page, 'data-nodes')).toBe(true);
+});
+
+test('Flowcharts opens Flowchart Diagram Items', async ({ page }) => {
+  await fresh(page);
+  await chooseProfile(page, 'flowchart');
+  await expect.poll(() => isOpen(page, 'flowchart')).toBe(true);
+});
+
+test('Review & Presentation hides the left, right and bottom panels', async ({ page }) => {
+  await fresh(page);
+  await chooseProfile(page, 'review');
+  await expect.poll(() => page.evaluate(() => [app.isLeftCollapsed, app.isRightCollapsed, app.isBottomCollapsed])).toEqual([true, true, true]);
+});
+
+test('the section a profile opens is editable in Settings and is applied when the profile is chosen', async ({ page }) => {
+  await fresh(page);
+  await openSettings(page);
+  const sel = page.locator('#settings-profile-expand');
+  await expect(sel).toBeVisible();
+  await expect(sel).toHaveValue('threat');
+  await sel.selectOption('text');
+  await page.click('#modal-settings .btn-close');
+  await expect(page.locator('#modal-settings')).toBeHidden();
+  expect((await activeProfile(page)).expand).toBe('text');
+  await chooseProfile(page, 'all'); await chooseProfile(page, 'threat');
+  await expect.poll(() => isOpen(page, 'text')).toBe(true);
+});
+
+test('built-in profiles saved in format 1 get the new defaults unless the user changed them', async ({ page }) => {
+  await H.openApp(page, { viewProfiles: null });
+  await page.evaluate(() => {
+    // what format 1 stored: the old built-ins, with Attack Path renamed by the user
+    const v1 = [
+      { id: 'attack', name: 'My attacks', icon: 'bi-diagram-2', hidden: { palette: ['data-nodes', 'flowchart', 'diagrams'], stencils: [], icons: [], tabs: ['tab-notes-trigger'] }, panels: { left: true, right: true, bottom: true } },
+      { id: 'infrastructure', name: 'Infrastructure & Network Modeling', icon: 'bi-hdd-network', hidden: { palette: ['attack', 'flowchart', 'diagrams'], stencils: [], icons: [], tabs: ['tab-notes-trigger'] }, panels: { left: true, right: true, bottom: true } },
+      { id: 'review', name: 'Review & Presentation', icon: 'bi-easel', hidden: { palette: [], stencils: [], icons: [], tabs: ['tab-notes-trigger'] }, panels: { left: false, right: true, bottom: true } },
+    ];
+    localStorage.setItem('view_profiles', JSON.stringify({ version: 1, profiles: v1 }));
+    localStorage.setItem('active_view_profile', 'infrastructure');
+  });
+  await reload(page);
+  const s = await stored(page);
+  const by = Object.fromEntries(s.profiles.profiles.map(p => [p.id, p]));
+  expect(s.profiles.version).toBe(2);
+  expect(by.infrastructure.hidden.palette).toContain('threat');            // unchanged → new default
+  expect(by.infrastructure.expand).toBe('data-nodes');
+  expect(by.review.panels).toEqual({ left: false, right: false, bottom: false });
+  expect(by.attack.name).toBe('My attacks');                              // edited → kept as it was
+  expect(by.attack.hidden.palette).not.toContain('threat');
+  expect(by.attack.expand).toBe('attack');                                // but it does learn which section to open
+});
