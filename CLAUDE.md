@@ -67,6 +67,8 @@ PW_BASE_URL=http://127.0.0.1:8080 npm test   # test the running container
 - Flowchart shapes `fc_*` (`FLOWCHART_DEFAULTS`; `threeD` flag drawn by the `fc3d*` methods; `FC_LEGACY_3D` migrates old `fc_cube`/`fc_database`), attack-tree shapes `at_*` (`ATTACK_SHAPE_DEFAULTS`, diagram-only), diagram shapes `c4_/uml_/bpmn_/erd_` (`DIAGRAM_SHAPES`, merged into `FLOWCHART_DEFAULTS`; only C4 are model components), and `table` / lane containers (`TT_DECOR_TYPES`). `isFcLikeType()` is true for every shape drawn by `renderFlowchartShapeSvg`.
 - The swimlane is frozen: `tests/swimlane-dom.spec.js` compares its rendered DOM with a stored snapshot.
 - Palette sections carry `data-palette-group`; `PALETTE_GROUPS` lists them (a new section must be added there; a test checks DOM and list match). Visibility comes from the active **view profile** (localStorage `view_profiles`, `active_view_profile`, validated by `normalizeViewProfiles()`); the old `hidden_*` keys are migrated once. Tests: `openApp` seeds a show-everything profile unless `viewProfiles: null`.
+- Help: the guide is static HTML in `#modal-help-guide` (sections `help-<id>`, `app.openHelp(id)`); screenshots in `docs/help/` come from `node scripts/help-shots.mjs [--readme]` (also writes `docs/images/`) — rerun it after UI changes and keep the `<img>` width/height in step. About & License is `#modal-help`.
+- Status files and live status: sample files in `samples/` (served same-origin, no host approval). Fetches never follow redirects (`redirect: 'manual'`) except the reply-less no-cors reachability request.
 - The title block & legend settings are in the model (`state.legend`, `normalizeLegend()`); component look is `display` (`card`/`icon`/`badge`, `normalizeNodeDisplay`).
 
 ## App standards

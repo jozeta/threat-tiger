@@ -4,11 +4,11 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.21.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.22.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
-![Threat Tiger: the architecture canvas with the palette on the left and Properties on the right](Screenshot.png)
+![Threat Tiger: the architecture canvas with the palette on the left and Properties on the right](docs/images/overview.png)
 
 ---
 
@@ -16,6 +16,8 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 *   **Interactive architecture canvas**: drag and drop processes, data stores, external entities, trust zones and trust boundary lines, infrastructure nodes, steps, text, flowchart shapes, swimlanes and your own images, align or space out a selection evenly, organise shapes on layers you can hide or lock, split big models over pages with drill-down links, copy a shape's look with a format painter, see line jumps where flows cross, find your way around big diagrams with a minimap, and use about 2,000 icons: devices and security symbols, security and DevOps brands, tech and OS logos, and official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons (see [their terms](vendor/stencils/README.md)). More than 200 icons (servers, code, web, infrastructure, databases, security, people). Change any node's type from **Properties** (for example process → data store, or rectangle → decision) without losing its name, flows or threats.
 *   **Attack trees, C4, UML, BPMN and ERD**: attack-tree and attack-flow shapes (ATT&CK tactics and techniques), ready-made security and platform nodes, and shapes for architecture and process diagrams; hide any palette section in Settings
+*   **Help guide**: a searchable manual in the app (☰ → Help, F1) with illustrations and screenshots
+*   **Build from status file**: turn a CSV, Google Sheet or JSON list of servers into a diagram that stays coloured by its status
 *   **Live status and traffic**: colour shapes and lines from a Google Sheet, a JSON feed or browser checks (web address, reachability, DNS) with your own rules, and animate traffic along data flows
 *   **3D shapes**: any flowchart shape can be 3D, drawn as a solid in the flat view and as a true isometric solid in the isometric views, plus sphere, cone, pyramid and stacked layers
 *   **Tables and containers**: a table with themed header rows and columns, pools, vertical lanes, frames and phase timelines
@@ -34,12 +36,20 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/images/flowchart-swimlanes.png" alt="A flowchart in a swimlane, with the next-step preview and the Type dropdown"><br><sub><b>Flowcharts and swimlanes:</b> hover a connection point to preview the next step; the Type dropdown switches shapes.</sub></td>
-    <td width="50%"><img src="docs/images/attack-paths.png" alt="Attack paths in Insights with the top path highlighted on the canvas"><br><sub><b>Attack paths:</b> routes from entry points to a crown jewel, ranked by risk, with the top path highlighted on the canvas.</sub></td>
+    <td width="50%"><img src="docs/images/status-file.png" alt="The Build from status file dialog with a preview of six servers"><br><sub><b>Build from status file:</b> a CSV, Google Sheet or JSON list of servers becomes a diagram with zones and flows</sub></td>
+    <td width="50%"><img src="docs/images/live-status.png" alt="Shapes coloured green, amber and red by live status, with a slow line"><br><sub><b>Live status:</b> rules colour shapes and lines from a sheet, a feed or browser checks</sub></td>
   </tr>
   <tr>
-    <td width="50%"><img src="docs/images/icon-sets.png" alt="A small Azure architecture drawn with icons from the icon sets"><br><sub><b>Icon sets:</b> a small Azure architecture (laptop, Front Door, App Services, Key Vault, SQL Database, Okta), with the icon sets in the palette.</sub></td>
-    <td width="50%"><img src="docs/images/pages-layers.png" alt="Page tabs, a drill-down badge, the minimap and the Layers tab"><br><sub><b>Pages and layers:</b> page tabs at the top left, a drill-down badge on Webfront, the minimap, and the Layers tab with a hidden or locked layer.</sub></td>
+    <td width="50%"><img src="docs/images/profiles.png" alt="The profile editor in Settings"><br><sub><b>Profiles:</b> show only what the job needs; edit, create and delete profiles</sub></td>
+    <td width="50%"><img src="docs/images/legend.png" alt="The title block and legend dialog"><br><sub><b>Title block &amp; legend:</b> pick and rename every item, title, columns, corner or free-floating</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/attack-tree.png" alt="An attack tree with gates, steps and a countermeasure"><br><sub><b>Attack trees:</b> goals, AND/OR gates, ATT&amp;CK steps, countermeasures and choke points</sub></td>
+    <td width="50%"><img src="docs/images/attack-paths.png" alt="Attack paths in Insights with the top path highlighted on the canvas"><br><sub><b>Attack paths:</b> ranked routes from entry points to crown jewels</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/images/3d.png" alt="3D flowchart shapes in the north-east isometric view"><br><sub><b>3D and isometric:</b> any flowchart shape as a solid, plus spheres, cones, pyramids and stacked layers</sub></td>
+    <td width="50%"><img src="docs/images/diagrams.png" alt="C4 and BPMN shapes on the canvas"><br><sub><b>C4, UML, BPMN and ERD:</b> architecture and process diagrams next to the threat model</sub></td>
   </tr>
 </table>
 
@@ -47,7 +57,15 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 ## What's new 🆕
 
-**1.21.0** brings the diagram to life (see [Live status](#live-status-colour-the-diagram-from-real-data) and [Traffic animation](#traffic-animation)):
+**1.22.0** adds a full **Help guide** and building diagrams from a status file:
+
+- **Help guide** (☰ → Help, or F1 / ?): a manual covering every palette section, canvas tool, panel and setting, with search, illustrations and screenshots. **About & License** keeps the version, licence and credits.
+- **Build from status file** (☰ → Build from status file…): load a CSV, Google Sheet or JSON list of servers and get a diagram (zones from `group`, data flows from `connects_to`) that stays coloured by the same file. See [Building a diagram from a status file](#building-a-diagram-from-a-status-file); try [`samples/status-servers.csv`](samples/status-servers.csv) or [`.json`](samples/status-servers.json).
+- **Test check** in Properties → Status check runs a check now and lists every value of the answer, each with a **+** that adds a ready-made rule.
+- Live status sources: **Google Sheet, CSV file and JSON file**, and files on the app's own site need no host approval.
+- The **Crown jewel** preset no longer ticks the Crown jewel switch; tick it in Properties.
+
+**1.21.0** brought the diagram to life (see [Live status](#live-status-colour-the-diagram-from-real-data) and [Traffic animation](#traffic-animation)):
 
 - **Live status:** colour shapes and lines from a Google Sheet, a JSON feed, or checks the browser runs itself (web address, reachability, DNS). You write the rules (equals, contains, number and latency limits…), each with its own fill, border or line colour, icon and label.
 - **Traffic animation:** moving dashes or dots along data flows, from source to target.
@@ -161,6 +179,31 @@ Shapes and lines behave as usual until you tick **Status check** in Properties; 
 5. **Start it** with **☰ → View → Canvas → Live status** (or the switch in Settings). The first time a host is needed, Settings lists it and asks you to allow it: nothing is contacted before that, so a model from someone else cannot make your browser call addresses you did not approve. The refresh interval is 60 seconds by default (at least 10) and can be set per source; *Refresh now* checks at once, and checking pauses while the tab is hidden.
 
 Hover the small dot on a shape to see its value, latency and time. Grey means waiting for approval, or data older than twice the interval. Sources and rules are saved in the model and its exports (a colleague gets them); the results never are. State changes such as up → down are written to the activity log.
+
+### Building a diagram from a status file
+
+1. Make a CSV file or Google Sheet with a header row, or a JSON file (`{ "title": "…", "items": [ … ] }` or a plain list). Only `name` is required:
+
+   | Column | Meaning | Default |
+   |---|---|---|
+   | `name` | shape name and status key (unique) | required |
+   | `status` | the value the rules check, e.g. `up`, `degraded`, `down` | |
+   | `type` | `process`, `datastore`, `interactor`, `infrastructure`, or a ready-made node such as `firewall`, `api-gateway`, `cache`, `backup`, `siem` | `infrastructure` |
+   | `icon` | a Bootstrap icon, e.g. `bi-server` | from the type |
+   | `ok` / `ok_color` | values that mean healthy (`a\|b`) and their colour | `up\|ok\|online\|healthy\|200` / `#198754` |
+   | `warn` / `warn_color` | values that mean degraded and their colour | `degraded\|slow\|warning\|maintenance` / `#ffc107` |
+   | `fail_color` | colour when nothing matches | `#dc3545` |
+   | `latency` / `latency_max` | response time in ms, and the limit above which it shows as warn ("slow") | |
+   | `group` | shapes with the same group share a trust zone | |
+   | `connects_to` | names this shape sends data to (`a\|b`): data flows | |
+   | `description` | the shape's notes | |
+
+   Column names ignore case, spaces, `-` and `_`. The repository has two ready-made examples with six servers in different states: [`samples/status-servers.csv`](samples/status-servers.csv) and [`samples/status-servers.json`](samples/status-servers.json) (see [`samples/README.md`](samples/README.md)).
+2. Open **☰ → Build from status file…** and enter an `https://` address, a Google Sheet share link (*Anyone with the link can view*) or a path on the same site such as `samples/status-servers.csv` — or click **Choose file…**. Press **Preview**: it shows the number of shapes, flows, groups and any warnings.
+3. Build on a new page or this one. With **Keep checking this file for status** on, the file becomes a live status source and every shape gets rules from its row; turn on **☰ → View → Canvas → Live status** to see the colours.
+4. When the file changes, use **Update from file** (in the dialog or Settings → Live status): new rows are added, changed rows updated, nothing you placed moves, and shapes whose row is gone are deleted only if you tick the box.
+
+**Test check:** select a shape or line with a status check and press **Test check** in Properties. Every part of the answer is listed (up/down, HTTP status, latency, DNS records, or every column of the matched row) together with the rule that matches now; press **+** next to a value to add a rule for it.
 
 ### Traffic animation
 

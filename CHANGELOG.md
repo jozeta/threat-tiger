@@ -5,8 +5,22 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.22.0
+
+### Added
+- **Help guide** (☰ → Help, or F1 / ?): a full manual with contents, search, phone layout and deep links (`#help/<section>`, `app.openHelp('section')`), covering every palette section, canvas tool, panel, setting, live status, status files, git sync, import/export, shortcuts, privacy and troubleshooting. 14 theme-aware illustrations, shape thumbnails taken from the palette, and screenshots in `docs/help/`. "?" links next to 3D, Status check, Title block & legend, Profiles, Live status and Git sync open the matching section.
+- **Build from status file** (☰ → Build from status file…): a CSV file, Google Sheet or JSON file (URL, same-site path or local file) becomes a diagram — each row a shape with its type and icon, `group` a trust zone, `connects_to` data flows — after a preview with counts and warnings. **Keep checking this file for status** makes it a live status source with rules from each row (ok, warn, latency limit, fail colour; grey without data). **Update from file** adds and updates without moving your shapes and deletes only when asked.
+- **Test check** in Properties → Status check: runs the check now (also with live status off) and lists every value of the answer and the rule that matches; a **+** next to each value adds a ready-made rule.
+- Live status sources: a separate **CSV file** kind next to Google Sheet and JSON file; files on the app's own site (such as `samples/status-servers.csv`) need no host approval.
+- **Sample files** `samples/status-servers.csv` and `samples/status-servers.json` (six servers: up, slow, degraded, custom colours, down, maintenance) with `samples/README.md`; also in the Docker image.
+
 ### Changed
+- **Help & License is now About & License** (version, licence and credits, with a button to the guide); first-time visitors still see it as the welcome.
 - The **Crown jewel** palette preset no longer ticks the Crown jewel switch: tick it in Properties to make the data store an attack-path target.
+- README: new screenshots (overview, status file, live status, profiles, legend, attack tree, attack paths, 3D, C4/BPMN).
+
+### Tests
+- New suites `help`, `status-file`, `live-test-check`; `scripts/help-shots.mjs` regenerates the help and README screenshots (`node scripts/help-shots.mjs --readme`).
 
 ## 1.21.0
 
