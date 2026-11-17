@@ -9,6 +9,7 @@ const firstProcess = (page) => page.evaluate(() => { const e = app.state.element
 /** Every dialog, how a user opens it, and the control that should get focus back when it closes. */
 const DIALOGS = [
   { id: 'modal-help', open: (p) => C.clickControl(p, '#btn-help-trigger'), back: '#btn-main-menu' },
+  { id: 'modal-help-guide', open: (p) => C.clickControl(p, '#btn-help-guide'), back: '#btn-main-menu' },
   { id: 'modal-session-context', open: (p) => p.click('#btn-open-session-meta'), back: '#btn-open-session-meta' },
   { id: 'modal-edit-threat', open: async (p) => { await p.click('#tab-register-trigger'); await p.click('#btn-register-add-custom'); }, back: '#btn-register-add-custom' },
   { id: 'modal-edit-template', open: async (p) => { await firstProcess(p); await p.click('#tab-suggest-trigger'); await p.click('#btn-add-template'); }, back: '#btn-add-template' },

@@ -430,7 +430,7 @@ test('Mermaid import: "Choose file" loads the file into the box and shows its na
   await expect.poll(() => page.evaluate(() => app.state.elements.map((e) => e.name).sort())).toEqual(['Orders', 'Shop']);
 });
 
-test('Help & License shows the same version as package.json, and the header shows it too', async ({ page }) => {
+test('About & License shows the same version as package.json, and the header shows it too', async ({ page }) => {
   await C.emptyApp(page);
   await C.clickControl(page, '#btn-help-trigger');
   await expect(page.locator('#modal-help')).toBeVisible();

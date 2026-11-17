@@ -12,6 +12,7 @@ COPY --chown=root:root deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --chown=root:root threat-tiger.html threat_templates.json demo.json favicon.ico Threat_tigerS.png Threat_tiger_840.webp /usr/share/nginx/html/
 COPY --chown=root:root vendor/ /usr/share/nginx/html/vendor/
 COPY --chown=root:root samples/ /usr/share/nginx/html/samples/
+COPY --chown=root:root docs/help/ /usr/share/nginx/html/docs/help/
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:8080/threat-tiger.html || exit 1
