@@ -5,6 +5,11 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.20.1
+
+### Fixed
+- **Two tabs:** after **Reload** on the "changed in another tab" notice, a late notice about the version this tab had just loaded could block its next save (seen as an intermittent CI failure of test A3). A tab now ignores a change notice that carries the version it already loaded or saved. Regression tests A3c and A3d.
+
 ## 1.20.0
 
 ### Added

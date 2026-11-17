@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-GGZilZiJxMfzbZtJ90EseVn4e/DQ3IyfxvwkLUEKut8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-s4Z8BLWdIpfWwSQPHcCeZ9AeqBH8K1+m3RNxHAxrGJ4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4590,7 +4590,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.20.0';
+        const APP_VERSION = '1.20.1';
         const SCHEMA_VERSION = 1;
         const MAX_ZOOM = 2.5;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
@@ -7031,6 +7031,9 @@
                 // Another tab of this browser saved the model: stop overwriting it silently.
                 window.addEventListener('storage', (ev) => {
                     if (ev.storageArea !== localStorage || ev.key !== 'stride_workbench_session_manifest_v26' || ev.newValue === null) return;
+                    // A late event carrying the version this tab already loaded or saved is not a new change (events from
+                    // two quick writes in another tab can arrive after "Reload" has loaded the second one).
+                    if (ev.newValue === this.lastSessionJson) return;
                     this.otherTabChanged = true;
                     document.getElementById('alert-other-tab').classList.remove('d-none');
                 });
@@ -17774,6 +17777,7 @@
             safeSetItem(key, value) {
                 try {
                     localStorage.setItem(key, value);
+                    if (key === 'stride_workbench_session_manifest_v26') this.lastSessionJson = value;   // this tab's own version
                     // Only a saved model clears the warning: a small unrelated write can succeed while the model still cannot.
                     if (key === 'stride_workbench_session_manifest_v26') this.setStorageFailure(false);
                     return true;
@@ -17857,6 +17861,7 @@
             loadSessionFromLocalStorage() {
                 const data = localStorage.getItem('stride_workbench_session_manifest_v26');
                 if (!data) return false;
+                this.lastSessionJson = data;   // the stored version this tab now shows (storage handler)
                 const { session, warnings } = normalizeSession(JSON.parse(data));
                 this.state = Object.assign(new ThreatModelSession(), session);
                 if (warnings.length) console.warn('[ThreatTiger] Stored model adjusted on load:', warnings);

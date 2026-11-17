@@ -48,6 +48,35 @@ test('A3: a second tab does not silently overwrite the first tab\'s saved change
   expect(after).toMatchObject({ projectTitle: 'Title from tab A', scopeDefinition: 'Scope after reload' });
 });
 
+test('A3c: a late storage event carrying the version this tab just loaded is not a new change', async ({ page, context }) => {
+  // CI race: tab A writes twice (start-up autosave, then an edit). Tab B shows the notice on the first event; after
+  // Reload, the second event arrives late with exactly the version B loaded. B must not treat it as a conflict.
+  await H.openApp(page, { session: H.demoSession() });
+  const other = await context.newPage();
+  await other.goto('/threat-tiger.html?test=true');
+  await other.waitForFunction(() => window.app && window.app.state && app.state.elements.length > 0);
+  await page.evaluate(() => { app.state.projectTitle = 'Title from tab A'; app.saveSessionToLocalStorage(); app.flushSave(); });
+  await expect(other.locator('#alert-other-tab')).toBeVisible();
+  await other.click('#btn-other-tab-reload');
+  await expect(other.locator('#alert-other-tab')).toBeHidden();
+  await other.evaluate(() => {
+    const key = 'stride_workbench_session_manifest_v26';
+    window.dispatchEvent(new StorageEvent('storage', { key, newValue: localStorage.getItem(key), storageArea: localStorage }));
+  });
+  await expect(other.locator('#alert-other-tab')).toBeHidden();
+  await other.evaluate(() => { app.state.scopeDefinition = 'Scope after reload'; app.saveSessionToLocalStorage(); app.flushSave(); });
+  const after = await page.evaluate(() => JSON.parse(localStorage.getItem('stride_workbench_session_manifest_v26')));
+  expect(after).toMatchObject({ projectTitle: 'Title from tab A', scopeDefinition: 'Scope after reload' });
+});
+
+test('A3d: a storage event with a version this tab has not seen still raises the notice', async ({ page }) => {
+  await H.openApp(page, { session: H.demoSession() });
+  await page.evaluate(() => {
+    window.dispatchEvent(new StorageEvent('storage', { key: 'stride_workbench_session_manifest_v26', newValue: '{"projectTitle":"elsewhere"}', storageArea: localStorage }));
+  });
+  await expect(page.locator('#alert-other-tab')).toBeVisible();
+});
+
 test('A3b: "Keep this tab\'s version" saves this tab again', async ({ page, context }) => {
   await H.openApp(page, { session: H.demoSession() });
   const other = await context.newPage();
