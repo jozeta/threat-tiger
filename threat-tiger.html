@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-rf01bKsPep79nGV1E31rztvzlh3aoHJpBxPLWmsYUbY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-J+ahG6QAdq0KX3VBHsgqynJ8H81RWkuH8iRqW59xkhM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4892,7 +4892,8 @@
         // Palette presets: ordinary components with an attack-path role.
         const ATTACK_PRESETS = {
             attacker: { type: 'interactor', name: 'Threat actor', icon: 'bi-incognito', secProps: { unauthAccess: 'true' }, look: { display: 'badge', badgeFill: '#fee2e2', badgeStroke: '#b91c1c', iconColor: '#7f1d1d' } },
-            'crown-jewel': { type: 'datastore', name: 'Crown jewel', icon: 'bi-gem', secProps: { isCrownJewel: 'true', handlesSensitiveData: 'true' }, look: { display: 'badge', badgeFill: '#fef9c3', badgeStroke: '#ca8a04', iconColor: '#854d0e' } },
+            'crown-jewel': { type: 'datastore', name: 'Crown jewel', icon: 'bi-gem', secProps: { handlesSensitiveData: 'true' },   // Crown jewel switch left off: the user ticks it in Properties
+                look: { display: 'badge', badgeFill: '#fef9c3', badgeStroke: '#ca8a04', iconColor: '#854d0e' } },
         };
         const ATTACK_PRESET_DRAG_TYPE = 'application/x-threat-tiger-preset';
         function isAttackShapeType(t) { return typeof t === 'string' && Object.prototype.hasOwnProperty.call(ATTACK_SHAPE_DEFAULTS, t); }

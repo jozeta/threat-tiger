@@ -178,7 +178,7 @@ Open **☰ → View → Title block & legend…** (or **☰ → Settings… → 
 
 The **Attack Paths & Trees** palette section follows MITRE Attack Flow and attack-defence trees:
 
-- **Threat actor** and **Crown jewel** are ordinary components (an external entity and a crown-jewel data store), so Insights → **Attack paths** finds routes between them.
+- **Threat actor** and **Crown jewel** are ordinary components (an external entity and a data store). Tick **Crown jewel** in the data store's Properties to make it a target; Insights → **Attack paths** then finds routes from threat actors to it.
 - **Entry point, Attack step, Asset / target, Condition, AND gate, OR gate, Goal, Countermeasure** and **Choke point** are diagram shapes. Connect them with flows to draw an attack tree (goal at the top, gates below) or an attack flow (steps left to right). An attack step takes an ATT&CK tactic and an optional technique ID (`T1566` or `T1566.001`), shown on the shape; a condition can be marked success or fail.
 - These shapes and the links between them get no STRIDE threats and are never data-flow steps in attack paths.
 

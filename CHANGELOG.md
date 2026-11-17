@@ -5,6 +5,9 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+### Changed
+- The **Crown jewel** palette preset no longer ticks the Crown jewel switch: tick it in Properties to make the data store an attack-path target.
+
 ## 1.21.0
 
 ### Added

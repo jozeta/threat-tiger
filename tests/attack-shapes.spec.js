@@ -39,7 +39,8 @@ test('every palette item adds its shape by click; the presets are an attacker an
   const els = await page.evaluate(() => JSON.parse(JSON.stringify(app.state.elements)));
   const attacker = els.find((e) => e.type === 'interactor'), jewel = els.find((e) => e.type === 'datastore');
   expect(attacker.icon).toBe('bi-incognito');
-  expect(jewel.secProps.isCrownJewel).toBe('true');
+  expect(jewel.secProps.isCrownJewel).not.toBe('true');   // the preset leaves the Crown jewel switch off; the user ticks it
+  expect(jewel.display).toBe('badge');
   for (const t of AT_TYPES) {
     const e = els.find((x) => x.type === t);
     expect(e.width, t).toBeGreaterThan(0); expect(e.height, t).toBeGreaterThan(0);
@@ -70,7 +71,8 @@ test('palette items are keyboard buttons with a hover popover, and can be dragge
   }
   const els = await page.evaluate(() => JSON.parse(JSON.stringify(app.state.elements)));
   expect(els.map((e) => e.type)).toEqual(['at_and', 'at_goal', 'datastore']);
-  expect(els[2].secProps.isCrownJewel).toBe('true');
+  expect(els[2].name).toBe('Crown jewel');                 // the preset keeps its preset fields
+  expect(els[2].secProps.isCrownJewel).not.toBe('true');
 });
 
 test('review mode blocks adding from the palette', async ({ page }) => {
