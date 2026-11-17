@@ -17,8 +17,9 @@ test('opening a set loads it once, search filters, clicking adds a recognised co
   await set.locator('.stencil-set-toggle').click(); await set.locator('.stencil-set-toggle').click();
   expect(await page.locator('script[src="vendor/stencils/aws.js"]').count()).toBe(1);
   const t0 = Date.now();
-  await set.locator('input[type="search"]').fill('Amazon RDS');
-  expect(Date.now() - t0).toBeLessThan(1000);
+  await page.locator('#data-nodes-search').fill('Amazon RDS');   // the one search box of Data Nodes & Icons (1.20)
+  await expect(page.locator('#data-nodes-search-status')).toContainText(/match/);
+  expect(Date.now() - t0).toBeLessThan(3000);
   const before = await page.evaluate(() => app.undoStack.length);
   await set.locator('.stencil-item:visible').first().click();
   const el = await page.evaluate(() => JSON.parse(JSON.stringify(app.state.elements.find((e) => e.id !== 'z'))));
@@ -119,9 +120,11 @@ test('the largest set (Azure) opens and filters quickly', async ({ page }) => {
   expect(Date.now() - t0).toBeLessThan(3000);
   expect(await set.locator('.stencil-item').count()).toBeGreaterThan(500);
   const t1 = Date.now();
-  await set.locator('input[type="search"]').fill('Key Vault');
+  await page.locator('#data-nodes-search').fill('Key Vault');
+  await expect(page.locator('#data-nodes-search-status')).toContainText(/match/);
   await expect(set.locator('.stencil-item:visible').first()).toBeVisible();
-  expect(Date.now() - t1).toBeLessThan(1000);
+  for (const s of await set.locator('.stencil-item:visible').evaluateAll((els) => els.map((e) => e.dataset.search))) expect(s).toContain('key vault');
+  expect(Date.now() - t1).toBeLessThan(3000);   // includes loading the other visible sets on the first search
 });
 
 test('a placed cloud database icon gets database threats in the suggestion list', async ({ page }) => {
@@ -130,7 +133,8 @@ test('a placed cloud database icon gets database threats in the suggestion list'
   await page.evaluate(() => document.getElementById('collapseDataNodes').classList.add('show'));
   const set = page.locator('[data-stencil-set="aws"]');
   await set.locator('.stencil-set-toggle').click();
-  await set.locator('input[type="search"]').fill('Amazon RDS');
+  await page.locator('#data-nodes-search').fill('Amazon RDS');
+  await expect(page.locator('#data-nodes-search-status')).toContainText(/match/);
   await set.locator('.stencil-item:visible').first().click();
   await page.click('button[data-bs-target="#tab-panel-suggest"]');
   await expect(page.locator('#suggest-subtype-hint')).toContainText(/database/i);

@@ -146,6 +146,10 @@ function attributeContextModel() {
     s.elements.push({ id: 'el-at-step2', type: 'at_step', name: INJ[1], x: 4000, y: 3000, width: INJ[3], height: 80, atTactic: INJ[2], atTechnique: INJ[1], fcFillColor: INJ[3], fcStrokeColor: INJ[1], fcStrokeWidth: INJ[3] });
     s.elements.push({ id: 'el-at-cond2', type: 'at_condition', name: INJ[0], x: 4300, y: 3000, width: 180, height: 70, atOutcome: INJ[1] });
     s.elements.push({ id: 'el-at-and2', type: 'at_and', name: INJ[2], x: 4600, y: 3000, width: 90, height: 80 });
+    // 1.20 node display: icon-only and circle-badge components with hostile colours, icon and display values.
+    s.elements.push({ id: 'el-disp-icon', type: 'process', name: INJ[1], x: 5000, y: 3000, width: 100, height: 80, display: 'icon', icon: INJ[1], iconColor: INJ[3], secProps: {} });
+    s.elements.push({ id: 'el-disp-badge', type: 'interactor', name: INJ[0], x: 5200, y: 3000, width: 96, height: 100, display: 'badge', badgeFill: INJ[3], badgeStroke: INJ[1], iconColor: INJ[2], icon: INJ[3], secProps: { isCrownJewel: 'true' } });
+    s.elements.push({ id: 'el-disp-bad', type: 'datastore', name: INJ[2], x: 5400, y: 3000, width: 96, height: 100, display: INJ[1], badgeFill: 'constructor', secProps: {} });
     s.elements.push({ id: 'el-table2', type: 'table', name: INJ[1], x: 4000, y: 3000, width: 400, height: 160, headerRow: true, headerCol: true, theme: INJ[3], cells: [[INJ[0], INJ[1]], [INJ[2], INJ[3]]] });
     s.elements.push({ id: 'el-vlanes2', type: 'vlanes', name: INJ[2], x: 4000, y: 3400, width: INJ[3], height: 300, lanes: [INJ[0], INJ[1], INJ[2]], theme: INJ[1] });
     s.elements.push({ id: 'el-frame2', type: 'group_frame', name: INJ[1], x: 4600, y: 3400, width: 300, height: 200, theme: INJ[3] });
