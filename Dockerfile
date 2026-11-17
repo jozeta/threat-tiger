@@ -11,6 +11,7 @@ FROM nginxinc/nginx-unprivileged:1.30.5-alpine@sha256:56b8272e43a0525f67aed68d1e
 COPY --chown=root:root deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --chown=root:root threat-tiger.html threat_templates.json demo.json favicon.ico Threat_tigerS.png Threat_tiger_840.webp /usr/share/nginx/html/
 COPY --chown=root:root vendor/ /usr/share/nginx/html/vendor/
+COPY --chown=root:root docs/help/ /usr/share/nginx/html/docs/help/
 
 EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD wget -q -O /dev/null http://127.0.0.1:8080/threat-tiger.html || exit 1

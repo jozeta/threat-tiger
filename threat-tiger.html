@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-rf01bKsPep79nGV1E31rztvzlh3aoHJpBxPLWmsYUbY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-0NBY7+LUx5BvhhX+7a1qf9+hU/ITak6iGDFvz4MHnhY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1777,6 +1777,158 @@
         @media (pointer: coarse) { .session-meta-toggle { min-height: 44px; } }
         @media print { #view-profile-dropdown { display: none !important; } }
 
+        /* ── Help guide (setupHelpGuide) ─────────────────────────────────────────────────── */
+        #modal-help-guide .modal-dialog { max-width: min(1240px, calc(100vw - 32px)); }
+        #modal-help-guide .modal-content { height: calc(100vh - 3.5rem); }
+        #modal-help-guide .modal-header { gap: 12px; }
+        #modal-help-guide .modal-body { padding: 0; overflow: hidden; display: flex; min-height: 0; }
+        .tt-help {
+            --hf-ink: #1f2937; --hf-muted: #6b7280; --hf-line: #cbd5e1; --hf-paper: #ffffff; --hf-soft: #f1f5f9;
+            --hf-blue: #0d6efd; --hf-blue-soft: #e7f1ff; --hf-amber: #b45309; --hf-amber-soft: #fff4d6;
+            --hf-green: #198754; --hf-green-soft: #e3f4ea; --hf-red: #b70918; --hf-red-soft: #fde8ea;
+            --hf-cyan: #0a7d94; --hf-cyan-soft: #e0f4f8; --hf-violet: #6f42c1; --hf-violet-soft: #efe8fb;
+            --hf-accent: #f08c00;
+            color: var(--hf-ink); background: var(--hf-paper);
+            display: grid; grid-template-columns: 272px minmax(0, 1fr); width: 100%; min-height: 0; flex: 1 1 auto;
+        }
+        html[data-bs-theme="dark"] .tt-help {
+            --hf-ink: #e5e7eb; --hf-muted: #9ca3af; --hf-line: #475569; --hf-paper: #111827; --hf-soft: #1f2937;
+            --hf-blue: #6ea8fe; --hf-blue-soft: #10294d; --hf-amber: #fbbf24; --hf-amber-soft: #3b2a06;
+            --hf-green: #75b798; --hf-green-soft: #0f2e1f; --hf-red: #f28b95; --hf-red-soft: #3d1016;
+            --hf-cyan: #6edff6; --hf-cyan-soft: #08343d; --hf-violet: #c29ffa; --hf-violet-soft: #2a1a47;
+        }
+        /* Table of contents */
+        .tt-help-toc { border-right: 1px solid var(--hf-line); background: var(--hf-soft); overflow-y: auto; min-height: 0; padding: 14px 10px 24px; }
+        .tt-help-search { position: relative; margin-bottom: 10px; }
+        .tt-help-search .bi-search { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--hf-muted); pointer-events: none; }
+        .tt-help-search input { padding-left: 32px; min-height: 38px; }
+        .tt-help-search-status:empty { display: none; }
+        .tt-help-search-status { font-size: 12px; color: var(--hf-muted); min-height: 18px; margin: -4px 4px 6px; }
+        .tt-help-toc-group { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--hf-muted); margin: 14px 8px 4px; }
+        .tt-help-toc ul { list-style: none; margin: 0; padding: 0; }
+        .tt-help-toc a { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 6px; color: var(--hf-ink); text-decoration: none; font-size: 13.5px; line-height: 1.3; min-height: 32px; }
+        .tt-help-toc a .bi { color: var(--hf-muted); width: 16px; text-align: center; flex-shrink: 0; }
+        .tt-help-toc a:hover { background: var(--hf-paper); }
+        .tt-help-toc a[aria-current="true"] { background: var(--hf-paper); color: var(--hf-blue); font-weight: 600; box-shadow: inset 3px 0 0 var(--hf-accent); }
+        .tt-help-toc a[aria-current="true"] .bi { color: var(--hf-accent); }
+        .tt-help-toc a:focus-visible { outline: 2px solid var(--hf-blue); outline-offset: 1px; }
+        .tt-help-mobile-nav { display: none; }
+        /* Content */
+        .tt-help-content { position: relative; overflow-y: auto; min-height: 0; padding: 0 40px 64px; font-size: 15px; line-height: 1.62; }
+        .tt-help-content > .tt-help-inner { max-width: 820px; margin: 0 auto; }
+        .tt-help-section { padding-top: 30px; scroll-margin-top: 8px; }
+        .tt-help-section + .tt-help-section { border-top: 1px solid var(--hf-line); margin-top: 26px; }
+        .tt-help-section[hidden] { display: none !important; }
+        .tt-help-kicker { font-size: 11.5px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--hf-accent); margin-bottom: 2px; }
+        .tt-help-section > h3 { font-size: 1.45rem; font-weight: 750; margin: 0 0 10px; display: flex; align-items: center; gap: 10px; outline: none; }
+        .tt-help-section > h3 .bi { color: var(--hf-blue); font-size: 1.2rem; }
+        .tt-help-section h4 { font-size: 1.02rem; font-weight: 700; margin: 22px 0 6px; }
+        .tt-help-section p, .tt-help-section li { color: var(--hf-ink); }
+        .tt-help-section ul, .tt-help-section ol { padding-left: 1.3rem; margin-bottom: 12px; }
+        .tt-help-section li { margin-bottom: 4px; }
+        .tt-help-lead { font-size: 1.05rem; color: var(--hf-muted) !important; margin-bottom: 14px; }
+        .tt-help-content code { color: var(--hf-red); background: var(--hf-soft); padding: 1px 5px; border-radius: 4px; font-size: .86em; }
+        .tt-help-content pre { background: var(--hf-soft); border: 1px solid var(--hf-line); border-radius: 8px; padding: 10px 12px; font-size: 12.5px; color: var(--hf-ink); white-space: pre; overflow-x: auto; }
+        .tt-help-content kbd { background: var(--hf-paper); color: var(--hf-ink); border: 1px solid var(--hf-line); border-bottom-width: 2px; border-radius: 5px; padding: 1px 6px; font-size: .82em; font-family: inherit; font-weight: 600; white-space: nowrap; }
+        .tt-help-ui { font-weight: 650; white-space: nowrap; }
+        .tt-help-content mark { background: #ffe066; color: #212529; padding: 0 1px; border-radius: 2px; }
+        /* Callouts */
+        .tt-help-note { border: 1px solid var(--hf-line); border-left: 4px solid var(--hf-blue); background: var(--hf-blue-soft); border-radius: 8px; padding: 10px 14px; margin: 14px 0; font-size: 14px; }
+        .tt-help-note.tip { border-left-color: var(--hf-green); background: var(--hf-green-soft); }
+        .tt-help-note.warn { border-left-color: var(--hf-amber); background: var(--hf-amber-soft); }
+        .tt-help-note > strong:first-child { display: block; margin-bottom: 2px; }
+        .tt-help-note p:last-child, .tt-help-note ul:last-child { margin-bottom: 0; }
+        /* Numbered steps */
+        .tt-help-steps { list-style: none; counter-reset: hstep; padding-left: 0 !important; }
+        .tt-help-steps > li { counter-increment: hstep; position: relative; padding: 2px 0 10px 44px; }
+        .tt-help-steps > li::before { content: counter(hstep); position: absolute; left: 0; top: 0; width: 30px; height: 30px; border-radius: 50%; background: var(--hf-blue); color: #fff; font-weight: 700; font-size: 14px; display: flex; align-items: center; justify-content: center; }
+        html[data-bs-theme="dark"] .tt-help-steps > li::before { color: #111827; }
+        /* Figures */
+        .tt-help-fig { margin: 18px 0; }
+        .tt-help-fig > img, .tt-help-fig > svg { display: block; max-width: 100%; height: auto; border-radius: 10px; }
+        .tt-help-fig > img { border: 1px solid var(--hf-line); box-shadow: 0 6px 20px rgba(15, 23, 42, .10); background: #fff; }
+        .tt-help-fig > svg { width: 100%; background: var(--hf-soft); border: 1px solid var(--hf-line); }
+        .tt-help-fig figcaption { font-size: 13px; color: var(--hf-muted); margin-top: 8px; line-height: 1.45; }
+        .tt-help-fig figcaption b { color: var(--hf-ink); }
+        .tt-help-fig.narrow > img { max-width: 320px; }
+        .tt-help-fig.center > img, .tt-help-fig.center > svg { margin: 0 auto; }
+        .tt-help-fig[hidden] { display: none; }
+        .tt-help-split { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 26px; align-items: start; }
+        .tt-help-split > .tt-help-fig { margin-top: 4px; }
+        .tt-help-pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; }
+        .tt-help-split > *, .tt-help-pair > * { min-width: 0; }
+        /* Inline SVG illustrations: theme-aware classes */
+        .tt-help svg .f-paper { fill: var(--hf-paper); } .tt-help svg .f-soft { fill: var(--hf-soft); } .tt-help svg .f-none { fill: none; }
+        .tt-help svg .f-ink { fill: var(--hf-ink); } .tt-help svg .f-muted { fill: var(--hf-muted); } .tt-help svg .f-line { fill: var(--hf-line); }
+        .tt-help svg .f-blue { fill: var(--hf-blue); } .tt-help svg .f-blue-soft { fill: var(--hf-blue-soft); }
+        .tt-help svg .f-amber { fill: var(--hf-amber); } .tt-help svg .f-amber-soft { fill: var(--hf-amber-soft); }
+        .tt-help svg .f-green { fill: var(--hf-green); } .tt-help svg .f-green-soft { fill: var(--hf-green-soft); }
+        .tt-help svg .f-red { fill: var(--hf-red); } .tt-help svg .f-red-soft { fill: var(--hf-red-soft); }
+        .tt-help svg .f-cyan { fill: var(--hf-cyan); } .tt-help svg .f-cyan-soft { fill: var(--hf-cyan-soft); }
+        .tt-help svg .f-violet { fill: var(--hf-violet); } .tt-help svg .f-violet-soft { fill: var(--hf-violet-soft); }
+        .tt-help svg .f-accent { fill: var(--hf-accent); }
+        .tt-help svg .s-ink { stroke: var(--hf-ink); } .tt-help svg .s-muted { stroke: var(--hf-muted); } .tt-help svg .s-line { stroke: var(--hf-line); }
+        .tt-help svg .s-blue { stroke: var(--hf-blue); } .tt-help svg .s-amber { stroke: var(--hf-amber); } .tt-help svg .s-green { stroke: var(--hf-green); }
+        .tt-help svg .s-red { stroke: var(--hf-red); } .tt-help svg .s-cyan { stroke: var(--hf-cyan); } .tt-help svg .s-violet { stroke: var(--hf-violet); }
+        .tt-help svg .s-accent { stroke: var(--hf-accent); } .tt-help svg .s-paper { stroke: var(--hf-paper); }
+        .tt-help svg .dash { stroke-dasharray: 6 4; } .tt-help svg .dot { stroke-dasharray: 2 3; }
+        .tt-help svg text { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; font-size: 12px; fill: var(--hf-ink); }
+        .tt-help svg text.sm { font-size: 10.5px; } .tt-help svg text.lg { font-size: 14px; } .tt-help svg text.b { font-weight: 700; }
+        .tt-help svg text.m { fill: var(--hf-muted); } .tt-help svg text.w { fill: #fff; } .tt-help svg text.c { text-anchor: middle; }
+        .tt-help svg text.blue { fill: var(--hf-blue); } .tt-help svg text.red { fill: var(--hf-red); } .tt-help svg text.green { fill: var(--hf-green); } .tt-help svg text.amber { fill: var(--hf-amber); }
+        html[data-bs-theme="dark"] .tt-help svg text.w { fill: #111827; }
+        /* Reference tables */
+        .tt-help-table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 10px 0 16px; }
+        .tt-help-table th, .tt-help-table td { border-bottom: 1px solid var(--hf-line); padding: 7px 8px; vertical-align: top; text-align: left; }
+        .tt-help-table thead th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--hf-muted); border-bottom-width: 2px; }
+        .tt-help-table td:first-child { white-space: nowrap; font-weight: 600; }
+        .tt-help-table .tt-help-thumb { display: inline-flex; align-items: center; justify-content: center; width: 30px; min-height: 22px; margin-right: 8px; vertical-align: middle; }
+        .tt-help-table .tt-help-thumb > * { margin: 0 !important; }
+        .tt-help-table.compact td:first-child { white-space: nowrap; }
+        .tt-help-wrap { overflow-x: auto; }
+        /* Cards */
+        .tt-help-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 14px 0; }
+        .tt-help-card { border: 1px solid var(--hf-line); border-radius: 10px; padding: 12px 14px; background: var(--hf-paper); font-size: 14px; }
+        .tt-help-card > .bi { font-size: 1.3rem; color: var(--hf-blue); }
+        .tt-help-card h5 { font-size: 14.5px; font-weight: 700; margin: 4px 0; }
+        .tt-help-card p { margin: 0; color: var(--hf-muted) !important; font-size: 13.5px; }
+        a.tt-help-card, button.tt-help-card { text-align: left; color: inherit; text-decoration: none; display: block; width: 100%; cursor: pointer; }
+        a.tt-help-card:hover, button.tt-help-card:hover { border-color: var(--hf-blue); box-shadow: 0 4px 14px rgba(13, 110, 253, .12); }
+        .tt-help-hero { margin: 24px 0 18px; border-radius: 14px; overflow: hidden; background: linear-gradient(120deg, #fff8eb 0%, #ffe8c2 100%); border: 1px solid #f5d29a; color: #1f2937; padding: 18px 24px; display: flex; align-items: center; gap: 22px; }
+        html[data-bs-theme="dark"] .tt-help-hero { background: linear-gradient(120deg, #2a1d08 0%, #3b2306 100%); border-color: #5c3b0b; color: #f3f4f6; }
+        .tt-help-hero img { width: 210px; height: auto; flex-shrink: 0; }
+        .tt-help-hero h3 { font-size: 1.6rem; font-weight: 800; margin: 0 0 4px; color: inherit; }
+        .tt-help-hero p { margin: 0; color: inherit !important; opacity: .8; }
+        .tt-help-downloads { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 14px; }
+        .tt-help-downloads .btn { min-height: 44px; display: inline-flex; align-items: center; }
+        .tt-help-empty { padding: 40px 0; text-align: center; color: var(--hf-muted); }
+        /* Small "?" help links next to complex settings */
+        .tt-help-link { display: inline-flex; align-items: center; justify-content: center; min-width: 24px; min-height: 24px; padding: 0 2px; margin-left: 4px; border: 0; background: none; color: #6c757d; border-radius: 50%; vertical-align: middle; line-height: 1; font-size: 14px; }
+        .tt-help-link:hover, .tt-help-link:focus-visible { color: #0d6efd; }
+        @media (pointer: coarse) { .tt-help-link { min-width: 44px; min-height: 44px; } }
+        .dropdown-item .tt-menu-kbd { margin-left: auto; padding-left: 12px; font-size: 11px; color: #6c757d; }
+        @media (max-width: 991.98px) {
+            #modal-help-guide .modal-dialog { max-width: none; }
+            #modal-help-guide .modal-content { height: 100%; }
+            .tt-help { grid-template-columns: 1fr; grid-template-rows: auto minmax(0, 1fr); }
+            .tt-help-toc { display: none; }
+            .tt-help-mobile-nav { display: flex; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--hf-line); background: var(--hf-soft); flex-wrap: wrap; }
+            .tt-help-mobile-nav .tt-help-search { flex: 1 1 180px; margin: 0; }
+            .tt-help-mobile-nav select { flex: 1 1 180px; min-height: 44px; }
+            .tt-help-mobile-nav input { min-height: 44px; }
+            .tt-help-mobile-nav .tt-help-search-status { flex-basis: 100%; margin: 0 2px; }
+            .tt-help-content { padding: 0 16px 48px; font-size: 15px; }
+            .tt-help-split, .tt-help-pair { grid-template-columns: 1fr; }
+            .tt-help-fig.narrow > img { max-width: 100%; }
+            .tt-help-hero { flex-direction: column; align-items: flex-start; padding: 18px; }
+            .tt-help-table td:first-child { white-space: normal; }
+        }
+        @media (max-width: 575.98px) {
+            .tt-help-table { font-size: 13px; }
+            .tt-help-section > h3 { font-size: 1.25rem; }
+        }
+        @media print { #modal-help-guide { display: none !important; } }
+        /* ── end help guide ── */
     /* Respect the system's "Reduce motion" setting: animations and transitions become instant. */
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
@@ -1882,7 +2034,8 @@
                     </li>
                     <li><hr class="dropdown-divider"></li>
                     <li><button class="dropdown-item" type="button" id="btn-settings"><i class="bi bi-gear me-2"></i>Settings…</button></li>
-                    <li><button class="dropdown-item" type="button" id="btn-help-trigger"><i class="bi bi-question-circle me-2"></i>Help &amp; License</button></li>
+                    <li><button class="dropdown-item d-flex align-items-center" type="button" id="btn-help-guide" aria-keyshortcuts="F1"><i class="bi bi-question-circle me-2" aria-hidden="true"></i>Help<span class="tt-menu-kbd" aria-hidden="true">F1</span></button></li>
+                    <li><button class="dropdown-item" type="button" id="btn-help-trigger"><i class="bi bi-info-circle me-2" aria-hidden="true"></i>About &amp; License</button></li>
                     <li><button class="dropdown-item text-danger" type="button" id="btn-reset-session"><i class="bi bi-trash me-2"></i>Reset canvas…</button></li>
                     <li><button class="dropdown-item text-danger" type="button" id="btn-clear-local-data" title="Remove every model, snapshot, template change and preference stored by Threat Tiger in this browser"><i class="bi bi-eraser me-2"></i>Clear all data in this browser…</button></li>
                 </ul>
@@ -3525,7 +3678,7 @@
                                 <div class="form-check mb-1" id="box-props-fc-3d">
                                     <input class="form-check-input" type="checkbox" id="props-fc-3d">
                                     <label class="form-check-label extra-small text-dark fw-bold" for="props-fc-3d"
-                                        title="Draw the shape as a solid; in the isometric views it stands up from the ground">3D</label>
+                                        title="Draw the shape as a solid; in the isometric views it stands up from the ground">3D</label><button type="button" class="tt-help-link" data-help-open="isometric-3d" aria-label="Help: 3D shapes" title="Help: 3D shapes"><i class="bi bi-question-circle" aria-hidden="true"></i></button>
                                 </div>
                                 <div id="box-props-fc-3d-settings">
                                     <div class="mb-1" id="box-props-fc-depth3d">
@@ -3616,7 +3769,7 @@
                             <div id="box-props-live-status" class="border rounded p-2 bg-light d-none">
                                 <div class="form-check form-switch mb-0">
                                     <input class="form-check-input" type="checkbox" role="switch" id="props-live-enabled" aria-controls="props-live-details">
-                                    <label class="form-check-label small fw-bold text-dark" for="props-live-enabled"><i class="bi bi-activity me-1 text-primary" aria-hidden="true"></i>Status check</label>
+                                    <label class="form-check-label small fw-bold text-dark" for="props-live-enabled"><i class="bi bi-activity me-1 text-primary" aria-hidden="true"></i>Status check</label><button type="button" class="tt-help-link" data-help-open="live-status" aria-label="Help: Live status" title="Help: Live status"><i class="bi bi-question-circle" aria-hidden="true"></i></button>
                                 </div>
                                 <div id="props-live-details" class="d-none mt-2">
                                     <div class="mb-2">
@@ -4157,7 +4310,7 @@
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-dark text-light">
-                    <h5 class="modal-title fs-6 fw-bold" id="modal-legend-title"><i class="bi bi-card-heading me-2" aria-hidden="true"></i>Title block &amp; legend</h5>
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-legend-title"><i class="bi bi-card-heading me-2" aria-hidden="true"></i>Title block &amp; legend<button type="button" class="tt-help-link text-white-50" data-help-open="legend" aria-label="Help: Title block and legend" title="Help: Title block and legend"><i class="bi bi-question-circle" aria-hidden="true"></i></button></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-3">
@@ -4234,14 +4387,14 @@
                 <div class="modal-body p-3">
                     <!-- Title block & legend: opens its own dialog (openLegendDialog) -->
                     <section class="mb-3" aria-labelledby="settings-legend-title">
-                        <h6 class="fw-bold mb-1" id="settings-legend-title"><i class="bi bi-card-heading me-1" aria-hidden="true"></i>Title block &amp; legend</h6>
+                        <h6 class="fw-bold mb-1" id="settings-legend-title"><i class="bi bi-card-heading me-1" aria-hidden="true"></i>Title block &amp; legend<button type="button" class="tt-help-link" data-help-open="legend" aria-label="Help: Title block and legend" title="Help: Title block and legend"><i class="bi bi-question-circle" aria-hidden="true"></i></button></h6>
                         <p class="small text-muted mb-2">Choose what the legend lists, its labels, title, columns and position, and whether the title block is shown.</p>
                         <button type="button" class="btn btn-sm btn-outline-primary" id="btn-settings-legend"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Title block &amp; legend…</button>
                     </section>
                     <hr class="my-3">
                     <!-- View profiles editor (renderPaletteSettings) -->
                     <section id="settings-profiles" aria-labelledby="settings-profiles-title">
-                    <h6 class="fw-bold mb-1" id="settings-profiles-title"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Profiles</h6>
+                    <h6 class="fw-bold mb-1" id="settings-profiles-title"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Profiles<button type="button" class="tt-help-link" data-help-open="profiles" aria-label="Help: Profiles" title="Help: Profiles"><i class="bi bi-question-circle" aria-hidden="true"></i></button></h6>
                     <p class="small text-muted mb-2">A profile chooses which palette sections, icon sets, panels and tabs you see; pick one with the button left of ☰.
                         Profiles are kept in this browser only. Hiding something only tidies the screen: shapes already on the canvas stay as they are.</p>
                     <div class="row g-2 align-items-start mb-2">
@@ -4287,7 +4440,7 @@
                     <hr class="my-3">
                     <!-- Live status: sources, switch, interval, approvals (renderLiveSettings) -->
                     <section id="settings-live" class="mb-3" aria-labelledby="settings-live-title">
-                        <h6 class="fw-bold mb-1" id="settings-live-title"><i class="bi bi-activity me-1" aria-hidden="true"></i>Live status</h6>
+                        <h6 class="fw-bold mb-1" id="settings-live-title"><i class="bi bi-activity me-1" aria-hidden="true"></i>Live status<button type="button" class="tt-help-link" data-help-open="live-status" aria-label="Help: Live status" title="Help: Live status"><i class="bi bi-question-circle" aria-hidden="true"></i></button></h6>
                         <p class="small text-muted mb-2">Colour shapes and flows by live data: a Google Sheet, a CSV or JSON feed, or a check the browser runs itself
                             (web address, reachability, DNS). Turn on <em>Status check</em> in a shape's or flow's Properties to choose its rules.
                             Sources and rules are saved in the model; results stay in this tab. Nothing is contacted until you allow its host here.</p>
@@ -4376,7 +4529,7 @@
                     </section>
                     <!-- /Live status -->
                     <hr class="my-3">
-                    <h6 class="fw-bold mb-1"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Git sync (GitHub / GitLab)</h6>
+                    <h6 class="fw-bold mb-1"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Git sync (GitHub / GitLab)<button type="button" class="tt-help-link" data-help-open="git-sync" aria-label="Help: Git sync" title="Help: Git sync"><i class="bi bi-question-circle" aria-hidden="true"></i></button></h6>
                     <p class="small text-muted mb-2">Save this model to a file in a repository and load it from there with the sync button next to ☰.
                         Server, repository, branch and file are saved in the model and its exports, so a colleague only needs their own token.
                         The token stays in this browser, encrypted with your passphrase. Sync sends the model to the server you enter here.</p>
@@ -4480,56 +4633,20 @@
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-dark text-white py-3">
                     <h5 class="modal-title fw-bold fs-6 d-flex align-items-center" id="modal-help-title"><i
-                            class="bi bi-question-circle-fill text-primary me-2"></i>Help &amp; License <span class="badge bg-secondary ms-2 fw-normal">v<span data-app-version></span></span></h5>
+                            class="bi bi-info-circle-fill text-primary me-2"></i>About &amp; License <span class="badge bg-secondary ms-2 fw-normal">v<span data-app-version></span></span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
                         aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4 text-muted small" style="line-height: 1.6;">
                     <img src="Threat_tiger_840.webp" alt="Threat Tiger — Threat modeling with a bite" width="840" height="328" loading="lazy" class="d-block mx-auto mb-3" style="width: 100%; max-width: 640px; height: auto;">
-                    <h5 class="fw-bold text-dark mb-2"><i class="bi bi-sliders me-2 text-primary"></i>1. How Threat Tiger works</h5>
-                    <p class="mb-2">Threat modeling means looking at how a system is built and asking "what could go wrong?" before
-                        attackers do. In Threat Tiger you draw the system as a <strong>data-flow diagram</strong> — processes,
-                        data stores, external entities (users and outside systems) and the data flows between them — and mark
-                        <strong>trust boundaries</strong> where data moves between areas with different levels of trust, such as
-                        from the internet into your network.</p>
-                    <p class="mb-2">For each part of the diagram you then consider the six <strong>STRIDE</strong> threat
-                        categories. Each one is the opposite of a security property you want to keep:</p>
-                    <ul class="mb-3">
-                        <li><strong>Spoofing</strong> (authentication): someone pretends to be another user, service or device.</li>
-                        <li><strong>Tampering</strong> (integrity): data, code or configuration is changed by someone who should not change it.</li>
-                        <li><strong>Repudiation</strong> (accountability): someone can deny having done something because there is no reliable record.</li>
-                        <li><strong>Information Disclosure</strong> (confidentiality): data is exposed to people or systems that should not see it.</li>
-                        <li><strong>Denial of Service</strong> (availability): the system is slowed down or stopped for legitimate users.</li>
-                        <li><strong>Elevation of Privilege</strong> (authorization): someone gains more rights than they were given.</li>
-                    </ul>
-                    <p class="mb-4">Select a component and open <strong>Threat Templates</strong> for ideas. Set the security
-                        switches in <strong>Properties</strong> (for example "encrypted" or "stores PII") and draw trust
-                        boundaries: Threat Tiger then suggests threats that follow from your design. The icon and name of a component
-                        also count: a component drawn as a GPU server, a .env file or a WordPress site gets threats for that kind
-                        of component. Record the threats that apply in the register, rate them by likelihood and impact, and track
-                        how they are mitigated. The <strong>Insights</strong> tab lists every open suggestion (filter by component,
-                        STRIDE category or reason) and shows what is still uncovered.</p>
-                    <h6 class="fw-bold text-dark mb-2"><i class="bi bi-diagram-3 me-2 text-primary"></i>Flowcharts and swimlanes</h6>
-                    <ul class="mb-4">
-                        <li><strong>Quick add:</strong> hover a connection point of a flowchart shape to see a preview of the next step; click to add it, already connected. Drag from the point to connect to an existing node instead.</li>
-                        <li><strong>Change type:</strong> use <strong>Type</strong> in Properties to turn any node into another kind (process, data store, decision, …). Name, flows and threats stay.</li>
-                        <li><strong>Swimlanes:</strong> drop a node into a cell (it is highlighted while you drag); cells grow to fit their nodes. Drag a column or row border to resize it, double-click it for the automatic size, and pick a colour in Properties.</li>
-                        <li><strong>Align and distribute:</strong> select two or more shapes to line them up or space them evenly from the small toolbar above the canvas controls.</li>
-                        <li><strong>Minimap:</strong> turn it on from ☰ menu → <strong>View</strong> → <strong>Show minimap</strong>. It shows the whole diagram in the top-right corner of the canvas; click or drag in it to move the view.</li>
-                        <li><strong>Format painter:</strong> select a shape, click the brush, then click another shape of the same kind to copy its colours (not its name, type or security settings). Double-click the brush to paint several; Esc stops.</li>
-                        <li><strong>Line jumps:</strong> where two flows cross, the later one hops over the other; switch it off in ☰ menu → <strong>View</strong>. <strong>Bend points:</strong> click a selected flow to add one, drag to move, click to remove, or use <strong>Clear bend points</strong> in Properties.</li>
-                        <li><strong>Layers:</strong> in the <strong>Layers</strong> tab of the right panel, add layers, click one to make it active (new shapes go there), double-click to rename, hide or lock it, or move the selection to it. Hidden layers still count in the threat analysis.</li>
-                        <li><strong>View:</strong> ☰ menu → <strong>View</strong> shows or hides the minimap, line jumps, each panel (left, right, bottom) and each panel tab.</li>
-                        <li><strong>Icon sets:</strong> devices and security symbols, security and DevOps brands (pentest, incident response, threat intel, DevSecOps, identity), tech and OS logos (Linux, Windows, Apple, languages, tools), and official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons in the palette under <strong>Data Nodes &amp; Icons</strong> (each set loads when you open it; search by name). A placed icon shows as the icon with its name underneath and is a normal component (data store, process, …), so threat suggestions work. Hide sets you don't use in ☰ → <strong>View</strong>.</li>
-                        <li><strong>Attack paths:</strong> Insights → <strong>Attack paths</strong> lists routes from entry points (external entities, and components outside every trust zone) to crown jewels, ranked by risk: unencrypted or unauthenticated hops, open threats on the way, and shorter routes score higher. Pick a start or target, and click a path to highlight it on the canvas.</li>
-                        <li><strong>Pages:</strong> the tabs at the top-left of the canvas split a big model over pages (one threat register and one set of insights for all of them). <strong>+</strong> adds a page, double-click (or F2) renames, and the arrow keys move between pages; while renaming, the <strong>×</strong> in the tab's corner deletes the page with its shapes (after asking; undo brings it back), and <strong>Move selection to…</strong> moves shapes to another page. Give a shape a <strong>Detail page</strong> in Properties to get a ↗ badge that opens it; <strong>◀</strong> goes back.</li>
-                        <li><strong>Mermaid:</strong> ☰ menu → <strong>Import Mermaid flowchart…</strong> turns a <code>flowchart</code> into shapes, flows and trust zones (from subgraphs).</li>
-                    </ul>
-
+                    <p class="mb-2 text-dark">Threat Tiger is an offline-first threat-modelling tool: draw your system as a data-flow diagram, mark the trust
+                        boundaries, and get concrete threats (STRIDE) from a curated library, ranked by what your model shows. Everything stays in this browser.</p>
+                    <p class="mb-3">New here? The <strong>Help guide</strong> walks through every part of the app, with pictures. Open it any time from ☰ → Help or with <kbd>F1</kbd>.</p>
+                    <p class="mb-4"><button type="button" class="btn btn-sm btn-primary" id="btn-about-open-help"><i class="bi bi-book me-1" aria-hidden="true"></i>Open the Help guide</button></p>
                     <p class="small text-muted mb-4"><strong>Third-party icons:</strong> the icon sets come from AWS, Microsoft (Azure, Entra, Fluent UI), Google Cloud, the Kubernetes project, Devicon and Simple Icons. They are not covered by Threat Tiger's MIT licence and are included under their owners' terms (Fluent UI and Devicon: MIT; Simple Icons: CC0; Kubernetes: Apache-2.0 or CC-BY-4.0; cloud providers: for architecture diagrams). Brand logos are trademarks of their owners. Details in <code>vendor/stencils/README.md</code>.</p>
 
                     <h5 class="fw-bold text-dark mb-2"><i
-                            class="bi bi-file-earmark-text-fill me-2 text-secondary"></i>2. Open Source License &amp;
+                            class="bi bi-file-earmark-text-fill me-2 text-secondary"></i>Open Source License &amp;
                         Feedback</h5>
                     <div class="bg-light p-3 border rounded text-dark mb-0 font-monospace extra-small"
                         style="font-size:11.5px; background-color:#fdfdfd !important; line-height: 1.45;">
@@ -4564,6 +4681,1174 @@
         </div>
     </div>
 
+    <!-- Help guide (setupHelpGuide): a static, trusted manual. No model data is ever written into it. -->
+    <div class="modal fade" id="modal-help-guide" tabindex="-1" aria-labelledby="modal-help-guide-title" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-fullscreen-lg-down modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-white py-2">
+                    <h5 class="modal-title fw-bold fs-6 d-flex align-items-center" id="modal-help-guide-title"><img src="Threat_tigerS.png" alt="" width="42" height="24" class="me-2">Help guide <span class="badge bg-secondary ms-2 fw-normal">v<span data-app-version></span></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="tt-help">
+                        <div class="tt-help-mobile-nav">
+                            <label class="visually-hidden" for="help-mobile-select">Go to a section</label>
+                            <select class="form-select form-select-sm" id="help-mobile-select"></select>
+                            <div class="tt-help-search">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                                <input type="search" class="form-control form-control-sm tt-help-search-input" id="help-search-mobile" placeholder="Search the guide" aria-label="Search the guide" autocomplete="off" spellcheck="false">
+                            </div>
+                            <div class="tt-help-search-status" aria-live="polite"></div>
+                        </div>
+                        <nav class="tt-help-toc" aria-label="Help contents">
+                            <div class="tt-help-search">
+                                <i class="bi bi-search" aria-hidden="true"></i>
+                                <input type="search" class="form-control form-control-sm tt-help-search-input" id="help-search" placeholder="Search the guide" aria-label="Search the guide" autocomplete="off" spellcheck="false">
+                            </div>
+                            <div class="tt-help-search-status" id="help-search-status" aria-live="polite"></div>
+                            <div class="tt-help-toc-group">Start here</div>
+                            <ul>
+                                <li><a href="#help/getting-started" data-help-toc="getting-started"><i class="bi bi-rocket-takeoff" aria-hidden="true"></i>Getting started</a></li>
+                                <li><a href="#help/concepts" data-help-toc="concepts"><i class="bi bi-lightbulb" aria-hidden="true"></i>Threat modelling in a nutshell</a></li>
+                                <li><a href="#help/screen" data-help-toc="screen"><i class="bi bi-window" aria-hidden="true"></i>The screen</a></li>
+                                <li><a href="#help/menu" data-help-toc="menu"><i class="bi bi-list" aria-hidden="true"></i>The ☰ menu</a></li>
+                            </ul>
+                            <div class="tt-help-toc-group">The palette</div>
+                            <ul>
+                                <li><a href="#help/palette-threat" data-help-toc="palette-threat"><i class="bi bi-shield-exclamation" aria-hidden="true"></i>Threat modelling shapes</a></li>
+                                <li><a href="#help/palette-attack" data-help-toc="palette-attack"><i class="bi bi-diagram-2" aria-hidden="true"></i>Attack paths &amp; trees</a></li>
+                                <li><a href="#help/palette-text" data-help-toc="palette-text"><i class="bi bi-fonts" aria-hidden="true"></i>Text items</a></li>
+                                <li><a href="#help/palette-data-nodes" data-help-toc="palette-data-nodes"><i class="bi bi-hdd-network" aria-hidden="true"></i>Data nodes &amp; icons</a></li>
+                                <li><a href="#help/palette-flowchart" data-help-toc="palette-flowchart"><i class="bi bi-bezier2" aria-hidden="true"></i>Flowchart items &amp; 3D</a></li>
+                                <li><a href="#help/palette-diagrams" data-help-toc="palette-diagrams"><i class="bi bi-diagram-3" aria-hidden="true"></i>C4, UML, BPMN &amp; ERD</a></li>
+                            </ul>
+                            <div class="tt-help-toc-group">Drawing</div>
+                            <ul>
+                                <li><a href="#help/canvas" data-help-toc="canvas"><i class="bi bi-cursor" aria-hidden="true"></i>Working on the canvas</a></li>
+                                <li><a href="#help/flows" data-help-toc="flows"><i class="bi bi-arrow-left-right" aria-hidden="true"></i>Data flows</a></li>
+                                <li><a href="#help/properties" data-help-toc="properties"><i class="bi bi-sliders2" aria-hidden="true"></i>Properties</a></li>
+                                <li><a href="#help/pages-layers" data-help-toc="pages-layers"><i class="bi bi-layers" aria-hidden="true"></i>Pages &amp; layers</a></li>
+                                <li><a href="#help/isometric-3d" data-help-toc="isometric-3d"><i class="bi bi-box" aria-hidden="true"></i>Isometric views &amp; 3D</a></li>
+                            </ul>
+                            <div class="tt-help-toc-group">Analysing</div>
+                            <ul>
+                                <li><a href="#help/threats" data-help-toc="threats"><i class="bi bi-bug" aria-hidden="true"></i>Threats &amp; templates</a></li>
+                                <li><a href="#help/register" data-help-toc="register"><i class="bi bi-table" aria-hidden="true"></i>Threat register</a></li>
+                                <li><a href="#help/mitigations" data-help-toc="mitigations"><i class="bi bi-shield-check" aria-hidden="true"></i>Mitigations</a></li>
+                                <li><a href="#help/insights" data-help-toc="insights"><i class="bi bi-graph-up" aria-hidden="true"></i>Insights &amp; attack paths</a></li>
+                            </ul>
+                            <div class="tt-help-toc-group">Presenting</div>
+                            <ul>
+                                <li><a href="#help/review-mode" data-help-toc="review-mode"><i class="bi bi-lock" aria-hidden="true"></i>Review mode</a></li>
+                                <li><a href="#help/legend" data-help-toc="legend"><i class="bi bi-card-heading" aria-hidden="true"></i>Title block &amp; legend</a></li>
+                                <li><a href="#help/profiles" data-help-toc="profiles"><i class="bi bi-person-gear" aria-hidden="true"></i>Profiles</a></li>
+                                <li><a href="#help/settings" data-help-toc="settings"><i class="bi bi-gear" aria-hidden="true"></i>Settings</a></li>
+                            </ul>
+                            <div class="tt-help-toc-group">Live data</div>
+                            <ul>
+                                <li><a href="#help/live-status" data-help-toc="live-status"><i class="bi bi-activity" aria-hidden="true"></i>Live status</a></li>
+                                <li><a href="#help/status-file" data-help-toc="status-file"><i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>Build from status file</a></li>
+                                <li><a href="#help/traffic" data-help-toc="traffic"><i class="bi bi-three-dots" aria-hidden="true"></i>Traffic animation</a></li>
+                            </ul>
+                            <div class="tt-help-toc-group">Files &amp; sync</div>
+                            <ul>
+                                <li><a href="#help/import-export" data-help-toc="import-export"><i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>Import &amp; export</a></li>
+                                <li><a href="#help/git-sync" data-help-toc="git-sync"><i class="bi bi-git" aria-hidden="true"></i>Git sync</a></li>
+                                <li><a href="#help/history" data-help-toc="history"><i class="bi bi-clock-history" aria-hidden="true"></i>History &amp; clearing data</a></li>
+                            </ul>
+                            <div class="tt-help-toc-group">Reference</div>
+                            <ul>
+                                <li><a href="#help/shortcuts" data-help-toc="shortcuts"><i class="bi bi-keyboard" aria-hidden="true"></i>Keyboard shortcuts</a></li>
+                                <li><a href="#help/privacy" data-help-toc="privacy"><i class="bi bi-incognito" aria-hidden="true"></i>Privacy &amp; security</a></li>
+                                <li><a href="#help/troubleshooting" data-help-toc="troubleshooting"><i class="bi bi-life-preserver" aria-hidden="true"></i>Troubleshooting &amp; FAQ</a></li>
+                            </ul>
+                        </nav>
+                        <div class="tt-help-content" id="help-content" tabindex="-1">
+                            <div class="tt-help-inner">
+                                <div class="tt-help-empty" id="help-no-results" hidden><i class="bi bi-search fs-2 d-block mb-2" aria-hidden="true"></i>No section matches your search. Try another word, such as <em>zone</em>, <em>export</em> or <em>rule</em>.</div>
+
+<!-- ============================== START HERE ============================== -->
+<section class="tt-help-section" id="help-getting-started" aria-labelledby="help-h-getting-started">
+    <div class="tt-help-hero">
+        <img src="Threat_tiger_840.webp" alt="" width="840" height="328" loading="lazy">
+        <div><h3>Welcome to Threat Tiger</h3><p>Draw your system, let the tiger point out what could go wrong, and keep track of what you will do about it. Everything stays in your browser.</p></div>
+    </div>
+    <div class="tt-help-kicker">Start here</div>
+    <h3 id="help-h-getting-started" tabindex="-1"><i class="bi bi-rocket-takeoff" aria-hidden="true"></i>Getting started: your first model in five steps</h3>
+    <figure class="tt-help-fig">
+        <svg viewBox="0 0 760 150" role="img" aria-labelledby="help-ill-steps-t help-ill-steps-d">
+            <title id="help-ill-steps-t">The five steps of a threat model</title>
+            <desc id="help-ill-steps-d">Draw, connect, describe, find threats, and decide: five numbered boxes joined by arrows.</desc>
+            <defs><marker id="help-arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" class="f-muted"/></marker></defs>
+            <g stroke-width="2">
+                <rect x="14" y="30" width="122" height="86" rx="12" class="f-paper s-blue"/>
+                <rect x="167" y="30" width="122" height="86" rx="12" class="f-paper s-blue"/>
+                <rect x="320" y="30" width="122" height="86" rx="12" class="f-paper s-blue"/>
+                <rect x="473" y="30" width="122" height="86" rx="12" class="f-paper s-red"/>
+                <rect x="626" y="30" width="122" height="86" rx="12" class="f-paper s-green"/>
+                <path d="M138 73 H163 M291 73 H316 M444 73 H469 M597 73 H622" class="s-muted" fill="none" marker-end="url(#help-arrow)"/>
+            </g>
+            <g><circle cx="38" cy="30" r="13" class="f-blue"/><text x="38" y="35" class="c b w">1</text>
+               <circle cx="191" cy="30" r="13" class="f-blue"/><text x="191" y="35" class="c b w">2</text>
+               <circle cx="344" cy="30" r="13" class="f-blue"/><text x="344" y="35" class="c b w">3</text>
+               <circle cx="497" cy="30" r="13" class="f-red"/><text x="497" y="35" class="c b w">4</text>
+               <circle cx="650" cy="30" r="13" class="f-green"/><text x="650" y="35" class="c b w">5</text></g>
+            <g>
+                <rect x="40" y="56" width="30" height="20" rx="4" class="f-blue-soft s-blue"/><path d="M84 58 h26 a3 3 0 0 1 0 0 M84 58 v16 M110 58 v16 M84 74 h26" class="f-none s-amber" stroke-width="2"/>
+                <text x="75" y="98" class="c b">Draw</text><text x="75" y="111" class="c sm m">from the palette</text>
+                <circle cx="195" cy="66" r="6" class="f-blue"/><circle cx="262" cy="66" r="6" class="f-blue"/><path d="M201 66 H252" class="s-ink" stroke-width="2" marker-end="url(#help-arrow)"/>
+                <text x="228" y="98" class="c b">Connect</text><text x="228" y="111" class="c sm m">with data flows</text>
+                <rect x="352" y="52" width="58" height="9" rx="4.5" class="f-green"/><circle cx="403" cy="56.5" r="3.5" class="f-paper"/><rect x="352" y="67" width="58" height="9" rx="4.5" class="f-line"/><circle cx="358" cy="71.5" r="3.5" class="f-paper"/>
+                <text x="381" y="98" class="c b">Describe</text><text x="381" y="111" class="c sm m">switches &amp; zones</text>
+                <path d="M534 50 l14 26 h-28 z" class="f-red-soft s-red" stroke-width="2"/><text x="534" y="72" class="c b red">!</text>
+                <text x="534" y="98" class="c b">Find threats</text><text x="534" y="111" class="c sm m">ranked suggestions</text>
+                <path d="M673 64 l8 8 l16 -16" class="f-none s-green" stroke-width="4" stroke-linecap="round"/>
+                <text x="687" y="98" class="c b">Decide</text><text x="687" y="111" class="c sm m">rate &amp; mitigate</text>
+            </g>
+        </svg>
+        <figcaption><b>Figure 1.</b> The threat-modelling loop in Threat Tiger. Steps 1–3 describe the system; steps 4–5 are the analysis.</figcaption>
+    </figure>
+    <ol class="tt-help-steps">
+        <li><strong>Draw the parts of your system.</strong> In the left panel, click (or drag) a <span class="tt-help-ui">Process / Service</span>, a <span class="tt-help-ui">Data Store</span> and an <span class="tt-help-ui">External Entity</span> onto the canvas. Rename each one in <span class="tt-help-ui">Properties → Component Label</span>; the field suggests names that fit the type.</li>
+        <li><strong>Connect them with data flows.</strong> Hover a shape until its small connection points appear, then drag from a point to another shape. Each line is a data flow: who sends what to whom.</li>
+        <li><strong>Describe the security.</strong> Drag a <span class="tt-help-ui">Trust Boundary Zone</span> around the parts you control (for example your cloud network). Select a flow and switch on <em>Encrypted</em> or <em>Authenticated</em> where that is true; set switches such as <em>Stores PII</em> on the data store.</li>
+        <li><strong>Find the threats.</strong> Select a component and open the <span class="tt-help-ui">Threat Templates</span> tab. Suggestions triggered by your model (an unencrypted flow across a boundary, a store with personal data…) are listed first, with the reason. Click <span class="tt-help-ui">Add</span> on the ones that apply.</li>
+        <li><strong>Decide what to do.</strong> In the <span class="tt-help-ui">Active Threat Register</span> at the bottom, rate each threat (likelihood × impact), set its status and link <span class="tt-help-ui">Mitigations</span>. <span class="tt-help-ui">Insights</span> shows what is still open, and ☰ → <span class="tt-help-ui">Print report…</span> or <span class="tt-help-ui">Export Markdown report</span> produces the write-up.</li>
+    </ol>
+    <div class="tt-help-cards">
+        <button type="button" class="tt-help-card" data-help-action="demo"><i class="bi bi-diagram-3" aria-hidden="true"></i><h5>Open the demo model</h5><p>A small web shop with zones, flows, threats and mitigations to explore. Your current model goes to History first.</p></button>
+        <a class="tt-help-card" href="#help/screen" data-help-goto="screen"><i class="bi bi-window" aria-hidden="true"></i><h5>Take the screen tour</h5><p>What every panel, tab and button is for.</p></a>
+        <a class="tt-help-card" href="#help/shortcuts" data-help-goto="shortcuts"><i class="bi bi-keyboard" aria-hidden="true"></i><h5>Keyboard shortcuts</h5><p>Press <kbd>F1</kbd> or <kbd>?</kbd> anywhere to open this guide.</p></a>
+    </div>
+    <div class="tt-help-note tip"><strong>Set your name</strong>Click <span class="tt-help-ui">You:</span> in the top bar to set the name written to the activity log and added to the participants. It is remembered in this browser.</div>
+</section>
+
+<section class="tt-help-section" id="help-concepts" aria-labelledby="help-h-concepts">
+    <div class="tt-help-kicker">Start here</div>
+    <h3 id="help-h-concepts" tabindex="-1"><i class="bi bi-lightbulb" aria-hidden="true"></i>Threat modelling in a nutshell</h3>
+    <p class="tt-help-lead">Threat modelling means looking at how a system is built and asking “what could go wrong?” before attackers do.</p>
+    <p>In Threat Tiger you draw the system as a <strong>data-flow diagram</strong> (DFD): <strong>processes</strong> that do work, <strong>data stores</strong> that keep data, <strong>external entities</strong> (users and outside systems you don’t control) and the <strong>data flows</strong> between them. <strong>Trust boundaries</strong> mark where data moves between areas with a different level of trust, such as from the internet into your network.</p>
+    <figure class="tt-help-fig">
+        <svg viewBox="0 0 760 210" role="img" aria-labelledby="help-ill-dfd-t help-ill-dfd-d">
+            <title id="help-ill-dfd-t">The building blocks of a data-flow diagram and the STRIDE categories that apply to each</title>
+            <desc id="help-ill-dfd-d">An external entity sends a flow across a dashed trust boundary to a process, which reads and writes a data store. Labels under each element list the STRIDE letters that apply.</desc>
+            <rect x="250" y="20" width="490" height="150" rx="10" class="f-red-soft s-red dash" stroke-width="2" fill-opacity=".5"/>
+            <text x="262" y="40" class="b red sm">TRUST ZONE · Company network</text>
+            <rect x="30" y="70" width="140" height="56" rx="4" class="f-paper s-ink" stroke-width="2"/>
+            <text x="100" y="95" class="c b">Customer</text><text x="100" y="111" class="c sm m">external entity</text>
+            <rect x="330" y="66" width="150" height="64" rx="14" class="f-blue-soft s-blue" stroke-width="2"/>
+            <text x="405" y="94" class="c b">Web shop</text><text x="405" y="110" class="c sm m">process</text>
+            <path d="M570 70 H700 M570 126 H700" class="s-amber" stroke-width="2.5"/><rect x="570" y="70" width="130" height="56" class="f-amber-soft" opacity=".6"/>
+            <text x="635" y="95" class="c b">Orders DB</text><text x="635" y="111" class="c sm m">data store</text>
+            <path d="M172 98 H326" class="s-ink" stroke-width="2" marker-end="url(#help-arrow)"/>
+            <text x="212" y="90" class="sm">HTTPS order</text>
+            <path d="M482 90 H566" class="s-ink" stroke-width="2" marker-end="url(#help-arrow)"/>
+            <path d="M566 108 H486" class="s-ink" stroke-width="2" marker-end="url(#help-arrow)"/>
+            <circle cx="250" cy="98" r="7" class="f-accent s-paper" stroke-width="2"/>
+            <text x="100" y="150" class="c sm b">S · R</text>
+            <text x="405" y="160" class="c sm b">S · T · R · I · D · E</text>
+            <text x="635" y="150" class="c sm b">T · R · I · D</text>
+            <text x="212" y="130" class="c sm b">T · I · D</text>
+            <text x="380" y="195" class="c sm m">The orange dot marks where the flow crosses the boundary: threats concentrate there.</text>
+        </svg>
+        <figcaption><b>Figure 2.</b> A minimal data-flow diagram. The letters show which STRIDE categories typically apply to each kind of element.</figcaption>
+    </figure>
+    <h4>STRIDE</h4>
+    <p>For each part of the diagram, consider the six STRIDE categories. Each one is the opposite of a security property you want to keep:</p>
+    <div class="tt-help-wrap"><table class="tt-help-table">
+        <thead><tr><th>Category</th><th>Property</th><th>What goes wrong</th></tr></thead>
+        <tbody>
+            <tr><td>Spoofing</td><td>Authentication</td><td>Someone pretends to be another user, service or device.</td></tr>
+            <tr><td>Tampering</td><td>Integrity</td><td>Data, code or configuration is changed by someone who should not change it.</td></tr>
+            <tr><td>Repudiation</td><td>Accountability</td><td>Someone can deny having done something because there is no reliable record.</td></tr>
+            <tr><td>Information Disclosure</td><td>Confidentiality</td><td>Data is exposed to people or systems that should not see it.</td></tr>
+            <tr><td>Denial of Service</td><td>Availability</td><td>The system is slowed down or stopped for legitimate users.</td></tr>
+            <tr><td>Elevation of Privilege</td><td>Authorisation</td><td>Someone gains more rights than they were given.</td></tr>
+        </tbody>
+    </table></div>
+    <p>Threat Tiger helps with each step: the security switches and boundaries you set trigger concrete threats from a curated library of 601 (with OWASP, CWE and MITRE ATT&amp;CK references, real-world incidents and typical controls). The icon and name of a component count too: a component drawn as a GPU server, a <code>.env</code> file or a WordPress site gets threats for that kind of component.</p>
+</section>
+
+<section class="tt-help-section" id="help-screen" aria-labelledby="help-h-screen">
+    <div class="tt-help-kicker">Start here</div>
+    <h3 id="help-h-screen" tabindex="-1"><i class="bi bi-window" aria-hidden="true"></i>The screen</h3>
+    <figure class="tt-help-fig">
+        <img src="docs/help/overview.png" alt="Threat Tiger with the demo model: palette on the left, the canvas in the middle, Properties on the right and the threat register at the bottom" width="1280" height="800" loading="lazy">
+        <figcaption><b>Figure 3.</b> The demo model. Every panel can be resized by dragging its edge, collapsed with the small handle, or hidden with ☰ → View.</figcaption>
+    </figure>
+    <figure class="tt-help-fig">
+        <svg viewBox="0 0 760 300" role="img" aria-labelledby="help-ill-screen-t help-ill-screen-d">
+            <title id="help-ill-screen-t">Map of the screen areas</title>
+            <desc id="help-ill-screen-d">A schematic of the window: the top bar across the top, the palette on the left, the canvas in the centre with its toolbar, the right panel with Properties, Threat Templates and Layers, and the bottom panel with the register, mitigations, insights and activity log. Numbered markers 1 to 6.</desc>
+            <rect x="10" y="10" width="740" height="280" rx="10" class="f-paper s-line" stroke-width="2"/>
+            <rect x="10" y="10" width="740" height="34" rx="10" class="f-ink"/><rect x="10" y="30" width="740" height="14" class="f-ink"/>
+            <text x="30" y="32" class="b" style="fill:#fff">Threat Tiger</text>
+            <rect x="590" y="18" width="70" height="18" rx="4" class="f-none" stroke="#fff" stroke-opacity=".6"/><text x="625" y="31" class="c sm" style="fill:#fff">Profile ▾</text>
+            <rect x="668" y="18" width="26" height="18" rx="4" class="f-none" stroke="#fff" stroke-opacity=".6"/><text x="681" y="31" class="c sm" style="fill:#fff">☰</text>
+            <rect x="10" y="44" width="150" height="246" class="f-soft"/>
+            <g class="f-paper s-line"><rect x="22" y="62" width="126" height="18" rx="4"/><rect x="22" y="86" width="126" height="18" rx="4"/><rect x="22" y="110" width="126" height="18" rx="4"/><rect x="22" y="134" width="126" height="18" rx="4"/><rect x="22" y="158" width="126" height="18" rx="4"/></g>
+            <text x="85" y="200" class="c sm m">Palette</text>
+            <rect x="160" y="44" width="420" height="166" class="f-paper"/>
+            <g stroke-width="1.5"><rect x="210" y="80" width="80" height="40" rx="8" class="f-blue-soft s-blue"/><rect x="380" y="120" width="80" height="40" rx="2" class="f-amber-soft s-amber"/><path d="M290 100 C340 100 330 140 378 140" class="f-none s-ink"/></g>
+            <rect x="400" y="186" width="170" height="18" rx="4" class="f-soft s-line"/><text x="485" y="199" class="c sm m">undo · zoom · PNG · view · grid</text>
+            <rect x="170" y="54" width="90" height="16" rx="3" class="f-soft s-line"/><text x="215" y="66" class="c sm m">Page 1 | +</text>
+            <rect x="580" y="44" width="170" height="166" class="f-soft"/>
+            <rect x="590" y="52" width="150" height="16" rx="3" class="f-paper s-line"/><text x="665" y="64" class="c sm m">Properties · Templates · Layers</text>
+            <g class="f-line"><rect x="592" y="80" width="110" height="7" rx="3"/><rect x="592" y="96" width="140" height="7" rx="3"/><rect x="592" y="112" width="90" height="7" rx="3"/><rect x="592" y="128" width="130" height="7" rx="3"/></g>
+            <rect x="160" y="210" width="590" height="80" class="f-soft"/>
+            <rect x="170" y="218" width="300" height="16" rx="3" class="f-paper s-line"/><text x="320" y="230" class="c sm m">Register · Mitigations · Insights · Activity Log</text>
+            <g class="f-line"><rect x="170" y="244" width="560" height="8" rx="3"/><rect x="170" y="260" width="560" height="8" rx="3"/></g>
+            <g><circle cx="140" cy="27" r="11" class="f-accent"/><text x="140" y="31" class="c b" style="fill:#fff">1</text>
+               <circle cx="148" cy="226" r="11" class="f-accent"/><text x="148" y="230" class="c b" style="fill:#fff">2</text>
+               <circle cx="560" cy="62" r="11" class="f-accent"/><text x="560" y="66" class="c b" style="fill:#fff">3</text>
+               <circle cx="392" cy="195" r="11" class="f-accent"/><text x="392" y="199" class="c b" style="fill:#fff">4</text>
+               <circle cx="738" cy="150" r="11" class="f-accent"/><text x="738" y="154" class="c b" style="fill:#fff">5</text>
+               <circle cx="738" cy="276" r="11" class="f-accent"/><text x="738" y="280" class="c b" style="fill:#fff">6</text></g>
+        </svg>
+        <figcaption><b>Figure 4.</b> The six areas of the screen, numbered as in the list below.</figcaption>
+    </figure>
+    <ol class="tt-help-steps">
+        <li><strong>Top bar.</strong> The model name, <span class="tt-help-ui">You:</span> (your name for the activity log), the <span class="tt-help-ui">Review mode</span> badge when the layout is frozen, the <span class="tt-help-ui">⟳</span> git-sync button (once set up), the profile button <em>What are you modelling?</em> and the <span class="tt-help-ui">☰</span> menu.</li>
+        <li><strong>Left panel.</strong> <span class="tt-help-ui">Session Meta &amp; Context</span> (title, scope, participants, diagram details; click the heading to collapse it) and the <span class="tt-help-ui">Diagram Component Palette</span>. Hover a palette item for a description; click it to add the shape in the middle of the view, or drag it to where you want it.</li>
+        <li><strong>Canvas.</strong> Your diagram. Page tabs at the top left, the minimap at the top right (if switched on), the title block and legend in a corner.</li>
+        <li><strong>Canvas toolbar.</strong> Undo, redo, zoom in, zoom out, zoom to fit, the format painter (the brush), <span class="tt-help-ui">Save as PNG</span>, the view menu (flat, NE isometric, NW isometric), grid settings and the dark-canvas switch. When two or more shapes are selected, the align toolbar appears above it.</li>
+        <li><strong>Right panel.</strong> <span class="tt-help-ui">Properties</span> of the selected shape or flow, <span class="tt-help-ui">Threat Templates</span> (suggestions for it) and <span class="tt-help-ui">Layers</span>.</li>
+        <li><strong>Bottom panel.</strong> <span class="tt-help-ui">Active Threat Register</span>, <span class="tt-help-ui">Mitigations</span>, <span class="tt-help-ui">Insights</span> and the <span class="tt-help-ui">Activity Log</span> (hidden in the built-in profiles; show it with ☰ → View → Panel tabs).</li>
+    </ol>
+    <div class="tt-help-note"><strong>Small screens</strong>On a phone or narrow window the panels stack and can be collapsed. Touch works on the canvas: tap selects, drag moves a shape or pans, and a two-finger pinch zooms.</div>
+</section>
+
+<section class="tt-help-section" id="help-menu" aria-labelledby="help-h-menu">
+    <div class="tt-help-kicker">Start here</div>
+    <h3 id="help-h-menu" tabindex="-1"><i class="bi bi-list" aria-hidden="true"></i>The ☰ menu</h3>
+    <div class="tt-help-split">
+        <div>
+            <p>Everything that isn’t drawing lives in the ☰ menu at the top right. It works like a desktop menu: hover or click an item with a ▸ to open its flyout, <kbd>→</kbd> / <kbd>Enter</kbd> open one, <kbd>←</kbd> / <kbd>Esc</kbd> close one level, and <kbd>↑</kbd> <kbd>↓</kbd> move inside the current level.</p>
+            <ul>
+                <li><strong>Model:</strong> Import JSON…, Import Mermaid flowchart…, Export JSON, Export JSON for git (no activity log), History…</li>
+                <li><strong>Reports &amp; diagrams:</strong> Print report…, Export Markdown report, Export Mermaid diagram.</li>
+                <li><strong>View ▸</strong> Review mode, Title block &amp; legend…, <em>Canvas ▸</em> (minimap, line jumps, animate traffic, live status), show or hide the left, right and bottom panels, <em>Palette sections ▸</em>, <em>Icon sets ▸</em> and <em>Panel tabs ▸</em>. View changes are saved into the profile you are using.</li>
+                <li><strong>Build from status file…</strong> turns a CSV or JSON list of servers into a diagram (see <a href="#help/status-file" data-help-goto="status-file">Build from status file</a>).</li>
+                <li><strong>Settings…</strong>, <strong>Help</strong> (this guide, <kbd>F1</kbd>) and <strong>About &amp; License</strong> (version, licence, credits).</li>
+                <li><strong>Reset canvas…</strong> empties the model (a snapshot goes to History first) and <strong>Clear all data in this browser…</strong> removes everything Threat Tiger stored here.</li>
+            </ul>
+        </div>
+        <figure class="tt-help-fig">
+            <img src="docs/help/menu.png" alt="The ☰ menu open, showing Model, Reports and diagrams, View, Settings, Help and About" width="327" height="594" loading="lazy">
+            <figcaption>The ☰ menu.</figcaption>
+        </figure>
+    </div>
+</section>
+
+<!-- ============================== PALETTE ============================== -->
+<section class="tt-help-section" id="help-palette-threat" aria-labelledby="help-h-palette-threat">
+    <div class="tt-help-kicker">The palette</div>
+    <h3 id="help-h-palette-threat" tabindex="-1"><i class="bi bi-shield-exclamation" aria-hidden="true"></i>Threat modelling shapes</h3>
+    <div class="tt-help-split">
+        <div>
+            <p>The <span class="tt-help-ui">Threat Modeling</span> section holds the five elements of a data-flow diagram. These are <em>model components</em>: they get STRIDE threats, suggestions and security switches.</p>
+            <div class="tt-help-wrap"><table class="tt-help-table compact">
+                <thead><tr><th>Shape</th><th>Use it for</th></tr></thead>
+                <tbody>
+                    <tr><td><span class="tt-help-thumb" data-help-thumb="pal-process"></span>Process / Service</td><td>Anything that runs code: an application, API, microservice, function, container or job.</td></tr>
+                    <tr><td><span class="tt-help-thumb" data-help-thumb="pal-datastore"></span>Data Store</td><td>Anything that keeps data: a database, bucket, file share, cache, queue or log.</td></tr>
+                    <tr><td><span class="tt-help-thumb" data-help-thumb="pal-interactor"></span>External Entity</td><td>People and systems outside your control: users, partners, third-party APIs, attackers.</td></tr>
+                    <tr><td><span class="tt-help-thumb" data-help-thumb="pal-boundary"></span>Trust Boundary Zone</td><td>A box around everything with the same level of trust (a network, a cloud account, a device). Zones can be nested; shapes inside belong to it.</td></tr>
+                    <tr><td><span class="tt-help-thumb" data-help-thumb="pal-boundary-line"></span>Trust Boundary Line</td><td>A dashed line, for a boundary that isn’t a box (for example the edge of the internet). Drag its ends; drag the middle handle to bend it.</td></tr>
+                </tbody>
+            </table></div>
+        </div>
+        <figure class="tt-help-fig narrow">
+            <img src="docs/help/palette-threat.png" alt="The Threat Modeling palette section with process, data store, external entity, trust zone and trust boundary line" width="261" height="278" loading="lazy">
+            <figcaption>The Threat Modeling section.</figcaption>
+        </figure>
+    </div>
+    <h4>How boundary crossings are detected</h4>
+    <figure class="tt-help-fig">
+        <svg viewBox="0 0 760 230" role="img" aria-labelledby="help-ill-cross-t help-ill-cross-d">
+            <title id="help-ill-cross-t">How a trust-boundary crossing is detected</title>
+            <desc id="help-ill-cross-d">Two flows leave a process inside a trust zone. One goes to a store in the same zone and is not a crossing. The other goes to an external entity outside the zone; the point where its line meets the zone edge is marked as a crossing, which triggers threat suggestions. A third flow crosses a boundary line.</desc>
+            <rect x="30" y="24" width="400" height="180" rx="10" class="f-blue-soft s-red dash" stroke-width="2"/>
+            <text x="44" y="44" class="b red sm">TRUST ZONE · Internal network</text>
+            <rect x="70" y="92" width="120" height="50" rx="10" class="f-paper s-blue" stroke-width="2"/><text x="130" y="121" class="c b">API</text>
+            <path d="M290 74 H390 M290 120 H390" class="s-amber" stroke-width="2.5"/><text x="340" y="101" class="c b">Users DB</text>
+            <path d="M190 106 C230 106 240 97 286 97" class="f-none s-ink" stroke-width="2" marker-end="url(#help-arrow)"/>
+            <text x="238" y="90" class="c sm green b">inside: no crossing</text>
+            <rect x="580" y="140" width="140" height="50" rx="3" class="f-paper s-ink" stroke-width="2"/><text x="650" y="170" class="c b">Partner</text>
+            <path d="M190 130 C320 175 470 168 576 165" class="f-none s-ink" stroke-width="2" marker-end="url(#help-arrow)"/>
+            <circle cx="430" cy="169" r="8" class="f-accent s-paper" stroke-width="2"/>
+            <path d="M440 165 L520 120" class="s-accent" stroke-width="1.5"/>
+            <rect x="470" y="70" width="270" height="52" rx="8" class="f-paper s-accent" stroke-width="1.5"/>
+            <text x="482" y="90" class="b sm">Crossing found on the line as drawn</text>
+            <text x="482" y="107" class="sm m">→ marked on the canvas, listed in Insights,</text>
+            <text x="482" y="119" class="sm m">and suggestions such as “unencrypted across a boundary”</text>
+            <path d="M520 20 C560 50 540 200 560 215" class="f-none s-red dash" stroke-width="2"/>
+            <text x="560" y="36" class="sm red b">boundary line</text>
+        </svg>
+        <figcaption><b>Figure 5.</b> A flow is checked along the line as it is drawn (connection points, bends, curves and elbow routes), not between shape centres. Every zone edge or boundary line it passes is a crossing.</figcaption>
+    </figure>
+    <div class="tt-help-note tip"><strong>Tip</strong>Zones are drawn behind shapes. Shapes inside a zone move with it. In Insights, a component that is outside every zone counts as an entry point for attack paths.</div>
+</section>
+
+<section class="tt-help-section" id="help-palette-attack" aria-labelledby="help-h-palette-attack">
+    <div class="tt-help-kicker">The palette</div>
+    <h3 id="help-h-palette-attack" tabindex="-1"><i class="bi bi-diagram-2" aria-hidden="true"></i>Attack paths &amp; trees</h3>
+    <p>The <span class="tt-help-ui">Attack Paths &amp; Trees</span> section follows MITRE Attack Flow and attack-defence trees. <strong>Threat actor</strong> and <strong>Crown jewel</strong> are ordinary components (an external entity with <em>unauthenticated access</em>, and a data store that <em>handles sensitive data</em>), drawn as a red and a yellow circle badge. To make the crown jewel a target for Insights → Attack paths, select it and tick <strong>Crown Jewel</strong> in Properties. The other shapes are diagram notation: they get no STRIDE threats and are never data-flow steps in attack paths.</p>
+    <div class="tt-help-split">
+        <div class="tt-help-wrap"><table class="tt-help-table compact">
+            <thead><tr><th>Shape</th><th>Meaning</th></tr></thead>
+            <tbody>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-at-attacker"></span>Threat actor</td><td>Who attacks: a criminal group, an insider, a bot.</td></tr>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-at-crown-jewel"></span>Crown jewel</td><td>What they want: the asset worth protecting most. Tick <em>Crown Jewel</em> in Properties to make it an attack-path target.</td></tr>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-at-entry"></span>Entry point</td><td>Where the attack starts (a phishing mail, an exposed port).</td></tr>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-at-step"></span>Attack step</td><td>One action. Pick an <strong>ATT&amp;CK tactic</strong> (the 14 Enterprise tactics) and optionally a technique ID such as <code>T1566</code> or <code>T1566.001</code>; both are shown on the shape.</td></tr>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-at-asset"></span>Asset / target</td><td>A system or data the step acts on.</td></tr>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-at-condition"></span>Condition / outcome</td><td>A state that must hold, or the result of a step; mark it <em>Success</em> or <em>Fail</em>.</td></tr>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-at-and"></span>AND gate</td><td>All children are needed.</td></tr>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-at-or"></span>OR gate</td><td>Any one child is enough.</td></tr>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-at-goal"></span>Goal</td><td>The attacker’s objective, at the top of a tree.</td></tr>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-at-countermeasure"></span>Countermeasure</td><td>A defence that blocks or detects a step.</td></tr>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-at-choke"></span>Choke point</td><td>A place many paths pass through: the best spot for a control.</td></tr>
+            </tbody>
+        </table></div>
+        <figure class="tt-help-fig narrow">
+            <img src="docs/help/palette-attack.png" alt="The Attack Paths and Trees palette section" width="261" height="485" loading="lazy">
+            <figcaption>The Attack Paths &amp; Trees section.</figcaption>
+        </figure>
+    </div>
+    <figure class="tt-help-fig">
+        <svg viewBox="0 0 760 260" role="img" aria-labelledby="help-ill-tree-t help-ill-tree-d">
+            <title id="help-ill-tree-t">Structure of an attack tree</title>
+            <desc id="help-ill-tree-d">A goal at the top, “Read customer data”, has an OR gate below it with two branches. The left branch is a single attack step, “Phish an admin”. The right branch is an AND gate that needs two steps, “Find exposed backup” and “Crack the password”. A countermeasure, MFA, blocks the phishing step.</desc>
+            <rect x="290" y="12" width="180" height="40" rx="20" class="f-red-soft s-red" stroke-width="2"/><text x="380" y="37" class="c b">Goal: read customer data</text>
+            <path d="M380 52 V74" class="s-ink" stroke-width="2"/>
+            <path d="M356 108 Q356 80 380 74 Q404 80 404 108 Q380 98 356 108 z" class="f-paper s-ink" stroke-width="2"/><text x="380" y="98" class="c sm b">OR</text>
+            <path d="M370 104 L200 140 M392 104 L560 140" class="s-ink" stroke-width="2" fill="none"/>
+            <rect x="110" y="140" width="180" height="44" rx="6" class="f-blue-soft s-blue" stroke-width="2"/><text x="200" y="160" class="c b">Phish an admin</text><text x="200" y="176" class="c sm m">TA0001 · T1566</text>
+            <path d="M536 172 V146 H584 V172 A24 24 0 0 1 536 172 z" class="f-paper s-ink" stroke-width="2"/><text x="560" y="167" class="c sm b">AND</text>
+            <path d="M548 190 L470 214 M572 190 L650 214" class="s-ink" stroke-width="2" fill="none"/>
+            <rect x="390" y="214" width="160" height="36" rx="6" class="f-blue-soft s-blue" stroke-width="2"/><text x="470" y="237" class="c b sm">Find exposed backup</text>
+            <rect x="580" y="214" width="160" height="36" rx="6" class="f-blue-soft s-blue" stroke-width="2"/><text x="660" y="237" class="c b sm">Crack the password</text>
+            <path d="M40 214 h70 l10 18 l-10 18 h-70 z" class="f-green-soft s-green" stroke-width="2"/><text x="72" y="236" class="c b sm">MFA</text>
+            <path d="M120 222 L170 186" class="s-green dash" stroke-width="2" fill="none" marker-end="url(#help-arrow)"/>
+            <text x="150" y="210" class="sm green b">blocks</text>
+        </svg>
+        <figcaption><b>Figure 6.</b> An attack tree: goal at the top, gates below it, attack steps as leaves, countermeasures beside the steps they block. For an <em>attack flow</em>, put the steps left to right instead.</figcaption>
+    </figure>
+    <figure class="tt-help-fig">
+        <img src="docs/help/attack-tree.png" alt="An attack tree drawn in Threat Tiger with a goal, OR and AND gates, attack steps with ATT&amp;CK tactics and a countermeasure" width="1088" height="538" loading="lazy">
+        <figcaption>The same idea on the canvas. Connect the shapes with flows (drag from a connection point).</figcaption>
+    </figure>
+</section>
+
+<section class="tt-help-section" id="help-palette-text" aria-labelledby="help-h-palette-text">
+    <div class="tt-help-kicker">The palette</div>
+    <h3 id="help-h-palette-text" tabindex="-1"><i class="bi bi-fonts" aria-hidden="true"></i>Text items</h3>
+    <div class="tt-help-split">
+        <div class="tt-help-wrap"><table class="tt-help-table compact">
+            <thead><tr><th>Item</th><th>What it does</th></tr></thead>
+            <tbody>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-step-activity"></span>Step Activity</td><td>A numbered circle with a text box, to walk readers through a scenario. Set the number with <kbd>−</kbd> / <kbd>+</kbd>, pick a colour, or <em>Hide Text &amp; Box</em> to show only the circle.</td></tr>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-textbox"></span>Comment Textbox</td><td>A free text note on the canvas (<em>Text Content Details</em> in Properties).</td></tr>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-headline"></span>Canvas Headline</td><td>A title, horizontal or vertical, 16 to 48 px.</td></tr>
+                <tr><td><span class="tt-help-thumb" data-help-thumb="pal-table"></span>Table</td><td>Rows and columns (up to 30 × 12) with an optional header row and header column and the swimlane colour themes. Edit the cells in Properties; double-click a cell on the canvas to jump to it.</td></tr>
+            </tbody>
+        </table></div>
+        <figure class="tt-help-fig narrow">
+            <img src="docs/help/palette-text.png" alt="The Text Items palette section" width="261" height="230" loading="lazy">
+            <figcaption>The Text Items section.</figcaption>
+        </figure>
+    </div>
+    <p>Text items are not part of the analysis: they get no threats and never count as components.</p>
+</section>
+
+<section class="tt-help-section" id="help-palette-data-nodes" aria-labelledby="help-h-palette-data-nodes">
+    <div class="tt-help-kicker">The palette</div>
+    <h3 id="help-h-palette-data-nodes" tabindex="-1"><i class="bi bi-hdd-network" aria-hidden="true"></i>Data nodes &amp; icons</h3>
+    <div class="tt-help-split">
+        <div>
+            <p>One <strong>search box</strong> at the top of <span class="tt-help-ui">Data Nodes &amp; Icons</span> searches everything in it: the fixed items, the ready-made nodes and every visible icon set (sets load as needed; hidden sets are skipped). It shows a count; <kbd>Esc</kbd> clears it.</p>
+            <ul>
+                <li><span class="tt-help-thumb" data-help-thumb="pal-custom-image"></span><strong>Custom Image / Icon:</strong> your own picture. Paste an image address or upload a local file in <em>Custom Graphic Source</em>. Uploaded images are stored inside the model.</li>
+                <li><span class="tt-help-thumb" data-help-thumb="pal-infrastructure"></span><strong>Infrastructure Node:</strong> a server, router or other device drawn as an icon in one of 16 colours. It has no security switches; use a process or store for that.</li>
+                <li><strong>Ready-made nodes</strong> (32, in three groups): <em>Network</em> (firewall, WAF, load balancer, API gateway, VPN gateway, IDS/IPS, reverse proxy, DNS, CDN, switch, router, Wi-Fi AP), <em>Security tooling</em> (SIEM, EDR agent, secrets vault, HSM, identity provider, PAM) and <em>Platforms &amp; devices</em> (message queue, cache, object storage, backup, container, Kubernetes, serverless function, AI/LLM model, CI/CD pipeline, Git repository, mail server, workstation, mobile app, IoT device). Each is a real component with the right type and subtypes, so it gets tailored threat suggestions straight away.</li>
+                <li><strong>Icon sets</strong> (about 2,000 icons): Devices &amp; security, Security &amp; DevOps brands, Tech &amp; OS logos, and the official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons. Each set loads when you open it. A placed icon shows the icon with its name underneath and is a normal component (data store, process…), so suggestions work. Hide sets you don’t use with ☰ → View → Icon sets.</li>
+            </ul>
+        </div>
+        <figure class="tt-help-fig narrow">
+            <img src="docs/help/palette-data-nodes.png" alt="The Data Nodes and Icons palette section with the search box, ready-made nodes and icon sets" width="261" height="508" loading="lazy">
+            <figcaption>Data Nodes &amp; Icons, with the unified search.</figcaption>
+        </figure>
+    </div>
+    <div class="tt-help-note"><strong>Third-party icons</strong>The icon sets come from AWS, Microsoft (Azure, Entra, Fluent UI), Google Cloud, the Kubernetes project, Devicon and Simple Icons, under their owners’ terms (see About &amp; License). A placed icon is stored in the model, so a model never depends on the packs.</div>
+</section>
+
+<section class="tt-help-section" id="help-palette-flowchart" aria-labelledby="help-h-palette-flowchart">
+    <div class="tt-help-kicker">The palette</div>
+    <h3 id="help-h-palette-flowchart" tabindex="-1"><i class="bi bi-bezier2" aria-hidden="true"></i>Flowchart items &amp; 3D</h3>
+    <div class="tt-help-split">
+        <div>
+            <h4 class="mt-0">Containers</h4>
+            <ul>
+                <li><span class="tt-help-thumb" data-help-thumb="pal-swimlane"></span><strong>Swimlane Grid Layout:</strong> a grid of rows and columns. Drop a node into a cell (it is highlighted while you drag); cells grow to fit their nodes, with padding. Drag a column or row border to resize it, double-click it for the automatic size. Add, remove and rename columns and rows, set the headline and pick a colour theme in Properties.</li>
+                <li><span class="tt-help-thumb" data-help-thumb="pal-pool"></span><strong>Pool:</strong> horizontal lanes with a header each.</li>
+                <li><span class="tt-help-thumb" data-help-thumb="pal-vlanes"></span><strong>Vertical Lanes:</strong> side-by-side columns, for teams, systems or stages.</li>
+                <li><span class="tt-help-thumb" data-help-thumb="pal-group-frame"></span><strong>Group / Frame:</strong> a titled box that groups related shapes (not a trust zone).</li>
+                <li><span class="tt-help-thumb" data-help-thumb="pal-phases"></span><strong>Phases / Timeline:</strong> chevron columns for the stages of a process.</li>
+            </ul>
+            <p>Containers are drawn behind shapes, can be resized, use the swimlane colour themes and carry the shapes inside them when moved.</p>
+        </div>
+        <figure class="tt-help-fig narrow">
+            <img src="docs/help/palette-flowchart.png" alt="The Flowchart Diagram Items palette section" width="261" height="760" loading="lazy">
+            <figcaption>Flowchart Diagram Items.</figcaption>
+        </figure>
+    </div>
+    <h4>Shapes</h4>
+    <div class="tt-help-wrap"><table class="tt-help-table compact">
+        <thead><tr><th>Shape</th><th>Means</th></tr></thead>
+        <tbody>
+            <tr><td><span class="tt-help-thumb" data-help-thumb="pal-fc-process"></span>Process (Rectangle)</td><td>A step or action.</td></tr>
+            <tr><td><span class="tt-help-thumb" data-help-thumb="pal-fc-decision"></span>Decision (Diamond)</td><td>A question with two or more ways out.</td></tr>
+            <tr><td><span class="tt-help-thumb" data-help-thumb="pal-fc-terminator"></span>Terminator (Oval)</td><td>Start or end.</td></tr>
+            <tr><td><span class="tt-help-thumb" data-help-thumb="pal-fc-data"></span>Data / I-O</td><td>Input or output.</td></tr>
+            <tr><td><span class="tt-help-thumb" data-help-thumb="pal-fc-document"></span>Document</td><td>A document or report.</td></tr>
+            <tr><td><span class="tt-help-thumb" data-help-thumb="pal-fc-manual-input"></span>Manual Input</td><td>Data typed in by a person.</td></tr>
+            <tr><td><span class="tt-help-thumb" data-help-thumb="pal-fc-preparation"></span>Preparation (Hexagon)</td><td>Set-up before a step.</td></tr>
+            <tr><td><span class="tt-help-thumb" data-help-thumb="pal-fc-connector"></span>Connector (Circle)</td><td>A jump to another part of the chart. As 3D it is a database cylinder.</td></tr>
+            <tr><td><span class="tt-help-thumb" data-help-thumb="pal-fc-stored-data"></span>Stored Data</td><td>Data kept somewhere.</td></tr>
+            <tr><td><span class="tt-help-thumb" data-help-thumb="pal-fc-sphere"></span>Sphere, <span class="tt-help-thumb" data-help-thumb="pal-fc-cone"></span>Cone, <span class="tt-help-thumb" data-help-thumb="pal-fc-pyramid"></span>Pyramid, <span class="tt-help-thumb" data-help-thumb="pal-fc-layers"></span>Stacked layers</td><td>The <em>3D shapes</em> group: solids in every view. Stacked layers have a layer count (1–10) and a layer thickness.</td></tr>
+        </tbody>
+    </table></div>
+    <p>Flowchart shapes take any fill, border colour and line width (Properties → <em>Flowchart Shape Style</em>), get all six STRIDE categories like processes, and can change type at any time (Properties → <em>Type</em>) without losing their name, flows or threats. Tick <strong>3D</strong> to draw any of them as a solid (see <a href="#help/isometric-3d" data-help-goto="isometric-3d">Isometric views &amp; 3D</a>).</p>
+    <h4>Quick add: the next step in one click</h4>
+    <figure class="tt-help-fig">
+        <svg viewBox="0 0 760 200" role="img" aria-labelledby="help-ill-quick-t help-ill-quick-d">
+            <title id="help-ill-quick-t">Connection points and quick add</title>
+            <desc id="help-ill-quick-d">A selected flowchart process shows four connection points. Hovering the right-hand point shows a dashed preview of the next shape, already connected. Clicking adds it; dragging from the point to another shape connects the two instead.</desc>
+            <rect x="60" y="60" width="170" height="80" rx="6" class="f-paper s-blue" stroke-width="2.5"/><text x="145" y="105" class="c b">Validate order</text>
+            <g class="f-paper s-blue" stroke-width="2"><circle cx="145" cy="60" r="6"/><circle cx="145" cy="140" r="6"/><circle cx="60" cy="100" r="6"/></g>
+            <circle cx="230" cy="100" r="9" class="f-blue s-paper" stroke-width="2"/>
+            <path d="M239 100 H330" class="s-blue dash" stroke-width="2" marker-end="url(#help-arrow)"/>
+            <rect x="334" y="60" width="170" height="80" rx="6" class="f-blue-soft s-blue dash" stroke-width="2" opacity=".8"/><text x="419" y="105" class="c b blue">Process</text>
+            <text x="285" y="88" class="c sm b blue">hover</text>
+            <rect x="540" y="40" width="200" height="120" rx="10" class="f-paper s-line" stroke-width="1.5"/>
+            <text x="556" y="64" class="b sm">On a connection point:</text>
+            <text x="556" y="86" class="sm"><tspan class="b">Hover</tspan> → preview the next step</text>
+            <text x="556" y="106" class="sm"><tspan class="b">Click</tspan> → add it, connected,</text>
+            <text x="556" y="120" class="sm m">same shape and colours</text>
+            <text x="556" y="142" class="sm"><tspan class="b">Drag</tspan> → connect to a shape</text>
+        </svg>
+        <figcaption><b>Figure 7.</b> Connection points (anchors) appear when you hover a shape. On flowchart shapes, hovering one previews the next step; a click adds it.</figcaption>
+    </figure>
+    <figure class="tt-help-fig">
+        <img src="docs/help/quick-add.png" alt="A flowchart with the quick-add preview of the next step" width="888" height="260" loading="lazy">
+        <figcaption>Quick add on the canvas: the dashed shape is the preview.</figcaption>
+    </figure>
+</section>
+
+<section class="tt-help-section" id="help-palette-diagrams" aria-labelledby="help-h-palette-diagrams">
+    <div class="tt-help-kicker">The palette</div>
+    <h3 id="help-h-palette-diagrams" tabindex="-1"><i class="bi bi-diagram-3" aria-hidden="true"></i>Architecture &amp; process diagrams: C4, UML, BPMN, ERD</h3>
+    <p>The <span class="tt-help-ui">Architecture &amp; Process Diagrams</span> section has four sub-groups (each can be hidden in a profile). Their text (technology, description, attributes, operations, rows) is edited in Properties → <em>Diagram Text</em>; classes and tables grow to fit.</p>
+    <div class="tt-help-wrap"><table class="tt-help-table compact">
+        <thead><tr><th>Group</th><th>Shapes</th><th>In the analysis?</th></tr></thead>
+        <tbody>
+            <tr><td>C4 model</td><td><span class="tt-help-thumb" data-help-thumb="pal-dg-c4-person"></span>Person, <span class="tt-help-thumb" data-help-thumb="pal-dg-c4-system"></span>Software system, <span class="tt-help-thumb" data-help-thumb="pal-dg-c4-container"></span>Container, <span class="tt-help-thumb" data-help-thumb="pal-dg-c4-component"></span>Component, <span class="tt-help-thumb" data-help-thumb="pal-dg-c4-external"></span>External system. Each has a technology line and a description.</td><td>Yes: people and external systems are external entities, the rest processes.</td></tr>
+            <tr><td>UML</td><td><span class="tt-help-thumb" data-help-thumb="pal-dg-uml-actor"></span>Actor, <span class="tt-help-thumb" data-help-thumb="pal-dg-uml-usecase"></span>Use case, <span class="tt-help-thumb" data-help-thumb="pal-dg-uml-note"></span>Note, <span class="tt-help-thumb" data-help-thumb="pal-dg-uml-package"></span>Package, <span class="tt-help-thumb" data-help-thumb="pal-dg-uml-class"></span>Class (name, attributes, operations).</td><td>No: notation only.</td></tr>
+            <tr><td>BPMN</td><td><span class="tt-help-thumb" data-help-thumb="pal-dg-bpmn-start"></span>Start, <span class="tt-help-thumb" data-help-thumb="pal-dg-bpmn-intermediate"></span>intermediate and <span class="tt-help-thumb" data-help-thumb="pal-dg-bpmn-end"></span>end events, <span class="tt-help-thumb" data-help-thumb="pal-dg-bpmn-task"></span>Task, <span class="tt-help-thumb" data-help-thumb="pal-dg-bpmn-gateway-exclusive"></span>exclusive, <span class="tt-help-thumb" data-help-thumb="pal-dg-bpmn-gateway-parallel"></span>parallel and <span class="tt-help-thumb" data-help-thumb="pal-dg-bpmn-gateway-inclusive"></span>inclusive gateways, <span class="tt-help-thumb" data-help-thumb="pal-dg-bpmn-data-object"></span>Data object.</td><td>No: notation only.</td></tr>
+            <tr><td>Entity-relationship</td><td><span class="tt-help-thumb" data-help-thumb="pal-dg-erd-entity"></span>Entity table: one row per line; start a row with <code>PK</code> or <code>FK</code> to mark a key.</td><td>No: notation only.</td></tr>
+        </tbody>
+    </table></div>
+    <figure class="tt-help-fig">
+        <img src="docs/help/c4-bpmn.png" alt="A C4 container diagram next to a small BPMN process" width="1188" height="538" loading="lazy">
+        <figcaption>A C4 container view (left) and a BPMN process (right) on the same page.</figcaption>
+    </figure>
+</section>
+
+<!-- ============================== DRAWING ============================== -->
+<section class="tt-help-section" id="help-canvas" aria-labelledby="help-h-canvas">
+    <div class="tt-help-kicker">Drawing</div>
+    <h3 id="help-h-canvas" tabindex="-1"><i class="bi bi-cursor" aria-hidden="true"></i>Working on the canvas</h3>
+    <div class="tt-help-wrap"><table class="tt-help-table">
+        <thead><tr><th>To…</th><th>Do this</th></tr></thead>
+        <tbody>
+            <tr><td>Add a shape</td><td>Click a palette item (it lands in the middle of the view) or drag it to a spot. Double-clicking adds just one.</td></tr>
+            <tr><td>Select</td><td>Click a shape or line. Drag on empty canvas to draw a selection box around several shapes. <kbd>Esc</kbd> deselects.</td></tr>
+            <tr><td>Move</td><td>Drag a shape, or use the arrow keys (<kbd>Shift</kbd> for five grid steps). Shapes snap to the grid unless snapping is off.</td></tr>
+            <tr><td>Resize</td><td>Drag the handle at the bottom-right corner of a selected shape.</td></tr>
+            <tr><td>Connect</td><td>Hover a shape, then drag from one of its connection points to another shape. <kbd>Esc</kbd> cancels a connection in progress.</td></tr>
+            <tr><td>Delete</td><td><kbd>Delete</kbd> / <kbd>Backspace</kbd>, or <span class="tt-help-ui">Delete</span> in Properties. It asks first if threats would be deleted with it.</td></tr>
+            <tr><td>Copy and paste</td><td><kbd>Ctrl/⌘</kbd>+<kbd>C</kbd> and <kbd>Ctrl/⌘</kbd>+<kbd>V</kbd> copy the selected shapes with the flows and threats between them. Each paste lands a little further away.</td></tr>
+            <tr><td>Undo and redo</td><td>The arrow buttons in the canvas toolbar, <kbd>Ctrl/⌘</kbd>+<kbd>Z</kbd> and <kbd>Ctrl/⌘</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> (or <kbd>Ctrl</kbd>+<kbd>Y</kbd>).</td></tr>
+            <tr><td>Zoom</td><td>The <span class="tt-help-ui">+</span> / <span class="tt-help-ui">−</span> buttons or the mouse wheel zoom around the centre of the view; <span class="tt-help-ui">Zoom to fit</span> shows the whole page. On touch screens, pinch.</td></tr>
+            <tr><td>Pan</td><td>Hold the right mouse button and drag, or drag empty canvas with one finger.</td></tr>
+            <tr><td>Line up shapes</td><td>Select two or more: the align toolbar offers align left, centres, right, top, middles and bottom, and (with three or more) <em>Space evenly across</em> and <em>Space evenly down</em>.</td></tr>
+            <tr><td>Copy a look</td><td>The <strong>format painter</strong> (the brush icon in the canvas toolbar): select a shape, click the brush, then click another shape of the same kind to copy its colours, line style and 3D look (never its name, type or security settings). Double-click the brush to paint several shapes; <kbd>Esc</kbd> stops.</td></tr>
+            <tr><td>Stack order</td><td>Properties → <em>Component Z-Depth / Order</em>: Back, Backward, Forward, Front.</td></tr>
+            <tr><td>Grid</td><td>The grid button: 10, 20 (default), 40 or 80 px, and <em>Snap to Grid</em> on or off.</td></tr>
+            <tr><td>Dark canvas</td><td>The moon button switches the canvas between light and dark. PNG exports follow it.</td></tr>
+            <tr><td>See the whole diagram</td><td>☰ → View → Canvas → <em>Show minimap</em>: a small map in the top-right corner; click or drag in it to move the view.</td></tr>
+            <tr><td>Save a picture</td><td><span class="tt-help-ui">Save as PNG</span> in the canvas toolbar saves the current page (with the title block and legend if they are shown).</td></tr>
+        </tbody>
+    </table></div>
+    <div class="tt-help-note tip"><strong>The pen-like brush is the format painter</strong>It does not draw. To draw a line, drag from a connection point.</div>
+</section>
+
+<section class="tt-help-section" id="help-flows" aria-labelledby="help-h-flows">
+    <div class="tt-help-kicker">Drawing</div>
+    <h3 id="help-h-flows" tabindex="-1"><i class="bi bi-arrow-left-right" aria-hidden="true"></i>Data flows</h3>
+    <p>A data flow is a line from a <em>source</em> to a <em>destination</em>. Select it to edit it in Properties:</p>
+    <ul>
+        <li><strong>Name</strong> (what travels, e.g. “Card details”), <strong>Source / Destination Endpoint</strong> (reconnect the ends; only shapes on the same page are listed) and <strong>Target Infrastructure Ports Context</strong> (e.g. <code>443/tcp</code>).</li>
+        <li><strong>Security switches:</strong> <em>Encrypted Communication Stream</em> and <em>Authenticated Communication Stream</em>. Unencrypted or unauthenticated flows, especially across a boundary, trigger suggestions and make attack paths riskier.</li>
+        <li><strong>Bi-directional Communication Stream</strong> (arrows at both ends), <strong>Dashed Line</strong>, <strong>Line Thickness</strong> and <strong>Line Display Color</strong> (16 colours).</li>
+        <li><strong>Curve Rendering Style:</strong> <em>Smooth Curved Spline</em>, <em>Sharp Angled Polyline</em> or <em>Elbow (right angles)</em>. Elbow lines find their own way around shapes and update while you move them; trust zones, swimlanes, boundary lines and text are crossed freely.</li>
+        <li><strong>Bend points:</strong> click a selected flow to add one, drag a point to move it, click a point to remove it; <span class="tt-help-ui">Clear bend points</span> removes all. (On elbow lines a click adds nothing: their route is automatic, and existing bend points act as waypoints.)</li>
+        <li><strong>Line jumps:</strong> where two flows cross, the later one hops over the other. Switch it off in ☰ → View → Canvas.</li>
+        <li><strong>Traffic animation</strong> and <strong>Status check</strong>: see <a href="#help/traffic" data-help-goto="traffic">Traffic animation</a> and <a href="#help/live-status" data-help-goto="live-status">Live status</a>.</li>
+    </ul>
+    <figure class="tt-help-fig">
+        <img src="docs/help/properties-flow.png" alt="Properties of a selected data flow: endpoints, curve style, security switches, colours and traffic animation" width="350" height="820" loading="lazy">
+        <figcaption>Properties of a data flow.</figcaption>
+    </figure>
+</section>
+
+<section class="tt-help-section" id="help-properties" aria-labelledby="help-h-properties">
+    <div class="tt-help-kicker">Drawing</div>
+    <h3 id="help-h-properties" tabindex="-1"><i class="bi bi-sliders2" aria-hidden="true"></i>Properties</h3>
+    <div class="tt-help-split">
+        <div>
+            <p>The <span class="tt-help-ui">Properties</span> tab shows only what applies to the selected item. For a component:</p>
+            <ul>
+                <li><strong>Type:</strong> turn it into another kind (process → data store, rectangle → decision…). Name, flows and threats stay.</li>
+                <li><strong>Component Label</strong> with name suggestions for the type, and <strong>Detail page</strong>: the shape gets a ↗ badge that opens that page (drill-down).</li>
+                <li><strong>Component State:</strong> <em>Disable Component Card</em> greys it out and leaves it out of the analysis.</li>
+                <li><strong>Icon</strong> (Component Subtype Graphic Icon) from 200+ icons in groups (servers, code, web, databases, security, people, attack &amp; threat, security artefacts, identity &amp; directory…). The icon also tells the threat engine what the component is.</li>
+                <li><strong>Display:</strong> <em>Card</em> (box with icon and name), <em>Icon only</em> (name underneath, in the icon colour) or <em>Circle badge</em> (with its own fill and border colours).</li>
+                <li><strong>Security Controls Configuration</strong> (the switches below) and <strong>Associated Threats</strong>.</li>
+                <li><strong>Notes</strong> (Architectural Scope Notes), <strong>Z-order</strong>, <strong>Disable Isometric Projection</strong>, and <strong>Status check</strong>.</li>
+                <li>Flowchart shapes add <em>Flowchart Shape Style</em> (fill, border, width, 3D, height); diagram shapes <em>Diagram Text</em>; attack steps their <em>ATT&amp;CK tactic</em> and <em>technique</em>; tables, swimlanes and lanes their rows, columns and themes.</li>
+            </ul>
+        </div>
+        <figure class="tt-help-fig narrow">
+            <img src="docs/help/properties-component.png" alt="Properties of a selected process: type, label, icon, display and security switches" width="350" height="820" loading="lazy">
+            <figcaption>Properties of a process.</figcaption>
+        </figure>
+    </div>
+    <h4>Security switches</h4>
+    <div class="tt-help-wrap"><table class="tt-help-table">
+        <thead><tr><th>Component</th><th>Switches</th></tr></thead>
+        <tbody>
+            <tr><td>Process</td><td>Runs with High System Privileges · Telemetry Logging Enabled · Handles Highly Sensitive Data · Crown Jewel</td></tr>
+            <tr><td>Data store</td><td>Tamper Audit Logging Enabled · Stores High-Value Secret Credentials · Stores PII Account Data · Encrypted At Rest · Handles Highly Sensitive Data · Crown Jewel</td></tr>
+            <tr><td>External entity</td><td>Unauthenticated Access Allowed · Is Privileged User Context · MFA Required · VPN Required</td></tr>
+            <tr><td>Data flow</td><td>Encrypted Communication Stream · Authenticated Communication Stream</td></tr>
+        </tbody>
+    </table></div>
+    <p>Switched-on properties show as small icons on the shape. A <strong>Crown Jewel</strong> is a target for attack paths.</p>
+</section>
+
+<section class="tt-help-section" id="help-pages-layers" aria-labelledby="help-h-pages-layers">
+    <div class="tt-help-kicker">Drawing</div>
+    <h3 id="help-h-pages-layers" tabindex="-1"><i class="bi bi-layers" aria-hidden="true"></i>Pages &amp; layers</h3>
+    <figure class="tt-help-fig">
+        <svg viewBox="0 0 760 210" role="img" aria-labelledby="help-ill-pages-t help-ill-pages-d">
+            <title id="help-ill-pages-t">Pages and layers</title>
+            <desc id="help-ill-pages-d">Left: three page tabs, Overview, Payments and Admin; a shape on Overview has a drill-down badge pointing to the Payments page. Right: a stack of three layers, Network, Applications and Notes; one is hidden and one is locked. One threat register spans all pages.</desc>
+            <g><rect x="20" y="20" width="90" height="26" rx="6" class="f-paper s-blue" stroke-width="2"/><text x="65" y="38" class="c b sm blue">Overview</text>
+               <rect x="114" y="20" width="90" height="26" rx="6" class="f-soft s-line" stroke-width="1.5"/><text x="159" y="38" class="c sm">Payments</text>
+               <rect x="208" y="20" width="70" height="26" rx="6" class="f-soft s-line" stroke-width="1.5"/><text x="243" y="38" class="c sm">Admin</text>
+               <rect x="282" y="20" width="26" height="26" rx="6" class="f-soft s-line" stroke-width="1.5"/><text x="295" y="38" class="c b">+</text></g>
+            <rect x="20" y="46" width="320" height="130" rx="6" class="f-paper s-line" stroke-width="1.5"/>
+            <rect x="60" y="80" width="130" height="56" rx="10" class="f-blue-soft s-blue" stroke-width="2"/><text x="125" y="113" class="c b">Payment service</text>
+            <circle cx="190" cy="80" r="11" class="f-blue"/><text x="190" y="84" class="c b w sm">↗</text>
+            <path d="M200 72 C260 40 150 30 159 46" class="f-none s-blue dash" stroke-width="1.5" marker-end="url(#help-arrow)"/>
+            <text x="260" y="120" class="sm m">Detail page</text><text x="260" y="134" class="sm m">(drill-down)</text>
+            <rect x="20" y="182" width="320" height="22" rx="5" class="f-red-soft s-red" stroke-width="1"/><text x="180" y="197" class="c sm b">One threat register and one set of Insights for all pages</text>
+            <g transform="translate(320 20)">
+                <path d="M40 120 L170 150 L300 120 L170 90 z" class="f-amber-soft s-amber" stroke-width="2"/>
+                <path d="M40 85 L170 115 L300 85 L170 55 z" class="f-blue-soft s-blue" stroke-width="2"/>
+                <path d="M40 50 L170 80 L300 50 L170 20 z" class="f-soft s-muted dash" stroke-width="2" opacity=".7"/>
+                <text x="310" y="54" class="sm b">Notes <tspan class="m">· hidden</tspan></text>
+                <text x="310" y="89" class="sm b">Applications <tspan class="blue">· active</tspan></text>
+                <text x="310" y="124" class="sm b">Network <tspan class="m">· locked</tspan></text>
+                <text x="170" y="180" class="c sm m">Hidden layers still count in the analysis</text>
+            </g>
+        </svg>
+        <figcaption><b>Figure 8.</b> Pages split a big model; layers organise one page. Both are views of one model.</figcaption>
+    </figure>
+    <h4>Pages</h4>
+    <ul>
+        <li>The tabs at the top left of the canvas. <span class="tt-help-ui">+</span> adds a page; double-click a tab (or press <kbd>F2</kbd>) to rename it; <kbd>←</kbd> <kbd>→</kbd>, <kbd>Home</kbd> and <kbd>End</kbd> move between tabs.</li>
+        <li>While renaming, the <span class="tt-help-ui">×</span> in the tab’s corner deletes the page with its shapes (after asking; undo brings it back).</li>
+        <li><span class="tt-help-ui">Move selection to…</span> moves shapes to another page. Give a shape a <strong>Detail page</strong> in Properties to get a ↗ badge that opens it; <span class="tt-help-ui">◀</span> goes back.</li>
+        <li>All pages share one threat register, one mitigation list and one set of insights; each page keeps its own trust zones.</li>
+    </ul>
+    <h4>Layers</h4>
+    <ul>
+        <li>The <span class="tt-help-ui">Layers</span> tab in the right panel. <span class="tt-help-ui">Add layer</span>; click a layer to make it active (new shapes go there); double-click (or <kbd>F2</kbd>) to rename it.</li>
+        <li>Hide a layer to declutter, lock it so its shapes can’t be moved, or move the selection to it. Hidden layers still count in the threat analysis, and flow ends never attach to hidden shapes.</li>
+    </ul>
+</section>
+
+<section class="tt-help-section" id="help-isometric-3d" aria-labelledby="help-h-isometric-3d">
+    <div class="tt-help-kicker">Drawing</div>
+    <h3 id="help-h-isometric-3d" tabindex="-1"><i class="bi bi-box" aria-hidden="true"></i>Isometric views &amp; 3D</h3>
+    <p>The view button in the canvas toolbar switches between <strong>2D Flat View</strong>, <strong>NE Isometric View</strong> and <strong>NW Isometric View</strong>. The model doesn’t change, only how it is drawn; new flows are sharp (straight segments) in the isometric views.</p>
+    <figure class="tt-help-fig">
+        <svg viewBox="0 0 760 220" role="img" aria-labelledby="help-ill-iso-t help-ill-iso-d">
+            <title id="help-ill-iso-t">Flat, NE isometric and NW isometric views of the same 3D shape</title>
+            <desc id="help-ill-iso-d">Three versions of one box. In the flat view it is a rectangle with a raised edge. In the NE view the diamond-shaped ground tilts so the box’s right side faces you; in the NW view it is mirrored, with the left side facing you. Arrows show the 3D height.</desc>
+            <g transform="translate(40 40)">
+                <rect x="20" y="34" width="150" height="80" rx="4" class="f-blue-soft s-blue" stroke-width="2"/>
+                <path d="M20 34 l14 -14 h150 l-14 14 M170 34 l14 -14 v80 l-14 14" class="f-blue-soft s-blue" stroke-width="2" stroke-linejoin="round"/>
+                <text x="95" y="80" class="c b">App server</text>
+                <text x="100" y="160" class="c b">2D flat</text><text x="100" y="175" class="c sm m">a solid with depth</text>
+            </g>
+            <g transform="translate(300 30)">
+                <path d="M0 110 L80 70 L160 110 L80 150 z" class="f-soft s-line" stroke-width="1.5"/>
+                <path d="M30 95 L80 70 L130 95 L80 120 z" class="f-blue-soft s-blue" stroke-width="2" transform="translate(0 -46)"/>
+                <path d="M30 49 V95 L80 120 V74 z" class="f-blue-soft s-blue" stroke-width="2" opacity=".85"/>
+                <path d="M130 49 V95 L80 120 V74 z" class="f-blue s-blue" stroke-width="2" opacity=".35"/>
+                <path d="M146 49 V95" class="s-accent" stroke-width="2" marker-end="url(#help-arrow)" marker-start="url(#help-arrow)"/>
+                <text x="152" y="76" class="sm b">3D height</text>
+                <text x="80" y="170" class="c b">NE isometric</text><text x="80" y="185" class="c sm m">right side towards you</text>
+            </g>
+            <g transform="translate(540 30)">
+                <path d="M0 110 L80 70 L160 110 L80 150 z" class="f-soft s-line" stroke-width="1.5"/>
+                <path d="M30 95 L80 70 L130 95 L80 120 z" class="f-blue-soft s-blue" stroke-width="2" transform="translate(0 -46)"/>
+                <path d="M30 49 V95 L80 120 V74 z" class="f-blue s-blue" stroke-width="2" opacity=".35"/>
+                <path d="M130 49 V95 L80 120 V74 z" class="f-blue-soft s-blue" stroke-width="2" opacity=".85"/>
+                <text x="80" y="170" class="c b">NW isometric</text><text x="80" y="185" class="c sm m">mirrored: left side towards you</text>
+            </g>
+        </svg>
+        <figcaption><b>Figure 9.</b> One 3D shape in the three views. In the isometric views it stands on the ground as a true isometric solid.</figcaption>
+    </figure>
+    <ul>
+        <li><strong>3D flowchart shapes:</strong> tick <em>3D</em> in Properties. In the flat view the shape is drawn as an extruded solid (a 3D process is a cube, a 3D connector a database cylinder; a 3D decision or terminator is a raised tile); in the isometric views it stands up from the ground. The format painter and quick add carry the 3D look; PNG and print show the same drawing.</li>
+        <li><strong>3D height:</strong> a slider, a number box and <em>Auto</em> (worked out from the shape’s size). Stacked layers also have <em>Layers</em> (1–10) and <em>Layer thickness</em>.</li>
+        <li><strong>Per shape:</strong> <em>Disable Isometric Projection</em> keeps a shape (a headline, say) flat in the isometric views.</li>
+    </ul>
+    <div class="tt-help-pair">
+        <figure class="tt-help-fig"><img src="docs/help/3d-flat.png" alt="3D flowchart shapes, a sphere, a cone, a pyramid and stacked layers in the flat view" width="888" height="498" loading="lazy"><figcaption>3D shapes in the flat view.</figcaption></figure>
+        <figure class="tt-help-fig"><img src="docs/help/3d-ne.png" alt="The same 3D shapes in the NE isometric view" width="888" height="498" loading="lazy"><figcaption>The same model in the NE isometric view.</figcaption></figure>
+    </div>
+</section>
+
+<!-- ============================== ANALYSING ============================== -->
+<section class="tt-help-section" id="help-threats" aria-labelledby="help-h-threats">
+    <div class="tt-help-kicker">Analysing</div>
+    <h3 id="help-h-threats" tabindex="-1"><i class="bi bi-bug" aria-hidden="true"></i>Threats &amp; templates</h3>
+    <div class="tt-help-split">
+        <div>
+            <p>Select a component or flow and open <span class="tt-help-ui">Threat Templates</span> in the right panel. The list is <strong>ranked</strong>:</p>
+            <ol>
+                <li><strong>Triggered by your model:</strong> security switches, boundary crossings and connected flows, with the reason (for example “unencrypted flow crossing a trust boundary”).</li>
+                <li><strong>Relevant for this component:</strong> recognised from its icon and name (an API, an S3 bucket, an administrator…).</li>
+                <li>The rest of the library for that element type.</li>
+            </ol>
+            <p>For each suggestion you can <strong>Add</strong> it (it then leaves the list), <strong>ignore</strong> it, or mark it <strong>not applicable</strong> with a reason, which is kept in the model and the report. Hidden suggestions can be shown again under <em>Hidden</em>.</p>
+            <ul>
+                <li><strong>Category Filters:</strong> click the STRIDE badges to filter; the search box filters by text; <em>Sort Templates</em> orders them.</li>
+                <li><strong>Add</strong> (next to the search) creates your own template: title, STRIDE category, description, typical controls (one per line), references.</li>
+                <li><strong>Load / Save</strong> back up the whole template library (every field, including the built-ins you deleted) as JSON, to restore it in another browser.</li>
+            </ul>
+        </div>
+        <figure class="tt-help-fig narrow">
+            <img src="docs/help/templates.png" alt="The Threat Templates tab with ranked suggestions for the selected component" width="350" height="820" loading="lazy">
+            <figcaption>Ranked suggestions, with the reason they apply.</figcaption>
+        </figure>
+    </div>
+    <div class="tt-help-note"><strong>Where the threats come from</strong>The library is <code>threat_templates.json</code> (601 threats with conditions that trigger them). If the file can’t be loaded (for example from <code>file://</code>), the copy embedded in the app is used.</div>
+</section>
+
+<section class="tt-help-section" id="help-register" aria-labelledby="help-h-register">
+    <div class="tt-help-kicker">Analysing</div>
+    <h3 id="help-h-register" tabindex="-1"><i class="bi bi-table" aria-hidden="true"></i>Threat register</h3>
+    <p>The <span class="tt-help-ui">Active Threat Register</span> (bottom panel) lists every threat in the model. Click a column header to sort (Severity sorts by severity), click a row to jump to its component, and use the buttons in <em>Actions</em> to edit or delete.</p>
+    <ul>
+        <li><strong>Filters:</strong> search text, severity, STRIDE category and status (including <em>Not fully mitigated</em> and <em>Needs review</em>).</li>
+        <li><strong>New Threat</strong> adds a threat by hand; <strong>Export CSV</strong> saves the filtered list.</li>
+        <li><strong>Editing a threat:</strong> title, STRIDE category, technical description, linked component or flow, remediation status (<em>Open / Unmitigated</em>, <em>Partially mitigated</em>, <em>Mitigated / Resolved</em>), likelihood and impact, and the mitigations that cover it.</li>
+        <li><strong>Needs review:</strong> an imported threat with an unknown category or status, or a missing component, is flagged for review instead of being dropped.</li>
+    </ul>
+    <figure class="tt-help-fig">
+        <svg viewBox="0 0 760 250" role="img" aria-labelledby="help-ill-risk-t help-ill-risk-d">
+            <title id="help-ill-risk-t">Risk score: likelihood times impact</title>
+            <desc id="help-ill-risk-d">A five by five grid with likelihood on the vertical axis and impact on the horizontal axis. Each cell shows the product. Cells under 5 are Low (green), 5 to 9 Medium (amber), 10 to 14 High (light red) and 15 or more Critical (red). A legend on the right repeats the bands.</desc>
+            <g transform="translate(70 20)" id="help-risk-grid">
+                <g class="sm">
+                    <rect x="0" y="0" width="64" height="38" class="f-amber-soft s-paper"/><rect x="64" y="0" width="64" height="38" class="f-red-soft s-paper"/><rect x="128" y="0" width="64" height="38" class="f-red s-paper" opacity=".8"/><rect x="192" y="0" width="64" height="38" class="f-red s-paper" opacity=".8"/><rect x="256" y="0" width="64" height="38" class="f-red s-paper" opacity=".8"/>
+                    <rect x="0" y="38" width="64" height="38" class="f-green-soft s-paper"/><rect x="64" y="38" width="64" height="38" class="f-amber-soft s-paper"/><rect x="128" y="38" width="64" height="38" class="f-red-soft s-paper"/><rect x="192" y="38" width="64" height="38" class="f-red s-paper" opacity=".8"/><rect x="256" y="38" width="64" height="38" class="f-red s-paper" opacity=".8"/>
+                    <rect x="0" y="76" width="64" height="38" class="f-green-soft s-paper"/><rect x="64" y="76" width="64" height="38" class="f-amber-soft s-paper"/><rect x="128" y="76" width="64" height="38" class="f-amber-soft s-paper"/><rect x="192" y="76" width="64" height="38" class="f-red-soft s-paper"/><rect x="256" y="76" width="64" height="38" class="f-red s-paper" opacity=".8"/>
+                    <rect x="0" y="114" width="64" height="38" class="f-green-soft s-paper"/><rect x="64" y="114" width="64" height="38" class="f-green-soft s-paper"/><rect x="128" y="114" width="64" height="38" class="f-amber-soft s-paper"/><rect x="192" y="114" width="64" height="38" class="f-amber-soft s-paper"/><rect x="256" y="114" width="64" height="38" class="f-red-soft s-paper"/>
+                    <rect x="0" y="152" width="64" height="38" class="f-green-soft s-paper"/><rect x="64" y="152" width="64" height="38" class="f-green-soft s-paper"/><rect x="128" y="152" width="64" height="38" class="f-green-soft s-paper"/><rect x="192" y="152" width="64" height="38" class="f-green-soft s-paper"/><rect x="256" y="152" width="64" height="38" class="f-amber-soft s-paper"/>
+                </g>
+                <g class="c b">
+                    <text x="32" y="24" class="c b">5</text><text x="96" y="24" class="c b">10</text><text x="160" y="24" class="c b w">15</text><text x="224" y="24" class="c b w">20</text><text x="288" y="24" class="c b w">25</text>
+                    <text x="32" y="62" class="c b">4</text><text x="96" y="62" class="c b">8</text><text x="160" y="62" class="c b">12</text><text x="224" y="62" class="c b w">16</text><text x="288" y="62" class="c b w">20</text>
+                    <text x="32" y="100" class="c b">3</text><text x="96" y="100" class="c b">6</text><text x="160" y="100" class="c b">9</text><text x="224" y="100" class="c b">12</text><text x="288" y="100" class="c b w">15</text>
+                    <text x="32" y="138" class="c b">2</text><text x="96" y="138" class="c b">4</text><text x="160" y="138" class="c b">6</text><text x="224" y="138" class="c b">8</text><text x="288" y="138" class="c b">10</text>
+                    <text x="32" y="176" class="c b">1</text><text x="96" y="176" class="c b">2</text><text x="160" y="176" class="c b">3</text><text x="224" y="176" class="c b">4</text><text x="288" y="176" class="c b">5</text>
+                </g>
+                <text x="-14" y="24" class="c sm m">5</text><text x="-14" y="176" class="c sm m">1</text>
+                <text x="-40" y="100" class="c sm b" transform="rotate(-90 -40 100)">Likelihood</text>
+                <text x="32" y="206" class="c sm m">1</text><text x="288" y="206" class="c sm m">5</text>
+                <text x="160" y="222" class="c sm b">Impact</text>
+            </g>
+            <g transform="translate(450 40)">
+                <text x="0" y="0" class="b">Severity bands</text>
+                <rect x="0" y="16" width="22" height="22" rx="4" class="f-red" opacity=".8"/><text x="32" y="32">Critical: score 15–25</text>
+                <rect x="0" y="48" width="22" height="22" rx="4" class="f-red-soft s-red"/><text x="32" y="64">High: 10–14</text>
+                <rect x="0" y="80" width="22" height="22" rx="4" class="f-amber-soft s-amber"/><text x="32" y="96">Medium: 5–9</text>
+                <rect x="0" y="112" width="22" height="22" rx="4" class="f-green-soft s-green"/><text x="32" y="128">Low: 1–4</text>
+                <text x="0" y="164" class="sm m">Score = likelihood (1–5) × impact (1–5).</text>
+                <text x="0" y="180" class="sm m">Insights shows the open threats on this grid.</text>
+            </g>
+        </svg>
+        <figcaption><b>Figure 10.</b> How the score and severity of a threat are worked out.</figcaption>
+    </figure>
+    <figure class="tt-help-fig">
+        <img src="docs/help/register.png" alt="The Active Threat Register with filters, severity, score and status columns" width="1280" height="330" loading="lazy">
+        <figcaption>The threat register of the demo model.</figcaption>
+    </figure>
+</section>
+
+<section class="tt-help-section" id="help-mitigations" aria-labelledby="help-h-mitigations">
+    <div class="tt-help-kicker">Analysing</div>
+    <h3 id="help-h-mitigations" tabindex="-1"><i class="bi bi-shield-check" aria-hidden="true"></i>Mitigations</h3>
+    <p>A mitigation is something you do about one or more threats. In the <span class="tt-help-ui">Mitigations</span> tab, <span class="tt-help-ui">New Mitigation</span> opens a dialog with a <strong>title</strong>, <strong>status</strong> (<em>Proposed</em>, <em>In progress</em>, <em>Implemented</em>, <em>Verified</em>, <em>Not applicable</em>), a <strong>description</strong> of how it is implemented, an <strong>owner</strong>, a <strong>ticket link</strong> and the <strong>threats it covers</strong>.</p>
+    <ul>
+        <li>Filter by text or status (<em>Not done yet</em> shows everything that isn’t implemented or verified). Click a row (or press <kbd>Enter</kbd> on it) to edit.</li>
+        <li>The register shows each threat’s mitigations; Insights counts <em>Mitigations done</em> and <em>Open threats without a mitigation</em>.</li>
+    </ul>
+</section>
+
+<section class="tt-help-section" id="help-insights" aria-labelledby="help-h-insights">
+    <div class="tt-help-kicker">Analysing</div>
+    <h3 id="help-h-insights" tabindex="-1"><i class="bi bi-graph-up" aria-hidden="true"></i>Insights &amp; attack paths</h3>
+    <p>The <span class="tt-help-ui">Insights</span> tab sums up the model and what is still missing:</p>
+    <ul>
+        <li><strong>Tiles:</strong> threats, critical, open critical / high, not fully mitigated, need review, components without threats, rule suggestions, flows crossing a boundary, marked not applicable, ignored, mitigations done, open threats without a mitigation.</li>
+        <li><strong>Open risk heat map</strong> (likelihood × impact of the threats that are not mitigated; hover a cell for the count).</li>
+        <li><strong>Open suggestions</strong> for the whole model, filtered by component, STRIDE category or reason (<em>from switches, flows and boundaries</em> or <em>from the icon or name</em>), with <em>Add all</em>.</li>
+        <li><strong>STRIDE coverage per component</strong>, <strong>Model checks</strong> (unconnected components, duplicate names, …) and the list of <strong>data flows crossing a trust boundary</strong>.</li>
+        <li><strong>Attack paths</strong> from entry points to crown jewels.</li>
+    </ul>
+    <h4>Attack paths</h4>
+    <figure class="tt-help-fig">
+        <svg viewBox="0 0 760 180" role="img" aria-labelledby="help-ill-paths-t help-ill-paths-d">
+            <title id="help-ill-paths-t">How attack paths are found and ranked</title>
+            <desc id="help-ill-paths-d">An entry point, the internet user, connects through a web app and an API to a crown jewel database. Hops that are unencrypted or unauthenticated, and open threats on the way, add to the score; shorter routes score higher.</desc>
+            <circle cx="70" cy="80" r="34" class="f-red-soft s-red" stroke-width="2"/><text x="70" y="78" class="c b sm">Internet</text><text x="70" y="92" class="c sm">user</text>
+            <rect x="180" y="52" width="130" height="56" rx="10" class="f-blue-soft s-blue" stroke-width="2"/><text x="245" y="85" class="c b">Web app</text>
+            <rect x="390" y="52" width="130" height="56" rx="10" class="f-blue-soft s-blue" stroke-width="2"/><text x="455" y="85" class="c b">API</text>
+            <circle cx="650" cy="80" r="36" class="f-amber-soft s-amber" stroke-width="2.5"/><text x="650" y="78" class="c b sm">Customer</text><text x="650" y="92" class="c b sm">DB 💎</text>
+            <path d="M104 80 H176" class="s-red" stroke-width="4" marker-end="url(#help-arrow)"/>
+            <path d="M310 80 H386" class="s-red" stroke-width="4" marker-end="url(#help-arrow)"/>
+            <path d="M520 80 H610" class="s-red" stroke-width="4" marker-end="url(#help-arrow)"/>
+            <text x="140" y="68" class="c sm red b">no TLS +</text>
+            <rect x="330" y="20" width="36" height="18" rx="4" class="f-red"/><text x="348" y="33" class="c sm b w">2</text><text x="348" y="54" class="c sm red b">open threats +</text>
+            <text x="565" y="68" class="c sm red b">no auth +</text>
+            <text x="70" y="140" class="c sm m">entry point</text><text x="650" y="140" class="c sm m">crown jewel</text>
+            <text x="360" y="150" class="c sm">Fewer hops score higher · the top path is highlighted on the canvas</text>
+        </svg>
+        <figcaption><b>Figure 11.</b> Entry points are external entities and components outside every trust zone; targets are crown jewels. Disabled components and attack-tree notation are skipped.</figcaption>
+    </figure>
+    <p>Pick a start or target to narrow the list, and click a path to highlight it on the canvas (click again to clear). The Markdown report lists the ranked paths too.</p>
+    <figure class="tt-help-fig">
+        <img src="docs/help/insights.png" alt="The Insights tab with summary tiles, the heat map and open suggestions" width="1280" height="560" loading="lazy">
+        <figcaption>Insights for the demo model.</figcaption>
+    </figure>
+    <figure class="tt-help-fig">
+        <img src="docs/help/attack-paths.png" alt="Attack paths in Insights with the top path highlighted on the canvas" width="1280" height="860" loading="lazy">
+        <figcaption>Attack paths, with the top path highlighted on the canvas.</figcaption>
+    </figure>
+</section>
+
+<!-- ============================== PRESENTING ============================== -->
+<section class="tt-help-section" id="help-review-mode" aria-labelledby="help-h-review-mode">
+    <div class="tt-help-kicker">Presenting</div>
+    <h3 id="help-h-review-mode" tabindex="-1"><i class="bi bi-lock" aria-hidden="true"></i>Review mode</h3>
+    <p>☰ → View → <span class="tt-help-ui">Review mode (freeze layout)</span> freezes the layout for a review meeting. Shapes can still be selected, so names, properties, threats and mitigations stay editable, but nothing can be moved, resized, added, deleted, pasted, aligned, retyped or moved to another page; flows can’t be bent or reconnected; the legend is frozen; and undo steps that would change the layout are skipped.</p>
+    <p>Review mode is saved with the model, so whoever opens the file sees it frozen too. Click the yellow <span class="tt-help-ui">Review mode</span> badge in the top bar to turn it off.</p>
+</section>
+
+<section class="tt-help-section" id="help-legend" aria-labelledby="help-h-legend">
+    <div class="tt-help-kicker">Presenting</div>
+    <h3 id="help-h-legend" tabindex="-1"><i class="bi bi-card-heading" aria-hidden="true"></i>Title block &amp; legend</h3>
+    <div class="tt-help-split">
+        <div>
+            <p>Open ☰ → View → <span class="tt-help-ui">Title block &amp; legend…</span> (or Settings). The settings are saved with the model and appear on the canvas, in <em>Save as PNG</em> and in print.</p>
+            <ul>
+                <li><strong>Title block:</strong> the model name and the diagram details from <em>Configure Session Metadata</em>: level (context, level 1–3), status (draft, in review, approved), version, date and author.</li>
+                <li><strong>Legend:</strong> a title of your choice, one or two columns.</li>
+                <li><strong>Items on this page:</strong> everything the page draws (shape types including 3D variants, icons and cloud icons, flow styles and colours, threat and crown-jewel markers). Tick what the legend shows and edit each item’s text; <em>Reset labels</em> brings the automatic text back. New kinds of items are shown until you untick them.</li>
+                <li><strong>Position:</strong> any corner, or <em>Free-floating</em>: drag the legend anywhere (or focus it and use the arrow keys, <kbd>Shift</kbd> for bigger steps). It pans and zooms with the diagram. <em>Lock position</em> keeps it in place.</li>
+            </ul>
+            <p>On screens narrower than 576 px the legend is hidden on the canvas (it is still in the PNG and print).</p>
+        </div>
+        <figure class="tt-help-fig">
+            <img src="docs/help/legend-dialog.png" alt="The Title block and legend dialog with the list of legend items" width="800" height="820" loading="lazy">
+            <figcaption>The Title block &amp; legend dialog.</figcaption>
+        </figure>
+    </div>
+</section>
+
+<section class="tt-help-section" id="help-profiles" aria-labelledby="help-h-profiles">
+    <div class="tt-help-kicker">Presenting</div>
+    <h3 id="help-h-profiles" tabindex="-1"><i class="bi bi-person-gear" aria-hidden="true"></i>Profiles: choosing what the screen shows</h3>
+    <p>The button left of ☰ asks <em>What are you modelling?</em> A profile decides which palette sections, icon sets, icon-picker groups, right- and bottom-panel tabs and panels you see, and which palette section opens. Your choice is remembered in this browser. Hiding something never changes the shapes on the canvas.</p>
+    <div class="tt-help-wrap"><table class="tt-help-table">
+        <thead><tr><th>Profile</th><th>Shows</th><th>Opens</th></tr></thead>
+        <tbody>
+            <tr><td>Threat Modeling (default)</td><td>The threat-modelling palette, text items, templates, register, mitigations and insights</td><td>Threat Modeling</td></tr>
+            <tr><td>Attack Path Modeling</td><td>Attack Paths &amp; Trees and text items; no templates and no bottom panel</td><td>Attack Paths &amp; Trees</td></tr>
+            <tr><td>Architecture &amp; Process</td><td>Flowchart, C4, UML, BPMN and ERD shapes; no threat templates or bottom panel</td><td>Architecture &amp; Process Diagrams</td></tr>
+            <tr><td>Infrastructure &amp; Network</td><td>Data Nodes &amp; Icons, ready-made nodes and every icon set; no templates and no bottom panel</td><td>Data Nodes &amp; Icons</td></tr>
+            <tr><td>Flowcharts</td><td>Flowchart shapes only</td><td>Flowchart Diagram Items</td></tr>
+            <tr><td>Review &amp; Presentation</td><td>The canvas only</td><td>—</td></tr>
+            <tr><td>Show All</td><td>Everything</td><td>—</td></tr>
+        </tbody>
+    </table></div>
+    <ul>
+        <li><strong>Edit profiles:</strong> ☰ → Settings… → <em>Profiles</em> (or <em>Edit profiles…</em> in the profile menu). Pick a profile, rename it, choose the palette section it opens, switch any section or sub-group, icon set, icon-picker group, tab or panel on or off, and use <em>New</em>, <em>Duplicate</em>, <em>Delete…</em> or <em>Restore default profiles…</em>. Changes to the profile in use apply at once.</li>
+        <li>☰ → View also edits the profile in use (<em>Palette sections</em>, <em>Icon sets</em>, <em>Panel tabs</em> and the panels).</li>
+        <li>The Activity Log tab is hidden in every built-in profile; show it from ☰ → View → Panel tabs.</li>
+    </ul>
+    <div class="tt-help-pair">
+        <figure class="tt-help-fig"><img src="docs/help/profiles.png" alt="The profile menu: What are you modelling?" width="344" height="363" loading="lazy"><figcaption>The profile menu.</figcaption></figure>
+        <figure class="tt-help-fig"><img src="docs/help/settings-profiles.png" alt="Settings, Profiles: the profile editor with switches for palette sections, icon sets, tabs and panels" width="784" height="700" loading="lazy"><figcaption>Settings → Profiles.</figcaption></figure>
+    </div>
+</section>
+
+<section class="tt-help-section" id="help-settings" aria-labelledby="help-h-settings">
+    <div class="tt-help-kicker">Presenting</div>
+    <h3 id="help-h-settings" tabindex="-1"><i class="bi bi-gear" aria-hidden="true"></i>Settings</h3>
+    <p>☰ → <span class="tt-help-ui">Settings…</span> has four sections. The small <i class="bi bi-question-circle" aria-hidden="true"></i><span class="visually-hidden">question mark</span> next to a heading opens the matching page of this guide.</p>
+    <div class="tt-help-cards">
+        <a class="tt-help-card" href="#help/legend" data-help-goto="legend"><i class="bi bi-card-heading" aria-hidden="true"></i><h5>Title block &amp; legend</h5><p>Opens the legend dialog. Saved in the model.</p></a>
+        <a class="tt-help-card" href="#help/profiles" data-help-goto="profiles"><i class="bi bi-sliders" aria-hidden="true"></i><h5>Profiles</h5><p>What each profile shows. This browser only.</p></a>
+        <a class="tt-help-card" href="#help/live-status" data-help-goto="live-status"><i class="bi bi-activity" aria-hidden="true"></i><h5>Live status</h5><p>On/off switch and interval (this browser), sources (in the model), allowed hosts (this browser).</p></a>
+        <a class="tt-help-card" href="#help/git-sync" data-help-goto="git-sync"><i class="bi bi-git" aria-hidden="true"></i><h5>Git sync</h5><p>Repository settings (in the model) and the encrypted token (this browser).</p></a>
+    </div>
+    <p>Other settings live where you use them: grid size and snapping in the canvas toolbar, the dark canvas, the view mode, panel sizes (drag the edges) and the session metadata in the left panel.</p>
+</section>
+
+<!-- ============================== LIVE DATA ============================== -->
+<section class="tt-help-section" id="help-live-status" aria-labelledby="help-h-live-status">
+    <div class="tt-help-kicker">Live data</div>
+    <h3 id="help-h-live-status" tabindex="-1"><i class="bi bi-activity" aria-hidden="true"></i>Live status: colour the diagram from real data</h3>
+    <p class="tt-help-lead">Turn a diagram into a status board: shapes and lines change colour, icon and label from a spreadsheet, a JSON feed or checks the browser runs itself.</p>
+    <figure class="tt-help-fig">
+        <img src="docs/help/live-status.png" alt="A diagram coloured by live status: healthy services green, a slow one amber and a failed one red, with status dots" width="1100" height="544" loading="lazy">
+        <figcaption>Live status on the canvas. Hover the small dot on a shape to see its value, latency and time.</figcaption>
+    </figure>
+    <h4>1. Choose where the status comes from</h4>
+    <div class="tt-help-wrap"><table class="tt-help-table">
+        <thead><tr><th>Source</th><th>How</th></tr></thead>
+        <tbody>
+            <tr><td>Google Sheet</td><td>Names in one column, status in the column to the right (for example <code>Service | Status | Latency</code> with rows like <code>API | up | 120</code>). Share as <em>Anyone with the link can view</em> and paste the share link in Settings → Live status → <em>Add a source</em> → <em>Google Sheet or CSV</em>. Optionally choose the name and value columns by header, letter or number.</td></tr>
+            <tr><td>CSV address</td><td>Any <code>https://</code> address that returns CSV, read the same way.</td></tr>
+            <tr><td>JSON feed</td><td>An <code>https://</code> address that returns <code>[{"name":"API","status":"up","latency":120}]</code> or <code>{"API":"up"}</code>. Other field names and a path such as <code>data.services</code> can be set.</td></tr>
+            <tr><td>Web (HTTPS)</td><td>A check run by the browser: you get the status code when the server allows it (CORS), otherwise only up or down.</td></tr>
+            <tr><td>Reachability (HTTPS)</td><td>Up or down plus the round-trip time. Browsers cannot send a real ping (ICMP), so this is a timed HTTPS request.</td></tr>
+            <tr><td>DNS lookup</td><td>Resolves or not, through DNS-over-HTTPS. The host name is sent to Cloudflare or Google, whichever you choose.</td></tr>
+        </tbody>
+    </table></div>
+    <h4>2. Turn it on for a shape or line</h4>
+    <p>Select it and tick <span class="tt-help-ui">Status check</span> in Properties (until then nothing changes). Pick the source or check; for a source, the <em>Row name</em> defaults to the shape’s name.</p>
+    <h4>3. Write the rules</h4>
+    <figure class="tt-help-fig">
+        <svg viewBox="0 0 760 230" role="img" aria-labelledby="help-ill-rules-t help-ill-rules-d">
+            <title id="help-ill-rules-t">How live-status rules are evaluated</title>
+            <desc id="help-ill-rules-d">A value, “degraded, 640 ms”, enters a list of rules checked from top to bottom. Rule 1, equals down, does not match. Rule 2, no data, does not match. Rule 3, equals degraded or slow, matches, so its amber colour, icon and label are applied and the later rules are not checked.</desc>
+            <rect x="20" y="86" width="140" height="58" rx="10" class="f-paper s-ink" stroke-width="2"/><text x="90" y="110" class="c b">Value</text><text x="90" y="128" class="c sm">“degraded” · 640 ms</text>
+            <path d="M160 115 H205" class="s-ink" stroke-width="2" marker-end="url(#help-arrow)"/>
+            <g>
+                <rect x="210" y="16" width="300" height="40" rx="8" class="f-paper s-line" stroke-width="1.5"/><text x="226" y="41" class="sm"><tspan class="b">1</tspan>  equals <tspan class="b">down|error</tspan> → red</text><text x="490" y="41" class="c b m">✕</text>
+                <rect x="210" y="66" width="300" height="40" rx="8" class="f-paper s-line" stroke-width="1.5"/><text x="226" y="91" class="sm"><tspan class="b">2</tspan>  no data / error → red</text><text x="490" y="91" class="c b m">✕</text>
+                <rect x="210" y="116" width="300" height="40" rx="8" class="f-amber-soft s-amber" stroke-width="2.5"/><text x="226" y="141" class="sm"><tspan class="b">3</tspan>  equals <tspan class="b">degraded|slow</tspan> → amber</text><text x="490" y="141" class="c b green">✓</text>
+                <rect x="210" y="166" width="300" height="40" rx="8" class="f-soft s-line dash" stroke-width="1.5" opacity=".6"/><text x="226" y="191" class="sm m"><tspan class="b">4</tspan>  latency &gt; 500 ms → amber  (not checked)</text>
+            </g>
+            <path d="M510 136 H560" class="s-amber" stroke-width="2.5" marker-end="url(#help-arrow)"/>
+            <rect x="566" y="96" width="150" height="70" rx="10" class="f-amber-soft s-amber" stroke-width="3"/><text x="641" y="127" class="c b">Checkout API</text><text x="641" y="146" class="c sm amber b">⚠ degraded</text>
+            <circle cx="712" cy="100" r="7" class="f-amber s-paper" stroke-width="2"/>
+            <text x="380" y="224" class="c sm m">Top to bottom, the first match wins. “anything else” at the end catches the rest.</text>
+        </svg>
+        <figcaption><b>Figure 12.</b> Rule evaluation. Each rule sets a fill and a border (for a line: the line colour), an optional icon and a label.</figcaption>
+    </figure>
+    <p>Rule conditions: <em>equals</em>, <em>not equals</em>, <em>contains</em> (use <code>|</code> for alternatives such as <code>up|ok</code>), <em>&lt; number</em>, <em>&gt; number</em>, <em>latency &gt; ms</em>, <em>latency &lt; ms</em>, <em>no data / error</em> and <em>anything else</em>. <span class="tt-help-ui">Add rule</span> adds one; <span class="tt-help-ui">Default rules</span> restores the defaults for the kind of check.</p>
+    <h4>4. Test the check</h4>
+    <p><span class="tt-help-ui">Test check</span> in Properties → Status check runs the shape’s or flow’s check right away, even with Live status off (hosts still need approval; files on the same site don’t). It shows every part of the answer: up or down, the HTTP status code (or <em>not readable — no CORS</em>), latency, a redirect, the DNS result and IP addresses, or for a Sheet, CSV, JSON or status-file source the matched row with all its columns. It also shows which rule matches now, with a colour preview.</p>
+    <p>Each value has an <span class="tt-help-ui">Add rule</span> (<i class="bi bi-plus" aria-hidden="true"></i>) button that adds a pre-filled rule, such as <code>equals 503</code>, <code>latency &gt; 950</code> or <code>equals degraded</code>, so rules are quick to build.</p>
+    <figure class="tt-help-fig" data-help-requires="#btn-live-test-check" hidden>
+        <img data-src="docs/help/live-test.png" alt="The Test check panel showing the status code, latency, the matching rule and Add rule buttons" width="350" height="600" loading="lazy">
+        <figcaption>The Test check panel.</figcaption>
+    </figure>
+    <h4>5. Start it</h4>
+    <p>☰ → View → Canvas → <span class="tt-help-ui">Live status</span> (or the switch in Settings) starts checking. It is off by default and remembered in this browser. The first time a host is needed, Settings lists it and asks you to allow it: nothing is contacted before that, so a model from someone else can’t make your browser call addresses you didn’t approve. The refresh interval is 60 seconds by default (at least 10) and can be set per source; <em>Refresh now</em> checks at once; checking pauses while the tab is hidden.</p>
+    <div class="tt-help-pair">
+        <figure class="tt-help-fig"><img src="docs/help/live-properties.png" alt="Properties, Status check: the check, row name and the list of rules" width="329" height="820" loading="lazy"><figcaption>Status check and rules in Properties.</figcaption></figure>
+        <figure class="tt-help-fig"><img src="docs/help/live-settings.png" alt="Settings, Live status: the switch, interval, sources and hosts to allow" width="784" height="386" loading="lazy"><figcaption>Settings → Live status.</figcaption></figure>
+    </div>
+    <ul>
+        <li><strong>Grey</strong> means waiting for approval, or data older than twice the interval.</li>
+        <li>State changes such as up → down are written to the activity log.</li>
+        <li>Sources and rules are saved in the model and its exports (a colleague gets them); the results never are.</li>
+    </ul>
+    <div class="tt-help-note warn"><strong>Google Sheets: use the share link</strong>A <em>Publish to web</em> link redirects, and redirects are never followed. Use <em>Share → Anyone with the link can view</em> and paste that link.</div>
+</section>
+
+<section class="tt-help-section" id="help-status-file" aria-labelledby="help-h-status-file">
+    <div class="tt-help-kicker">Live data</div>
+    <h3 id="help-h-status-file" tabindex="-1"><i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>Build from status file</h3>
+    <p class="tt-help-lead">Have a list of servers with their status? Turn it into a diagram in one go, and keep it coloured by that list.</p>
+    <figure class="tt-help-fig">
+        <svg viewBox="0 0 760 250" role="img" aria-labelledby="help-ill-file-t help-ill-file-d">
+            <title id="help-ill-file-t">From a status file to a diagram</title>
+            <desc id="help-ill-file-d">A CSV table with columns name, status, group and connects_to. Its rows become shapes; rows with the same group go into one trust zone; connects_to becomes data flows; the status colours each shape green, amber or red.</desc>
+            <rect x="16" y="30" width="300" height="170" rx="8" class="f-paper s-line" stroke-width="1.5"/>
+            <rect x="16" y="30" width="300" height="26" rx="8" class="f-soft"/>
+            <g class="sm"><text x="26" y="48" class="sm b">name</text><text x="96" y="48" class="sm b">status</text><text x="160" y="48" class="sm b">group</text><text x="220" y="48" class="sm b">connects_to</text>
+            <text x="26" y="78" class="sm">web-01</text><text x="96" y="78" class="sm green b">up</text><text x="160" y="78" class="sm">DMZ</text><text x="220" y="78" class="sm">api-01</text>
+            <text x="26" y="104" class="sm">api-01</text><text x="96" y="104" class="sm amber b">degraded</text><text x="160" y="104" class="sm">App</text><text x="220" y="104" class="sm">db-01|cache</text>
+            <text x="26" y="130" class="sm">db-01</text><text x="96" y="130" class="sm red b">down</text><text x="160" y="130" class="sm">App</text><text x="220" y="130" class="sm"></text>
+            <text x="26" y="156" class="sm">cache</text><text x="96" y="156" class="sm green b">ok</text><text x="160" y="156" class="sm">App</text>
+            <text x="26" y="186" class="sm m">samples/status-servers.csv</text></g>
+            <path d="M326 115 H372" class="s-accent" stroke-width="3" marker-end="url(#help-arrow)"/><text x="349" y="105" class="c sm b">Build</text>
+            <rect x="384" y="40" width="130" height="150" rx="8" class="f-none s-red dash" stroke-width="2"/><text x="394" y="58" class="sm b red">DMZ</text>
+            <rect x="534" y="20" width="210" height="210" rx="8" class="f-none s-red dash" stroke-width="2"/><text x="544" y="38" class="sm b red">App</text>
+            <rect x="400" y="92" width="96" height="44" rx="6" class="f-green-soft s-green" stroke-width="2.5"/><text x="448" y="119" class="c b sm">web-01</text>
+            <rect x="560" y="92" width="96" height="44" rx="6" class="f-amber-soft s-amber" stroke-width="2.5"/><text x="608" y="119" class="c b sm">api-01</text>
+            <rect x="560" y="168" width="80" height="40" rx="6" class="f-red-soft s-red" stroke-width="2.5"/><text x="600" y="193" class="c b sm">db-01</text>
+            <rect x="660" y="168" width="72" height="40" rx="6" class="f-green-soft s-green" stroke-width="2.5"/><text x="696" y="193" class="c b sm">cache</text>
+            <path d="M496 114 H556" class="s-ink" stroke-width="2" marker-end="url(#help-arrow)"/>
+            <path d="M600 136 V164 M630 136 L680 164" class="s-ink" stroke-width="2" marker-end="url(#help-arrow)" fill="none"/>
+        </svg>
+        <figcaption><b>Figure 13.</b> Each row becomes a shape; <code>group</code> makes trust zones, <code>connects_to</code> makes data flows, and the status columns colour the shapes.</figcaption>
+    </figure>
+    <ol class="tt-help-steps">
+        <li>Open ☰ → <span class="tt-help-ui">Build from status file…</span></li>
+        <li>Give an address (an <code>https://</code> file, a Google Sheet share link, or a path on the same site such as <code>samples/status-servers.csv</code>) or choose a local file.</li>
+        <li>Check the <strong>Preview</strong>, then <strong>Build</strong> on a new page or on this page.</li>
+        <li>Leave <strong>Keep checking this file for status</strong> on to turn on status rules for every shape from its <code>ok</code>, <code>warn</code>, <code>latency</code> and fail columns.</li>
+    </ol>
+    <p>Loading the file again updates the diagram: new rows are added and existing shapes updated, shapes you placed are never moved, and you are asked before anything is deleted. Files on the same site need no host approval; other hosts must be allowed once (see <a href="#help/live-status" data-help-goto="live-status">Live status</a>).</p>
+    <h4>Sample files</h4>
+    <div class="tt-help-downloads">
+        <a class="btn btn-sm btn-outline-primary" href="samples/status-servers.csv" download><i class="bi bi-filetype-csv me-2" aria-hidden="true"></i>Download status-servers.csv</a>
+        <a class="btn btn-sm btn-outline-primary" href="samples/status-servers.json" download><i class="bi bi-filetype-json me-2" aria-hidden="true"></i>Download status-servers.json</a>
+        <button type="button" class="btn btn-sm btn-primary" data-help-action="load-sample" hidden><i class="bi bi-play-fill me-1" aria-hidden="true"></i>Load the sample</button>
+    </div>
+    <p>Both samples describe the same small server estate. Open one in a spreadsheet or text editor to see the format, change it, and load your copy.</p>
+    <h4>Columns</h4>
+    <p>Column names are case-insensitive. Only <code>name</code> is required.</p>
+    <div class="tt-help-wrap"><table class="tt-help-table">
+        <thead><tr><th>Column</th><th>Meaning</th><th>Default</th></tr></thead>
+        <tbody>
+            <tr><td><code>name</code></td><td>The shape’s name (and the row name for status checks). Required.</td><td>—</td></tr>
+            <tr><td><code>status</code></td><td>The current status value.</td><td>empty</td></tr>
+            <tr><td><code>type</code></td><td><code>process</code>, <code>datastore</code>, <code>interactor</code>, <code>infrastructure</code>, or a ready-made node id such as <code>firewall</code>, <code>siem</code>, <code>api-gateway</code>.</td><td><code>infrastructure</code></td></tr>
+            <tr><td><code>icon</code></td><td>A Bootstrap icon, e.g. <code>bi-server</code>.</td><td>the type’s icon</td></tr>
+            <tr><td><code>ok</code> + <code>ok_color</code></td><td>Healthy values, separated by <code>|</code>, and their colour.</td><td><code>up|ok|online|healthy|200</code>, green <code>#198754</code></td></tr>
+            <tr><td><code>warn</code> + <code>warn_color</code></td><td>Warning values and their colour.</td><td><code>degraded|slow|warning|maintenance</code>, amber <code>#ffc107</code></td></tr>
+            <tr><td><code>fail_color</code></td><td>The colour when no rule matched.</td><td>red <code>#dc3545</code></td></tr>
+            <tr><td><code>latency</code> + <code>latency_max</code></td><td>Latency in ms and the limit; above it the shape turns to warning.</td><td>—</td></tr>
+            <tr><td><code>group</code></td><td>Shapes with the same group go into one trust zone.</td><td>no zone</td></tr>
+            <tr><td><code>connects_to</code></td><td>Names of other rows, separated by <code>|</code>: each becomes a data flow.</td><td>—</td></tr>
+            <tr><td><code>description</code></td><td>Goes into the shape’s notes.</td><td>—</td></tr>
+        </tbody>
+    </table></div>
+    <h4>Examples</h4>
+    <div class="tt-help-pair">
+        <div><div class="small fw-semibold mb-1">CSV</div>
+<pre>name,status,type,group,connects_to,latency,latency_max
+Edge firewall,up,firewall,DMZ,Web 01,,
+Web 01,up,process,DMZ,API 01,120,800
+API 01,degraded,api-gateway,App,Orders DB,640,500
+Orders DB,down,datastore,App,,,</pre></div>
+        <div><div class="small fw-semibold mb-1">JSON</div>
+<pre>{ "title": "Production",
+  "items": [
+    { "name": "Web 01", "status": "up",
+      "type": "process", "group": "DMZ",
+      "connects_to": "API 01" },
+    { "name": "API 01", "status": "degraded",
+      "latency": 640, "latency_max": 500 }
+  ] }</pre></div>
+    </div>
+    <p>JSON can also be a bare array of items. Each item uses the same field names as the CSV columns.</p>
+    <figure class="tt-help-fig" data-help-requires="#btn-build-from-status" hidden>
+        <img data-src="docs/help/status-file.png" alt="The Build from status file dialog with the preview of the rows" width="800" height="560" loading="lazy">
+        <figcaption>The Build from status file dialog.</figcaption>
+    </figure>
+</section>
+
+<section class="tt-help-section" id="help-traffic" aria-labelledby="help-h-traffic">
+    <div class="tt-help-kicker">Live data</div>
+    <h3 id="help-h-traffic" tabindex="-1"><i class="bi bi-three-dots" aria-hidden="true"></i>Traffic animation</h3>
+    <p>Select a data flow and, in Properties → <em>Traffic animation</em>, switch on <span class="tt-help-ui">Animate traffic</span>. Choose a <strong>Speed</strong> (slow, normal, fast) and a <strong>Style</strong> (moving dashes or moving dots). Traffic runs from source to destination, both ways on a two-way flow; on the light canvas the dashes are white so they show on dark lines.</p>
+    <p>☰ → View → Canvas → <em>Animate traffic</em> pauses every animation (remembered in this browser), and with <em>reduce motion</em> set in your system the lines stay still. PNG exports and printouts show the plain diagram.</p>
+</section>
+
+<!-- ============================== FILES & SYNC ============================== -->
+<section class="tt-help-section" id="help-import-export" aria-labelledby="help-h-import-export">
+    <div class="tt-help-kicker">Files &amp; sync</div>
+    <h3 id="help-h-import-export" tabindex="-1"><i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>Import &amp; export</h3>
+    <div class="tt-help-wrap"><table class="tt-help-table">
+        <thead><tr><th>Format</th><th>Where</th><th>What you get</th></tr></thead>
+        <tbody>
+            <tr><td>JSON</td><td>☰ → Export JSON / Import JSON…</td><td>The whole model: pages, shapes, flows, threats, mitigations, settings and the activity log. The app version is recorded as <code>appVersion</code>.</td></tr>
+            <tr><td>JSON for git</td><td>☰ → Export JSON for git (no activity log)</td><td>A smaller file with a stable layout that diffs cleanly in a repository.</td></tr>
+            <tr><td>Mermaid (import)</td><td>☰ → Import Mermaid flowchart…</td><td>Paste a <code>flowchart</code> / <code>graph</code>: nodes become flowchart shapes, subgraphs trust zones, laid out automatically. Add it next to the current model or replace it (undo brings it back).</td></tr>
+            <tr><td>Mermaid (export)</td><td>☰ → Export Mermaid diagram</td><td>The diagram as Mermaid flowchart text.</td></tr>
+            <tr><td>Markdown report</td><td>☰ → Export Markdown report</td><td>Scope, components, threats, mitigations, model checks and attack paths, with an embedded Mermaid diagram.</td></tr>
+            <tr><td>Print / PDF</td><td>☰ → Print report…</td><td>A print-ready report with the diagram (choose <em>Save as PDF</em> in the print dialog).</td></tr>
+            <tr><td>PNG</td><td>Canvas toolbar → Save as PNG</td><td>A picture of the current page, with the title block and legend when shown.</td></tr>
+            <tr><td>CSV</td><td>Register → Export CSV</td><td>The threats in the register, as filtered.</td></tr>
+            <tr><td>Templates</td><td>Threat Templates → Save / Load</td><td>A backup of the threat library.</td></tr>
+        </tbody>
+    </table></div>
+    <div class="tt-help-note"><strong>Imports are checked</strong>Imported models are treated as untrusted: every field is validated, unknown values are dropped with a warning, and threats with problems are marked <em>needs review</em>. A snapshot is taken before an import. If a model loads images from other websites, Threat Tiger asks first.</div>
+</section>
+
+<section class="tt-help-section" id="help-git-sync" aria-labelledby="help-h-git-sync">
+    <div class="tt-help-kicker">Files &amp; sync</div>
+    <h3 id="help-h-git-sync" tabindex="-1"><i class="bi bi-git" aria-hidden="true"></i>Git sync with GitHub or GitLab</h3>
+    <ol class="tt-help-steps">
+        <li><strong>Create an access token:</strong> on GitHub a fine-grained token for the one repository with <em>Contents: Read and write</em>; on GitLab a personal or project token with the <em>api</em> scope.</li>
+        <li><strong>Fill in</strong> ☰ → Settings… → <em>Git sync</em>: service, server (defaults to <code>https://api.github.com</code> or <code>https://gitlab.com</code>; GitHub Enterprise <code>https://host/api/v3</code>), repository (<code>owner/name</code>, GitLab <code>group/subgroup/project</code>), branch (<code>main</code>), file (<code>threat-model.json</code>), the token and a passphrase (8+ characters) that encrypts it.</li>
+        <li><strong>Connect.</strong> Threat Tiger checks that the token can open the repository, then shows the ⟳ button next to ☰.</li>
+        <li><strong>Press ⟳ to sync.</strong> After a reload, the first sync asks for your passphrase.</li>
+    </ol>
+    <figure class="tt-help-fig">
+        <svg viewBox="0 0 760 200" role="img" aria-labelledby="help-ill-git-t help-ill-git-d">
+            <title id="help-ill-git-t">What the sync button does</title>
+            <desc id="help-ill-git-d">Three cases. Only your copy changed: it is committed to the repository. Only the repository changed: it is loaded and your previous version goes to History. Both changed: you choose Keep mine, Take theirs or Cancel.</desc>
+            <g>
+                <rect x="20" y="20" width="230" height="160" rx="10" class="f-paper s-blue" stroke-width="2"/>
+                <text x="135" y="46" class="c b">Only your copy changed</text>
+                <rect x="50" y="70" width="60" height="40" rx="6" class="f-blue-soft s-blue" stroke-width="2"/><text x="80" y="95" class="c sm b">you</text>
+                <rect x="160" y="70" width="60" height="40" rx="6" class="f-soft s-muted" stroke-width="2"/><text x="190" y="95" class="c sm b">repo</text>
+                <path d="M112 90 H156" class="s-blue" stroke-width="2.5" marker-end="url(#help-arrow)"/>
+                <text x="135" y="140" class="c sm">saved as a commit</text><text x="135" y="156" class="c sm m">(git-friendly JSON)</text>
+            </g>
+            <g>
+                <rect x="265" y="20" width="230" height="160" rx="10" class="f-paper s-green" stroke-width="2"/>
+                <text x="380" y="46" class="c b">Only the repository changed</text>
+                <rect x="295" y="70" width="60" height="40" rx="6" class="f-soft s-muted" stroke-width="2"/><text x="325" y="95" class="c sm b">you</text>
+                <rect x="405" y="70" width="60" height="40" rx="6" class="f-green-soft s-green" stroke-width="2"/><text x="435" y="95" class="c sm b">repo</text>
+                <path d="M403 90 H359" class="s-green" stroke-width="2.5" marker-end="url(#help-arrow)"/>
+                <text x="380" y="140" class="c sm">loaded into the app</text><text x="380" y="156" class="c sm m">your old version → History</text>
+            </g>
+            <g>
+                <rect x="510" y="20" width="230" height="160" rx="10" class="f-paper s-amber" stroke-width="2"/>
+                <text x="625" y="46" class="c b">Both changed</text>
+                <rect x="540" y="70" width="60" height="40" rx="6" class="f-blue-soft s-blue" stroke-width="2"/><text x="570" y="95" class="c sm b">you</text>
+                <rect x="650" y="70" width="60" height="40" rx="6" class="f-green-soft s-green" stroke-width="2"/><text x="680" y="95" class="c sm b">repo</text>
+                <text x="625" y="96" class="c b amber">?</text>
+                <text x="625" y="140" class="c sm">you choose:</text><text x="625" y="156" class="c sm b">Keep mine · Take theirs · Cancel</text>
+            </g>
+        </svg>
+        <figcaption><b>Figure 14.</b> The three cases of a sync.</figcaption>
+    </figure>
+    <ul>
+        <li>The sync settings (not the token) are part of the model and its exports, so a colleague who opens your JSON gets the ⟳ button and only needs their own token.</li>
+        <li>A model can’t redirect sync: nothing is sent to a target until you confirm it with <em>Connect</em> in this browser.</li>
+        <li><em>Forget token</em> removes the token from this browser; <em>Remove sync from this model</em> removes the settings.</li>
+    </ul>
+</section>
+
+<section class="tt-help-section" id="help-history" aria-labelledby="help-h-history">
+    <div class="tt-help-kicker">Files &amp; sync</div>
+    <h3 id="help-h-history" tabindex="-1"><i class="bi bi-clock-history" aria-hidden="true"></i>History &amp; clearing data</h3>
+    <div class="tt-help-split">
+        <div>
+            <ul>
+                <li><strong>History</strong> (☰ → History…): snapshots saved automatically in this browser every few minutes, and before imports, restores, resets and deletions of threats. The latest 25 are kept. Restore one to go back; a snapshot of the current model is taken first.</li>
+                <li><strong>Activity Log</strong> (bottom panel): what changed, when, and by whom (the name under <em>You:</em>). It is a convenience history, not a tamper-proof audit trail.</li>
+                <li><strong>Two tabs:</strong> if the same model is changed in another tab, this tab stops saving and offers <em>Reload</em> or <em>Keep this tab’s version</em>; the other version is kept in History.</li>
+                <li><strong>Reset canvas…</strong> empties the model (after a snapshot).</li>
+                <li><strong>Clear all data in this browser…</strong> removes every model, snapshot, template change and preference Threat Tiger stored here. Use it on shared machines; export first what you want to keep.</li>
+            </ul>
+        </div>
+        <figure class="tt-help-fig"><img src="docs/help/history.png" alt="The History dialog with a list of snapshots" width="500" height="307" loading="lazy"><figcaption>History.</figcaption></figure>
+    </div>
+</section>
+
+<!-- ============================== REFERENCE ============================== -->
+<section class="tt-help-section" id="help-shortcuts" aria-labelledby="help-h-shortcuts">
+    <div class="tt-help-kicker">Reference</div>
+    <h3 id="help-h-shortcuts" tabindex="-1"><i class="bi bi-keyboard" aria-hidden="true"></i>Keyboard shortcuts</h3>
+    <p>On a Mac, use <kbd>⌘</kbd> where the table says <kbd>Ctrl</kbd>. Shortcuts that act on the canvas don’t fire while you type in a field or while a dialog is open.</p>
+    <div class="tt-help-wrap"><table class="tt-help-table">
+        <thead><tr><th>Key</th><th>Action</th></tr></thead>
+        <tbody>
+            <tr><td><kbd>F1</kbd> or <kbd>?</kbd></td><td>Open this guide</td></tr>
+            <tr><td><kbd>Tab</kbd> / <kbd>Shift</kbd>+<kbd>Tab</kbd></td><td>Move between components and data flows on the canvas (and between controls)</td></tr>
+            <tr><td><kbd>Enter</kbd> / <kbd>Space</kbd></td><td>Select the focused canvas item; add the focused palette item; open a focused row</td></tr>
+            <tr><td><kbd>←</kbd> <kbd>→</kbd> <kbd>↑</kbd> <kbd>↓</kbd></td><td>Move the selection one grid step (<kbd>Shift</kbd>: five steps). On a focused free-floating legend: move the legend</td></tr>
+            <tr><td><kbd>Delete</kbd> / <kbd>Backspace</kbd></td><td>Delete the selection (asks first if threats would be deleted)</td></tr>
+            <tr><td><kbd>Esc</kbd></td><td>Cancel a connection, drag, resize or bend in progress; stop the format painter; deselect. In the ☰ menu: close one level. In a search box: clear it</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> or <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Redo</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>V</kbd></td><td>Copy / paste the selected shapes with the flows and threats between them (text copy works as usual when text is selected)</td></tr>
+            <tr><td><kbd>F2</kbd></td><td>Rename the focused page tab or layer</td></tr>
+            <tr><td><kbd>←</kbd> <kbd>→</kbd> <kbd>Home</kbd> <kbd>End</kbd></td><td>On a page tab: go to the previous, next, first or last page</td></tr>
+            <tr><td><kbd>→</kbd> / <kbd>Enter</kbd>, <kbd>←</kbd>, <kbd>↑</kbd> <kbd>↓</kbd></td><td>In the ☰ menu: open a flyout, close it, move inside it</td></tr>
+            <tr><td>Mouse wheel / right-drag</td><td>Zoom / pan the canvas</td></tr>
+        </tbody>
+    </table></div>
+</section>
+
+<section class="tt-help-section" id="help-privacy" aria-labelledby="help-h-privacy">
+    <div class="tt-help-kicker">Reference</div>
+    <h3 id="help-h-privacy" tabindex="-1"><i class="bi bi-incognito" aria-hidden="true"></i>Privacy &amp; security</h3>
+    <ul>
+        <li><strong>Your data stays in your browser.</strong> The model is in localStorage and History in IndexedDB. Nothing is uploaded unless you set up git sync and press ⟳, or turn on live status for hosts you allowed.</li>
+        <li><strong>No trackers, no CDNs.</strong> Every library, icon and font is part of the app, so it works offline.</li>
+        <li><strong>Network requests only when you ask:</strong> images an imported model references (after asking), git sync to the server you configured, and live-status checks to hosts you allowed. Redirects to hosts you didn’t allow are never followed. DNS checks send the host name to the provider you chose.</li>
+        <li><strong>Tokens</strong> for git sync are stored encrypted with your passphrase (PBKDF2 + AES-GCM) and never go into the model or exports.</li>
+        <li><strong>Imported models and templates are untrusted:</strong> they are validated and never run as code.</li>
+        <li>Anyone with access to your browser profile can read what is stored there. Use <em>Clear all data in this browser…</em> on shared machines, and keep exported files somewhere appropriate: threat models describe weaknesses of real systems.</li>
+        <li>If you host Threat Tiger yourself, give it its <strong>own origin</strong> (domain or sub-domain): browser storage is shared by every page on the same origin.</li>
+    </ul>
+</section>
+
+<section class="tt-help-section" id="help-troubleshooting" aria-labelledby="help-h-troubleshooting">
+    <div class="tt-help-kicker">Reference</div>
+    <h3 id="help-h-troubleshooting" tabindex="-1"><i class="bi bi-life-preserver" aria-hidden="true"></i>Troubleshooting &amp; FAQ</h3>
+    <h4>I clicked the pen icon and nothing was drawn.</h4>
+    <p>The brush in the canvas toolbar is the <strong>format painter</strong>: it copies one shape’s look to another. To draw a data flow, hover a shape and drag from one of its connection points. <kbd>Esc</kbd> leaves the format painter.</p>
+    <h4>Why can’t the browser ping my server?</h4>
+    <p>Browsers can’t send ICMP pings. <em>Reachability</em> is a timed HTTPS request instead, so the host must answer on HTTPS. Without CORS headers you only get up/down, not the status code.</p>
+    <h4>My Google Sheet shows no data.</h4>
+    <p>Use the <em>Share → Anyone with the link can view</em> link, not a <em>Publish to web</em> link: those redirect, and redirects are not followed. Check that the host is allowed in Settings → Live status and that the row name matches the shape’s name.</p>
+    <h4>Live status stays grey.</h4>
+    <p>Grey means the host still needs your approval (Settings → Live status lists it), or the data is older than twice the refresh interval. Is Live status switched on in ☰ → View → Canvas?</p>
+    <h4>“Open demo model” doesn’t work when I open the file by double-clicking.</h4>
+    <p>From <code>file://</code>, browsers block the app from reading other files, so the demo, the threat library file, the sample files and the screenshots in this guide may not load (the embedded threat library is used instead). Serve the folder over http (for example <code>npm run serve</code> or <code>python3 -m http.server</code>), or use Import JSON and choose <code>demo.json</code>.</p>
+    <h4>A palette section or tab is missing.</h4>
+    <p>The current profile hides it. Pick <em>Show All</em> in the profile menu, or switch it back on in ☰ → View or Settings → Profiles.</p>
+    <h4>I can’t move or delete anything.</h4>
+    <p>Review mode is on (yellow badge in the top bar), or the shape is on a locked layer (Layers tab).</p>
+    <h4>A red banner says my changes are not being saved.</h4>
+    <p>The browser’s storage is full, usually because of large uploaded images. Export the model as JSON straight away, then remove or shrink the images.</p>
+    <h4>A notice says the model was changed in another tab.</h4>
+    <p>Choose <em>Reload</em> to continue with the other tab’s version, or <em>Keep this tab’s version</em>. Either way the other version is kept in History.</p>
+    <h4>Where is the licence and version?</h4>
+    <p>☰ → <span class="tt-help-ui">About &amp; License</span>.</p>
+</section>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- /Help guide -->
     <p id="canvas-keyboard-help" class="visually-hidden">Press Tab to move between components and data flows, Enter to select, arrow keys to move the selection (Shift for larger steps), Delete to remove it, Escape to deselect, Ctrl or Cmd plus Z to undo.</p>
 
     <!-- Notifications (replaces alert()) -->
@@ -7484,6 +8769,7 @@
                 this.setupNameAutosuggest();
                 this.bindWindowResizerEvents(); this.bindPrintScalingEngine();
                 this.bindPalettePopoverEvents();
+                this.setupHelpGuide();
 
                 this.loadThreatTemplates();
                 this.applyViewMode();
@@ -7499,7 +8785,7 @@
                     this.saveSessionToLocalStorage();
                 }
 
-                // First visit: show Help as a dismissible welcome (no license gate — MIT needs no acceptance).
+                // First visit: show About & License as a dismissible welcome that points to the Help guide (no license gate — MIT needs no acceptance).
                 this.assertValidOperatorProfileAuthentication();
                 const seenWelcome = localStorage.getItem('threat_tiger_welcome_seen') === 'true' || localStorage.getItem('license_accepted') === 'true';
                 if (!seenWelcome) this.helpModal.show();
@@ -10464,6 +11750,229 @@
                 });
             }
 
+            // ── Help guide (setupHelpGuide) ─────────────────────────────────────────────────
+            // A static manual in #modal-help-guide: table of contents, search, deep links (#help/<section>, app.openHelp(id)),
+            // F1 / ? to open, and "?" links ([data-help-open]) next to complex settings. All text is authored in this file;
+            // the code only shows, hides and clones existing nodes (no innerHTML).
+            setupHelpGuide() {
+                const modalEl = document.getElementById('modal-help-guide');
+                if (!modalEl) return;
+                this.helpGuideModal = bootstrap.Modal.getOrCreateInstance(modalEl);
+                const content = document.getElementById('help-content');
+                const sections = [...modalEl.querySelectorAll('.tt-help-section')];
+                const tocLinks = [...modalEl.querySelectorAll('[data-help-toc]')];
+                const select = document.getElementById('help-mobile-select');
+                const inputs = [...modalEl.querySelectorAll('.tt-help-search-input')];
+                const statuses = [...modalEl.querySelectorAll('.tt-help-search-status')];
+                const noResults = document.getElementById('help-no-results');
+                const sectionText = new Map(sections.map(s => [s, s.textContent.replace(/\s+/g, ' ').toLowerCase()]));
+                this.helpSectionIds = sections.map(s => s.id.replace(/^help-/, ''));
+
+                // Phone navigation: a select built from the table of contents (group headings become optgroups).
+                let group = null;
+                modalEl.querySelector('.tt-help-toc').querySelectorAll('.tt-help-toc-group, [data-help-toc]').forEach(n => {
+                    if (n.classList.contains('tt-help-toc-group')) { group = document.createElement('optgroup'); group.label = n.textContent; select.appendChild(group); return; }
+                    const o = new Option(n.textContent.trim(), n.dataset.helpToc);
+                    (group || select).appendChild(o);
+                });
+                select.addEventListener('change', () => this.scrollHelpTo(select.value));
+
+                const go = (ev) => {
+                    const a = ev.target.closest('[data-help-toc], [data-help-goto]');
+                    if (!a || !modalEl.contains(a)) return;
+                    ev.preventDefault();
+                    this.scrollHelpTo(a.dataset.helpToc || a.dataset.helpGoto, true);
+                };
+                modalEl.addEventListener('click', go);
+
+                // Scroll spy: the section at the top of the view is marked in the table of contents.
+                let spyQueued = false;
+                const spy = () => {
+                    spyQueued = false;
+                    const top = content.scrollTop + 80;
+                    let current = null;
+                    for (const s of sections) { if (s.hidden) continue; if (s.offsetTop <= top) current = s; else break; }
+                    if (!current) current = sections.find(s => !s.hidden);
+                    this.markHelpCurrent(current ? current.id.replace(/^help-/, '') : '');
+                };
+                content.addEventListener('scroll', () => { if (!spyQueued) { spyQueued = true; requestAnimationFrame(spy); } }, { passive: true });
+
+                // Search: hide sections (and their contents entries) that don't contain every word; mark the matches.
+                const unmark = () => modalEl.querySelectorAll('mark.tt-help-hit').forEach(m => { const p = m.parentNode; p.replaceChild(document.createTextNode(m.textContent), m); p.normalize(); });
+                const markWords = (root, words) => {
+                    const re = new RegExp(words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'gi');
+                    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.parentElement.closest('svg, script, style, mark') ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT) });
+                    const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+                    nodes.forEach(n => {
+                        const text = n.nodeValue; re.lastIndex = 0;
+                        if (!re.test(text)) return;
+                        re.lastIndex = 0;
+                        const frag = document.createDocumentFragment(); let last = 0, m;
+                        while ((m = re.exec(text))) {
+                            if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+                            const mark = document.createElement('mark'); mark.className = 'tt-help-hit'; mark.textContent = m[0]; frag.appendChild(mark);
+                            last = m.index + m[0].length;
+                        }
+                        if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+                        n.parentNode.replaceChild(frag, n);
+                    });
+                };
+                const search = (value) => {
+                    inputs.forEach(i => { if (i.value !== value) i.value = value; });
+                    unmark();
+                    const words = value.toLowerCase().split(/\s+/).filter(w => w.length > 1).slice(0, 8);
+                    let shown = 0;
+                    sections.forEach(s => {
+                        const hit = !words.length || words.every(w => sectionText.get(s).includes(w));
+                        s.hidden = !hit; if (hit) shown++;
+                        const id = s.id.replace(/^help-/, '');
+                        tocLinks.filter(a => a.dataset.helpToc === id).forEach(a => { a.parentElement.hidden = !hit; });
+                        const opt = [...select.options].find(o => o.value === id); if (opt) opt.hidden = opt.disabled = !hit;
+                        if (hit && words.length) markWords(s, words);
+                    });
+                    modalEl.querySelectorAll('.tt-help-toc ul').forEach(ul => {
+                        const anyVisible = [...ul.children].some(li => !li.hidden);
+                        ul.hidden = !anyVisible;
+                        if (ul.previousElementSibling && ul.previousElementSibling.classList.contains('tt-help-toc-group')) ul.previousElementSibling.hidden = !anyVisible;
+                    });
+                    noResults.hidden = shown > 0;
+                    const msg = !words.length ? '' : shown ? `${shown} section${shown === 1 ? '' : 's'} match` : 'No section matches';
+                    statuses.forEach(st => { st.textContent = msg; });
+                    content.scrollTop = 0;
+                    spy();
+                };
+                inputs.forEach(i => {
+                    i.addEventListener('input', () => search(i.value));
+                    i.addEventListener('keydown', (ev) => {
+                        if (ev.key === 'Escape' && i.value) { ev.preventDefault(); ev.stopPropagation(); search(''); }
+                        if (ev.key === 'Enter') { ev.preventDefault(); const first = sections.find(s => !s.hidden); if (first) this.scrollHelpTo(first.id.replace(/^help-/, ''), true); }
+                    });
+                });
+
+                // Screenshots of features another build may not have: shown (and loaded) only when the feature's control exists.
+                const showOptionalFigures = () => modalEl.querySelectorAll('figure[data-help-requires]').forEach(f => {
+                    const img = f.querySelector('img[data-src]');
+                    let ok = false;
+                    try { ok = !!document.querySelector(f.dataset.helpRequires); } catch (_) { ok = false; }
+                    f.hidden = !ok;
+                    if (ok && img && !img.getAttribute('src')) {
+                        img.addEventListener('error', () => { f.hidden = true; }, { once: true });
+                        img.src = img.dataset.src;
+                    }
+                });
+
+                // Actions inside the guide.
+                modalEl.addEventListener('click', (ev) => {
+                    const b = ev.target.closest('[data-help-action]');
+                    if (!b) return;
+                    const action = b.dataset.helpAction;
+                    this.afterHelpGuideHidden(() => {
+                        if (action === 'demo') this.openDemoModel();
+                        if (action === 'load-sample' && typeof this.openStatusFileDialog === 'function') this.openStatusFileDialog('samples/status-servers.csv');
+                    });
+                });
+
+                modalEl.addEventListener('show.bs.modal', () => {
+                    this.fillHelpThumbnails();
+                    showOptionalFigures();
+                    const sample = modalEl.querySelector('[data-help-action="load-sample"]');
+                    if (sample) sample.hidden = typeof this.openStatusFileDialog !== 'function';
+                });
+                modalEl.addEventListener('shown.bs.modal', () => {
+                    const target = this.pendingHelpSection;
+                    this.pendingHelpSection = null;
+                    if (target) this.scrollHelpTo(target, true);
+                    else { spy(); const i = inputs.find(x => x.offsetParent); if (i) i.focus(); }
+                });
+
+                document.getElementById('btn-help-guide').addEventListener('click', () => this.openHelp());
+                const aboutHelp = document.getElementById('btn-about-open-help');
+                if (aboutHelp) aboutHelp.addEventListener('click', () => this.openHelp('getting-started'));
+                // "?" links anywhere in the app.
+                document.addEventListener('click', (ev) => {
+                    const l = ev.target.closest && ev.target.closest('[data-help-open]');
+                    if (!l) return;
+                    ev.preventDefault(); ev.stopPropagation();
+                    this.openHelp(l.dataset.helpOpen);
+                });
+                // F1 or ? opens the guide (not while typing, and not over another dialog, whose unsaved input it would close).
+                window.addEventListener('keydown', (ev) => {
+                    if (ev.key !== 'F1' && ev.key !== '?') return;
+                    if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+                    const t = ev.target;
+                    if (t && (['INPUT', 'TEXTAREA', 'SELECT'].includes(t.tagName) || t.isContentEditable)) return;
+                    if (document.querySelector('.modal.show')) { if (ev.key === 'F1') ev.preventDefault(); return; }
+                    ev.preventDefault();
+                    this.openHelp();
+                });
+                // Deep links: threat-tiger.html#help or #help/<section>.
+                const fromHash = () => {
+                    const m = /^#help(?:\/([a-z0-9-]{1,40}))?$/.exec(location.hash);
+                    if (m) this.openHelp(m[1] || '');
+                };
+                window.addEventListener('hashchange', fromHash);
+                fromHash();
+            }
+
+            /** Opens the help guide, optionally at a section id (e.g. 'live-status'). Another open dialog is closed first. */
+            openHelp(section = '') {
+                const id = typeof section === 'string' && this.helpSectionIds && this.helpSectionIds.includes(section) ? section : '';
+                const modalEl = document.getElementById('modal-help-guide');
+                if (!modalEl || !this.helpGuideModal) return false;
+                if (modalEl.classList.contains('show')) { if (id) this.scrollHelpTo(id, true); return true; }
+                this.pendingHelpSection = id;
+                const other = document.querySelector('.modal.show');
+                if (other && other !== modalEl) {
+                    other.addEventListener('hidden.bs.modal', () => this.helpGuideModal.show(), { once: true });
+                    bootstrap.Modal.getOrCreateInstance(other).hide();
+                } else this.helpGuideModal.show();
+                return true;
+            }
+
+            /** Scrolls the guide to a section and marks it in the table of contents; focus moves to its heading when asked. */
+            scrollHelpTo(id, focus = false) {
+                const s = document.getElementById(`help-${id}`);
+                const content = document.getElementById('help-content');
+                if (!s || !content || !s.classList.contains('tt-help-section')) return;
+                if (s.hidden) {   // a section hidden by the search: clear the search first
+                    const i = document.getElementById('help-search');
+                    if (i) { i.value = ''; i.dispatchEvent(new Event('input')); }
+                }
+                content.scrollTo({ top: Math.max(0, s.offsetTop - 8), behavior: 'instant' });
+                this.markHelpCurrent(id);
+                if (focus) { const h = s.querySelector('h3'); if (h) h.focus({ preventScroll: true }); }
+            }
+
+            markHelpCurrent(id) {
+                document.querySelectorAll('#modal-help-guide [data-help-toc]').forEach(a => {
+                    if (a.dataset.helpToc === id) a.setAttribute('aria-current', 'true'); else a.removeAttribute('aria-current');
+                });
+                const select = document.getElementById('help-mobile-select');
+                if (select && id && select.value !== id) select.value = id;
+            }
+
+            /** Runs fn once the guide has closed (at once if it isn't open). */
+            afterHelpGuideHidden(fn) {
+                const modalEl = document.getElementById('modal-help-guide');
+                if (!modalEl.classList.contains('show')) { fn(); return; }
+                modalEl.addEventListener('hidden.bs.modal', () => fn(), { once: true });
+                this.helpGuideModal.hide();
+            }
+
+            /** Shape thumbnails in the palette reference: copies of the palette's own preview icons (cloned DOM nodes). */
+            fillHelpThumbnails() {
+                document.querySelectorAll('#modal-help-guide [data-help-thumb]').forEach(slot => {
+                    if (slot.firstChild) return;
+                    const item = document.getElementById(slot.dataset.helpThumb);
+                    const preview = item && item.firstElementChild;
+                    if (!preview) return;
+                    const copy = preview.cloneNode(true);
+                    copy.removeAttribute('id'); copy.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
+                    copy.setAttribute('aria-hidden', 'true');
+                    slot.appendChild(copy);
+                });
+            }
+            // ── end help guide ──
             bindKeyboardShortcuts() {
                 window.addEventListener('keydown', (ev) => {
                     // Escape stops a drag, resize, bend or connection in progress, wherever focus is.
