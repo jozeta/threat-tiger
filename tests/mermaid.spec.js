@@ -29,7 +29,7 @@ test('parser: shapes, labels, edge syntaxes, chains, & groups, comments and fenc
   expect(g.direction).toBe('LR');
   const t = (id) => g.nodes[id].type, l = (id) => g.nodes[id].label;
   expect([t('A'), t('B'), t('C'), t('D'), t('E'), t('F'), t('G'), t('H'), t('I'), t('J'), t('K'), t('M')]).toEqual(
-    ['fc_process', 'fc_process', 'fc_terminator', 'fc_decision', 'fc_database', 'fc_connector', 'fc_preparation', 'fc_data', 'fc_manual_input', 'fc_document', 'fc_process', 'fc_database']);
+    ['fc_process', 'fc_process', 'fc_terminator', 'fc_decision', 'fc_connector', 'fc_connector', 'fc_preparation', 'fc_data', 'fc_manual_input', 'fc_document', 'fc_process', 'fc_connector']);
   expect([l('A'), l('D'), l('K'), l('L'), l('M')]).toEqual(['Rect', 'Is it?', 'Sub "q" two', 'L', 'New syntax']);
   const e = (a, b) => g.edges.find((x) => x.from === a && x.to === b);
   expect(e('A', 'B')).toBeTruthy(); expect(e('A', 'C')).toBeTruthy();

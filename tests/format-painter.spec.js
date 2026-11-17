@@ -11,7 +11,7 @@ const select = (page, ids) => page.evaluate((sel) => { app.state.selectedElement
 const els = [
   { id: 'f1', type: 'fc_process', name: 'Styled', x: 0, y: 0, width: 160, height: 80, fcFillColor: '#fee2e2', fcStrokeColor: '#dc2626', fcStrokeWidth: 4 },
   { id: 'f2', type: 'fc_decision', name: 'Plain', x: 300, y: 0, width: 160, height: 100, fcFillColor: '#ffffff', fcStrokeColor: '#000000', fcStrokeWidth: 2 },
-  { id: 'f3', type: 'fc_cube', name: 'Plain 2', x: 600, y: 0, width: 140, height: 100, fcFillColor: '#ffffff', fcStrokeColor: '#000000', fcStrokeWidth: 2 },
+  { id: 'f3', type: 'fc_process', threeD: true, name: 'Plain 2', x: 600, y: 0, width: 140, height: 100, fcFillColor: '#ffffff', fcStrokeColor: '#000000', fcStrokeWidth: 2 },
   { id: 'p', type: 'process', name: 'API', x: 0, y: 300, width: 240, height: 80, iconColor: '#2563eb', secProps: { encrypted: 'true' } },
 ];
 const get = (page, id) => page.evaluate((i) => JSON.parse(JSON.stringify(app.state.elements.find((e) => e.id === i))), id);
