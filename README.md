@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.20.3** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.21.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -16,6 +16,7 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 *   **Interactive architecture canvas**: drag and drop processes, data stores, external entities, trust zones and trust boundary lines, infrastructure nodes, steps, text, flowchart shapes, swimlanes and your own images, align or space out a selection evenly, organise shapes on layers you can hide or lock, split big models over pages with drill-down links, copy a shape's look with a format painter, see line jumps where flows cross, find your way around big diagrams with a minimap, and use about 2,000 icons: devices and security symbols, security and DevOps brands, tech and OS logos, and official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons (see [their terms](vendor/stencils/README.md)). More than 200 icons (servers, code, web, infrastructure, databases, security, people). Change any node's type from **Properties** (for example process → data store, or rectangle → decision) without losing its name, flows or threats.
 *   **Attack trees, C4, UML, BPMN and ERD**: attack-tree and attack-flow shapes (ATT&CK tactics and techniques), ready-made security and platform nodes, and shapes for architecture and process diagrams; hide any palette section in Settings
+*   **Live status and traffic**: colour shapes and lines from a Google Sheet, a JSON feed or browser checks (web address, reachability, DNS) with your own rules, and animate traffic along data flows
 *   **3D shapes**: any flowchart shape can be 3D, drawn as a solid in the flat view and as a true isometric solid in the isometric views, plus sphere, cone, pyramid and stacked layers
 *   **Tables and containers**: a table with themed header rows and columns, pools, vertical lanes, frames and phase timelines
 *   **Flowcharts and swimlanes**: hover a connection point of a flowchart shape to preview the next step, click to add it (same shape and colours, already connected). Drop nodes into swimlane cells (the target cell is highlighted and grows to fit, with padding), drag column and row borders to resize them, and pick a colour theme per swimlane.
@@ -45,6 +46,12 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 ---
 
 ## What's new 🆕
+
+**1.21.0** brings the diagram to life (see [Live status](#live-status-colour-the-diagram-from-real-data) and [Traffic animation](#traffic-animation)):
+
+- **Live status:** colour shapes and lines from a Google Sheet, a JSON feed, or checks the browser runs itself (web address, reachability, DNS). You write the rules (equals, contains, number and latency limits…), each with its own fill, border or line colour, icon and label.
+- **Traffic animation:** moving dashes or dots along data flows, from source to target.
+- The canvas display switches (minimap, line jumps, traffic animation, live status) moved into **☰ → View → Canvas**.
 
 **1.20.3**: the Attack Path and Infrastructure & Network profiles also hide the bottom panel.
 
@@ -139,6 +146,25 @@ The Activity Log tab is hidden in every built-in profile; show it with **☰ →
 - **Edit profiles:** **☰ → Settings… → Profiles** (or *Edit profiles…* in the profile menu). Pick a profile, rename it, choose which palette section it opens, switch any palette section or sub-group, icon set, icon-picker group, tab or panel on or off, and use **New**, **Duplicate**, **Delete…** or **Restore default profiles…**. Changes to the profile in use apply at once.
 - **☰ → View** also edits the profile in use: *Palette sections*, *Icon sets*, *Panel tabs* and the panels.
 - Profiles live in this browser only, not in the model; hiding something never changes shapes already on the canvas. Sections you hid in 1.19.0 carry over as a *My previous view* profile.
+
+### Live status: colour the diagram from real data
+
+Shapes and lines behave as usual until you tick **Status check** in Properties; then the status options appear.
+
+1. **A Google Sheet:** put the names in one column and their status in the column to the right, for example `Service | Status | Latency` with rows like `API | up | 120`. Share the sheet as *Anyone with the link can view* and copy its link. In **☰ → Settings… → Live status**, click **Add a source**, choose *Google Sheet or CSV* and paste the link. Use the share link, not a *Publish to web* link: those redirect, and redirects are not followed. Optionally choose the name and value columns by header, letter or number.
+2. **A JSON feed:** add a *JSON* source with an `https://` address that returns `[{"name":"API","status":"up","latency":120}]` or `{"API":"up"}`. Other field names and a path such as `data.services` can be set.
+3. **Turn it on for a shape or line:** select it, tick **Status check** and pick the source. The row name defaults to the shape's name. Or pick a check that runs in the browser:
+   - *Web (HTTPS):* an address. You get the status code when the server allows it (CORS), otherwise only up or down.
+   - *Reachability (HTTPS):* up or down plus the round-trip time. Browsers cannot send a real ping (ICMP), so this is a timed HTTPS request.
+   - *DNS lookup:* resolves or not, through DNS-over-HTTPS. The host name is sent to Cloudflare or Google, whichever you choose.
+4. **Rules** run top to bottom and the first match wins: *equals*, *not equals*, *contains* (use `|` for alternatives such as `up|ok`), *less / greater than* a number, *latency above / below* a number of milliseconds, *no data / error*, and *anything else*. Each rule sets a fill, a border (for a line: the line colour), an optional icon and a label. Add as many as you need.
+5. **Start it** with **☰ → View → Canvas → Live status** (or the switch in Settings). The first time a host is needed, Settings lists it and asks you to allow it: nothing is contacted before that, so a model from someone else cannot make your browser call addresses you did not approve. The refresh interval is 60 seconds by default (at least 10) and can be set per source; *Refresh now* checks at once, and checking pauses while the tab is hidden.
+
+Hover the small dot on a shape to see its value, latency and time. Grey means waiting for approval, or data older than twice the interval. Sources and rules are saved in the model and its exports (a colleague gets them); the results never are. State changes such as up → down are written to the activity log.
+
+### Traffic animation
+
+Select a data flow and, in **Properties → Traffic animation**, turn on *Animate traffic*. Choose a *Speed* (slow, normal, fast) and a *Style* (moving dashes or moving dots). The traffic runs from source to target, both ways on a two-way flow. **☰ → View → Canvas → Animate traffic** pauses every animation (remembered in this browser), and with *reduce motion* set in your system the lines stay still. PNG exports and printouts show the plain diagram.
 
 ### Title block and legend
 

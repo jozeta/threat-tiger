@@ -5,6 +5,24 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.21.0
+
+### Added
+- **Live status:** tick **Status check** in Properties for a shape or data flow to colour it from live data. Ordered rules (equals, not equals, contains, less / greater than, latency above / below, no data, anything else) set the fill, border or line colour, an icon and a label; the first match wins.
+- **Status sources** in Settings → Live status: a Google Sheet (paste its share link), a CSV address, or a JSON feed (list or map, optional path). A shape is matched by name to a row; the value is the column to the right, or a chosen column.
+- **Browser checks** that need no source: Web (HTTPS status code, or only reachability without CORS), Reachability (a timed HTTPS request; browsers cannot ping), and DNS lookup through DNS-over-HTTPS (Cloudflare or Google).
+- **Live status switch** (☰ → View → Canvas, and Settings): off by default and remembered in this browser; refresh interval (60 s default, 10 s minimum, per-source override), Refresh now, paused while the tab is hidden; stale data turns grey; state changes go to the activity log.
+- **Traffic animation:** per data flow, moving dashes or dots from source to target (both ways on two-way flows), slow / normal / fast; ☰ → View → Canvas → Animate traffic pauses it, and *reduce motion* keeps it still. On the light canvas the dashes are white so they show on dark lines.
+
+### Changed
+- The minimap, line jumps, traffic animation and live status switches moved into a **☰ → View → Canvas** flyout, so the View flyout fits small phones.
+
+### Security
+- No host is contacted until it is allowed in this browser; DNS lookups are allowed per provider **and** host name. Redirects are not followed (`redirect: 'manual'`), except for the reply-less `no-cors` reachability request, for which browsers require it. Results never enter the model, its exports, undo or History. Sources, rules and traffic settings are validated on import, and the XSS suite covers them. See SECURITY.md → Live status.
+
+### Tests
+- New suites `live-status` (every remote call faked, stray requests fail the test) and `traffic`. The ESLint check of the inline script now allows a larger output buffer (the script outgrew Node's 1 MB default).
+
 ## 1.20.3
 
 ### Changed
