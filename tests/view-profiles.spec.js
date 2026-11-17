@@ -333,7 +333,7 @@ test('Attack Path Modeling hides Threat Modeling, templates, mitigations and ins
   expect(await hidden(page, '#paletteAccordion [data-palette-group="attack"]')).toBe(false);
   await expect.poll(() => isOpen(page, 'attack')).toBe(true);
   for (const t of ['tab-suggest-trigger', 'tab-mitigations-trigger', 'tab-insights-trigger']) expect(await tabHidden(page, t), t).toBe(true);
-  expect(await tabHidden(page, 'tab-register-trigger')).toBe(false);
+  expect((await activeProfile(page)).hidden.tabs).not.toContain('tab-register-trigger');   // the register stays (its panel is closed)
 });
 
 test('Architecture & Process hides Threat Modeling and opens Architecture & Process Diagrams', async ({ page }) => {
@@ -392,11 +392,41 @@ test('built-in profiles saved in format 1 get the new defaults unless the user c
   await reload(page);
   const s = await stored(page);
   const by = Object.fromEntries(s.profiles.profiles.map(p => [p.id, p]));
-  expect(s.profiles.version).toBe(2);
+  expect(s.profiles.version).toBe(3);
   expect(by.infrastructure.hidden.palette).toContain('threat');            // unchanged → new default
   expect(by.infrastructure.expand).toBe('data-nodes');
   expect(by.review.panels).toEqual({ left: false, right: false, bottom: false });
   expect(by.attack.name).toBe('My attacks');                              // edited → kept as it was
   expect(by.attack.hidden.palette).not.toContain('threat');
   expect(by.attack.expand).toBe('attack');                                // but it does learn which section to open
+});
+
+test('Attack Path and Infrastructure & Network also hide the bottom panel', async ({ page }) => {
+  await fresh(page);
+  for (const id of ['attack', 'infrastructure']) {
+    await chooseProfile(page, id);
+    await expect.poll(() => page.evaluate(() => app.isBottomCollapsed), id).toBe(true);
+    await chooseProfile(page, 'threat');
+    await expect.poll(() => page.evaluate(() => app.isBottomCollapsed)).toBe(false);
+  }
+});
+
+test('built-in profiles saved in format 2 get the new defaults unless the user changed them', async ({ page }) => {
+  await H.openApp(page, { viewProfiles: null });
+  await page.evaluate(() => {
+    const noThreat = ['tab-notes-trigger', 'tab-suggest-trigger', 'tab-mitigations-trigger', 'tab-insights-trigger'];
+    const v2 = [
+      { id: 'attack', name: 'Attack Path Modeling', icon: 'bi-diagram-2', expand: 'attack', hidden: { palette: ['threat', 'data-nodes', 'flowchart', 'diagrams'], stencils: [], icons: [], tabs: noThreat }, panels: { left: true, right: true, bottom: true } },
+      { id: 'infrastructure', name: 'Infrastructure & Network Modeling', icon: 'bi-hdd-network', expand: 'data-nodes', hidden: { palette: ['threat', 'attack', 'flowchart', 'diagrams'], stencils: ['aws'], icons: [], tabs: noThreat }, panels: { left: true, right: true, bottom: true } },
+    ];
+    localStorage.setItem('view_profiles', JSON.stringify({ version: 2, profiles: v2 }));
+    localStorage.setItem('active_view_profile', 'attack');
+  });
+  await reload(page);
+  const s = await stored(page);
+  const by = Object.fromEntries(s.profiles.profiles.map(p => [p.id, p]));
+  expect(s.profiles.version).toBe(3);
+  expect(by.attack.panels.bottom).toBe(false);            // untouched → new default
+  expect(by.infrastructure.panels.bottom).toBe(true);     // the user hid AWS → kept as it was
+  expect(by.infrastructure.hidden.stencils).toEqual(['aws']);
 });

@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.20.2** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.20.3** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -46,7 +46,9 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 ## What's new 🆕
 
-**1.20.2** fixes dialogs that stayed open when **Save** was clicked while they were still fading in.
+**1.20.3**: the Attack Path and Infrastructure & Network profiles also hide the bottom panel.
+
+**1.20.2** fixed dialogs that stayed open when **Save** was clicked while they were still fading in.
 
 **1.20.1** fixed a rare case where, with the model open in two tabs, a tab could refuse to save right after *Reload*.
 
@@ -125,9 +127,9 @@ The button left of **☰** asks *What are you modelling?* and switches between *
 | Profile | Shows | Opens |
 |---|---|---|
 | **Threat Modeling** (default) | The threat-modelling palette, text items, templates, register, mitigations and insights | Threat Modeling |
-| **Attack Path Modeling** | Attack Paths & Trees and text items; register, no templates, mitigations or insights | Attack Paths & Trees |
+| **Attack Path Modeling** | Attack Paths & Trees and text items; no templates and no bottom panel | Attack Paths & Trees |
 | **Architecture & Process Modeling** | Flowchart, C4, UML, BPMN and ERD shapes; no threat templates or bottom panel | Architecture & Process Diagrams |
-| **Infrastructure & Network Modeling** | Data Nodes & Icons, ready-made nodes and every icon set; register, no templates, mitigations or insights | Data Nodes & Icons |
+| **Infrastructure & Network Modeling** | Data Nodes & Icons, ready-made nodes and every icon set; no templates and no bottom panel | Data Nodes & Icons |
 | **Flowcharts** | Flowchart shapes only | Flowchart Diagram Items |
 | **Review & Presentation** | The canvas only (no left, right or bottom panel) | — |
 | **Show All** | Everything | — |

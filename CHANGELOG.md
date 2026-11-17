@@ -5,6 +5,11 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.20.3
+
+### Changed
+- The **Attack Path Modeling** and **Infrastructure & Network Modeling** profiles also hide the bottom panel (the register, mitigations and insights). Built-in profiles you have not changed update on the next visit; changed ones stay as they are (*Restore default profiles…* brings the new defaults).
+
 ## 1.20.2
 
 ### Fixed
