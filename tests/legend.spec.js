@@ -386,3 +386,15 @@ test('legend: no page errors while configuring and dragging', async ({ page }) =
   await exportedSvg(page);
   expect(errors).toEqual([]);
 });
+
+test('Settings has a "Title block & legend…" link that opens the legend dialog (not a checkbox)', async ({ page }) => {
+  await openApp(page, { session: demoSession() });
+  await clickControl(page, '#btn-settings');
+  await expect(page.locator('#modal-settings')).toBeVisible();
+  const link = page.locator('#btn-settings-legend');
+  await expect(link).toBeVisible();
+  expect(await link.evaluate(el => el.tagName === 'BUTTON' && el.getAttribute('type') === 'button')).toBe(true);
+  await link.click();
+  await expect(page.locator('#modal-settings')).toBeHidden();
+  await expect(page.locator('#modal-legend')).toBeVisible();
+});

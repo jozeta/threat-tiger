@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-mcXqeq4ovUTJsR1kkB77dIaz7renHxeJ/EhHiiBPyzA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-hGdLKevWGSfqug4YBGBB5XBLsQaqzH0aS64cGqaBWsA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4139,6 +4139,13 @@
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-3">
+                    <!-- Title block & legend: opens its own dialog (openLegendDialog) -->
+                    <section class="mb-3" aria-labelledby="settings-legend-title">
+                        <h6 class="fw-bold mb-1" id="settings-legend-title"><i class="bi bi-card-heading me-1" aria-hidden="true"></i>Title block &amp; legend</h6>
+                        <p class="small text-muted mb-2">Choose what the legend lists, its labels, title, columns and position, and whether the title block is shown.</p>
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btn-settings-legend"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Title block &amp; legend…</button>
+                    </section>
+                    <hr class="my-3">
                     <!-- View profiles editor (renderPaletteSettings) -->
                     <section id="settings-profiles" aria-labelledby="settings-profiles-title">
                     <h6 class="fw-bold mb-1" id="settings-profiles-title"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Profiles</h6>
@@ -4579,7 +4586,7 @@
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.19.0';
+        const APP_VERSION = '1.20.0';
         const SCHEMA_VERSION = 1;
         const MAX_ZOOM = 2.5;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
@@ -10869,6 +10876,12 @@
                 if (!modalEl) return;
                 this.legendModal = window.bootstrap ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
                 $('btn-menu-title-block').addEventListener('click', () => this.openLegendDialog());
+                // Settings → Title block & legend…: close Settings first, then open the legend dialog (no stacked modals).
+                $('btn-settings-legend').addEventListener('click', () => {
+                    const settings = document.getElementById('modal-settings');
+                    settings.addEventListener('hidden.bs.modal', () => this.openLegendDialog(), { once: true });
+                    this.gitSettingsModal.hide();
+                });
                 const L = () => this.legendSettings();
                 const changed = () => { this.renderTitleBlock(); this.saveSessionToLocalStorage(); this.syncLegendDialog(); };
                 $('legend-show-title-block').addEventListener('change', (ev) => { L().showTitleBlock = ev.target.checked; changed(); });

@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.19.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.20.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -46,7 +46,15 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 ## What's new 🆕
 
-**1.19.0** adds a lot to the palette, and a **Settings → Palette** section to hide what you don't need (see [Choosing what the palette shows](#choosing-what-the-palette-shows)):
+**1.20.0** makes the screen fit the job:
+
+- **Profiles:** a *What are you modelling?* button left of ☰ switches between Threat Modeling (default), Attack Path, Architecture & Process, Infrastructure & Network, Flowcharts, Review & Presentation and Show All. Profiles can be edited, created and deleted in Settings. See [Profiles](#profiles-choosing-what-the-screen-shows).
+- **Title block & legend dialog:** pick and rename every legend item, set the title, one or two columns, any corner or a free-floating, lockable position. See [Title block and legend](#title-block-and-legend).
+- **3D:** a height for every 3D shape, layer count and thickness for stacked layers, softer sphere shadow and cone shading, readable labels on solids, and 3D decision and terminator shapes drawn as raised tiles.
+- **Palette:** one search box for all of Data Nodes & Icons, ready-made nodes placed as coloured icons, threat actor and crown jewel as red and yellow circles, smaller attack-tree gates, and Architecture & Process items styled like the rest. New **Display** option (card, icon only, circle badge) for components.
+- The left panel's Session Meta & Context can be collapsed, and the section numbers are gone.
+
+**1.19.0** added a lot to the palette, and a **Settings → Palette** section to hide what you don't need (see [Profiles](#profiles-choosing-what-the-screen-shows)):
 
 - **Attack Paths & Trees:** threat actor and crown jewel presets, plus attack-tree and attack-flow shapes (entry point, attack step with ATT&CK tactic and technique, asset, condition, AND / OR gates, goal, countermeasure, choke point). See [Drawing attack trees and attack flows](#drawing-attack-trees-and-attack-flows).
 - **Ready-made nodes:** 32 preconfigured components (firewall, WAF, API gateway, SIEM, secrets vault, Kubernetes, AI/LLM model …) with tailored threats from the start, and three new icon groups: Attack & threat, Security artefacts, Identity & directory.
@@ -106,13 +114,33 @@ All other actions (import, export, reports, History, help) are in the **☰ menu
 
 The sync settings (not the token) are part of the model and its exports, so a colleague who opens your JSON gets the ⟳ button straight away and only needs to enter their own token. **Forget token** removes the token from this browser; **Remove sync from this model** removes the settings.
 
-### Choosing what the palette shows
+### Profiles: choosing what the screen shows
 
-Open **☰ → Settings… → Palette** and switch off what you don't use. Changes apply at once and are remembered in this browser (they are a view setting, not part of the model; shapes already on the canvas stay as they are).
+The button left of **☰** asks *What are you modelling?* and switches between **profiles**. A profile decides which palette sections, icon sets, icon-picker groups, right-panel tabs, bottom-panel tabs and panels you see. Your choice is remembered in this browser.
 
-- **Palette sections:** Attack paths & trees, Text items, Data nodes & icons, Ready-made nodes, Flowchart items, Architecture & process diagrams, and each of its sub-groups (C4 model, UML, BPMN, Entity-relationship). All are shown by default.
-- **Icon sets:** the cloud and device stencil packs (the same switches as **☰ → View → Icon sets**).
-- **Icon picker groups:** the groups offered in a shape's **Icon** list in Properties (for example *Attack & threat*, *Security artefacts*, *Identity & directory*). A shape keeps its icon even when its group is hidden.
+| Profile | Shows |
+|---|---|
+| **Threat Modeling** (default) | The threat-modelling palette, text items, templates, register, mitigations and insights |
+| **Attack Path Modeling** | Adds Attack Paths & Trees |
+| **Architecture & Process Modeling** | Flowchart, C4, UML, BPMN and ERD shapes; no threat templates or bottom panel |
+| **Infrastructure & Network Modeling** | Data Nodes & Icons, ready-made nodes and every icon set |
+| **Flowcharts** | Flowchart shapes only |
+| **Review & Presentation** | The canvas without the palette |
+| **Show All** | Everything |
+
+The Activity Log tab is hidden in every built-in profile; show it with **☰ → View → Panel tabs** or in the profile editor.
+
+- **Edit profiles:** **☰ → Settings… → Profiles** (or *Edit profiles…* in the profile menu). Pick a profile, rename it, switch any palette section or sub-group, icon set, icon-picker group, tab or panel on or off, and use **New**, **Duplicate**, **Delete…** or **Restore default profiles…**. Changes to the profile in use apply at once.
+- **☰ → View** also edits the profile in use: *Palette sections*, *Icon sets*, *Panel tabs* and the panels.
+- Profiles live in this browser only, not in the model; hiding something never changes shapes already on the canvas. Sections you hid in 1.19.0 carry over as a *My previous view* profile.
+
+### Title block and legend
+
+Open **☰ → View → Title block & legend…** (or **☰ → Settings… → Title block & legend…**). The settings are saved with the model and appear on the canvas, in the PNG export and in print.
+
+- **Title block** and **legend** switch on separately. The legend gets a **title** of your choice and **one or two columns**.
+- **Items:** everything the page draws is listed (shape types, 3D variants, icons and cloud icons, flow styles and colours, threat and crown-jewel markers). Tick what the legend shows and edit each item's text; *Reset labels* brings the automatic text back. New kinds of items are shown until you untick them.
+- **Position:** any corner, or **Free-floating**: drag the legend anywhere on the canvas (or focus it and use the arrow keys). It pans and zooms with the diagram. **Lock position** keeps it in place, and review mode freezes it as well.
 
 ### Drawing attack trees and attack flows
 

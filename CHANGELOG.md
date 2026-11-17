@@ -5,6 +5,34 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.20.0
+
+### Added
+- **View profiles:** a *What are you modelling?* button left of ☰ switches between Threat Modeling (default), Attack Path Modeling, Architecture & Process Modeling, Infrastructure & Network Modeling, Flowcharts, Review & Presentation and Show All. Each shows only the palette sections, icon sets, icon-picker groups, tabs and panels that fit the job; the choice is remembered in this browser.
+- **Settings → Profiles** (replaces Settings → Palette): create, rename, duplicate, delete and restore profiles; each can show or hide every palette section and sub-group, icon set, icon-picker group, right- and bottom-panel tab, and the left, right and bottom panels. Changes to the profile in use apply at once.
+- **☰ → View → Palette sections** shows or hides each palette section and sub-group; all View toggles now save into the active profile.
+- **Title block & legend dialog** (☰ → View, and Settings): separate switches for the title block and the legend, legend title, one or two columns, and a list of everything the page draws (shape types incl. 3D, icons and cloud icons, flow styles and colours, threat and crown-jewel markers) to tick and relabel.
+- **Legend position:** any corner, or free-floating on the canvas (drag with mouse or touch, or arrow keys), lockable, frozen in review mode; PNG and print use the same place. Saved in the model (`legend`), validated on import.
+- **3D height** slider, number box and Auto for every 3D flowchart shape, cone and pyramid; **stacked layers** get a layer count (1–10) and layer thickness.
+- **One search box** directly under Data Nodes & Icons searches the fixed items, ready-made nodes and every visible icon set (loads sets as needed, skips hidden ones, shows a count; Esc clears). The per-set search boxes are gone.
+- **Properties → Display** for processes, data stores, external entities and infrastructure: Card, Icon only or Circle badge (with fill and border colours).
+
+### Changed
+- Ready-made nodes are placed as icons with the name underneath, in their palette colour; they keep their type and tailored threats.
+- **Threat actor** is a red circle badge and **Crown jewel** a yellow one, icon centred, name below.
+- Smaller default sizes for condition, AND and OR gates, countermeasure and choke point (existing shapes keep their size).
+- The Architecture & Process Diagrams palette now looks like the other sections (one row per item, small outline preview).
+- Softer sphere shadow and cone shading; sphere, cone, pyramid and stacked-layer labels sit on a readable backdrop and stand upright in isometric views. In the flat view a 3D decision or terminator is a raised tile.
+- The Activity Log tab is hidden in every built-in profile.
+- Left panel: "Session Meta & Context" and "Diagram Component Palette" lose their numbers, and Session Meta & Context can be collapsed (remembered).
+- The title block's on/off setting moved from the browser into the model; the old setting is carried over once. Palette sections, icon sets and tabs hidden in 1.19.0 carry over as a *My previous view* profile.
+
+### Security
+- New model fields (`legend`, `display`, `badgeFill`, `badgeStroke`, `depth3d`, `layerCount`, `layerThickness`) are validated on import; profiles in localStorage are validated on read. The XSS suite covers them.
+
+### Tests
+- New suites: `view-profiles`, `legend`, `palette-visuals`; `flowchart-3d` extended. `tests/helpers.js` `openApp` seeds a show-everything profile unless `viewProfiles: null` is passed.
+
 ## 1.19.0
 
 ### Added
