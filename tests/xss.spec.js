@@ -51,6 +51,11 @@ function poisonedModel() {
     // 1.16.0: title block fields and review mode (the block is shown by exerciseUi).
     s.diagramInfo = { level: P('level')[0], version: P('version')[0], status: P('status')[1], author: P('author')[0], date: P('date')[0] };
     s.reviewMode = true;
+    // Diagram shapes (C4, UML class, ERD, BPMN): name and every multi-line text field.
+    s.elements.push({ id: 'el-c4', type: 'c4_container', name: P('c4name')[0], x: 4000, y: 0, width: 200, height: 120, c4Technology: P('c4tech')[1], c4Description: P('c4desc')[0] });
+    s.elements.push({ id: 'el-cls', type: 'uml_class', name: P('clsname')[2], x: 4300, y: 0, width: 200, height: 160, umlAttributes: `${P('attr')[0]}\n${P('attr2')[1]}`, umlOperations: P('op')[2] });
+    s.elements.push({ id: 'el-erd', type: 'erd_entity', name: P('erdname')[0], x: 4600, y: 0, width: 200, height: 120, erdRows: `PK ${P('pk')[0]}\nFK ${P('fk')[1]}\n${P('row')[2]}` });
+    s.elements.push({ id: 'el-bpmn', type: 'bpmn_gateway_exclusive', name: P('gw')[1], x: 4900, y: 0, width: 60, height: 60 });
   });
 }
 
@@ -129,6 +134,9 @@ function attributeContextModel() {
     s.elements.push(Object.assign({}, infra, { id: 'el-infra-proto', iconColor: 'constructor' }));
     const bline = byType('boundary_line');
     bline.name = INJ[0]; bline.textOffset = INJ[3]; bline.x2 = INJ[3]; bline.bendX = INJ[1];
+    s.elements.push({ id: 'el-dg-c4', type: 'c4_component', name: INJ[1], x: 4000, y: 3000, width: 200, height: 120, c4Technology: INJ[2], c4Description: INJ[0], fcFillColor: INJ[3], fcStrokeColor: INJ[1] });
+    s.elements.push({ id: 'el-dg-cls', type: 'uml_class', name: INJ[0], x: 4300, y: 3000, width: 200, height: 160, umlAttributes: `${INJ[0]}\n${INJ[1]}`, umlOperations: `${INJ[2]}\n${INJ[3]}`, fcStrokeWidth: INJ[3] });
+    s.elements.push({ id: 'el-dg-erd', type: 'erd_entity', name: INJ[2], x: 4600, y: 3000, width: 200, height: 120, erdRows: `PK ${INJ[1]}\nFK ${INJ[0]}\n${INJ[3]}` });
     s.elements.push({ id: 'el-swim2', type: 'swimlane', name: INJ[1], x: 3000, y: 3000, width: 700, height: 500, columns: [INJ[1], INJ[2]], rows: [INJ[1], INJ[2]] });
     s.elements.push({ id: 'el-at-step2', type: 'at_step', name: INJ[1], x: 4000, y: 3000, width: INJ[3], height: 80, atTactic: INJ[2], atTechnique: INJ[1], fcFillColor: INJ[3], fcStrokeColor: INJ[1], fcStrokeWidth: INJ[3] });
     s.elements.push({ id: 'el-at-cond2', type: 'at_condition', name: INJ[0], x: 4300, y: 3000, width: 180, height: 70, atOutcome: INJ[1] });
@@ -183,6 +191,9 @@ test('payloads in attribute, style and SVG contexts never inject markup (SEC-DOM
   expect(checked.swimInputs).toBeGreaterThan(0);
   expect(checked.mitRows).toBe(2);
   expect(await injectedNodes(page)).toEqual([]);
+  // Diagram-shape text is drawn as literal text (so the payloads really reached the renderer).
+  await expect(page.locator('[data-id="el-dg-cls"] text[data-dg-text="attr"]').first()).toHaveText(/^<b data-injected/);
+  await expect(page.locator('[data-id="el-dg-erd"] text[data-erd-key="FK"]')).toHaveCount(1);
   // Invalid ticket addresses were dropped on import, so neither becomes a link.
   await expect(page.locator('#mitigation-tbody a.mitigation-ticket-link')).toHaveCount(0);
   expect(errors).toEqual([]);
