@@ -62,6 +62,17 @@ plain `http://` stays blocked by the Content-Security-Policy, which is unchanged
   "Forget all allowed hosts" or "Clear all data in this browser". A model from someone else can name any host,
   but it cannot make the browser contact one you have not allowed; until then its shapes show a grey "waiting
   for approval" dot.
+- **Files on the app's own site need no approval.** A status source may also be a path next to the app (for
+  example `samples/status-servers.csv`, or a full address on the app's own origin, which is stored as its path).
+  Only a safe path is accepted (letters, digits, `. _ ~ % -`, `/` and an optional query; no `..`, no scheme, no
+  `//`, at most 300 characters), it is resolved against the page's own address and must stay on its origin, so
+  the request goes nowhere the page itself did not come from (`connect-src 'self'`). Opened as a `file://` page,
+  such a source reports an error instead of being read.
+- **Build from status file** (☰ → Model) and **Test check** (Properties → Status check) fetch with the same rules:
+  host approval first (same-origin files exempt), no cookies, no redirects, 2 MB, a timeout. Test check works with
+  live status off but only runs when you press it. A status file is untrusted: names, groups and descriptions are
+  plain text and clipped, at most 200 rows and 500 connections, colours `#rgb`/`#rrggbb`, icons Bootstrap icon
+  names, unknown types and connections are skipped with a warning shown before anything is built.
 - Sources and rules are part of the model and its exports; **results are not**: they stay in memory in the open
   tab and never reach the model, undo history, History snapshots or JSON exports. A PNG export or print shows
   the colours on screen at that moment. A change of state (for example up → down) is written to the activity log.

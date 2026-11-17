@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-J+ahG6QAdq0KX3VBHsgqynJ8H81RWkuH8iRqW59xkhM='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-koEz2LdPsoC76vDtWcCmGA1LhBL56CDXyyVr+mcA3gQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1831,6 +1831,7 @@
                     <li><h6 class="dropdown-header">Model</h6></li>
                     <li><button class="dropdown-item" type="button" id="btn-import"><i class="bi bi-file-earmark-arrow-up me-2"></i>Import JSON…</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-import-mermaid"><i class="bi bi-diagram-3 me-2"></i>Import Mermaid flowchart…</button></li>
+                    <li><button class="dropdown-item" type="button" id="btn-build-from-status"><i class="bi bi-activity me-2"></i>Build from status file…</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-export"><i class="bi bi-file-earmark-arrow-down me-2"></i>Export JSON</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-export-no-log" title="Smaller file that diffs cleanly in git"><i class="bi bi-git me-2"></i>Export JSON for git (no activity log)</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-snapshots"><i class="bi bi-clock-history me-2"></i>History…</button></li>
@@ -3633,6 +3634,8 @@
                                     </div>
                                     <div class="extra-small text-muted mb-2" id="props-live-note"></div>
                                     <div class="extra-small mb-2" id="props-live-result" role="status" aria-live="polite"></div>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mb-2" id="btn-live-test-check" title="Run this check now and show everything it returns"><i class="bi bi-play-circle me-1" aria-hidden="true"></i>Test check</button>
+                                    <div id="live-test-result" class="live-test-result border rounded bg-white p-2 mb-2 extra-small d-none" aria-live="polite"></div>
                                     <div class="extra-small fw-bold text-muted mb-1">Rules (the first that matches wins)</div>
                                     <ol id="props-live-rules" class="list-unstyled d-flex flex-column gap-2 mb-2"></ol>
                                     <div class="d-flex flex-wrap gap-2">
@@ -4324,14 +4327,15 @@
                                 <div class="col-12 col-sm-6">
                                     <label class="form-label small text-muted mb-1" for="live-src-kind">Type</label>
                                     <select class="form-select form-select-sm shadow-none" id="live-src-kind">
-                                        <option value="sheet">Google Sheet or CSV</option>
-                                        <option value="json">JSON</option>
+                                        <option value="sheet">Google Sheet</option>
+                                        <option value="csv">CSV file</option>
+                                        <option value="json">JSON file</option>
                                     </select>
                                 </div>
                                 <div class="col-12">
-                                    <label class="form-label small text-muted mb-1" for="live-src-url">Address (https)</label>
+                                    <label class="form-label small text-muted mb-1" for="live-src-url">Address (https, or a file on this site)</label>
                                     <input type="url" class="form-control form-control-sm shadow-none" id="live-src-url" maxlength="2000" spellcheck="false" placeholder="https://docs.google.com/spreadsheets/d/…/edit#gid=0" aria-describedby="live-src-url-help">
-                                    <div class="form-text extra-small" id="live-src-url-help">Google Sheets: share it as "Anyone with the link can view" and paste that link (a "Publish to web" link redirects, and redirects are not followed). The first row is the header row.</div>
+                                    <div class="form-text extra-small" id="live-src-url-help">A file next to the app (like <code>samples/status-servers.csv</code>) needs no approval. Google Sheets: share it as "Anyone with the link can view" and paste that link (a "Publish to web" link redirects, and redirects are not followed). The first row is the header row.</div>
                                 </div>
                                 <div class="col-6 live-src-sheet">
                                     <label class="form-label small text-muted mb-1" for="live-src-key-col">Name column</label>
@@ -4612,6 +4616,95 @@
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-confirm-cancel" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn btn-sm btn-danger" id="btn-confirm-delete">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Build from status file (1.21) -->
+    <div class="modal fade" id="modal-status-file" tabindex="-1" aria-labelledby="modal-status-file-title" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header py-2">
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-status-file-title"><i class="bi bi-activity me-1" aria-hidden="true"></i>Build from status file</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body small">
+                    <p class="mb-2">Load a CSV file, a Google Sheet or a JSON file that lists your servers. Each row becomes a shape, groups become trust zones and
+                        <code>connects_to</code> becomes data flows. Keep checking the file and the shapes show its status live.</p>
+                    <label for="status-file-url" class="form-label fw-semibold mb-1">Address</label>
+                    <div class="d-flex flex-wrap gap-2 align-items-start">
+                        <input type="text" class="form-control form-control-sm shadow-none flex-grow-1 status-file-url-input" id="status-file-url" maxlength="2000" spellcheck="false" autocomplete="off"
+                            placeholder="https://…/status.csv, a Google Sheet share link, or samples/status-servers.csv" aria-describedby="status-file-url-help">
+                        <button type="button" class="btn btn-sm btn-primary" id="btn-status-file-preview"><i class="bi bi-eye me-1" aria-hidden="true"></i>Preview</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-status-file-choose"><i class="bi bi-folder2-open me-1" aria-hidden="true"></i>Choose file…</button>
+                        <input type="file" id="status-file-input" class="d-none" accept=".csv,.json,.txt,text/csv,application/json,text/plain">
+                    </div>
+                    <div class="form-text extra-small" id="status-file-url-help">An https address (asked once per host), a Google Sheet shared as "Anyone with the link can view", or a file on this site (no approval). <span id="status-file-filename" class="fw-semibold"></span></div>
+                    <details class="mt-2" id="status-file-help">
+                        <summary class="fw-semibold">Format help and sample files</summary>
+                        <div class="mt-1">
+                            <p class="mb-1">A CSV file or sheet with a header row, or JSON as <code>{ "title": "…", "items": [ { "name": "web-01", "status": "up" } ] }</code> (or just the list).
+                                Column names ignore case, and <code>_</code>, <code>-</code> and spaces are the same.</p>
+                            <ul class="mb-1 ps-3">
+                                <li><code>name</code> (required, unique): the shape's name and the key looked up for its status.</li>
+                                <li><code>status</code>: the value checked, for example <code>up</code>, <code>degraded</code>, <code>down</code>.</li>
+                                <li><code>type</code>: <code>process</code>, <code>datastore</code>, <code>interactor</code>, <code>infrastructure</code> (default) or a ready-made node such as <code>firewall</code>, <code>api-gateway</code>, <code>load-balancer</code>, <code>cache</code>, <code>siem</code>.</li>
+                                <li><code>icon</code>: a Bootstrap icon such as <code>bi-server</code> (default: from the type).</li>
+                                <li><code>ok</code> (default <code>up|ok|online|healthy|200</code>) and <code>ok_color</code> (default green <code>#198754</code>).</li>
+                                <li><code>warn</code> (default <code>degraded|slow|warning|maintenance</code>) and <code>warn_color</code> (default amber <code>#ffc107</code>).</li>
+                                <li><code>fail_color</code>: any other status (default red <code>#dc3545</code>). No data or no row: grey.</li>
+                                <li><code>latency</code> (ms) and <code>latency_max</code>: above the limit shows the warn colour.</li>
+                                <li><code>group</code>: shapes with the same group share a trust zone. <code>connects_to</code>: names separated by <code>|</code>, each a data flow.</li>
+                                <li><code>description</code>: the shape's notes.</li>
+                            </ul>
+                            <p class="mb-0">Samples with six servers in different states: <a href="samples/status-servers.csv" download>status-servers.csv</a> ·
+                                <a href="samples/status-servers.json" download>status-servers.json</a>.
+                                <button type="button" class="btn btn-link btn-sm p-0 align-baseline" id="btn-status-file-sample">Load the sample CSV</button></p>
+                        </div>
+                    </details>
+                    <div class="alert alert-warning py-2 px-2 mt-2 mb-0 d-none" id="status-file-approve" role="alertdialog" aria-labelledby="status-file-approve-title">
+                        <div class="fw-semibold mb-1" id="status-file-approve-title">Allow Threat Tiger to contact <span id="status-file-approve-host"></span>?</div>
+                        <div class="mb-2">Your browser sends a request (with its IP address, but no cookies) to this host now, and on every live status refresh if you keep checking the file.</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-sm btn-warning" id="btn-status-file-approve">Allow and preview</button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-status-file-approve-cancel">Not now</button>
+                        </div>
+                    </div>
+                    <div id="status-file-error" class="alert alert-danger py-1 px-2 mt-2 mb-0 d-none" role="alert"></div>
+                    <div id="status-file-preview" class="mt-3 d-none" aria-live="polite">
+                        <div class="fw-semibold mb-1">Preview</div>
+                        <div id="status-file-summary" class="mb-1 fw-semibold"></div>
+                        <ul id="status-file-warnings" class="mb-2 ps-3 text-warning-emphasis"></ul>
+                        <fieldset class="mb-2">
+                            <legend class="fw-semibold mb-1" style="font-size: inherit;">Where</legend>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="status-file-target" id="status-file-target-new" value="new" checked>
+                                <label class="form-check-label" for="status-file-target-new">Build on a new page</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="status-file-target" id="status-file-target-this" value="this">
+                                <label class="form-check-label" for="status-file-target-this">Build on this page (to the right of what is there)</label>
+                            </div>
+                        </fieldset>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" role="switch" id="status-file-keep" checked aria-describedby="status-file-keep-help">
+                            <label class="form-check-label" for="status-file-keep">Keep checking this file for status</label>
+                        </div>
+                        <div class="form-text extra-small mt-0 mb-2" id="status-file-keep-help">Adds the file as a status source (Settings → Live status) and gives every shape rules from its row. Turn on live status in ☰ → View → Canvas to see the colours.</div>
+                        <div id="status-file-update-box" class="border rounded p-2 d-none">
+                            <div id="status-file-update-text" class="mb-1"></div>
+                            <div class="form-check d-none" id="status-file-delete-wrap">
+                                <input class="form-check-input" type="checkbox" id="status-file-delete-missing">
+                                <label class="form-check-label" for="status-file-delete-missing" id="status-file-delete-label"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer py-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btn-status-file-update" disabled title="Update the page built from this address: new rows are added, changed rows updated, nothing is moved">Update from file</button>
+                    <button type="button" class="btn btn-sm btn-primary" id="btn-status-file-build" disabled>Build diagram</button>
                 </div>
             </div>
         </div>
@@ -7020,14 +7113,17 @@
             const out = [], seen = new Set();
             raw.filter(isPlainObject).forEach(s => {
                 if (out.length >= LIVE_LIMITS.sources) return;
-                const id = toText(s.id).trim(), kind = s.kind === 'json' ? 'json' : (s.kind === 'sheet' ? 'sheet' : '');
+                const id = toText(s.id).trim(), kind = LIVE_SOURCE_KINDS.includes(s.kind) ? s.kind : '';
                 if (!LIVE_ID.test(id) || seen.has(id) || !kind) return;
-                const url = liveSafeUrl(s.url);
+                const url = statusSourceUrl(s.url);   // https, or a file on the app's own site (status file, 1.21)
                 if (!url) return;
                 const n = Math.round(toNumber(s.intervalSec, 0));
                 const src = { id, name: liveClip(s.name, LIVE_LIMITS.name), kind, url };
-                if (kind === 'sheet') { src.keyColumn = liveClip(s.keyColumn, LIVE_LIMITS.column); src.valueColumn = liveClip(s.valueColumn, LIVE_LIMITS.column); }
+                if (liveCsvKind(kind)) { src.keyColumn = liveClip(s.keyColumn, LIVE_LIMITS.column); src.valueColumn = liveClip(s.valueColumn, LIVE_LIMITS.column); }
                 else { src.keyField = liveClip(s.keyField, LIVE_LIMITS.column) || 'name'; src.valueField = liveClip(s.valueField, LIVE_LIMITS.column) || 'status'; src.path = toText(s.path).trim().slice(0, LIVE_LIMITS.path); }
+                const lat = liveClip(liveCsvKind(kind) ? s.latencyColumn : s.latencyField, LIVE_LIMITS.column);
+                if (lat) src[liveCsvKind(kind) ? 'latencyColumn' : 'latencyField'] = lat;
+                if (LIVE_ID.test(toText(s.pageId))) src.pageId = toText(s.pageId);   // the page built from this status file
                 src.intervalSec = n > 0 ? Math.min(LIVE_LIMITS.maxInterval, Math.max(LIVE_LIMITS.minInterval, n)) : 0;
                 seen.add(id); out.push(src);
             });
@@ -7107,7 +7203,7 @@
             if (!k || vc === null) return { found: false };
             const row = rows.slice(1).find(r => liveNorm(r[kc]) === k);
             if (!row) return { found: false };
-            const lc = header.findIndex(h => /^latency(\s*\(?ms\)?|_ms|ms)?$/i.test(toText(h).trim()));
+            const lc = src.latencyColumn ? (liveColumnIndex(src.latencyColumn, header) ?? -1) : header.findIndex(h => /^latency(\s*\(?ms\)?|_ms|ms)?$/i.test(toText(h).trim()));
             return { found: true, value: toText(row[vc]).trim(), latency: lc >= 0 ? liveNum(row[lc]) : null };
         }
         /** An array of objects (key/value fields) or an object map ({ "API": "up" } / { "API": { "status": "up" } }), after an optional dotted path. */
@@ -7118,7 +7214,7 @@
                 if (d !== null && typeof d === 'object' && Object.prototype.hasOwnProperty.call(d, p)) d = d[p]; else return { found: false };
             }
             const k = liveNorm(key), kf = src.keyField || 'name', vf = src.valueField || 'status';
-            const fromObj = (o) => ({ found: true, value: toText(o[vf]).trim(), latency: liveNum(o.latency ?? o.latencyMs ?? o.latency_ms) });
+            const fromObj = (o) => ({ found: true, value: toText(o[vf]).trim(), latency: liveNum(src.latencyField ? o[src.latencyField] : (o.latency ?? o.latencyMs ?? o.latency_ms)) });
             if (!k) return { found: false };
             if (Array.isArray(d)) {
                 const item = d.find(o => isPlainObject(o) && liveNorm(o[kf]) === k);
@@ -7131,6 +7227,45 @@
                 return isPlainObject(v) ? fromObj(v) : { found: true, value: toText(v).trim(), latency: null };
             }
             return { found: false };
+        }
+        /**
+         * Test check (1.21): everything a source has for `key`: { found, value, latency, valueName, fields: [{ name, value,
+         * isKey, isValue }] } (fields: every column of the matched row, or every field of the matched JSON item; at most 50).
+         */
+        function liveSourceDetails(d, key, src) {
+            const k = liveNorm(key), shown = (v) => (v !== null && typeof v === 'object' ? JSON.stringify(v) : toText(v)).trim();
+            if (liveCsvKind(src.kind)) {
+                const rows = d.rows || [], header = rows[0] || [];
+                const kc = liveColumnIndex(src.keyColumn, header) ?? 0, vc = src.valueColumn ? liveColumnIndex(src.valueColumn, header) : kc + 1;
+                const row = k ? rows.slice(1).find(r => liveNorm(r[kc]) === k) : null;
+                if (!row) return { found: false, fields: [] };
+                const r = liveCsvLookup(rows, key, src), width = Math.min(50, Math.max(header.length, row.length));
+                const fields = Array.from({ length: width }, (_, i) => ({ name: toText(header[i]).trim() || `Column ${i + 1}`, value: toText(row[i]).trim(), isKey: i === kc, isValue: i === vc }));
+                return { found: true, value: r.value, latency: r.latency, valueName: vc === null ? '' : (toText(header[vc]).trim() || `Column ${vc + 1}`), fields };
+            }
+            let x = d.json;
+            const path = toText(src.path).trim();
+            if (path) for (const p of path.split('.')) { if (x !== null && typeof x === 'object' && Object.prototype.hasOwnProperty.call(x, p)) x = x[p]; else return { found: false, fields: [] }; }
+            const kf = src.keyField || 'name', vf = src.valueField || 'status';
+            let obj = null, mapKey = null;
+            if (k && Array.isArray(x)) obj = x.find(o => isPlainObject(o) && liveNorm(o[kf]) === k) || null;
+            else if (k && isPlainObject(x)) { mapKey = Object.keys(x).find(n => liveNorm(n) === k); if (mapKey !== undefined) obj = x[mapKey]; else mapKey = null; }
+            if (obj === null || obj === undefined) return { found: false, fields: [] };
+            const r = liveJsonLookup(d.json, key, src);
+            if (!isPlainObject(obj)) return { found: true, value: r.value, latency: r.latency, valueName: 'value', fields: [{ name: 'value', value: shown(obj), isKey: false, isValue: true }] };
+            const fields = Object.keys(obj).slice(0, 50).map(n => ({ name: n, value: shown(obj[n]), isKey: mapKey === null && n === kf, isValue: n === vf }));
+            return { found: true, value: r.value, latency: r.latency, valueName: vf, fields };
+        }
+        /** A colour for a rule made from a tested value: green for healthy values, red for failures, amber for warnings, else blue. */
+        function liveSuggestColor(when, value) {
+            if (when === 'latency_gt') return '#ffc107';
+            if (when === 'nodata') return '#dc3545';
+            const v = liveNorm(value), n = Number(v);
+            if (/^\d{3}$/.test(v)) return n < 400 ? '#198754' : '#dc3545';
+            if (['up', 'ok', 'online', 'healthy', 'resolves', 'true', 'yes', 'green', 'pass', 'passing', 'running'].includes(v)) return '#198754';
+            if (['down', 'error', 'offline', 'fail', 'failed', 'failing', 'nxdomain', 'noanswer', 'red', 'false', 'no', 'critical', 'stopped'].includes(v)) return '#dc3545';
+            if (['degraded', 'slow', 'warning', 'warn', 'maintenance', 'amber', 'yellow', 'partial', 'redirect'].includes(v)) return '#ffc107';
+            return '#0d6efd';
         }
         /**
          * The first rule that matches a result { value, state?, latency?, error? } (null: no result yet), or null.
@@ -7169,6 +7304,269 @@
             const c = liveColor(hex) || '#ffffff', r = parseInt(c.slice(1, 3), 16), g = parseInt(c.slice(3, 5), 16), b = parseInt(c.slice(5, 7), 16);
             return (0.299 * r + 0.587 * g + 0.114 * b) > 150 ? '#0f172a' : '#ffffff';
         }
+        // ── Live status: status files (1.21) ─────────────────────────────────────────────
+        // A status file (CSV, Google Sheet or JSON) lists servers: name, status, optional type / icon / rules / colours /
+        // group / connections. "Build from status file…" turns it into a diagram and, optionally, a status source that
+        // colours it. The file is untrusted: text only, clipped, at most 200 rows and 500 flows, colours #rgb/#rrggbb,
+        // icons as Bootstrap icon names. Sources may also be files on the app's own site (a relative path), which need
+        // no host approval: they stay within connect-src 'self'.
+        const LIVE_SOURCE_KINDS = ['sheet', 'csv', 'json'];
+        const LIVE_SOURCE_KIND_LABELS = { sheet: 'Google Sheet', csv: 'CSV', json: 'JSON' };
+        /** CSV-like sources: a Google Sheet ('sheet', older models also use it for any CSV) or a CSV file. */
+        function liveCsvKind(kind) { return kind === 'sheet' || kind === 'csv'; }
+        const STATUS_PATH = /^\/?[A-Za-z0-9._~%-]+(?:\/[A-Za-z0-9._~%-]+)*(?:\?[A-Za-z0-9._~=&%+-]*)?$/;
+        const STATUS_PATH_MAX = 300;
+        function statusPathOk(p) { return p.length <= STATUS_PATH_MAX && STATUS_PATH.test(p) && !p.includes('..') ? p : ''; }
+        /**
+         * A status source address as stored in the model: an https URL (no credentials), or a path on the app's own
+         * site (relative like "samples/status-servers.csv" or starting with one "/"; no "..", no scheme, no "//").
+         * A full URL on the app's own origin (also http://localhost while developing) is stored as its path. Else ''.
+         */
+        function statusSourceUrl(v) {
+            const t = toText(v).trim();
+            if (!t || t.length > LIVE_LIMITS.url) return '';
+            const own = (u) => typeof location !== 'undefined' && /^https?:$/.test(location.protocol) && u.origin === location.origin;
+            if (/^https?:\/\//i.test(t)) {
+                let u; try { u = new URL(t); } catch { return ''; }
+                if (u.username || u.password) return '';
+                if (own(u)) return statusPathOk(u.pathname + u.search);
+                return u.protocol === 'https:' ? liveSafeUrl(t) : '';
+            }
+            return statusPathOk(t);
+        }
+        /** The address to fetch for a stored source address: https as it is; a path resolved on the app's own origin ('' from file://). */
+        function statusFetchUrl(stored, base = location.href) {
+            const t = toText(stored);
+            if (/^https:\/\//i.test(t)) return liveSafeUrl(t);
+            if (!statusPathOk(t)) return '';
+            let b; try { b = new URL(base); } catch { return ''; }
+            if (!/^https?:$/.test(b.protocol)) return '';
+            const u = new URL(t, b);
+            return u.origin === b.origin ? u.href : '';
+        }
+        /** True for a stored address on the app's own site (no host approval). */
+        function statusIsLocal(stored) { return !/^https:\/\//i.test(toText(stored)); }
+        const STATUS_FILE_LIMITS = { rows: 200, flows: 500, name: 60, description: 1000, group: 60, title: 80 };
+        const STATUS_FILE_DEFAULTS = { ok: 'up|ok|online|healthy|200', okColor: '#198754', warn: 'degraded|slow|warning|maintenance', warnColor: '#ffc107', failColor: '#dc3545', nodata: '#adb5bd' };
+        const STATUS_FILE_ICONS = { process: 'bi-server', datastore: 'bi-database-fill', interactor: 'bi-person-fill', infrastructure: 'bi-hdd-rack' };
+        // Column / key names after lower-casing and removing spaces, "_" and "-".
+        const STATUS_FILE_COLUMNS = {
+            name: ['name', 'server', 'servername', 'host', 'hostname', 'service', 'node', 'component'],
+            status: ['status', 'state', 'value', 'health'],
+            type: ['type', 'kind', 'shape', 'nodetype'],
+            icon: ['icon'],
+            ok: ['ok', 'okvalues', 'okvalue', 'okwhen', 'up', 'healthy'],
+            okColor: ['okcolor', 'okcolour', 'colorok', 'colourok', 'upcolor', 'upcolour', 'matchcolor', 'matchcolour'],
+            warn: ['warn', 'warning', 'warnvalues', 'warnvalue', 'warnwhen'],
+            warnColor: ['warncolor', 'warncolour', 'warningcolor', 'warningcolour', 'colorwarn', 'colourwarn'],
+            failColor: ['failcolor', 'failcolour', 'colorfail', 'colourfail', 'downcolor', 'downcolour', 'errorcolor', 'errorcolour', 'nomatchcolor', 'nomatchcolour', 'color', 'colour'],
+            latency: ['latency', 'latencyms', 'latency(ms)', 'ms', 'responsetime', 'responsetimems'],
+            latencyMax: ['latencymax', 'latencymaxms', 'latencymax(ms)', 'maxlatency', 'maxlatencyms', 'latencylimit'],
+            group: ['group', 'zone', 'trustzone'],
+            connectsTo: ['connectsto', 'connectto', 'connections', 'links', 'linksto', 'flowsto', 'to', 'calls'],
+            description: ['description', 'desc', 'notes', 'note', 'comment', 'details'],
+        };
+        const STATUS_TYPE_ALIASES = { datastore: 'datastore', database: 'datastore', db: 'datastore', store: 'datastore', process: 'process', service: 'process', app: 'process', application: 'process',
+            interactor: 'interactor', externalentity: 'interactor', external: 'interactor', entity: 'interactor', user: 'interactor', actor: 'interactor', infrastructure: 'infrastructure', infra: 'infrastructure', server: 'infrastructure', host: 'infrastructure', node: 'infrastructure' };
+        const statusColumnKey = (k) => toText(k).toLowerCase().replace(/[\s_-]+/g, '');
+        const STATUS_COLUMN_FIELD = new Map(Object.entries(STATUS_FILE_COLUMNS).flatMap(([f, list]) => list.map(k => [k, f])));
+        // eslint-disable-next-line no-control-regex -- strips control characters from untrusted text
+        function statusText(v, max) { return toText(v).replace(/[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f]/g, '').trim().slice(0, max); }
+        /**
+         * Parses a status file (CSV with a header row, or JSON: { "title", "items": [...] } or a bare array). Returns
+         * { format, title, items, flows: [[from, to]], groups, warnings, columns: { field: header / key }, jsonPath }.
+         * Throws an Error with a readable message when the text is not a status file.
+         */
+        function parseStatusFile(input) {
+            const text = toText(input).replace(/^\uFEFF/, ''), t = text.trim();
+            if (text.length > LIVE_LIMITS.bytes) throw new Error('The file is larger than 2 MB.');
+            if (!t) throw new Error('The file is empty.');
+            if (t[0] === '<') throw new Error('The address returned a web page, not CSV or JSON (is a Google Sheet shared with "anyone with the link"?).');
+            const warnings = [], columns = {}, unknown = new Set();
+            let format, title = '', jsonPath = '', records;
+            if (t[0] === '{' || t[0] === '[') {
+                let data;
+                try { data = JSON.parse(t); } catch { throw new Error('The file is not valid JSON.'); }
+                format = 'json';
+                let list = null;
+                if (Array.isArray(data)) list = data;
+                else if (isPlainObject(data)) {
+                    title = liveClip(data.title, STATUS_FILE_LIMITS.title);
+                    jsonPath = ['items', 'servers', 'services', 'rows'].find(k => Object.prototype.hasOwnProperty.call(data, k) && Array.isArray(data[k])) || '';
+                    if (jsonPath) list = data[jsonPath];
+                }
+                if (!list) throw new Error('The JSON needs a list of items: [ { "name": …, "status": … } ] or { "items": [ … ] }.');
+                records = list.map(o => {
+                    if (!isPlainObject(o)) return null;
+                    const r = {};
+                    Object.keys(o).forEach(k => {
+                        const f = STATUS_COLUMN_FIELD.get(statusColumnKey(k));
+                        if (!f) { unknown.add(liveClip(k, 40)); return; }
+                        if (r[f] !== undefined) return;
+                        r[f] = o[k];
+                        if (!columns[f]) columns[f] = k;
+                    });
+                    return r;
+                });
+            } else {
+                format = 'csv';
+                const rows = parseCsv(text), header = rows[0] || [], idx = {};
+                header.forEach((h, i) => {
+                    const f = STATUS_COLUMN_FIELD.get(statusColumnKey(h));
+                    if (!f) { if (toText(h).trim()) unknown.add(liveClip(h, 40)); return; }
+                    if (idx[f] === undefined) { idx[f] = i; columns[f] = toText(h).trim(); }
+                });
+                if (idx.name === undefined) throw new Error('The first row must be a header row with a "name" column (and usually "status").');
+                records = rows.slice(1).filter(r => r.some(c => toText(c).trim())).map(r => {
+                    const o = {};
+                    Object.entries(idx).forEach(([f, i]) => { o[f] = r[i]; });
+                    return o;
+                });
+            }
+            if (unknown.size) warnings.push(`Ignored unknown column(s): ${[...unknown].slice(0, 10).join(', ')}${unknown.size > 10 ? ' …' : ''}.`);
+            if (format === 'json' && !columns.name && records.some(Boolean)) throw new Error('The items need a "name" field (and usually "status").');
+            const items = [], byName = new Map(), groups = new Map();
+            const where = (n, name) => `${format === 'csv' ? 'Row' : 'Item'} ${n}${name ? ` ("${name}")` : ''}`;
+            for (let i = 0; i < records.length; i++) {
+                const rec = records[i], n = format === 'csv' ? i + 2 : i + 1;
+                if (items.length >= STATUS_FILE_LIMITS.rows) { warnings.push(`Only the first ${STATUS_FILE_LIMITS.rows} rows were used.`); break; }
+                if (!rec) { warnings.push(`${where(n)}: skipped, it is not an object.`); continue; }
+                const val = (f, max = LIVE_LIMITS.value) => statusText(Array.isArray(rec[f]) ? rec[f].map(toText).join('|') : rec[f], max);
+                const name = liveClip(Array.isArray(rec.name) ? '' : rec.name, STATUS_FILE_LIMITS.name);
+                if (!name) { warnings.push(`${where(n)}: skipped a row without a name.`); continue; }
+                if (byName.has(name.toLowerCase())) { warnings.push(`${where(n)}: skipped a duplicate name "${name}".`); continue; }
+                const at = where(n, name);
+                // Type: a model type (or an alias) or a ready-made node id / label.
+                let type = 'infrastructure', readyNode = '';
+                const tv = val('type', 60), tl = tv.toLowerCase().replace(/\s+/g, ' ');
+                if (tv) {
+                    const rn = READY_NODES.find(r => r.id === tl.replace(/[\s_]+/g, '-') || r.label.toLowerCase() === tl || r.name.toLowerCase() === tl);
+                    const alias = STATUS_TYPE_ALIASES[statusColumnKey(tv)];
+                    if (alias) type = alias;
+                    else if (rn) { type = rn.type; readyNode = rn.id; }
+                    else warnings.push(`${at}: unknown type "${tv}"; used infrastructure.`);
+                }
+                const rn = readyNode ? READY_NODES.find(r => r.id === readyNode) : null;
+                let icon = rn ? rn.icon : STATUS_FILE_ICONS[type];
+                const iv = val('icon', 80);
+                if (iv) {
+                    const c = iv.replace(/^bi\s+/, '').trim(), name2 = /^bi-/.test(c) ? c : `bi-${c}`;
+                    if (name2.length <= 60 && safeIcon(name2, '') === name2) icon = name2;
+                    else warnings.push(`${at}: the icon "${iv.slice(0, 40)}" is not a Bootstrap icon name (like bi-server); used the default.`);
+                }
+                const colour = (f, col, def) => {
+                    const v = val(f, 40);
+                    if (!v) return def;
+                    const c = liveColor(v);
+                    if (!c) warnings.push(`${at}: ${col} "${v}" is not a #rgb or #rrggbb colour; used ${def}.`);
+                    return c || def;
+                };
+                const num = (f, col, positive) => {
+                    const v = val(f, 40);
+                    if (!v) return null;
+                    const x = liveNum(v);
+                    if (x === null || (positive && x <= 0) || x < 0) { warnings.push(`${at}: ${col} "${v}" is not a number; ignored.`); return null; }
+                    return x;
+                };
+                const values = (f, def) => { const v = val(f).split('|').map(x => x.trim()).filter(Boolean).join('|'); return v || def; };
+                const groupRaw = liveClip(val('group', 200), STATUS_FILE_LIMITS.group);
+                let group = '';
+                if (groupRaw) { const g = groupRaw.toLowerCase(); if (!groups.has(g)) groups.set(g, groupRaw); group = groups.get(g); }
+                const item = {
+                    name, status: val('status'), type, readyNode, icon,
+                    ok: values('ok', STATUS_FILE_DEFAULTS.ok), okColor: colour('okColor', 'ok_color', STATUS_FILE_DEFAULTS.okColor),
+                    warn: values('warn', STATUS_FILE_DEFAULTS.warn), warnColor: colour('warnColor', 'warn_color', STATUS_FILE_DEFAULTS.warnColor),
+                    failColor: colour('failColor', 'fail_color', STATUS_FILE_DEFAULTS.failColor),
+                    latency: num('latency', 'latency', false), latencyMax: num('latencyMax', 'latency_max', true),
+                    group, connectsTo: val('connectsTo', 4000).split(/[|,]/).map(x => liveClip(x, STATUS_FILE_LIMITS.name)).filter(Boolean),
+                    description: statusText(Array.isArray(rec.description) ? '' : rec.description, STATUS_FILE_LIMITS.description),
+                };
+                byName.set(name.toLowerCase(), item);
+                items.push(item);
+            }
+            const flows = [], pairs = new Set();
+            items.forEach(it => it.connectsTo.forEach(to => {
+                const target = byName.get(to.toLowerCase());
+                if (!target) { warnings.push(`"${it.name}" connects to "${to}", which is not in the file; skipped.`); return; }
+                if (target === it) { warnings.push(`"${it.name}" connects to itself; skipped.`); return; }
+                const k = `${it.name}\u0000${target.name}`;
+                if (pairs.has(k)) return;
+                if (flows.length >= STATUS_FILE_LIMITS.flows) { if (flows.length === STATUS_FILE_LIMITS.flows) warnings.push(`Only the first ${STATUS_FILE_LIMITS.flows} connections were used.`); return; }
+                pairs.add(k); flows.push([it.name, target.name]);
+            }));
+            if (flows.length > STATUS_FILE_LIMITS.flows) flows.length = STATUS_FILE_LIMITS.flows;
+            if (items.length && !columns.status) warnings.push('There is no "status" column, so live status shows "no data".');
+            return { format, title, items, flows, groups: [...groups.values()], warnings, columns, jsonPath };
+        }
+        /** The live status rules of a status-file row: no data → grey, warn values → warn colour, not ok → fail colour, too slow → warn colour, ok → ok colour. */
+        function statusFileRules(item) {
+            const fx = (c) => ({ fill: c, stroke: c });
+            const rules = [{ when: 'nodata', ...fx(STATUS_FILE_DEFAULTS.nodata), label: 'no data' },
+                { when: 'eq', value: item.warn, ...fx(item.warnColor) },
+                { when: 'neq', value: item.ok, ...fx(item.failColor) }];
+            if (item.latencyMax !== null && item.latencyMax !== undefined) rules.push({ when: 'latency_gt', value: String(item.latencyMax), ...fx(item.warnColor), label: 'slow' });
+            rules.push({ when: 'eq', value: item.ok, ...fx(item.okColor) }, { when: 'else', ...fx(item.failColor) });
+            return rules;
+        }
+        /**
+         * Layout for a status file: groups become trust zones side by side (wrapping after 3), ungrouped shapes form
+         * their own row below. Inside a block shapes stand in columns by how far along the connections they are (at
+         * most 4 per column), each placed level with what connects to it. Returns { nodes: Map(name -> { x, y, w, h }),
+         * zones: [{ name, x, y, w, h }] } from (0, 0).
+         */
+        const STATUS_LAYOUT = { cw: 180, ch: 150, padX: 24, top: 46, bottom: 16, gap: 90, perCol: 4, zonesPerRow: 3 };
+        function layoutStatusFile(parsed, size = NODE_BADGE_SIZE) {
+            const L = STATUS_LAYOUT, items = parsed.items, names = items.map(i => i.name);
+            const preds = new Map(names.map(n => [n, []]));
+            parsed.flows.forEach(([a, b]) => { if (preds.has(b) && preds.has(a)) preds.get(b).push(a); });
+            const rank = new Map(), onStack = new Set();
+            const rankOf = (n) => {
+                if (rank.has(n)) return rank.get(n);
+                onStack.add(n);
+                let r = 0;
+                preds.get(n).forEach(p => { if (!onStack.has(p)) r = Math.max(r, rankOf(p) + 1); });   // a cycle's back edge is ignored
+                onStack.delete(n); rank.set(n, r);
+                return r;
+            };
+            names.forEach(rankOf);
+            const block = (list) => {
+                const byRank = new Map();
+                list.forEach(n => { const r = rank.get(n); if (!byRank.has(r)) byRank.set(r, []); byRank.get(r).push(n); });
+                const cols = [];
+                [...byRank.keys()].sort((a, b) => a - b).forEach(r => { const l = byRank.get(r); for (let i = 0; i < l.length; i += L.perCol) cols.push(l.slice(i, i + L.perCol)); });
+                const maxRows = Math.max(1, ...cols.map(c => c.length)), pos = new Map();
+                cols.forEach((col, ci) => {
+                    const order = col.map((n, k) => {
+                        const ps = preds.get(n).filter(p => pos.has(p));
+                        return { n, k, d: ps.length ? ps.reduce((a, p) => a + pos.get(p).row, 0) / ps.length : (maxRows - col.length) / 2 + k };
+                    }).sort((a, b) => a.d - b.d || a.k - b.k);
+                    let prev = -Infinity;
+                    order.forEach(o => { const row = Math.max(o.d, prev + 1); pos.set(o.n, { col: ci, row }); prev = row; });
+                });
+                const min = Math.min(...[...pos.values()].map(p => p.row));
+                pos.forEach(p => { p.row -= min; });
+                const rows = Math.max(...[...pos.values()].map(p => p.row)) + 1;
+                return { pos, w: cols.length * L.cw, h: rows * L.ch };
+            };
+            const nodes = new Map(), zones = [];
+            const place = (b, ox, oy) => b.pos.forEach((p, n) => nodes.set(n, { x: Math.round(ox + p.col * L.cw + (L.cw - size.width) / 2), y: Math.round(oy + p.row * L.ch + (L.ch - size.height) / 2), w: size.width, h: size.height }));
+            const groupNames = parsed.groups.filter(g => items.some(i => i.group === g));
+            const minRank = (g) => Math.min(...items.filter(i => i.group === g).map(i => rank.get(i.name)));
+            const ordered = groupNames.map((g, k) => ({ g, k, r: minRank(g) })).sort((a, b) => a.r - b.r || a.k - b.k).map(x => x.g);
+            let x = 0, y = 0, rowH = 0, inRow = 0;
+            ordered.forEach(g => {
+                const b = block(items.filter(i => i.group === g).map(i => i.name));
+                const w = b.w + 2 * L.padX, h = L.top + b.h + L.bottom;
+                if (inRow === L.zonesPerRow) { x = 0; y += rowH + L.gap; rowH = 0; inRow = 0; }
+                zones.push({ name: g, x, y, w, h });
+                place(b, x + L.padX, y + L.top);
+                x += w + L.gap; rowH = Math.max(rowH, h); inRow++;
+            });
+            const loose = items.filter(i => !i.group).map(i => i.name);
+            if (loose.length) place(block(loose), 0, zones.length ? y + rowH + L.gap : 0);
+            return { nodes, zones };
+        }
+        // ── end live status: status files ──
         // ── end live status: model validation ──
 
         function normalizeSession(raw) {
@@ -9165,6 +9563,7 @@
                 document.getElementById('btn-export').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile());
                 document.getElementById('btn-import').addEventListener('click', () => this.triggerWorkspaceJsonImportSelector());
                 this.setupMermaidImport();
+                this.setupStatusFileImport();   // Build from status file (1.21)
                 document.getElementById('btn-reset-session').addEventListener('click', () => this.resetSession());
                 document.getElementById('btn-help-trigger').addEventListener('click', () => {
                     const closeBtn = document.querySelector('#modal-help .btn-close');
@@ -10955,6 +11354,7 @@
                 $('props-live-kind').addEventListener('change', (ev) => this.setItemLiveCheck({ kindValue: ev.target.value }));
                 $('props-live-key').addEventListener('change', (ev) => this.setItemLiveCheck({ key: ev.target.value }));
                 $('props-live-dns').addEventListener('change', (ev) => this.setItemLiveCheck({ dnsProvider: ev.target.value }));
+                $('btn-live-test-check').addEventListener('click', () => this.testLiveCheck());   // Test check (1.21)
                 $('btn-live-add-rule').addEventListener('click', () => this.editLiveRules((rules, isFlow) => rules.push(isFlow ? { when: 'eq', value: '', stroke: '#0d6efd' } : { when: 'eq', value: '', fill: '#0d6efd', stroke: '#0d6efd' }), 'Added a status rule'));
                 $('btn-live-reset-rules').addEventListener('click', () => this.editLiveRules((rules, isFlow, item) => rules.splice(0, rules.length, ...liveDefaultRules(item.liveStatus.check.kind, isFlow)), 'Reset the status rules'));
                 document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && this.liveOn && !this.live.timer) this.scheduleLiveTick(500); });
@@ -11056,6 +11456,9 @@
 
             liveSourceById(id) { return (this.state.statusSources || []).find(s => s.id === id) || null; }
 
+            /** May this job be fetched now? Files on the app's own site always; other hosts once allowed in this browser. */
+            liveAllowed(job) { return !!job.sameOrigin || this.readLiveApproved().has(job.host); }
+
             /** What a check contacts: { key, kind, url, host, intervalSec, source? }, or { error } when it is not set up. */
             liveJobFor(item) {
                 const c = item.liveStatus.check, key = c.key || toText(item.name).trim();
@@ -11063,7 +11466,12 @@
                 if (c.kind === 'source') {
                     const src = this.liveSourceById(c.sourceId);
                     if (!src) return { error: 'Choose a status source (Settings → Live status).' };
-                    const url = src.kind === 'sheet' ? liveSheetCsvUrl(src.url) : liveSafeUrl(src.url);
+                    if (statusIsLocal(src.url)) {   // a file on the app's own site: no approval (connect-src 'self')
+                        const local = statusFetchUrl(src.url);
+                        if (!local) return { error: location.protocol === 'file:' ? 'A file on the app\'s own site can only be read when the app is served over http(s), not opened as a file:// page. Use an https address instead.' : 'The source has no valid address.' };
+                        return job('source', local, { source: src, intervalSec: src.intervalSec, sameOrigin: true });
+                    }
+                    const url = liveCsvKind(src.kind) ? liveSheetCsvUrl(src.url) : liveSafeUrl(src.url);
                     return url ? job('source', url, { source: src, intervalSec: src.intervalSec }) : { error: 'The source has no valid https address.' };
                 }
                 if (c.kind === 'dns') {
@@ -11088,7 +11496,7 @@
                 if (!d || d.url !== job.url) return null;
                 if (d.error) return { value: '', error: d.error, at: d.at };
                 const key = item.liveStatus.check.key || toText(item.name).trim();
-                const r = job.source.kind === 'sheet' ? liveCsvLookup(d.rows, key, job.source) : liveJsonLookup(d.json, key, job.source);
+                const r = liveCsvKind(job.source.kind) ? liveCsvLookup(d.rows, key, job.source) : liveJsonLookup(d.json, key, job.source);
                 if (!r.found) return { value: '', error: `"${key}" is not in ${job.source.name || 'the source'}`, at: d.at };
                 return { value: r.value, latency: r.latency, at: d.at };
             }
@@ -11097,7 +11505,7 @@
             liveLookFor(item) {
                 if (!this.live || !this.liveOn || !item || !item.liveStatus || !item.liveStatus.enabled || item.isDisabled || !liveCheckable(item)) return null;
                 const job = this.liveJobFor(item), name = toText(item.name).trim() || 'unnamed';
-                if (!job.error && !this.readLiveApproved().has(job.host)) return { state: 'pending', text: `${name}: waiting for your approval to contact ${job.host} (Settings → Live status).` };
+                if (!job.error && !this.liveAllowed(job)) return { state: 'pending', text: `${name}: waiting for your approval to contact ${job.host} (Settings → Live status).` };
                 const res = this.liveResultFor(item);
                 if (!res) return { state: 'pending', text: `${name}: waiting for the first result…` };
                 const time = new Date(res.at).toLocaleTimeString();
@@ -11215,7 +11623,7 @@
                 const approved = this.readLiveApproved(), now = Date.now(), jobs = new Map();
                 (only ? [only] : this.liveItems().map(it => this.liveJobFor(it))).forEach(j => { if (!j.error && !jobs.has(j.key) && jobs.size < LIVE_LIMITS.jobs) jobs.set(j.key, j); });
                 const list = [...jobs.values()];
-                const pending = [...new Set(list.filter(j => !approved.has(j.host)).map(j => j.host))];
+                const pending = [...new Set(list.filter(j => !j.sameOrigin && !approved.has(j.host)).map(j => j.host))];
                 if (pending.length) {
                     if (manual) this.askLiveApproval(pending, () => this.refreshLiveStatus({ manual: true, only }));
                     else if (pending.join(' ') !== this.live.notifiedHosts) {
@@ -11223,7 +11631,7 @@
                         this.notify(`Live status: ${pending.length === 1 ? 'a host waits' : `${pending.length} hosts wait`} for your approval before anything is checked.`, 'warning', { label: 'Review', onClick: () => this.askLiveApproval(pending, () => this.refreshLiveStatus({ manual: true })) });
                     }
                 }
-                const due = list.filter(j => approved.has(j.host) && (manual || only || now - (this.live.lastRun.get(j.key) || 0) >= (j.intervalSec || this.liveIntervalSec()) * 1000 - 500));
+                const due = list.filter(j => (j.sameOrigin || approved.has(j.host)) && (manual || only || now - (this.live.lastRun.get(j.key) || 0) >= (j.intervalSec || this.liveIntervalSec()) * 1000 - 500));
                 this.live.busy = true;
                 this.live.busyPromise = (async () => {
                     try {
@@ -11301,7 +11709,8 @@
                     const d = JSON.parse(r.text), st = toNumber(d && d.Status, -1);
                     if (st === 0) {
                         const a = (Array.isArray(d.Answer) ? d.Answer : []).find(x => isPlainObject(x) && x.type === 1);
-                        return a ? { value: 'resolves', ip: toText(a.data).slice(0, 64), latency: r.latency, at } : { value: 'noanswer', latency: r.latency, at };
+                        const ips = (Array.isArray(d.Answer) ? d.Answer : []).filter(x => isPlainObject(x) && x.type === 1).slice(0, 10).map(x => toText(x.data).slice(0, 64));   // Test check shows them all
+                        return a ? { value: 'resolves', ip: toText(a.data).slice(0, 64), ips, latency: r.latency, at } : { value: 'noanswer', latency: r.latency, at };
                     }
                     if (st === 3) return { value: 'nxdomain', latency: r.latency, at };
                     return { value: 'error', error: `DNS status ${st}`, latency: r.latency, at };
@@ -11321,7 +11730,7 @@
                 if (j.kind !== 'source') { this.live.results.set(j.key, res); return; }
                 const src = j.source, d = { url: j.url, at: Date.now(), latency: res.latency };
                 if (res.error) d.error = res.error;
-                else if (src.kind === 'sheet') {
+                else if (liveCsvKind(src.kind)) {
                     if (/^\s*</.test(res.text)) d.error = 'the address returned a web page, not CSV (is the sheet shared with "anyone with the link"?)';
                     else { d.rows = parseCsv(res.text); d.count = Math.max(0, d.rows.length - 1); }
                 } else {
@@ -11364,16 +11773,17 @@
                     row.className = 'live-source-row border rounded px-2 py-1 d-flex flex-wrap align-items-center gap-2 small';
                     row.dataset.sourceId = src.id;
                     const name = document.createElement('span'); name.className = 'fw-semibold text-break'; name.textContent = src.name || '(no name)';
-                    const kind = document.createElement('span'); kind.className = 'badge text-bg-secondary'; kind.textContent = src.kind === 'sheet' ? 'Sheet / CSV' : 'JSON';
-                    const host = document.createElement('span'); host.className = 'text-muted text-break'; host.textContent = (() => { try { return new URL(src.url).host; } catch { return ''; } })();
+                    const kind = document.createElement('span'); kind.className = 'badge text-bg-secondary'; kind.textContent = LIVE_SOURCE_KIND_LABELS[src.kind] || 'JSON';
+                    const host = document.createElement('span'); host.className = 'text-muted text-break'; host.textContent = statusIsLocal(src.url) ? `this site: ${src.url}` : (() => { try { return new URL(src.url).host; } catch { return ''; } })();
                     const state = document.createElement('span'); state.className = 'live-source-state';
                     const d = this.live.sourceData.get(src.id);
                     if (!d) state.textContent = 'Not fetched yet';
                     else if (d.error) { state.className += ' text-danger'; state.textContent = `Error: ${d.error} (${new Date(d.at).toLocaleTimeString()})`; }
-                    else { state.className += ' text-success'; state.textContent = `OK · ${d.count} ${src.kind === 'sheet' ? (d.count === 1 ? 'row' : 'rows') : (d.count === 1 ? 'item' : 'items')} · ${new Date(d.at).toLocaleTimeString()}`; }
+                    else { state.className += ' text-success'; state.textContent = `OK · ${d.count} ${liveCsvKind(src.kind) ? (d.count === 1 ? 'row' : 'rows') : (d.count === 1 ? 'item' : 'items')} · ${new Date(d.at).toLocaleTimeString()}`; }
                     const btn = (cls, text, label, fn) => { const b = document.createElement('button'); b.type = 'button'; b.className = `btn btn-sm ${cls}`; b.textContent = text; b.setAttribute('aria-label', `${label} ${src.name || 'source'}`); b.addEventListener('click', fn); return b; };
                     const actions = document.createElement('span'); actions.className = 'ms-auto d-flex gap-1';
                     actions.append(btn('btn-outline-primary live-source-test', 'Test', 'Test', () => this.testLiveSource(src.id)),
+                        btn('btn-outline-secondary live-source-update', 'Update from file', 'Update the diagram from', () => this.openStatusFileFromSettings(src.id)),   // status file (1.21)
                         btn('btn-outline-secondary live-source-edit', 'Edit', 'Edit', () => this.editLiveSource(src.id)),
                         btn('btn-outline-danger live-source-remove', 'Remove', 'Remove', () => this.removeLiveSource(src.id)));
                     row.append(name, kind, host, state, actions);
@@ -11390,7 +11800,7 @@
                 if (!src) return;
                 const job = this.liveJobFor({ name: '', liveStatus: { check: { kind: 'source', sourceId: id, key: '' } } });
                 if (job.error) return;
-                if (!this.readLiveApproved().has(job.host)) { this.askLiveApproval([job.host], () => this.testLiveSource(id)); return; }
+                if (!this.liveAllowed(job)) { this.askLiveApproval([job.host], () => this.testLiveSource(id)); return; }
                 this.refreshLiveStatus({ manual: true, only: job });
             }
 
@@ -11420,21 +11830,22 @@
             }
 
             syncLiveSourceFormKind() {
-                const json = document.getElementById('live-src-kind').value === 'json';
+                const kindValue = document.getElementById('live-src-kind').value, json = kindValue === 'json';
                 document.querySelectorAll('#live-source-form .live-src-sheet').forEach(n => n.classList.toggle('d-none', json));
                 document.querySelectorAll('#live-source-form .live-src-json').forEach(n => n.classList.toggle('d-none', !json));
-                document.getElementById('live-src-url').placeholder = json ? 'https://status.example.com/services.json' : 'https://docs.google.com/spreadsheets/d/…/edit#gid=0';
+                document.getElementById('live-src-url').placeholder = json ? 'https://status.example.com/services.json' : (kindValue === 'csv' ? 'https://status.example.com/status.csv or samples/status-servers.csv' : 'https://docs.google.com/spreadsheets/d/…/edit#gid=0');
             }
 
             saveLiveSourceFromForm() {
                 const v = (id) => document.getElementById(id).value, err = document.getElementById('live-src-error');
                 const url = v('live-src-url').trim();
-                if (!liveSafeUrl(url)) { err.textContent = 'Enter an https:// address without a user name or password.'; return; }
+                if (!statusSourceUrl(url)) { err.textContent = 'Enter an https:// address without a user name or password, or a path to a file on this site (like samples/status-servers.csv).'; return; }
                 const list = (this.state.statusSources || []).slice(), editing = this.live.editingSourceId;
                 if (!editing && list.length >= LIVE_LIMITS.sources) { err.textContent = `A model can have up to ${LIVE_LIMITS.sources} sources.`; return; }
                 const id = editing || `src-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
-                const [src] = normalizeStatusSources([{ id, name: v('live-src-name').trim() || new URL(url).host, kind: v('live-src-kind'), url,
-                    keyColumn: v('live-src-key-col'), valueColumn: v('live-src-value-col'), keyField: v('live-src-key-field'), valueField: v('live-src-value-field'), path: v('live-src-path'), intervalSec: v('live-src-interval') }]);
+                const [src] = normalizeStatusSources([{ id, name: v('live-src-name').trim() || (statusIsLocal(statusSourceUrl(url)) ? statusSourceUrl(url).split(/[/?]/).filter(Boolean).pop() || 'File' : new URL(url).host), kind: v('live-src-kind'), url,
+                    keyColumn: v('live-src-key-col'), valueColumn: v('live-src-value-col'), keyField: v('live-src-key-field'), valueField: v('live-src-value-field'), path: v('live-src-path'), intervalSec: v('live-src-interval'),
+                    ...(() => { const o = editing ? this.liveSourceById(editing) : null; return o ? { pageId: o.pageId, latencyColumn: o.latencyColumn, latencyField: o.latencyField } : {}; })() }]);   // keep what a status file set
                 if (!src) { err.textContent = 'Check the address and the other fields.'; return; }
                 const at = list.findIndex(s => s.id === id);
                 if (at >= 0) list[at] = src; else list.push(src);
@@ -11476,11 +11887,12 @@
                 const ls = item.liveStatus, on = !!(ls && ls.enabled), isFlow = !item.type;
                 $('props-live-enabled').checked = on;
                 $('props-live-details').classList.toggle('d-none', !on);
+                if (this.live.test && this.live.test.itemId !== item.id) { this.live.test = null; $('live-test-result').classList.add('d-none'); }
                 if (!on) return;
                 const c = ls.check, sources = this.state.statusSources || [];
                 const sel = $('props-live-kind'), groupS = document.createElement('optgroup'), groupB = document.createElement('optgroup');
                 groupS.label = 'Status sources'; groupB.label = 'Checks from this browser';
-                sources.forEach(s => groupS.append(new Option(`${s.name || s.url} (${s.kind === 'sheet' ? 'sheet' : 'JSON'})`, `source:${s.id}`)));
+                sources.forEach(s => groupS.append(new Option(`${s.name || s.url} (${LIVE_SOURCE_KIND_LABELS[s.kind] || 'JSON'})`, `source:${s.id}`)));
                 if (c.kind === 'source' && !this.liveSourceById(c.sourceId)) groupS.append(new Option(sources.length ? 'Choose a source…' : 'No sources yet (Settings → Live status)', `source:${c.sourceId}`));
                 Object.entries(LIVE_KIND_LABELS).forEach(([k, label]) => groupB.append(new Option(label, k)));
                 sel.replaceChildren(...(groupS.children.length ? [groupS] : []), groupB);
@@ -11493,13 +11905,14 @@
                 if (c.kind === 'dns') { $('props-live-dns').replaceChildren(...Object.entries(LIVE_DNS).map(([k, p]) => new Option(p.label, k))); $('props-live-dns').value = c.dnsProvider; }
                 const src = c.kind === 'source' ? this.liveSourceById(c.sourceId) : null;
                 $('props-live-note').textContent = {
-                    source: src ? `Reads the value for "${c.key || toText(item.name).trim()}" from ${src.name || 'the source'}${src.kind === 'sheet' ? ' (its row, the next column unless the source names one)' : ''}.` : 'Add a Google Sheet, CSV or JSON source in Settings → Live status, or use a check from this browser.',
+                    source: src ? `Reads the value for "${c.key || toText(item.name).trim()}" from ${src.name || 'the source'}${liveCsvKind(src.kind) ? ' (its row, the next column unless the source names one)' : ''}.` : 'Add a Google Sheet, CSV or JSON source in Settings → Live status, or use a check from this browser.',
                     http: 'Requests the address. If the server allows CORS the value is the HTTP status code (e.g. 200; "up"/"down" also match); without CORS only reachability is known and the value is up or down.',
                     reach: 'Browsers cannot ping (ICMP). This sends a small HTTPS HEAD request and times the reply: the value is up or down, with the latency.',
                     dns: `Looks up the A record with DNS over HTTPS. The host name is sent to ${(LIVE_DNS[c.dnsProvider] || LIVE_DNS.cloudflare).label}. The value is resolves, nxdomain or error.`,
                 }[c.kind];
                 this.renderLiveResultLine();
                 this.renderLiveRules(item, isFlow);
+                this.renderLiveTestResult();
             }
 
             renderLiveResultLine() {
@@ -11624,6 +12037,137 @@
             editLiveRules(fn, message = 'Changed the status rules') {
                 this.updateItemLiveStatus((ls, isFlow, item) => { fn(ls.rules, isFlow, item); }, message);
             }
+
+            // ── Live status: Test check (1.21) ──
+            // Properties → Status check → Test check runs the selected item's check now (also with live status off; the
+            // host approval rule still applies) and lists everything the reply has, each value with a "+" that adds a
+            // pre-filled rule. Values come from outside: shown as text only, clipped to 200 characters.
+            async testLiveCheck() {
+                const item = this.liveSelectedItem();
+                if (!item || !item.liveStatus || !item.liveStatus.enabled) return;
+                const job = this.liveJobFor(item), id = item.id;
+                if (job.error) { this.live.test = { itemId: id, job, res: { at: Date.now(), error: job.error } }; this.renderLiveTestResult(); return; }
+                if (!this.liveAllowed(job)) { this.askLiveApproval([job.host], () => this.testLiveCheck()); return; }
+                this.live.test = { itemId: id, job, running: true };
+                this.renderLiveTestResult();
+                const btn = document.getElementById('btn-live-test-check');
+                btn.disabled = true;
+                let res;
+                try {
+                    if (job.kind === 'http') this.live.noCors.delete(job.url);   // try a readable request again
+                    res = await this.liveRequest(job);
+                } finally { btn.disabled = false; }
+                this.storeLiveResult(job, res);   // the canvas uses it too when live status is on
+                if (!this.live.test || this.live.test.itemId !== id) return;
+                this.live.test = { itemId: id, job, res };
+                this.renderLiveTestResult();
+                if (this.liveOn) this.afterLiveResults();
+            }
+
+            renderLiveTestResult() {
+                const box = document.getElementById('live-test-result'), t = this.live && this.live.test, item = this.liveSelectedItem();
+                if (!box) return;
+                if (!t || !item || item.id !== t.itemId || !item.liveStatus || !item.liveStatus.enabled) { box.classList.add('d-none'); box.replaceChildren(); return; }
+                box.classList.remove('d-none');
+                if (t.running) { box.textContent = 'Testing…'; return; }
+                const isFlow = !item.type, res = t.res, job = t.job, rows = [];
+                const ms = (v) => `${Math.round(v)} ms`, latencyRule = (v) => ({ when: 'latency_gt', value: String(Math.ceil(v)) });
+                const timeRow = (at) => rows.push({ label: 'Checked at', value: new Date(at || Date.now()).toLocaleTimeString() });
+                let forRules = res, otherNote = false;
+                if (job.error) { rows.push({ label: 'Error', value: res.error, rule: { when: 'nodata' } }); forRules = { value: '', error: res.error, at: res.at }; }
+                else if (job.kind === 'source') {
+                    const src = job.source, sd = this.live.sourceData.get(src.id);
+                    rows.push({ label: 'Source', value: `${src.name || 'source'} (${LIVE_SOURCE_KIND_LABELS[src.kind] || 'JSON'})` });
+                    const err = res.error || (sd && sd.error) || (!sd ? 'no data' : '');
+                    if (err) { rows.push({ label: 'Error', value: err, rule: { when: 'nodata' } }); forRules = { value: '', error: err, at: res.at }; }
+                    else {
+                        const key = item.liveStatus.check.key || toText(item.name).trim(), det = liveSourceDetails(sd, key, src);
+                        rows.push({ label: 'Key', value: key });
+                        rows.push({ label: 'Row found', value: det.found ? 'yes' : `no: nothing for "${key}"`, rule: det.found ? null : { when: 'nodata' } });
+                        if (det.found) {
+                            rows.push({ label: `Value (${det.valueName || 'value'})`, value: det.value || '(empty)', rule: det.value ? { when: 'eq', value: det.value } : { when: 'nodata' } });
+                            if (Number.isFinite(det.latency)) rows.push({ label: 'Latency (from the row)', value: ms(det.latency), rule: latencyRule(det.latency) });
+                            det.fields.filter(f => !f.isKey && !f.isValue).forEach(f => { rows.push({ label: f.name, value: f.value || '(empty)', rule: f.value ? { when: 'eq', value: f.value } : null }); if (f.value) otherNote = true; });
+                            forRules = { value: det.value, latency: det.latency, at: sd.at };
+                        } else forRules = { value: '', error: 'not found', at: sd.at };
+                    }
+                    if (Number.isFinite(res.latency)) rows.push({ label: 'Fetched in', value: ms(res.latency) });
+                    timeRow(res.at);
+                } else {
+                    const state = res.state || (job.kind === 'dns' ? '' : res.value);
+                    if (job.kind === 'dns') {
+                        rows.push({ label: 'Result', value: res.value || 'error', rule: res.value ? { when: 'eq', value: res.value } : { when: 'nodata' } });
+                        const ips = Array.isArray(res.ips) && res.ips.length ? res.ips : (res.ip ? [res.ip] : []);
+                        if (ips.length) rows.push({ label: ips.length === 1 ? 'IP address' : 'IP addresses (A records)', value: ips.join(', ') });
+                        rows.push({ label: 'Provider', value: (LIVE_DNS[item.liveStatus.check.dnsProvider] || LIVE_DNS.cloudflare).label });
+                    } else {
+                        rows.push({ label: 'State', value: state || 'unknown', rule: state ? { when: 'eq', value: state } : null });
+                        if (job.kind === 'http') {
+                            if (res.cors) {
+                                const redirect = res.value === 'redirect';
+                                rows.push({ label: 'HTTP status', value: redirect ? '3xx (a redirect, not followed)' : res.value, rule: !redirect && /^\d{3}$/.test(res.value) ? { when: 'eq', value: res.value } : null });
+                                rows.push({ label: 'Redirect', value: redirect ? 'yes' : 'no', rule: redirect ? { when: 'eq', value: 'redirect' } : null });
+                            } else rows.push({ label: 'HTTP status', value: 'not readable: the server does not allow CORS, so only up / down is known' });
+                        }
+                    }
+                    if (Number.isFinite(res.latency)) rows.push({ label: 'Latency', value: ms(res.latency), rule: latencyRule(res.latency) });
+                    if (res.error) rows.push({ label: 'Error', value: res.error });
+                    timeRow(res.at);
+                }
+                const mk = (tag, cls, text) => { const n = document.createElement(tag); if (cls) n.className = cls; if (text !== undefined) n.textContent = text; return n; };
+                const full = item.liveStatus.rules.length >= LIVE_LIMITS.rules;
+                const title = mk('div', 'fw-bold mb-1', 'Test result');
+                const list = mk('ul', 'list-unstyled mb-1 live-test-rows');
+                rows.forEach(r => {
+                    const li = mk('li', 'd-flex align-items-start gap-1 live-test-row');
+                    const value = liveClip(r.value, 200);
+                    li.dataset.label = liveClip(r.label, 60);
+                    const lbl = mk('span', 'fw-semibold text-muted live-test-label', `${liveClip(r.label, 60)}:`);
+                    const val = mk('span', 'text-break flex-grow-1 live-test-value', value);
+                    li.append(lbl, val);
+                    if (r.rule) {
+                        const b = mk('button', 'btn btn-sm btn-outline-secondary py-0 px-1 live-test-add-rule');
+                        b.type = 'button';
+                        const what = r.rule.when === 'latency_gt' ? `latency > ${r.rule.value} ms` : (r.rule.when === 'nodata' ? 'no data / error' : `${liveClip(r.label, 60)} = ${value}`);
+                        b.setAttribute('aria-label', `Add a rule for ${what}`);
+                        b.title = `Add a rule: ${what}`;
+                        b.disabled = full;
+                        b.append(mk('i', 'bi bi-plus-lg'));
+                        b.firstChild.setAttribute('aria-hidden', 'true');
+                        b.addEventListener('click', () => this.addLiveRuleFromTest(r.rule));
+                        li.append(b);
+                    }
+                    list.append(li);
+                });
+                const rule = liveMatchRule(item.liveStatus.rules, forRules);
+                const match = mk('div', 'd-flex align-items-center gap-1 live-test-match');
+                if (rule) {
+                    const i = item.liveStatus.rules.indexOf(rule), c = rule.fill || rule.stroke || '';
+                    const sw = mk('span', 'live-test-swatch d-inline-flex align-items-center justify-content-center rounded-circle border');
+                    sw.style.cssText = 'width: 18px; height: 18px; flex: none;';
+                    if (c) { sw.style.backgroundColor = liveColor(c); sw.style.color = liveInk(c); }
+                    if (!isFlow && rule.icon) { const ic = mk('i', `bi ${safeIcon(rule.icon)}`); ic.style.fontSize = '11px'; ic.setAttribute('aria-hidden', 'true'); sw.append(ic); }
+                    const cond = ['nodata', 'else'].includes(rule.when) ? LIVE_WHEN[rule.when] : `${LIVE_WHEN[rule.when]} ${rule.value || ''}`.trim();
+                    match.append(sw, mk('span', 'fw-semibold', `Rule ${i + 1} matches now: ${cond}${rule.label ? ` (label "${rule.label}")` : ''}`));
+                } else match.append(mk('span', 'fw-semibold text-muted', 'No rule matches now: the shape keeps its own look.'));
+                const parts = [title, list, match];
+                if (otherNote) parts.push(mk('div', 'text-muted mt-1', 'Rules compare the value column. A rule added for another column only matches after you make that column the value column (Settings → Live status → Edit).'));
+                if (full) parts.push(mk('div', 'text-muted mt-1', `This check already has ${LIVE_LIMITS.rules} rules, the most it can have.`));
+                box.replaceChildren(...parts);
+            }
+
+            /** "+" next to a tested value: appends a pre-filled rule (one undo step) with a colour that suits the value. */
+            addLiveRuleFromTest(rule) {
+                this.editLiveRules((rules, isFlow) => {
+                    if (rules.length >= LIVE_LIMITS.rules) return;
+                    const c = liveSuggestColor(rule.when, rule.value), r = { when: rule.when };
+                    if (rule.value !== undefined) r.value = toText(rule.value).slice(0, LIVE_LIMITS.value);
+                    if (isFlow) r.stroke = c; else { r.fill = c; r.stroke = c; }
+                    if (rule.when === 'latency_gt') r.label = 'slow';
+                    rules.push(r);
+                }, 'Added a status rule from Test check');
+            }
+            // ── end live status: Test check ──
             // ── end live status: runtime ──
 
             // ── Review mode: the layout is frozen; properties, threats and mitigations stay editable ──
@@ -18555,6 +19099,352 @@
                 this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace(); this.zoomToFit();
                 return { nodes: g.nodes.size, flows: g.edges.length, zones: lay.zones.length, warnings };
             }
+
+            // ── Build from status file (1.21) ────────────────────────────────────────
+            // ☰ → Build from status file…: a CSV / Google Sheet / JSON file becomes shapes, trust zones (groups) and flows
+            // (connects_to); "Keep checking" makes it a status source whose rows colour the shapes. Fetching follows the
+            // live status rules: host approval first (files on the app's own site need none), no redirects, no cookies,
+            // 2 MB, a timeout. Everything in the file is untrusted (parseStatusFile validates it) and shown as text only.
+            setupStatusFileImport() {
+                const $ = (id) => document.getElementById(id);
+                this.statusFile = { parsed: null, url: '', kind: '', name: '', upload: false, pendingHost: '', seq: 0 };
+                $('btn-build-from-status').addEventListener('click', () => this.openStatusFileDialog());
+                $('btn-status-file-preview').addEventListener('click', () => this.previewStatusFile());
+                $('btn-status-file-sample').addEventListener('click', () => { $('status-file-url').value = 'samples/status-servers.csv'; this.previewStatusFile(); });
+                $('status-file-url').addEventListener('keydown', (ev) => { if (ev.key === 'Enter') { ev.preventDefault(); this.previewStatusFile(); } });
+                $('btn-status-file-choose').addEventListener('click', () => $('status-file-input').click());
+                $('status-file-input').addEventListener('change', async () => {
+                    const input = $('status-file-input'), f = input.files && input.files[0];
+                    input.value = '';
+                    if (!f) return;
+                    this.resetStatusFilePreview();
+                    $('status-file-url').value = '';
+                    if (f.size > LIVE_LIMITS.bytes) { this.statusFileError('The file is larger than 2 MB.'); return; }
+                    $('status-file-filename').textContent = `File: ${f.name}`;
+                    this.showStatusFilePreview(await f.text(), { upload: true, name: f.name.replace(/\.[a-z0-9]{1,5}$/i, '') });
+                });
+                $('btn-status-file-approve').addEventListener('click', () => {
+                    const host = this.statusFile.pendingHost;
+                    this.statusFile.pendingHost = '';
+                    $('status-file-approve').classList.add('d-none');
+                    if (host) { this.approveLiveHosts([host]); this.logEvent('CONFIGURE', `Allowed live status to contact ${host} in this browser`, { undoable: false }); }
+                    this.previewStatusFile();
+                });
+                $('btn-status-file-approve-cancel').addEventListener('click', () => { this.statusFile.pendingHost = ''; $('status-file-approve').classList.add('d-none'); });
+                $('btn-status-file-build').addEventListener('click', () => this.runStatusFileAction('build'));
+                $('btn-status-file-update').addEventListener('click', () => this.runStatusFileAction('update'));
+            }
+
+            openStatusFileDialog({ url = '' } = {}) {
+                const $ = (id) => document.getElementById(id);
+                this.resetStatusFilePreview();
+                $('status-file-url').value = url;
+                $('status-file-filename').textContent = '';
+                const modalEl = $('modal-status-file');
+                bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                setTimeout(() => $('status-file-url').focus(), 200);
+                if (url) this.previewStatusFile();
+            }
+
+            /** Settings → Live status → Update from file: the dialog for that source's address (Settings closes first). */
+            openStatusFileFromSettings(id) {
+                const src = this.liveSourceById(id), settings = document.getElementById('modal-settings');
+                if (!src) return;
+                const open = () => this.openStatusFileDialog({ url: src.url });
+                if (settings.classList.contains('show')) { settings.addEventListener('hidden.bs.modal', open, { once: true }); bootstrap.Modal.getOrCreateInstance(settings).hide(); }
+                else open();
+            }
+
+            resetStatusFilePreview() {
+                const $ = (id) => document.getElementById(id);
+                Object.assign(this.statusFile, { parsed: null, url: '', kind: '', name: '', upload: false, pendingHost: '' });
+                this.statusFile.seq++;
+                ['status-file-preview', 'status-file-approve', 'status-file-error', 'status-file-update-box', 'status-file-delete-wrap'].forEach(id => $(id).classList.add('d-none'));
+                $('status-file-error').textContent = '';
+                $('btn-status-file-build').disabled = true;
+                $('btn-status-file-update').disabled = true;
+                $('status-file-target-new').checked = true;
+                $('status-file-delete-missing').checked = false;
+                const keep = $('status-file-keep'); keep.disabled = false; keep.checked = true;
+            }
+
+            statusFileError(message) {
+                const err = document.getElementById('status-file-error');
+                err.textContent = message;
+                err.classList.toggle('d-none', !message);
+            }
+
+            /** Preview: checks and fetches the address (asking to allow its host first), then parses the file. */
+            async previewStatusFile() {
+                const $ = (id) => document.getElementById(id), raw = $('status-file-url').value.trim();
+                this.resetStatusFilePreview();
+                $('status-file-filename').textContent = '';
+                if (!raw) { this.statusFileError('Enter an address, or choose a file.'); return; }
+                const stored = statusSourceUrl(raw);
+                if (!stored) { this.statusFileError('Enter an https:// address (without a user name or password), a Google Sheet share link, or a path to a file on this site such as samples/status-servers.csv.'); return; }
+                let fetchUrl;
+                if (statusIsLocal(stored)) {
+                    fetchUrl = statusFetchUrl(stored);
+                    if (!fetchUrl) { this.statusFileError('A file on the app\'s own site can only be read when the app is served over http(s), not opened as a file:// page. Use an https address or Choose file… instead.'); return; }
+                } else {
+                    fetchUrl = liveSheetCsvUrl(stored);
+                    const host = new URL(fetchUrl).host;
+                    if (!this.readLiveApproved().has(host)) {
+                        this.statusFile.pendingHost = host;
+                        $('status-file-approve-host').textContent = host;
+                        $('status-file-approve').classList.remove('d-none');
+                        return;
+                    }
+                }
+                const seq = this.statusFile.seq, btn = $('btn-status-file-preview');
+                let r;
+                btn.disabled = true;
+                try { r = await this.liveFetch(fetchUrl); } catch (e) { if (seq === this.statusFile.seq) this.statusFileError(`Could not load the file: ${e.message}.`); return; } finally { btn.disabled = false; }
+                if (seq !== this.statusFile.seq) return;   // the address changed meanwhile
+                if (r.redirected) { this.statusFileError('The address redirects to another address, which is not followed. Use the final address (for a Google Sheet, its share link).'); return; }
+                if (!r.ok) { this.statusFileError(`Could not load the file: HTTP ${r.status}.`); return; }
+                const sheet = !statusIsLocal(stored) && fetchUrl !== liveSafeUrl(stored);
+                let name = sheet ? 'Google Sheet' : '';
+                if (!sheet) { const last = stored.split('?')[0].split('/').filter(Boolean).pop() || ''; try { name = decodeURIComponent(last); } catch { name = last; } name = name.replace(/\.[a-z0-9]{1,5}$/i, ''); }
+                this.showStatusFilePreview(r.text, { url: stored, sheet, name: liveClip(name, 60) || 'Status file' });
+            }
+
+            showStatusFilePreview(text, { url = '', sheet = false, upload = false, name = 'Status file' } = {}) {
+                const $ = (id) => document.getElementById(id);
+                let parsed;
+                try { parsed = parseStatusFile(text); } catch (e) { this.statusFileError(e.message); return; }
+                if (!parsed.items.length) { this.statusFileError(`The file has no rows with a name.${parsed.warnings.length ? ' ' + parsed.warnings.slice(0, 3).join(' ') : ''}`); return; }
+                const kind = sheet ? 'sheet' : (parsed.format === 'json' ? 'json' : 'csv');
+                Object.assign(this.statusFile, { parsed, url, kind, upload, name: parsed.title || name });
+                const n = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+                $('status-file-summary').textContent = `${n(parsed.items.length, 'shape')} · ${n(parsed.flows.length, 'flow')} · ${n(parsed.groups.length, 'group')} · ${n(parsed.warnings.length, 'warning')}`;
+                const lis = parsed.warnings.slice(0, 30).map(w => { const li = document.createElement('li'); li.textContent = w; return li; });
+                if (parsed.warnings.length > 30) { const li = document.createElement('li'); li.textContent = `… and ${parsed.warnings.length - 30} more.`; lis.push(li); }
+                $('status-file-warnings').replaceChildren(...lis);
+                const keep = $('status-file-keep');
+                keep.disabled = upload; keep.checked = !upload;
+                $('status-file-keep-help').textContent = upload
+                    ? 'A file from this computer cannot be checked again; load it from an address to keep checking it.'
+                    : 'Adds the file as a status source (Settings → Live status) and gives every shape rules from its row. Turn on live status in ☰ → View → Canvas to see the colours.';
+                const src = url ? (this.state.statusSources || []).find(s => s.url === url) : null, plan = src ? this.statusUpdatePlan(parsed, src) : null;
+                if (plan && plan.count) {
+                    const page = this.pageById(plan.pageId);
+                    $('status-file-update-text').textContent = `Built before on "${page ? page.name : 'a page'}". Update from file: ${plan.added.length} new · ${plan.matched.length} to update · ${plan.missing.length} no longer in the file. Shapes stay where they are.`;
+                    $('status-file-delete-wrap').classList.toggle('d-none', !plan.missing.length);
+                    const names = plan.missing.slice(0, 8).map(e => e.name).join(', ') + (plan.missing.length > 8 ? ` and ${plan.missing.length - 8} more` : '');
+                    $('status-file-delete-label').textContent = `Also delete the ${n(plan.missing.length, 'shape')} whose row is gone: ${names}`;
+                    $('status-file-update-box').classList.remove('d-none');
+                    $('btn-status-file-update').disabled = false;
+                }
+                $('status-file-preview').classList.remove('d-none');
+                $('btn-status-file-build').disabled = false;
+            }
+
+            runStatusFileAction(action) {
+                const $ = (id) => document.getElementById(id), f = this.statusFile;
+                if (!f.parsed) return;
+                if (this.state.reviewMode) { this.statusFileError('Review mode is on, so the layout is frozen. Turn it off (header badge or View menu) to build or update a diagram.'); return; }
+                try {
+                    let msg;
+                    if (action === 'build') {
+                        const target = ($('status-file-target-this').checked ? 'this' : 'new');
+                        const r = this.buildFromStatusFile(f.parsed, { url: f.upload ? '' : f.url, kind: f.kind, name: f.name, target, keep: !f.upload && $('status-file-keep').checked });
+                        msg = `Built ${r.shapes} shape(s), ${r.flows} flow(s) and ${r.zones} trust zone(s) from "${f.name}".${r.source && !this.liveOn ? ' Turn on live status (☰ → View → Canvas) to see their status.' : ''}`;
+                    } else {
+                        const src = (this.state.statusSources || []).find(s => s.url === f.url);
+                        const r = this.updateFromStatusFile(f.parsed, src, { deleteMissing: $('status-file-delete-missing').checked });
+                        msg = `Updated from "${f.name}": ${r.added} added, ${r.updated} updated, ${r.flows} new flow(s)${r.deleted ? `, ${r.deleted} deleted` : ''}.`;
+                    }
+                    bootstrap.Modal.getOrCreateInstance($('modal-status-file')).hide();
+                    const w = f.parsed.warnings.length;
+                    this.notify(w ? `${msg} The file had ${w} warning(s).` : msg, w ? 'warning' : 'success');
+                } catch (e) {
+                    this.statusFileError(e && e.message ? e.message : 'The diagram could not be built.');
+                }
+            }
+
+            /** Creates or updates the status source for a file address (same address = same source); returns it. */
+            statusSourceForFile(parsed, url, kind, name) {
+                const s = this.state;
+                if (!Array.isArray(s.statusSources)) s.statusSources = [];
+                const old = s.statusSources.find(x => x.url === url);
+                if (!old && s.statusSources.length >= LIVE_LIMITS.sources) throw new Error(`A model can have up to ${LIVE_LIMITS.sources} status sources; remove one in Settings → Live status first.`);
+                const c = parsed.columns;
+                const fields = liveCsvKind(kind)
+                    ? { keyColumn: c.name || 'name', valueColumn: c.status || 'status', latencyColumn: c.latency || '' }
+                    : { keyField: c.name || 'name', valueField: c.status || 'status', path: parsed.jsonPath, latencyField: c.latency || '' };
+                const id = old ? old.id : `src-${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+                const [src] = normalizeStatusSources([{ id, name: (old && old.name) || name, kind, url, intervalSec: old ? old.intervalSec : 0, pageId: old && old.pageId, ...fields }]);
+                if (!src) throw new Error('The address cannot be used as a status source.');
+                const at = s.statusSources.indexOf(old);
+                if (at >= 0) s.statusSources[at] = src; else s.statusSources.push(src);
+                if (this.live) this.live.sourceData.delete(id);
+                return src;
+            }
+
+            /** A shape for a status-file row (a circle badge), with its live status check when there is a source. */
+            statusShapeFor(item, id, x, y, pageId, src) {
+                const def = this.elementDefaults(item.type), rn = item.readyNode ? READY_NODES.find(r => r.id === item.readyNode) : null;
+                const el = { id, type: item.type, name: item.name, x, y, notes: item.description, ...JSON.parse(JSON.stringify(def.props)), icon: safeIcon(item.icon), display: 'badge',
+                    width: NODE_BADGE_SIZE.width, height: NODE_BADGE_SIZE.height, pageId };
+                delete el.iconColor;
+                if (rn) el.stencilTags = rn.subtypes.filter(t => SUBTYPE_LABELS[t]);
+                if (src) el.liveStatus = this.statusLiveFor(item, src, true);
+                return el;
+            }
+
+            statusLiveFor(item, src, enabled) {
+                return { enabled, check: { kind: 'source', sourceId: src.id, key: item.name }, rules: normalizeLiveStatus({ rules: statusFileRules(item) }).rules };
+            }
+
+            /** A data flow between two shapes, leaving and entering on the sides that face each other. */
+            statusFlowFor(a, b, id) {
+                const dx = (b.x + b.width / 2) - (a.x + a.width / 2), dy = (b.y + b.height / 2) - (a.y + a.height / 2);
+                const sa = Math.abs(dx) >= Math.abs(dy) ? (dx >= 0 ? 'right' : 'left') : (dy >= 0 ? 'bottom' : 'top');
+                return { id, name: '', sourceId: a.id, sourceAnchor: sa, targetId: b.id, targetAnchor: OPPOSITE_ANCHOR[sa], notes: '', color: 'black',
+                    secProps: { encrypted: 'false', authenticated: 'false' }, isBidirectional: false, isDashed: false, ports: '',
+                    bendX: 0, bendY: 0, textOffset: 0.5, points: [], curveStyle: this.isIsometric ? 'sharp' : 'smooth' };
+            }
+
+            /** Where new content goes on a page: below what is there (or at the page's origin), snapped. */
+            statusFreeSpot(pageId, below) {
+                const boxes = this.state.elements.filter(e => e.pageId === pageId).map(e => e.type === 'boundary_line'
+                    ? { x1: Math.min(e.x, e.x2), y1: Math.min(e.y, e.y2), x2: Math.max(e.x, e.x2), y2: Math.max(e.y, e.y2) }
+                    : { x1: e.x, y1: e.y, x2: e.x + (e.width || 240), y2: e.y + (e.height || 80) });
+                const page = this.pageById(pageId) || DEFAULT_PAGE;
+                if (!boxes.length) return { x: page.offset, y: 0 };
+                if (below) return { x: this.snapValue(Math.min(...boxes.map(b => b.x1))), y: this.snapValue(Math.max(...boxes.map(b => b.y2)) + STATUS_LAYOUT.gap) };
+                return { x: this.snapValue(Math.max(...boxes.map(b => b.x2)) + 200), y: this.snapValue(Math.min(...boxes.map(b => b.y1))) };
+            }
+
+            /** Adds a laid-out status file (zones, shapes, flows) at ox/oy; returns a Map(lower-case name -> element). */
+            statusPlace(parsed, ox, oy, pageId, src, stamp) {
+                const s = this.state, lay = layoutStatusFile(parsed), byName = new Map();
+                lay.zones.forEach((z, k) => s.elements.push({ id: `el-sf${stamp}-z${k}`, type: 'boundary', name: z.name, x: ox + z.x, y: oy + z.y, width: z.w, height: z.h, notes: '', pageId }));
+                parsed.items.forEach((item, k) => {
+                    const b = lay.nodes.get(item.name), el = this.statusShapeFor(item, `el-sf${stamp}-${k}`, ox + b.x, oy + b.y, pageId, src);
+                    s.elements.push(el); byName.set(item.name.toLowerCase(), el);
+                });
+                return { byName, zones: lay.zones.length };
+            }
+
+            /**
+             * Builds a diagram from a parsed status file on a new page (default) or the active one, with a status source
+             * for `url` when `keep` is on. One undo step. Throws an Error with a readable message.
+             */
+            buildFromStatusFile(parsed, { url = '', kind = 'csv', name = 'Status file', target = 'new', keep = true } = {}) {
+                if (this.state.reviewMode) throw new Error('Review mode is on, so the layout is frozen. Turn it off (header badge or View menu) to build a diagram.');
+                if (!parsed || !parsed.items || !parsed.items.length) throw new Error('The file has no rows to build.');
+                const s = this.state;
+                if (target === 'new' && s.pages.length >= MAX_PAGES) throw new Error(`A model can have up to ${MAX_PAGES} pages; build on this page instead.`);
+                if (keep && url && !(s.statusSources || []).some(x => x.url === url) && (s.statusSources || []).length >= LIVE_LIMITS.sources) throw new Error(`A model can have up to ${LIVE_LIMITS.sources} status sources; remove one in Settings → Live status first.`);
+                const src = keep && url ? this.statusSourceForFile(parsed, url, kind, name) : null;
+                let pageId = s.activePageId, spot;
+                if (target === 'new') {
+                    const offset = Math.max(...s.pages.map(p => p.offset)) + PAGE_STRIDE;
+                    let n = s.pages.length + 1, id;
+                    do { id = `p${n}`; n++; } while (this.pageById(id));
+                    const used = new Set(s.pages.map(p => p.name)), base = liveClip(name, 54) || 'Status';
+                    let pageName = base, k = 2;
+                    while (used.has(pageName)) pageName = `${base} (${k++})`;
+                    s.pages.push({ id, name: pageName, offset });
+                    this.pageViews = this.pageViews || {};
+                    if (s.activePageId) this.pageViews[s.activePageId] = { panX: this.panX, panY: this.panY, zoom: this.zoomScale };
+                    s.activePageId = id; s.selectedElementIds = []; s.selectedFlowId = null;
+                    pageId = id; spot = { x: offset, y: 0 };
+                } else spot = this.statusFreeSpot(pageId, false);
+                const stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+                const placed = this.statusPlace(parsed, spot.x, spot.y, pageId, src, stamp);
+                let flows = 0;
+                parsed.flows.forEach(([a, b], i) => { s.flows.push(this.statusFlowFor(placed.byName.get(a.toLowerCase()), placed.byName.get(b.toLowerCase()), `fl-sf${stamp}-${i}`)); flows++; });
+                if (src) src.pageId = pageId;
+                this.logEvent('IMPORT', `Built a diagram from the status file "${name}": ${parsed.items.length} shape(s), ${flows} flow(s), ${placed.zones} trust zone(s)`);
+                this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace(); this.zoomToFit();
+                if (src && this.liveOn) this.refreshLiveStatus({ manual: true });
+                return { shapes: parsed.items.length, flows, zones: placed.zones, source: src };
+            }
+
+            /** What an update from the file would do: shapes built from `src` (on its page) matched to the rows by name. */
+            statusUpdatePlan(parsed, src) {
+                const s = this.state, pageOk = src.pageId && this.pageById(src.pageId);
+                const shapes = s.elements.filter(e => e.liveStatus && e.liveStatus.check && e.liveStatus.check.kind === 'source' && e.liveStatus.check.sourceId === src.id && (!pageOk || e.pageId === src.pageId));
+                const byKey = new Map();
+                shapes.forEach(e => { const k = toText(e.liveStatus.check.key || e.name).trim().toLowerCase(); if (k && !byKey.has(k)) byKey.set(k, e); });
+                const names = new Set(parsed.items.map(i => i.name.toLowerCase()));
+                return { pageId: pageOk ? src.pageId : (shapes[0] ? shapes[0].pageId : s.activePageId), byKey, count: shapes.length,
+                    added: parsed.items.filter(i => !byKey.has(i.name.toLowerCase())), matched: parsed.items.filter(i => byKey.has(i.name.toLowerCase())),
+                    missing: [...byKey.entries()].filter(([k]) => !names.has(k)).map(([, e]) => e) };
+            }
+
+            /**
+             * Updates the page built from `src` with the file: new rows are added (in their group's zone, which grows, or
+             * below), matched shapes get the row's type, icon, notes and rules without moving, new connections become flows.
+             * Shapes whose row is gone are deleted only with deleteMissing. One undo step.
+             */
+            updateFromStatusFile(parsed, src, { deleteMissing = false } = {}) {
+                if (this.state.reviewMode) throw new Error('Review mode is on, so the layout is frozen. Turn it off (header badge or View menu) to update the diagram.');
+                const plan = src ? this.statusUpdatePlan(parsed, src) : null;
+                if (!plan || !plan.count) throw new Error('Nothing was built from this address yet. Build the diagram first.');
+                const s = this.state, L = STATUS_LAYOUT;
+                src = this.statusSourceForFile(parsed, src.url, src.kind === 'sheet' ? 'sheet' : (parsed.format === 'json' ? 'json' : 'csv'), src.name);
+                src.pageId = plan.pageId;
+                plan.matched.forEach(item => {
+                    const el = plan.byKey.get(item.name.toLowerCase()), rn = item.readyNode ? READY_NODES.find(r => r.id === item.readyNode) : null;
+                    if (el.type !== item.type && SWITCHABLE_NODE_TYPES.has(el.type)) {
+                        const def = this.elementDefaults(item.type), oldSec = el.secProps || {};
+                        delete el.secProps; delete el.iconColor; delete el.stencilTags;
+                        if (def.props.secProps) { el.secProps = JSON.parse(JSON.stringify(def.props.secProps)); Object.keys(el.secProps).forEach(k => { if (k in oldSec) el.secProps[k] = oldSec[k]; }); }
+                        el.type = item.type;
+                    }
+                    el.icon = safeIcon(item.icon);
+                    el.notes = item.description;
+                    if (rn) el.stencilTags = rn.subtypes.filter(t => SUBTYPE_LABELS[t]);
+                    el.liveStatus = this.statusLiveFor(item, src, el.liveStatus.enabled !== false);
+                });
+                const byName = new Map(plan.byKey), stamp = `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
+                // New rows whose group already has a zone on the page: a new row at the bottom of that zone (it grows).
+                const zoneOf = (g) => g ? s.elements.find(e => e.type === 'boundary' && e.pageId === plan.pageId && toText(e.name).trim().toLowerCase() === g.toLowerCase()) : null;
+                const rest = [];
+                const intoZone = new Map();
+                plan.added.forEach(item => { const z = zoneOf(item.group); if (z) { if (!intoZone.has(z)) intoZone.set(z, []); intoZone.get(z).push(item); } else rest.push(item); });
+                let k = 0;
+                intoZone.forEach((list, z) => {
+                    const cols = Math.max(1, Math.floor((z.width - 2 * L.padX) / L.cw)), y0 = z.y + z.height - L.bottom;
+                    list.forEach((item, i) => {
+                        const x = z.x + L.padX + (i % cols) * L.cw + (L.cw - NODE_BADGE_SIZE.width) / 2, y = y0 + Math.floor(i / cols) * L.ch + (L.ch - NODE_BADGE_SIZE.height) / 2;
+                        const el = this.statusShapeFor(item, `el-sf${stamp}-a${k++}`, Math.round(x), Math.round(y), plan.pageId, src);
+                        s.elements.push(el); byName.set(item.name.toLowerCase(), el);
+                    });
+                    z.height += Math.ceil(list.length / cols) * L.ch;
+                });
+                if (rest.length) {
+                    const names = new Set(rest.map(i => i.name));
+                    const sub = { items: rest, flows: parsed.flows.filter(([a, b]) => names.has(a) && names.has(b)), groups: parsed.groups };
+                    const spot = this.statusFreeSpot(plan.pageId, true);
+                    this.statusPlace(sub, spot.x, spot.y, plan.pageId, src, `${stamp}b`).byName.forEach((el, key) => byName.set(key, el));
+                }
+                let flows = 0;
+                parsed.flows.forEach(([a, b], i) => {
+                    const ea = byName.get(a.toLowerCase()), eb = byName.get(b.toLowerCase());
+                    if (!ea || !eb || s.flows.some(f => f.sourceId === ea.id && f.targetId === eb.id)) return;
+                    s.flows.push(this.statusFlowFor(ea, eb, `fl-sf${stamp}-${i}`)); flows++;
+                });
+                let deleted = 0;
+                if (deleteMissing && plan.missing.length) {
+                    const ids = new Set(plan.missing.map(e => e.id));
+                    const flowIds = new Set(s.flows.filter(f => ids.has(f.sourceId) || ids.has(f.targetId)).map(f => f.id));
+                    s.threats = s.threats.filter(t => !ids.has(t.elementId) && !flowIds.has(t.elementId));
+                    s.flows = s.flows.filter(f => !flowIds.has(f.id));
+                    s.elements = s.elements.filter(e => !ids.has(e.id));
+                    s.selectedElementIds = []; s.selectedFlowId = null;
+                    deleted = ids.size;
+                }
+                this.logEvent('IMPORT', `Updated the diagram from the status file "${src.name}": ${plan.added.length} added, ${plan.matched.length} updated, ${flows} new flow(s)${deleted ? `, ${deleted} deleted` : ''}`);
+                this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace();
+                if (this.liveOn) this.refreshLiveStatus({ manual: true });
+                return { added: plan.added.length, updated: plan.matched.length, flows, deleted };
+            }
+            // ── end build from status file ──
 
             /** SEC-006: threat models are sensitive; let users wipe everything this app stored in the browser. */
             confirmClearLocalData() {

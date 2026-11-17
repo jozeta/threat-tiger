@@ -1,0 +1,7 @@
+name,status,type,icon,latency,latency_max,ok,ok_color,warn,warn_color,fail_color,group,connects_to,description
+web-01,up,process,bi-globe2,45,500,,,,,,DMZ,api-01,Public web server (node 1)
+web-02,up,process,bi-globe2,950,500,,,,,,DMZ,api-01,Public web server (node 2); slower than its latency limit
+api-01,degraded,api-gateway,,310,800,,,,,,Internal,db-01|cache-01,Order API behind the web tier
+db-01,up,datastore,bi-database-fill,12,200,up|ok|primary,#20c997,,,,Internal,backup-01,Primary order database (custom ok colour)
+cache-01,down,cache,,,,,,,,#b02a37,Internal,,Session cache (custom fail colour)
+backup-01,maintenance,backup,,,,,,maintenance|backup running,#fd7e14,,Internal,,Nightly backup storage
