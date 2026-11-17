@@ -137,3 +137,50 @@ test('while painting, trust zones and swimlanes are not dragged', async ({ page 
   await page.mouse.up();
   expect((await get(page, 'z')).x).toBeGreaterThan(20);
 });
+
+// ── "It does not work": components copied only their icon colour, and an empty paint said nothing ──
+test('painting a component copies its display look (circle badge or icon only, badge colours) but not its icon', async ({ page }) => {
+  await setup(page, [
+    { id: 'src', type: 'interactor', name: 'Threat actor', x: 0, y: 0, width: 100, height: 100, icon: 'bi-incognito', display: 'badge', badgeFill: '#fee2e2', badgeStroke: '#b91c1c', iconColor: '#7f1d1d', secProps: {} },
+    { id: 'dst', type: 'interactor', name: 'Partner', x: 400, y: 0, width: 240, height: 80, icon: 'bi-building', secProps: {} },
+    { id: 'dst2', type: 'process', name: 'API', x: 800, y: 0, width: 240, height: 80, icon: 'bi-server', secProps: {} },
+  ]);
+  await select(page, ['src']);
+  await page.click('#btn-format-painter');
+  await clickNode(page, 'dst');
+  expect(await get(page, 'dst')).toMatchObject({ display: 'badge', badgeFill: '#fee2e2', badgeStroke: '#b91c1c', iconColor: '#7f1d1d', icon: 'bi-building', name: 'Partner' });
+  // components of another component type are the same kind: a process can take the look too
+  await select(page, ['src']);
+  await page.click('#btn-format-painter');
+  await clickNode(page, 'dst2');
+  expect(await get(page, 'dst2')).toMatchObject({ display: 'badge', badgeFill: '#fee2e2', icon: 'bi-server', type: 'process' });
+});
+
+test('a paint that changes nothing says why instead of doing nothing silently', async ({ page }) => {
+  await setup(page, els);
+  await select(page, ['p']);
+  await page.click('#btn-format-painter');
+  await clickNode(page, 'f2');                                     // a process onto a flowchart shape: different kinds
+  await expect(page.locator('#app-toast-container .toast-body').last()).toContainText(/different kind|cannot|can't/i);
+  await select(page, ['f1']);
+  await page.click('#btn-format-painter');
+  await clickNode(page, 'f1');                                     // clicking the source keeps it armed (no message)
+  await page.evaluate(() => { const f2 = app.state.elements.find(e => e.id === 'f2'); Object.assign(f2, { fcFillColor: '#fee2e2', fcStrokeColor: '#dc2626', fcStrokeWidth: 4 }); app.refreshAppViewVisualWorkspace(); });
+  await clickNode(page, 'f2');                                     // same look already
+  await expect(page.locator('#app-toast-container .toast-body').last()).toContainText(/already/i);
+});
+
+test('in review mode the painter copies colours but not a display change (that would resize the shape)', async ({ page }) => {
+  await setup(page, [
+    { id: 'src', type: 'process', name: 'Badge', x: 0, y: 0, width: 100, height: 100, display: 'badge', badgeFill: '#fee2e2', badgeStroke: '#b91c1c', iconColor: '#7f1d1d', secProps: {} },
+    { id: 'dst', type: 'process', name: 'Card', x: 400, y: 0, width: 240, height: 80, secProps: {} },
+  ]);
+  await page.evaluate(() => app.toggleReviewMode(true));
+  await select(page, ['src']);
+  await page.click('#btn-format-painter');
+  await clickNode(page, 'dst');
+  const d = await get(page, 'dst');
+  expect(d.iconColor).toBe('#7f1d1d');
+  expect(d.display).toBeUndefined();
+  expect([d.width, d.height, d.x, d.y]).toEqual([240, 80, 400, 0]);
+});

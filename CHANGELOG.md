@@ -5,6 +5,12 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.22.1
+
+### Fixed
+- **Format painter** seemed not to work on processes, data stores, external entities and infrastructure: it copied only their icon colour, so painting one card onto another usually changed nothing. It now also copies the display look (card, icon only or circle badge, with badge colours), resizing the target as Properties → Display does (in review mode only the colours, since a resize would change the layout). The icon is still not copied (it decides the tailored threats).
+- A paint that changes nothing now says why (a different kind of shape, or the same look already) instead of doing nothing silently. The Help guide explains when the brush is greyed out and what it copies.
+
 ## 1.22.0
 
 ### Added

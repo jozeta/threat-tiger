@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.22.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.22.1** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -57,7 +57,9 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 
 ## What's new 🆕
 
-**1.22.0** adds a full **Help guide** and building diagrams from a status file:
+**1.22.1** fixes the format painter for processes, data stores, external entities and infrastructure: it now copies their display look (card, icon only, circle badge and colours), and says why when a paint changes nothing.
+
+**1.22.0** added a full **Help guide** and building diagrams from a status file:
 
 - **Help guide** (☰ → Help, or F1 / ?): a manual covering every palette section, canvas tool, panel and setting, with search, illustrations and screenshots. **About & License** keeps the version, licence and credits.
 - **Build from status file** (☰ → Build from status file…): load a CSV, Google Sheet or JSON list of servers and get a diagram (zones from `group`, data flows from `connects_to`) that stays coloured by the same file. See [Building a diagram from a status file](#building-a-diagram-from-a-status-file); try [`samples/status-servers.csv`](samples/status-servers.csv) or [`.json`](samples/status-servers.json).

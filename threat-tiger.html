@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-EcbQacX5vfg90kkMe5dXp2V0+/8tcsleALfGsUEfNX8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3XEqIKnPvqOJvG6jZjUs2q35biilnu5KRm0AXo6DyQY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -5187,7 +5187,7 @@
             <tr><td>Zoom</td><td>The <span class="tt-help-ui">+</span> / <span class="tt-help-ui">−</span> buttons or the mouse wheel zoom around the centre of the view; <span class="tt-help-ui">Zoom to fit</span> shows the whole page. On touch screens, pinch.</td></tr>
             <tr><td>Pan</td><td>Hold the right mouse button and drag, or drag empty canvas with one finger.</td></tr>
             <tr><td>Line up shapes</td><td>Select two or more: the align toolbar offers align left, centres, right, top, middles and bottom, and (with three or more) <em>Space evenly across</em> and <em>Space evenly down</em>.</td></tr>
-            <tr><td>Copy a look</td><td>The <strong>format painter</strong> (the brush icon in the canvas toolbar): select a shape, click the brush, then click another shape of the same kind to copy its colours, line style and 3D look (never its name, type or security settings). Double-click the brush to paint several shapes; <kbd>Esc</kbd> stops.</td></tr>
+            <tr><td>Copy a look</td><td>The <strong>format painter</strong> (the brush icon in the canvas toolbar): select <em>one</em> shape (the brush is greyed out until you do), click the brush, then click another shape of the same kind to copy its look: for flowchart, attack-tree and diagram shapes the fill, border, line width and 3D settings; for processes, data stores, external entities and infrastructure the display (card, icon only or circle badge), badge colours and icon colour. Its name, type, icon and security settings are never copied. Double-click the brush to paint several shapes; <kbd>Esc</kbd> stops. A click that changes nothing tells you why (a different kind of shape, or the same look already).</td></tr>
             <tr><td>Stack order</td><td>Properties → <em>Component Z-Depth / Order</em>: Back, Backward, Forward, Front.</td></tr>
             <tr><td>Grid</td><td>The grid button: 10, 20 (default), 40 or 80 px, and <em>Snap to Grid</em> on or off.</td></tr>
             <tr><td>Dark canvas</td><td>The moon button switches the canvas between light and dark. PNG exports follow it.</td></tr>
@@ -5824,7 +5824,7 @@ Orders DB,down,datastore,App,,,</pre></div>
     <div class="tt-help-kicker">Reference</div>
     <h3 id="help-h-troubleshooting" tabindex="-1"><i class="bi bi-life-preserver" aria-hidden="true"></i>Troubleshooting &amp; FAQ</h3>
     <h4>I clicked the pen icon and nothing was drawn.</h4>
-    <p>The brush in the canvas toolbar is the <strong>format painter</strong>: it copies one shape’s look to another. To draw a data flow, hover a shape and drag from one of its connection points. <kbd>Esc</kbd> leaves the format painter.</p>
+    <p>The brush in the canvas toolbar is the <strong>format painter</strong>: it copies one shape’s look to another. It is greyed out until exactly one shape is selected. Shapes of the same kind only: two cards with the default look already look alike, so painting them changes nothing (a message says so). To draw a data flow, hover a shape and drag from one of its connection points. <kbd>Esc</kbd> leaves the format painter.</p>
     <h4>Why can’t the browser ping my server?</h4>
     <p>Browsers can’t send ICMP pings. <em>Reachability</em> is a timed HTTPS request instead, so the host must answer on HTTPS. Without CORS headers you only get up/down, not the status code.</p>
     <h4>My Google Sheet shows no data.</h4>
@@ -6152,7 +6152,7 @@ Orders DB,down,datastore,App,,,</pre></div>
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.22.0';
+        const APP_VERSION = '1.22.1';
         const SCHEMA_VERSION = 1;
         const MAX_ZOOM = 2.5;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
@@ -6829,7 +6829,7 @@ Orders DB,down,datastore,App,,,</pre></div>
         // ── Format painter ───────────────────────────────────────────────────────────
         // Look-only properties per kind of shape; the painter copies them between shapes of the same kind.
         // Numbered steps store their colour differently from components, so they are their own kind.
-        const STYLE_FAMILIES = { flowchart: ['fcFillColor', 'fcStrokeColor', 'fcStrokeWidth', 'threeD'], component: ['iconColor'], step: ['circleColor'], text: ['fontSize'] };
+        const STYLE_FAMILIES = { flowchart: ['fcFillColor', 'fcStrokeColor', 'fcStrokeWidth', 'threeD'], component: ['iconColor', 'display', 'badgeFill', 'badgeStroke'], step: ['circleColor'], text: ['fontSize'] };
         function styleFamily(e) {
             const t = e && toText(e.type);
             if (!t) return null;
@@ -6850,6 +6850,12 @@ Orders DB,down,datastore,App,,,</pre></div>
             const def = fam === 'flowchart' ? { fcFillColor: fcLikeDefaults(src.type).fill, fcStrokeColor: fcLikeDefaults(src.type).stroke, fcStrokeWidth: 2 } : {};
             const out = {};
             STYLE_FAMILIES[fam].forEach(k => { out[k] = src[k] !== undefined ? src[k] : def[k]; });
+            if (fam === 'component') {
+                // The display look (card / icon only / circle badge) only exists on the four threat-modelling types; the
+                // effective display is copied, so an infrastructure node (icon by default) paints "icon only".
+                if (nodeDisplay(src) && nodeDisplay(dst)) out.display = nodeDisplay(src);
+                else ['display', 'badgeFill', 'badgeStroke'].forEach(k => delete out[k]);
+            }
             return out;
         }
         // New positions for boxes that move. Modes: left, center, right, top, middle, bottom (2+ boxes);
@@ -19314,8 +19320,26 @@ Orders DB,down,datastore,App,,,</pre></div>
                 const dst = this.state.elements.find(e => e.id === id);
                 if (!src || !dst || this.isItemLocked(dst) || !this.isItemVisible(dst)) return false;   // layers
                 const style = paintableStyle(src, dst);
-                const changed = Object.keys(style).filter(k => dst[k] !== style[k]);
-                if (changed.length === 0) return false;
+                const changed = Object.keys(style).filter(k => (k === 'display' ? nodeDisplay(dst) : dst[k]) !== style[k]);
+                if (changed.length === 0) {
+                    // Say why, instead of a click that silently does nothing.
+                    if (!styleFamily(src) || styleFamily(src) !== styleFamily(dst)) this.notify(`The format painter copies a look between shapes of the same kind; "${toText(dst.name) || 'this shape'}" is a different kind from "${toText(src.name) || 'the source'}".`, 'warning');
+                    else this.notify(`"${toText(dst.name) || 'This shape'}" already has this look.`, 'info');
+                    return false;
+                }
+                if (changed.includes('display') && this.state.reviewMode) {   // review mode freezes the layout: colours yes, a resize no
+                    ['display', 'badgeFill', 'badgeStroke'].forEach(k => { const i = changed.indexOf(k); if (i >= 0) changed.splice(i, 1); });
+                    if (!changed.length) { this.blockedByReviewMode('change how shapes look'); return false; }
+                }
+                const newDisplay = changed.includes('display') ? style.display : null;
+                if (newDisplay) {   // a new display mode also takes that mode's size, kept around the shape's centre (as Properties → Display does)
+                    const def = this.elementDefaults(dst.type), infra = dst.type === 'infrastructure';
+                    const size = newDisplay === 'card' ? { width: infra ? 240 : def.width, height: infra ? 80 : def.height }
+                        : newDisplay === 'icon' ? (infra ? { width: def.width, height: def.height } : READY_NODE_SIZE) : NODE_BADGE_SIZE;
+                    const cx = dst.x + (dst.width || def.width) / 2, cy = dst.y + (dst.height || def.height) / 2;
+                    dst.width = size.width; dst.height = size.height;
+                    dst.x = this.snapValue(cx - size.width / 2); dst.y = this.snapValue(cy - size.height / 2);
+                }
                 changed.forEach(k => { if (style[k] === undefined) delete dst[k]; else dst[k] = style[k]; });
                 this.logEvent('CHANGE', `Copied the look of "${src.name}" to "${dst.name}"`);
                 this.refreshAppViewVisualWorkspace();
