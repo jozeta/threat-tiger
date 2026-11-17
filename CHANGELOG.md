@@ -8,7 +8,11 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 ## 1.20.1
 
 ### Fixed
-- **Two tabs:** after **Reload** on the "changed in another tab" notice, a late notice about the version this tab had just loaded could block its next save (seen as an intermittent CI failure of test A3). A tab now ignores a change notice that carries the version it already loaded or saved. Regression tests A3c and A3d.
+- **Two tabs:** after **Reload** on the "changed in another tab" notice, a late notice about the version this tab had just loaded could block its next save. A tab now ignores a change notice that carries the version it already loaded or saved. Regression tests A3c and A3d.
+
+### Tests
+- The intermittent CI failure of test A3 was the test itself: it read tab A's localStorage right after tab B saved, but browser tabs run in separate processes and the write arrives a moment later. A3 and A3c now wait for it.
+- The line-jumps speed test allows 1500 ms on CI (shared runners were measured at 815 and 825 ms against the 800 ms local limit).
 
 ## 1.20.0
 

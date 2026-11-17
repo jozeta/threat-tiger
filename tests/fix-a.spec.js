@@ -44,13 +44,14 @@ test('A3: a second tab does not silently overwrite the first tab\'s saved change
   await expect(other.locator('#alert-other-tab')).toBeHidden();
   expect(await other.evaluate(() => app.state.projectTitle)).toBe('Title from tab A');
   await other.evaluate(() => { app.state.scopeDefinition = 'Scope after reload'; app.saveSessionToLocalStorage(); app.flushSave(); });
-  const after = await page.evaluate(() => JSON.parse(localStorage.getItem('stride_workbench_session_manifest_v26')));
-  expect(after).toMatchObject({ projectTitle: 'Title from tab A', scopeDefinition: 'Scope after reload' });
+  // Tabs run in separate processes: tab B's write reaches tab A's view of localStorage a moment later, so poll.
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('stride_workbench_session_manifest_v26'))))
+    .toMatchObject({ projectTitle: 'Title from tab A', scopeDefinition: 'Scope after reload' });
 });
 
 test('A3c: a late storage event carrying the version this tab just loaded is not a new change', async ({ page, context }) => {
-  // CI race: tab A writes twice (start-up autosave, then an edit). Tab B shows the notice on the first event; after
-  // Reload, the second event arrives late with exactly the version B loaded. B must not treat it as a conflict.
+  // Tab A may write twice (start-up autosave, then an edit). Tab B shows the notice on the first event; if the second
+  // event arrives after Reload, it carries exactly the version B loaded, and B must not treat it as a conflict.
   await H.openApp(page, { session: H.demoSession() });
   const other = await context.newPage();
   await other.goto('/threat-tiger.html?test=true');
@@ -65,8 +66,9 @@ test('A3c: a late storage event carrying the version this tab just loaded is not
   });
   await expect(other.locator('#alert-other-tab')).toBeHidden();
   await other.evaluate(() => { app.state.scopeDefinition = 'Scope after reload'; app.saveSessionToLocalStorage(); app.flushSave(); });
-  const after = await page.evaluate(() => JSON.parse(localStorage.getItem('stride_workbench_session_manifest_v26')));
-  expect(after).toMatchObject({ projectTitle: 'Title from tab A', scopeDefinition: 'Scope after reload' });
+  // Tabs run in separate processes: tab B's write reaches tab A's view of localStorage a moment later, so poll.
+  await expect.poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('stride_workbench_session_manifest_v26'))))
+    .toMatchObject({ projectTitle: 'Title from tab A', scopeDefinition: 'Scope after reload' });
 });
 
 test('A3d: a storage event with a version this tab has not seen still raises the notice', async ({ page }) => {
