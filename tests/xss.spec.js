@@ -246,3 +246,34 @@ test('payloads in attribute, style and SVG contexts never inject markup (SEC-DOM
   await expect(page.locator('#mitigation-tbody a.mitigation-ticket-link')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
+
+test('payloads in a status file and in a Test check reply never inject markup (status file, 1.21)', async ({ page }) => {
+  const errors = trackPageErrors(page);
+  await page.route(/^https:\/\//, (route) => route.abort());
+  await openApp(page, { session: demoSession() });
+  const checked = await page.evaluate((inj) => {
+    // Every text field of a row, plus colour, icon and type values that try to break out of attributes.
+    const q = (v) => `"${String(v).replace(/"/g, '""')}"`;
+    const csv = ['name,status,type,icon,ok,ok_color,warn_color,fail_color,group,connects_to,description,' + q(inj[0]),
+      [inj[0], inj[1], inj[2], inj[3], inj[1], inj[3], inj[1], inj[2], inj[0], inj[1], inj[2], inj[3]].map(q).join(','),
+      [inj[1], 'down', '', '', '', '', '', '', inj[0], inj[0], inj[1], inj[0]].map(q).join(',')].join('\n');
+    const parsed = parseStatusFile(csv);
+    app.state.statusSources = normalizeStatusSources([{ id: 'sf', name: inj[1], kind: 'csv', url: 'samples/x.csv' }]);
+    app.buildFromStatusFile(parsed, { url: '', name: inj[0], target: 'new', keep: false });
+    // A Test check result for a built shape, with the parsed CSV standing in for the reply.
+    const el = app.state.elements.find((e) => e.type !== 'boundary' && e.pageId === app.state.activePageId);
+    el.liveStatus = { enabled: true, check: { kind: 'source', sourceId: 'sf', key: '' }, rules: statusFileRules(parsed.items[0]) };
+    app.live.sourceData.set('sf', { url: location.origin + '/samples/x.csv', at: Date.now(), rows: parseCsv(csv), count: 2 });
+    app.state.selectedElementIds = [el.id]; app.state.selectedFlowId = null;
+    app.live.test = { itemId: el.id, job: app.liveJobFor(el), res: { at: Date.now(), text: csv, latency: 5 } };
+    app.liveOn = true;
+    app.refreshAppViewVisualWorkspace();
+    return { warnings: parsed.warnings.length, shapes: parsed.items.length, testRows: document.querySelectorAll('#live-test-result .live-test-row').length };
+  }, INJ);
+  expect(checked.shapes).toBe(2);
+  expect(checked.warnings).toBeGreaterThan(0);
+  expect(checked.testRows).toBeGreaterThan(5);
+  await expect(page.locator('#live-test-result')).toContainText(INJ[0]);
+  expect(await injectedNodes(page)).toEqual([]);
+  expect(errors).toEqual([]);
+});

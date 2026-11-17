@@ -1,0 +1,18 @@
+{
+  "title": "Server status",
+  "items": [
+    { "name": "web-01", "status": "up", "type": "process", "icon": "bi-globe2", "latency": 45, "latency_max": 500,
+      "group": "DMZ", "connects_to": ["api-01"], "description": "Public web server (node 1)" },
+    { "name": "web-02", "status": "up", "type": "process", "icon": "bi-globe2", "latency": 950, "latency_max": 500,
+      "group": "DMZ", "connects_to": ["api-01"], "description": "Public web server (node 2); slower than its latency limit" },
+    { "name": "api-01", "status": "degraded", "type": "api-gateway", "latency": 310, "latency_max": 800,
+      "group": "Internal", "connects_to": ["db-01", "cache-01"], "description": "Order API behind the web tier" },
+    { "name": "db-01", "status": "up", "type": "datastore", "icon": "bi-database-fill", "latency": 12, "latency_max": 200,
+      "ok": "up|ok|primary", "ok_color": "#20c997",
+      "group": "Internal", "connects_to": ["backup-01"], "description": "Primary order database (custom ok colour)" },
+    { "name": "cache-01", "status": "down", "type": "cache", "fail_color": "#b02a37",
+      "group": "Internal", "description": "Session cache (custom fail colour)" },
+    { "name": "backup-01", "status": "maintenance", "type": "backup", "warn": "maintenance|backup running", "warn_color": "#fd7e14",
+      "group": "Internal", "description": "Nightly backup storage" }
+  ]
+}
