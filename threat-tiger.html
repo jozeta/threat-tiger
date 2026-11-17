@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YQ51vvEzsy0AkA2Wi0bDxYzdJUflQokBADCnEmLfmyw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Hfpb6FGQ5QazJEQ5J1G/NiFzyaSu2KKmJ0+D98e+Al4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -496,6 +496,11 @@
         .sidebar-left .palette-item {
             cursor: grab;
         }
+
+        /* Architecture & process diagram shapes: compact items, two per row */
+        .palette-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+        .palette-item.palette-item-compact { padding: 4px 6px !important; min-height: 44px; }
+        .palette-item-compact .palette-compact-label { font-size: 11px; line-height: 1.2; min-width: 0; overflow-wrap: anywhere; }
 
         .sidebar-left .palette-item:active {
             cursor: grabbing;
@@ -2992,6 +2997,21 @@
                                 </div>
                             </div>
 
+                            <!-- Diagram shape text (C4, UML class, ERD): limits and placeholders come from DIAGRAM_TEXT_FIELDS -->
+                            <div id="box-props-diagram" class="card card-body p-2 bg-light border d-none">
+                                <h6 class="small fw-bold text-dark border-bottom pb-1 mb-2"><i class="bi bi-diagram-3 me-1 text-primary" aria-hidden="true"></i>Diagram Text</h6>
+                                <div class="mb-2" data-dg-field="c4Technology"><label class="extra-small text-muted fw-bold mb-1" for="props-dg-c4Technology">Technology</label>
+                                    <input type="text" class="form-control form-control-sm shadow-none" id="props-dg-c4Technology"></div>
+                                <div class="mb-2" data-dg-field="c4Description"><label class="extra-small text-muted fw-bold mb-1" for="props-dg-c4Description">Description</label>
+                                    <textarea class="form-control form-control-sm shadow-none" id="props-dg-c4Description" rows="2"></textarea></div>
+                                <div class="mb-2" data-dg-field="umlAttributes"><label class="extra-small text-muted fw-bold mb-1" for="props-dg-umlAttributes">Attributes (one per line)</label>
+                                    <textarea class="form-control form-control-sm shadow-none font-monospace" id="props-dg-umlAttributes" rows="3"></textarea></div>
+                                <div class="mb-2" data-dg-field="umlOperations"><label class="extra-small text-muted fw-bold mb-1" for="props-dg-umlOperations">Operations (one per line)</label>
+                                    <textarea class="form-control form-control-sm shadow-none font-monospace" id="props-dg-umlOperations" rows="3"></textarea></div>
+                                <div class="mb-1" data-dg-field="erdRows"><label class="extra-small text-muted fw-bold mb-1" for="props-dg-erdRows">Rows (one per line; start with PK or FK to mark a key)</label>
+                                    <textarea class="form-control form-control-sm shadow-none font-monospace" id="props-dg-erdRows" rows="4"></textarea></div>
+                            </div>
+
                             <div id="box-props-notes">
                                 <label class="form-label small fw-semibold text-muted mb-1">Architectural Scope
                                     Notes</label>
@@ -4000,6 +4020,73 @@
             fc_database:     { label: 'Database (cylinder)',    name: 'Database',     w: 120, h: 100, fill: '#ecfccb', stroke: '#65a30d' },
             fc_cube:         { label: 'Cube (3D box)',          name: 'Cube',         w: 140, h: 100, fill: '#e0e7ff', stroke: '#4f46e5' },
         };
+        // ── Architecture & process diagram shapes (C4, UML, BPMN light, ERD) ─────────
+        // Drawn shapes like the flowchart ones: they are merged into FLOWCHART_DEFAULTS below, so palette, sizes, colours
+        // (fcFillColor / fcStrokeColor / fcStrokeWidth), the Type dropdown, quick add, format painter, align, anchors and
+        // exports treat them the same way. DIAGRAM_SHAPES[type].group is the palette sub-group (#palette-<group>).
+        // Component decision: only the C4 shapes are model components (`library` set). A C4 person, software system,
+        // container, component or external system is a real part of (or party to) the system, so it gets STRIDE threats,
+        // suggestions, Insights coverage and attack paths: people and external systems use the external-entity library,
+        // the rest the process library. UML, BPMN and ERD shapes are notation (a use case, a gateway or a table schema is
+        // not a deployable component), so they get no threats and no suggestions; see isDiagramNotation().
+        const DIAGRAM_SHAPES = {
+            c4_person:              { group: 'c4',   label: 'Person',               name: 'Person',          w: 160, h: 150, fill: '#08427b', stroke: '#052e56', library: 'interactor', kind: 'Person', fields: ['c4Description'], desc: 'A person who uses the system: a user, an operator or an administrator.' },
+            c4_system:              { group: 'c4',   label: 'Software system',      name: 'Software System', w: 200, h: 120, fill: '#1168bd', stroke: '#0b4884', library: 'process', kind: 'Software System', fields: ['c4Description'], desc: 'The highest level of abstraction: something that delivers value to its users.' },
+            c4_container:           { group: 'c4',   label: 'Container',            name: 'Container',       w: 200, h: 120, fill: '#438dd5', stroke: '#2e6295', library: 'process', kind: 'Container', fields: ['c4Technology', 'c4Description'], desc: 'A separately deployable or runnable unit: an application, a service or a database.' },
+            c4_component:           { group: 'c4',   label: 'Component',            name: 'Component',       w: 200, h: 120, fill: '#85bbf0', stroke: '#5d82a8', library: 'process', kind: 'Component', fields: ['c4Technology', 'c4Description'], desc: 'A grouping of related functionality inside a container, behind a well-defined interface.' },
+            c4_external:            { group: 'c4',   label: 'External system',      name: 'External System', w: 200, h: 120, fill: '#8a8a8a', stroke: '#6b6b6b', library: 'interactor', kind: 'External System', fields: ['c4Description'], desc: 'A software system outside the scope of the one being modelled.' },
+            uml_actor:              { group: 'uml',  label: 'Actor',                name: 'Actor',           w: 80,  h: 120, fill: '#ffffff', stroke: '#334155', desc: 'A role that interacts with the system (stick figure). The name is drawn below the figure.' },
+            uml_usecase:            { group: 'uml',  label: 'Use case',             name: 'Use Case',        w: 180, h: 80,  fill: '#fefce8', stroke: '#a16207', desc: 'Something an actor can do with the system (ellipse).' },
+            uml_note:               { group: 'uml',  label: 'Note',                 name: 'Note',            w: 160, h: 90,  fill: '#fef9c3', stroke: '#a16207', desc: 'A comment attached to a diagram (folded corner). The name is the note text.' },
+            uml_package:            { group: 'uml',  label: 'Package',              name: 'Package',         w: 180, h: 110, fill: '#f1f5f9', stroke: '#475569', desc: 'A namespace that groups related elements (tabbed folder).' },
+            uml_class:              { group: 'uml',  label: 'Class',                name: 'Class',           w: 200, h: 130, fill: '#f8fafc', stroke: '#334155', fields: ['umlAttributes', 'umlOperations'], props: { umlAttributes: '- id: int\n- name: string', umlOperations: '+ save(): void' }, desc: 'A class with three compartments: name, attributes and operations (one per line).' },
+            bpmn_start:             { group: 'bpmn', label: 'Start event',          name: 'Start',           w: 50,  h: 50,  fill: '#dcfce7', stroke: '#15803d', outside: true, desc: 'Where a process starts (thin circle).' },
+            bpmn_intermediate:      { group: 'bpmn', label: 'Intermediate event',   name: 'Event',           w: 50,  h: 50,  fill: '#fef9c3', stroke: '#a16207', outside: true, desc: 'Something that happens during a process (double circle).' },
+            bpmn_end:               { group: 'bpmn', label: 'End event',            name: 'End',             w: 50,  h: 50,  fill: '#fee2e2', stroke: '#b91c1c', outside: true, desc: 'Where a process ends (thick circle).' },
+            bpmn_task:              { group: 'bpmn', label: 'Task',                 name: 'Task',            w: 160, h: 80,  fill: '#eff6ff', stroke: '#1d4ed8', desc: 'A unit of work in a process (rounded rectangle).' },
+            bpmn_gateway_exclusive: { group: 'bpmn', label: 'Exclusive gateway',    name: 'Exclusive',       w: 60,  h: 60,  fill: '#fef3c7', stroke: '#b45309', outside: true, desc: 'Exactly one outgoing path is taken (diamond with X).' },
+            bpmn_gateway_parallel:  { group: 'bpmn', label: 'Parallel gateway',     name: 'Parallel',        w: 60,  h: 60,  fill: '#fef3c7', stroke: '#b45309', outside: true, desc: 'All outgoing paths are taken at the same time (diamond with +).' },
+            bpmn_gateway_inclusive: { group: 'bpmn', label: 'Inclusive gateway',    name: 'Inclusive',       w: 60,  h: 60,  fill: '#fef3c7', stroke: '#b45309', outside: true, desc: 'One or more outgoing paths are taken (diamond with O).' },
+            bpmn_data_object:       { group: 'bpmn', label: 'Data object',          name: 'Data',            w: 60,  h: 80,  fill: '#ffffff', stroke: '#475569', outside: true, desc: 'Information a process reads or writes (page with a folded corner).' },
+            erd_entity:             { group: 'erd',  label: 'Entity table',         name: 'Entity',          w: 200, h: 100, fill: '#ffffff', stroke: '#0f766e', fields: ['erdRows'], props: { erdRows: 'PK id\nFK user_id\ncreated_at' }, desc: 'A table: a title row and one row per attribute. Start a row with PK or FK to mark a key.' },
+        };
+        const DIAGRAM_GROUPS = [['c4', 'C4 model'], ['uml', 'UML'], ['bpmn', 'BPMN'], ['erd', 'Entity-relationship']];
+        // Multi-line text fields of the diagram shapes: [label, most characters, most lines, placeholder]. Untrusted on import.
+        const DIAGRAM_TEXT_FIELDS = {
+            c4Technology:  ['Technology', 120, 1, 'e.g. Node.js, PostgreSQL'],
+            c4Description: ['Description', 400, 6, 'What it does'],
+            umlAttributes: ['Attributes (one per line)', 2000, 40, '- id: int'],
+            umlOperations: ['Operations (one per line)', 2000, 40, '+ save(): void'],
+            erdRows:       ['Rows (one per line; PK / FK first marks a key)', 2000, 60, 'PK id\nFK user_id'],
+        };
+        function isDiagramShape(t) { return typeof t === 'string' && Object.prototype.hasOwnProperty.call(DIAGRAM_SHAPES, t); }
+        /** True for diagram notation (UML, BPMN, ERD): drawn shapes that are not model components and get no threats. */
+        function isDiagramNotation(t) { return isDiagramShape(t) && !DIAGRAM_SHAPES[t].library; }
+        /** Plain text of a diagram field: newlines kept, other control characters removed, line and length limits applied. */
+        function normalizeDiagramText(v, key) {
+            const spec = DIAGRAM_TEXT_FIELDS[key];
+            if (!spec || typeof v !== 'string') return undefined;
+            const plain = Array.from(v.slice(0, 100000).replace(/\r\n?/g, '\n')).filter(c => c === '\n' || (c >= ' ' && c !== '\u007f')).join('');
+            return plain.split('\n').slice(0, spec[2]).join('\n').slice(0, spec[1]);
+        }
+        /** The rows of an ERD table: { key: 'PK' | 'FK' | 'PK FK' | '', text }. */
+        function erdRowsOf(text) {
+            return toText(text).split('\n').filter(l => l.trim()).map(l => {
+                const m = /^\s*(PK\s*[,/]?\s*FK|FK\s*[,/]?\s*PK|PK|FK)\b\s*(.*)$/i.exec(l);
+                if (!m) return { key: '', text: l.trim() };
+                const key = /PK/i.test(m[1]) && /FK/i.test(m[1]) ? 'PK FK' : m[1].toUpperCase();
+                return { key, text: m[2].trim() };
+            });
+        }
+        /** Height a class or ERD table needs to show all its lines (other shapes: 0). */
+        function diagramMinHeight(e) {
+            const lines = (s) => Math.max(1, toText(s).split('\n').filter(l => l.trim()).length);
+            if (e.type === 'uml_class') return 28 + 8 + lines(e.umlAttributes) * 15 + 8 + lines(e.umlOperations) * 15 + 6;
+            if (e.type === 'erd_entity') return 28 + 4 + erdRowsOf(e.erdRows).length * 18 + 6;
+            return 0;
+        }
+        Object.assign(FLOWCHART_DEFAULTS, DIAGRAM_SHAPES);
+        // ── end of the diagram-shape block ──────────────────────────────────────────
         // Every shape type the palette can add; imported or dropped types outside this list are not trusted.
         const ELEMENT_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'boundary', 'boundary_line', 'step_activity', 'textbox', 'headline',
             'custom_image', 'swimlane', ...Object.keys(FLOWCHART_DEFAULTS)]);
@@ -4022,7 +4109,7 @@
         // Routes an attacker could take from an entry point to a crown jewel along the data flows.
         const ATTACK_PATH_LIMITS = { hops: 8, paths: 200, expansions: 50000 };
         // Shapes that are parts of the system being modelled (threats, suggestions, reports, Insights coverage, attack paths).
-        const MODEL_COMPONENT_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'custom_image', ...Object.keys(FLOWCHART_DEFAULTS)]);
+        const MODEL_COMPONENT_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'custom_image', ...Object.keys(FLOWCHART_DEFAULTS).filter(t => !isDiagramNotation(t))]);   // C4 yes, UML/BPMN/ERD no (see DIAGRAM_SHAPES)
         const ATTACK_PATH_NODE_TYPES = MODEL_COMPONENT_TYPES;
         const THREAT_WEIGHT = { 'Open / Unmitigated': 1, 'Partially mitigated': 0.5 };
         // model: { elements, flows, threats, nodeZones: Map(id -> zones[]), zoneCount, zoneCountOf?(element) (zones on that shape's page) }. Breadth-first over simple paths, so the
@@ -4367,7 +4454,7 @@
         function styleFamily(e) {
             const t = e && toText(e.type);
             if (!t) return null;
-            if (t.startsWith('fc_')) return 'flowchart';
+            if (t.startsWith('fc_') || isDiagramShape(t)) return 'flowchart';
             if (t === 'step_activity') return 'step';
             if (['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(t)) return 'component';
             if (t === 'textbox' || t === 'headline') return 'text';
@@ -5271,6 +5358,8 @@
             // Flowchart styling: colours as safe colour tokens, the line width as a number; anything else falls back to the shape's defaults.
             ['fcFillColor', 'fcStrokeColor'].forEach(k => { if (k in raw) { const c = safeColor(raw[k], ''); if (c) el[k] = c; else delete el[k]; } });
             if ('fcStrokeWidth' in raw) { const w = toNumber(raw.fcStrokeWidth, undefined); if (w > 0) el.fcStrokeWidth = Math.min(20, w); else delete el.fcStrokeWidth; }
+            // Diagram-shape text (C4 technology, class compartments, ERD rows): plain strings within their limits, or dropped.
+            Object.keys(DIAGRAM_TEXT_FIELDS).forEach(k => { if (k in raw) { const v = normalizeDiagramText(raw[k], k); if (v === undefined) delete el[k]; else el[k] = v; } });
             el.name = toText(raw.name);
             el.x = toNumber(raw.x, 0); el.y = toNumber(raw.y, 0);
             ['width', 'height', 'x2', 'y2', 'bendX', 'bendY', 'textOffset', 'fontSize', 'stepNumber', 'zIndex'].forEach(k => {
@@ -7643,6 +7732,7 @@
                 document.getElementById('btn-menu-minimap').addEventListener('click', () => this.toggleMinimap());
                 this.setupViewMenu();
                 this.setupStencils();
+                this.setupDiagramPalette();
                 this.setupPaletteVisibility();
                 try { this.lineJumps = localStorage.getItem('line_jumps') !== 'false'; } catch { this.lineJumps = true; }
                 document.getElementById('btn-menu-line-jumps').setAttribute('aria-checked', String(this.lineJumps));
@@ -8112,7 +8202,7 @@
                     const id = this.state.selectedElementIds[0];
                     if (!id) return null;
                     const node = this.state.elements.find(e => e.id === id);
-                    return (node && node.type && node.type.startsWith('fc_')) ? node : null;
+                    return (node && node.type && (node.type.startsWith('fc_') || isDiagramShape(node.type))) ? node : null;
                 };
 
                 // Fill color swatches
@@ -10013,6 +10103,7 @@
                     ...(type === 'custom_image' && { width: w, height: h, imageUrl: '' }),
                     ...(type === 'swimlane' && { width: w, height: h, columns: ['Column 1', 'Column 2'], rows: ['Row 1', 'Row 2'] }),
                     ...(FLOWCHART_DEFAULTS[type] && { width: w, height: h, fcFillColor: FLOWCHART_DEFAULTS[type].fill, fcStrokeColor: FLOWCHART_DEFAULTS[type].stroke, fcStrokeWidth: 2 }),
+                    ...(isDiagramShape(type) && DIAGRAM_SHAPES[type].props),   // default class compartments and ERD rows
                 };
                 return { name, width: w, height: h, props };
             }
@@ -10049,13 +10140,17 @@
                 return id;
             }
 
-            /** Fills the Type dropdown for a node (threat-modelling and flowchart types). */
+            nodeHasThreats(id) { return (this.state.threats || []).some(t => t.elementId === id); }
+
+            /** Fills the Type dropdown for a node (threat-modelling, flowchart and diagram types). */
             renderNodeTypeSelect(item) {
                 const box = document.getElementById('box-props-node-type'), sel = document.getElementById('props-node-type');
                 if (!box || !sel) return;
                 box.classList.remove('d-none');
                 sel.replaceChildren();
-                [['Threat modelling', MODEL_NODE_TYPES], ['Flowchart', Object.fromEntries(Object.entries(FLOWCHART_DEFAULTS).map(([k, v]) => [k, v.label]))]].forEach(([label, types]) => {
+                [['Threat modelling', MODEL_NODE_TYPES], ['Flowchart', Object.fromEntries(Object.entries(FLOWCHART_DEFAULTS).filter(([k]) => !isDiagramShape(k)).map(([k, v]) => [k, v.label]))],
+                    // A shape with threats is not offered the notation types (they have no threats); empty groups are left out.
+                    ...DIAGRAM_GROUPS.map(([g, title]) => [title, Object.fromEntries(Object.entries(DIAGRAM_SHAPES).filter(([k, v]) => v.group === g && !(isDiagramNotation(k) && this.nodeHasThreats(item.id))).map(([k, v]) => [k, v.label]))])].filter(([, types]) => Object.keys(types).length).forEach(([label, types]) => {
                     const g = document.createElement('optgroup'); g.label = label;
                     Object.entries(types).forEach(([value, text]) => g.appendChild(new Option(text, value)));
                     sel.appendChild(g);
@@ -10072,6 +10167,7 @@
             changeNodeType(id, newType) {
                 const el = this.state.elements.find(e => e.id === id);
                 if (!el || !SWITCHABLE_NODE_TYPES.has(el.type) || !SWITCHABLE_NODE_TYPES.has(newType) || el.type === newType) return false;
+                if (isDiagramNotation(newType) && this.nodeHasThreats(id)) return false;   // its threats would be left on a shape that has none
                 if (this.blockedByReviewMode('change shape types')) {   // a new type has a new size, so the shape moves
                     const sel = document.getElementById('props-node-type'); if (sel && sel.dataset.elementId === id) sel.value = el.type;
                     return false;
@@ -10725,6 +10821,7 @@
             libraryKeyFor(item) {
                 if (this.isFlowItem(item)) return 'flow';
                 if (item.type === 'custom_image' || toText(item.type).startsWith('fc_')) return 'process';
+                if (isDiagramShape(item.type)) return DIAGRAM_SHAPES[item.type].library || item.type;   // C4: interactor / process
                 return item.type;
             }
 
@@ -11645,7 +11742,7 @@
                     g.setAttribute('tabindex', '0');
                     g.setAttribute('role', 'button');
                     g.setAttribute('aria-pressed', this.state.selectedElementIds.includes(el.id) ? 'true' : 'false');
-                    g.setAttribute('aria-label', `${typeLabel[el.type] || el.type.replace(/^fc_/, 'Shape ').replace(/_/g, ' ')}: ${el.name || 'unnamed'}${n ? `, ${n} threat${n === 1 ? '' : 's'}` : ''}`);
+                    g.setAttribute('aria-label', `${typeLabel[el.type] || (isDiagramShape(el.type) && DIAGRAM_SHAPES[el.type].label) || el.type.replace(/^fc_/, 'Shape ').replace(/_/g, ' ')}: ${el.name || 'unnamed'}${n ? `, ${n} threat${n === 1 ? '' : 's'}` : ''}`);
                 });
                 this.dom.svg.querySelectorAll('g[data-flow-id]').forEach(g => {
                     const f = this.state.flows.find(x => x.id === g.getAttribute('data-flow-id'));
@@ -12246,7 +12343,11 @@
                     const w = node.width || (node.type === 'custom_image' ? 120 : (node.type === 'infrastructure' ? 80 : (node.type === 'step_activity' ? 260 : 240)));
                     const h = node.height || (node.type === 'custom_image' ? 120 : (node.type === 'infrastructure' ? 70 : (node.type === 'step_activity' ? 50 : 80)));
 
-                    if (node.type && node.type.startsWith('fc_')) {
+                    if (isDiagramShape(node.type)) {
+                        const d = DIAGRAM_SHAPES[node.type], fill = node.fcFillColor || d.fill;
+                        this.renderFlowchartShapeSvg(g, node.type, w, h, fill, node.fcStrokeColor || d.stroke, node.fcStrokeWidth || 2, isSelected, node);
+                        this.renderDiagramShapeText(g, node, w, h, fill, node.fcStrokeColor || d.stroke);
+                    } else if (node.type && node.type.startsWith('fc_')) {
                         const fill = node.fcFillColor || '#f5f3ff';
                         const stroke = node.fcStrokeColor || '#2563eb';
                         const sw = node.fcStrokeWidth || 2;  // absolute, not scaled
@@ -12658,7 +12759,269 @@
             }
 
 
-            renderFlowchartShapeSvg(g, type, w, h, fill, stroke, sw, isSelected) {
+            // ── Architecture & process diagram shapes (C4, UML, BPMN, ERD) ───────────
+            // Palette items are built from DIAGRAM_SHAPES (DOM nodes and textContent only), two per row in their sub-group;
+            // the preview is the shape renderer itself, so palette and canvas always match.
+            setupDiagramPalette() {
+                const ns = 'http://www.w3.org/2000/svg';
+                DIAGRAM_GROUPS.forEach(([group, groupTitle]) => {
+                    const box = document.getElementById(`palette-${group}`);
+                    if (!box) return;
+                    const grid = document.createElement('div'); grid.className = 'palette-grid-2';
+                    Object.entries(DIAGRAM_SHAPES).filter(([, d]) => d.group === group).forEach(([type, d]) => {
+                        const wrap = document.createElement('div'); wrap.className = 'palette-item-container';
+                        const item = document.createElement('div');
+                        item.className = 'palette-item palette-item-compact p-1 rounded bg-light d-flex align-items-center';
+                        item.id = `pal-dg-${type.replace(/_/g, '-')}`; item.dataset.type = type;
+                        item.setAttribute('tabindex', '0'); item.setAttribute('role', 'button'); item.setAttribute('draggable', 'true');
+                        item.setAttribute('aria-label', `Add ${d.label}`);
+                        const pw = 34, ph = 26, k = Math.min((pw - 4) / d.w, (ph - 4) / d.h);
+                        const svg = document.createElementNS(ns, 'svg');
+                        svg.setAttribute('width', pw); svg.setAttribute('height', ph); svg.setAttribute('aria-hidden', 'true');
+                        svg.setAttribute('class', 'flex-shrink-0 me-2');
+                        const g = document.createElementNS(ns, 'g');
+                        g.setAttribute('transform', `translate(${(pw - d.w * k) / 2}, ${(ph - d.h * k) / 2}) scale(${k})`);
+                        this.renderDiagramShapeSvg(g, type, d.w, d.h, d.fill, d.stroke, 1.4 / k, '', { type, ...(d.props || {}) }, true);
+                        svg.appendChild(g);
+                        const label = document.createElement('div'); label.className = 'fw-semibold small palette-compact-label'; label.textContent = d.label;
+                        item.append(svg, label);
+                        item.addEventListener('click', (ev) => { if (ev.detail > 1) return; this.instantiateNewCanvasElementNode(type); });   // the 2nd click of a double-click adds nothing
+                        item.addEventListener('dragstart', (ev) => { ev.dataTransfer.setData('text/plain', type); ev.dataTransfer.effectAllowed = 'copy'; });
+                        const pop = document.createElement('div'); pop.className = 'palette-popover-panel';
+                        const title = document.createElement('div'); title.className = 'popover-header-title'; title.style.color = '#adb5bd';
+                        title.textContent = d.label;
+                        const sub = document.createElement('div'); sub.className = 'small fw-bold text-white-50 mb-1';
+                        sub.textContent = `${groupTitle}: ${d.library ? 'a model component (gets threats)' : 'diagram notation (no threats)'}`;
+                        const text = document.createElement('div'); text.className = 'small text-light opacity-75 mb-2'; text.textContent = d.desc;
+                        pop.append(title, sub, text);
+                        wrap.append(item, pop);
+                        grid.appendChild(wrap);
+                    });
+                    box.appendChild(grid);
+                });
+                // Properties panel: the text fields, one undo step per committed edit.
+                Object.entries(DIAGRAM_TEXT_FIELDS).forEach(([key, spec]) => {
+                    const input = document.getElementById(`props-dg-${key}`);
+                    if (!input) return;
+                    input.maxLength = spec[1]; input.placeholder = spec[3];
+                    input.addEventListener('change', () => {
+                        const node = this.state.elements.find(e => e.id === input.dataset.elementId);
+                        if (!node || !isDiagramShape(node.type)) return;
+                        const v = normalizeDiagramText(input.value, key);
+                        if ((node[key] || '') === v) return;
+                        node[key] = v;
+                        // A class or table grows to show all its lines (not in review mode: the layout is frozen there).
+                        const need = diagramMinHeight(node);
+                        if (need > (node.height || 0) && !this.state.reviewMode) node.height = need;
+                        this.logEvent('CHANGE', `Changed the ${spec[0].replace(/ \(.*$/, '').toLowerCase()} of "${node.name}"`);
+                        this.renderSvgDiagramElements(); this.saveSessionToLocalStorage();
+                    });
+                });
+            }
+
+            /** Shows the text fields that `item`'s diagram type has (none for flowchart shapes) with its values. */
+            renderDiagramFieldsInspector(item) {
+                const box = document.getElementById('box-props-diagram');
+                const fields = (isDiagramShape(item.type) && DIAGRAM_SHAPES[item.type].fields) || [];
+                box.classList.toggle('d-none', !fields.length);
+                box.querySelectorAll('[data-dg-field]').forEach(row => {
+                    const key = row.dataset.dgField, on = fields.includes(key);
+                    row.classList.toggle('d-none', !on);
+                    const input = document.getElementById(`props-dg-${key}`);
+                    input.dataset.elementId = on ? item.id : '';
+                    if (on) input.value = toText(item[key]);
+                });
+            }
+
+            /** Lines of `str` that fit `maxW` px at font size `size` (approximate glyph width), words kept whole where possible. */
+            wrapDiagramText(str, maxW, size) {
+                const per = Math.max(3, Math.floor(maxW / (size * 0.58)));
+                const out = [];
+                toText(str).split('\n').forEach(par => {
+                    let line = '';
+                    par.split(/\s+/).filter(Boolean).forEach(word => {
+                        while (word.length > per) { if (line) { out.push(line); line = ''; } out.push(word.slice(0, per)); word = word.slice(per); }
+                        if (!word) return;
+                        if (!line) line = word;
+                        else if ((line + ' ' + word).length <= per) line += ' ' + word;
+                        else { out.push(line); line = word; }
+                    });
+                    if (line) out.push(line);
+                });
+                return out;
+            }
+            /** One line cut to `maxW` px with an ellipsis. */
+            fitDiagramText(str, maxW, size) {
+                const per = Math.max(3, Math.floor(maxW / (size * 0.58))), t = toText(str);
+                return t.length > per ? `${t.slice(0, per - 1)}…` : t;
+            }
+
+            /** Compartments of a UML class (divider positions and lines), shared by the outline and its text. */
+            umlClassLayout(node) {
+                const lines = (s) => toText(s).split('\n').filter(l => l.trim());
+                const attrs = lines(node.umlAttributes), ops = lines(node.umlOperations);
+                const y1 = 28, y2 = y1 + 10 + Math.max(1, attrs.length) * 15;
+                return { attrs, ops, y1, y2 };
+            }
+
+            /**
+             * Draws the outline of a diagram shape into `g` (each part marked with data-dg-part). `node` gives the class
+             * compartments; `preview` is the small palette icon (no canvas-theme adjustments).
+             */
+            renderDiagramShapeSvg(g, type, w, h, fill, stroke, sw, glow, node = null, preview = false) {
+                const ns = 'http://www.w3.org/2000/svg', d = DIAGRAM_SHAPES[type];
+                const grp = document.createElementNS(ns, 'g');
+                grp.setAttribute('data-dg-shape', type);
+                if (glow) grp.setAttribute('style', glow);
+                // Lines drawn straight on the canvas (the actor figure) follow a dark canvas while they keep the default colour.
+                const lineStroke = (!preview && this.canvasTheme === 'dark' && stroke === d.stroke) ? '#cbd5e1' : stroke;
+                const add = (tag, attrs, part) => {
+                    const el = document.createElementNS(ns, tag);
+                    Object.entries(attrs).forEach(([k, v]) => el.setAttribute(k, v));
+                    if (part) el.setAttribute('data-dg-part', part);
+                    grp.appendChild(el); return el;
+                };
+                const paint = { fill, stroke, 'stroke-width': sw, 'stroke-linejoin': 'round' };
+                const line = { fill: 'none', stroke, 'stroke-width': sw, 'stroke-linecap': 'round' };
+                const r = Math.min(w, h) / 2, cx = w / 2, cy = h / 2;
+                const page = (f) => {   // a page with its top-right corner folded
+                    add('path', { d: `M0,0 H${w - f} L${w},${f} V${h} H0 Z`, ...paint }, 'page');
+                    add('path', { d: `M${w - f},0 V${f} H${w} Z`, fill: stroke, 'fill-opacity': 0.18, stroke, 'stroke-width': sw, 'stroke-linejoin': 'round' }, 'fold');
+                };
+                switch (type) {
+                    case 'c4_person': {
+                        const hr = Math.min(w, h) * 0.2;
+                        add('rect', { x: 0, y: hr * 1.6, width: w, height: h - hr * 1.6, rx: Math.min(w, h) * 0.16, ...paint }, 'body');
+                        add('circle', { cx, cy: hr, r: Math.max(1, hr - sw / 2), ...paint }, 'head');
+                        break;
+                    }
+                    case 'c4_system': case 'c4_container': case 'c4_component': case 'c4_external':
+                        add('rect', { x: 0, y: 0, width: w, height: h, rx: 8, ...paint }, 'box');
+                        break;
+                    case 'uml_actor': {
+                        add('rect', { x: 0, y: 0, width: w, height: h, fill: 'transparent', stroke: 'none' });   // hit area
+                        const fh = preview ? h : h - 20, hr = Math.min(w * 0.18, fh * 0.14), neck = hr * 2 + sw, hip = fh * 0.62, arms = neck + (hip - neck) * 0.3;
+                        add('path', { d: `M${cx},${neck} V${hip} M${w * 0.12},${arms} H${w * 0.88} M${cx},${hip} L${w * 0.18},${fh - sw} M${cx},${hip} L${w * 0.82},${fh - sw}`, ...line, stroke: lineStroke }, 'figure');
+                        add('circle', { cx, cy: hr + sw / 2, r: hr, fill, stroke: lineStroke, 'stroke-width': sw }, 'head');
+                        break;
+                    }
+                    case 'uml_usecase':
+                        add('ellipse', { cx, cy, rx: Math.max(1, cx - sw / 2), ry: Math.max(1, cy - sw / 2), ...paint }, 'ellipse');
+                        break;
+                    case 'uml_note': page(Math.min(w, h) * 0.22); break;
+                    case 'uml_package': {
+                        const th = Math.min(22, h * 0.2), tw = Math.min(w * 0.45, 90);
+                        add('rect', { x: 0, y: 0, width: tw, height: th + sw, ...paint }, 'tab');
+                        add('rect', { x: 0, y: th, width: w, height: h - th, ...paint }, 'body');
+                        break;
+                    }
+                    case 'uml_class': {
+                        const L = this.umlClassLayout(node || { type, ...(d.props || {}) });
+                        add('rect', { x: 0, y: 0, width: w, height: h, ...paint }, 'box');
+                        [L.y1, L.y2].forEach(y => { if (y < h) add('line', { x1: 0, y1: y, x2: w, y2: y, ...line }, 'divider'); });
+                        break;
+                    }
+                    case 'bpmn_start': add('circle', { cx, cy, r: Math.max(1, r - sw), ...paint, 'stroke-width': Math.max(1, sw * 0.6) }, 'ring'); break;
+                    case 'bpmn_intermediate':
+                        add('circle', { cx, cy, r: Math.max(1, r - sw), ...paint, 'stroke-width': sw * 0.8 }, 'ring');
+                        add('circle', { cx, cy, r: Math.max(1, r - sw - Math.max(3, r * 0.16)), fill: 'none', stroke, 'stroke-width': sw * 0.8 }, 'inner-ring');
+                        break;
+                    case 'bpmn_end': add('circle', { cx, cy, r: Math.max(1, r - sw * 1.1), ...paint, 'stroke-width': sw * 2.2 }, 'ring'); break;
+                    case 'bpmn_task': add('rect', { x: 0, y: 0, width: w, height: h, rx: Math.min(12, h / 4), ...paint }, 'box'); break;
+                    case 'bpmn_gateway_exclusive': case 'bpmn_gateway_parallel': case 'bpmn_gateway_inclusive': {
+                        add('polygon', { points: `${cx},0 ${w},${cy} ${cx},${h} 0,${cy}`, ...paint }, 'diamond');
+                        const m = { ...line, 'stroke-width': sw * 1.6 };
+                        if (type === 'bpmn_gateway_exclusive') add('path', { d: `M${w * 0.36},${h * 0.36} L${w * 0.64},${h * 0.64} M${w * 0.64},${h * 0.36} L${w * 0.36},${h * 0.64}`, ...m }, 'marker-x');
+                        else if (type === 'bpmn_gateway_parallel') add('path', { d: `M${cx},${h * 0.28} V${h * 0.72} M${w * 0.28},${cy} H${w * 0.72}`, ...m }, 'marker-plus');
+                        else add('circle', { cx, cy, r: Math.min(w, h) * 0.19, ...m, 'stroke-width': sw * 1.3 }, 'marker-o');
+                        break;
+                    }
+                    case 'bpmn_data_object': page(Math.min(w, h) * 0.3); break;
+                    case 'erd_entity':
+                        add('rect', { x: 0, y: 0, width: w, height: h, ...paint }, 'box');
+                        add('rect', { x: 0, y: 0, width: w, height: Math.min(28, h), fill: stroke, stroke, 'stroke-width': sw }, 'header');
+                        break;
+                    default:
+                        add('rect', { x: 0, y: 0, width: w, height: h, ...paint }, 'box');
+                }
+                g.appendChild(grp);
+            }
+
+            /** The name and other text of a diagram shape (SVG text nodes, textContent only). */
+            renderDiagramShapeText(g, node, w, h, fill, stroke) {
+                const ns = 'http://www.w3.org/2000/svg', type = node.type, d = DIAGRAM_SHAPES[type];
+                const lum = (c) => { const v = /^#[0-9a-f]{6}$/i.test(c) ? c : '#ffffff'; return 0.299 * parseInt(v.slice(1, 3), 16) + 0.587 * parseInt(v.slice(3, 5), 16) + 0.114 * parseInt(v.slice(5, 7), 16); };
+                const text = (x, y, str, { size = 12, weight = '600', anchor = 'middle', on = fill, role = 'name', outside = false } = {}) => {
+                    const t = document.createElementNS(ns, 'text');
+                    t.setAttribute('x', x); t.setAttribute('y', y);
+                    t.setAttribute('dominant-baseline', 'middle'); t.setAttribute('text-anchor', anchor);
+                    t.setAttribute('font-size', `${size}px`); t.setAttribute('font-weight', weight);
+                    t.setAttribute('font-family', 'Inter, system-ui, sans-serif');
+                    t.setAttribute('pointer-events', 'none');
+                    if (role) t.setAttribute('data-dg-text', outside ? 'outside' : role);
+                    if (outside) { t.setAttribute('fill', node.isDisabled ? '#6c757d' : '#212529'); t.setAttribute('class', 'dg-outside-label'); }
+                    else {
+                        // Same rule as flowchart labels: dark text on pale fills, white text on dark fills, on both canvas themes.
+                        const dark = lum(on) < 150;
+                        t.setAttribute('fill', dark ? '#f8fafc' : '#0f172a'); t.setAttribute('class', 'fc-shape-label');
+                        if (dark) t.setAttribute('data-dark-fill', 'true');
+                    }
+                    t.textContent = str;
+                    g.appendChild(t); return t;
+                };
+                // rows: [text, size, weight, role], centred between top and bottom; rows that do not fit are left out.
+                const block = (rows, top, bottom) => {
+                    const lh = (s) => s * 1.35;
+                    const shown = [];
+                    let used = 0;
+                    rows.forEach(r => { if (!shown.length || used + lh(r[1]) <= bottom - top - 4) { shown.push(r); used += lh(r[1]); } });
+                    let y = top + (bottom - top - used) / 2;
+                    shown.forEach(([str, size, weight, role]) => { text(w / 2, y + lh(size) / 2, str, { size, weight, role }); y += lh(size); });
+                };
+                const name = toText(node.name);
+                if (d.outside) {   // BPMN events, gateways and data objects: the name below the shape
+                    this.wrapDiagramText(name, Math.max(w + 60, 100), 11).slice(0, 2).forEach((l, i) => text(w / 2, h + 12 + i * 14, l, { size: 11, outside: true }));
+                    return;
+                }
+                if (type === 'uml_actor') { text(w / 2, h - 8, this.fitDiagramText(name, w + 40, 11), { size: 11, outside: true }); return; }
+                if (type.startsWith('c4_')) {
+                    const top = type === 'c4_person' ? Math.min(w, h) * 0.32 : 0;
+                    const tech = d.fields.includes('c4Technology') ? toText(node.c4Technology).trim() : '';
+                    const rows = this.wrapDiagramText(name, w - 16, 13).slice(0, 2).map(l => [l, 13, '700', 'name']);
+                    rows.push([this.fitDiagramText(`[${d.kind}${tech ? `: ${tech}` : ''}]`, w - 12, 10), 10, '400', 'kind']);
+                    this.wrapDiagramText(node.c4Description, w - 16, 10).forEach(l => rows.push([l, 10, '400', 'desc']));
+                    block(rows, top, h);
+                    return;
+                }
+                if (type === 'uml_class') {
+                    const L = this.umlClassLayout(node);
+                    text(w / 2, L.y1 / 2, this.fitDiagramText(name, w - 12, 12), { size: 12, weight: '700' });
+                    const rows = (list, y0, role, limit) => list.forEach((l, i) => {
+                        const y = y0 + 5 + i * 15 + 7.5;
+                        if (y + 6 <= limit) text(8, y, this.fitDiagramText(l, w - 14, 11), { size: 11, weight: '400', anchor: 'start', role });
+                    });
+                    rows(L.attrs, L.y1, 'attr', Math.min(L.y2, h));
+                    rows(L.ops, L.y2, 'op', h);
+                    return;
+                }
+                if (type === 'erd_entity') {
+                    const head = Math.min(28, h);
+                    text(w / 2, head / 2, this.fitDiagramText(name, w - 12, 12), { size: 12, weight: '700', on: stroke });
+                    const rows = erdRowsOf(node.erdRows), x = rows.some(r => r.key) ? 44 : 8;
+                    rows.forEach((r, i) => {
+                        const y = head + 4 + i * 18 + 9;
+                        if (y + 7 > h) return;
+                        if (r.key) text(8, y, r.key, { size: r.key === 'PK FK' ? 8 : 10, weight: '700', anchor: 'start', role: '' }).setAttribute('data-erd-key', r.key);
+                        text(x, y, this.fitDiagramText(r.text, w - x - 6, 11), { size: 11, weight: r.key.includes('PK') ? '600' : '400', anchor: 'start', role: 'row' });
+                    });
+                    return;
+                }
+                // Use case, note, package, task: the name, wrapped, in the middle of the shape (below a package's tab).
+                const top = type === 'uml_package' ? Math.min(22, h * 0.2) : 0;
+                block(this.wrapDiagramText(name, w - (type === 'uml_usecase' ? 30 : 16), 12).map(l => [l, 12, '600', 'name']), top, h);
+            }
+
+            renderFlowchartShapeSvg(g, type, w, h, fill, stroke, sw, isSelected, node = null) {
                 const ns = 'http://www.w3.org/2000/svg';
 
                 // ── Always-on fill-hue glow ───────────────────────────────────────────
@@ -12692,6 +13055,7 @@
                 const selRingStyle = isSelected
                     ? `filter: drop-shadow(0 8px 22px rgba(${gr},${gg},${gb},0.75)) drop-shadow(0 0 10px rgba(${gr},${gg},${gb},0.60));`
                     : ambientGlow;
+                if (isDiagramShape(type)) { this.renderDiagramShapeSvg(g, type, w, h, fill, stroke, sw, selRingStyle, node); return; }
 
                 let el;
 
@@ -12949,6 +13313,7 @@
                 this.updateFormatPainterButton();
                 const boxIds = ['box-props-node-type', 'box-props-standard-name', 'box-props-status-state', 'box-props-icon-customization', 'box-props-flow-routing', 'box-props-step-activity', 'box-props-text-offset', 'box-props-textbox-textarea', 'box-props-headline-customization', 'box-props-security', 'box-props-zdepth', 'box-props-custom-image', 'box-props-isometric-toggle', 'box-props-swimlane', 'box-props-flowchart'];
                 boxIds.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('d-none'); });
+                document.getElementById('box-props-diagram').classList.add('d-none');
 
                 const textContentInput = document.getElementById('props-input-text-content');
                 if (textContentInput) textContentInput.disabled = false;
@@ -12986,8 +13351,9 @@
                     return;
                 }
 
-                if (targetItem.type && targetItem.type.startsWith('fc_')) {
+                if (targetItem.type && (targetItem.type.startsWith('fc_') || isDiagramShape(targetItem.type))) {
                     document.getElementById('box-props-flowchart').classList.remove('d-none');
+                    this.renderDiagramFieldsInspector(targetItem);   // C4 / class / ERD text fields
                     document.getElementById('box-props-zdepth').classList.remove('d-none');
                     // Populate label
                     const fcLabel = document.getElementById('props-fc-label');
@@ -13382,7 +13748,7 @@
                 boxThreats.classList.add('d-none');
 
                 const canHaveThreats = ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(targetItem.type) || toText(targetItem.type).startsWith('fc_') || !targetItem.type;
-                if (!canHaveThreats) return;
+                if (!canHaveThreats && !MODEL_COMPONENT_TYPES.has(targetItem.type)) return;   // diagram shapes: only C4 ones have threats
 
                 const associatedThreats = (this.state.threats || []).filter(t => t.elementId === targetItem.id);
 
@@ -13439,13 +13805,13 @@
                 const count = this.state.selectedElementIds.length;
                 let item = count === 1 ? this.state.elements.find(e => e.id === this.state.selectedElementIds[0]) : (this.state.selectedFlowId ? this.state.flows.find(f => f.id === this.state.selectedFlowId) : null);
 
-                if (!item || ['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(item.type)) {
+                if (!item || ['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(item.type) || isDiagramNotation(item.type)) {
                     this.dom.suggestEmpty.classList.remove('d-none'); this.dom.suggestContent.classList.add('d-none'); return;
                 }
                 this.dom.suggestEmpty.classList.add('d-none'); this.dom.suggestContent.classList.remove('d-none');
                 this.dom.lblMatrixElementType.innerText = item.type ? item.type.toUpperCase() : 'COMMUNICATION STREAM';
 
-                const typeKey = item.type || 'flow';
+                const typeKey = (isDiagramShape(item.type) && DIAGRAM_SHAPES[item.type].library) || item.type || 'flow';   // C4 shapes use their library
                 let categories = [];
                 if (typeKey === 'process' || typeKey === 'custom_image' || typeKey.startsWith('fc_')) {   // flowchart shapes use the process library
                     categories = ['Spoofing', 'Tampering', 'Repudiation', 'Information Disclosure', 'Denial of Service', 'Elevation of Privilege'];

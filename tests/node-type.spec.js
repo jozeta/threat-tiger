@@ -22,7 +22,7 @@ test('changing process to data store keeps name, notes, centre, flows, threats a
   await select(page, 'p');
   await expect(page.locator('#props-node-type')).toBeVisible();
   await expect(page.locator('#props-node-type')).toHaveValue('process');
-  expect(await page.locator('#props-node-type optgroup').evaluateAll((g) => g.map((x) => x.label))).toEqual(['Threat modelling', 'Flowchart']);
+  expect(await page.locator('#props-node-type optgroup').evaluateAll((g) => g.map((x) => x.label))).toEqual(['Threat modelling', 'Flowchart', 'C4 model']);   // a node with threats: no UML/BPMN/ERD (notation without threats)
   await page.selectOption('#props-node-type', 'datastore');
   const d = await el(page, 'p');
   expect(d.type).toBe('datastore');
