@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-bZBoOdKMcS5yt7sq7mp9CCN30WlGOGtFmGeVZKK+cSU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YQ51vvEzsy0AkA2Wi0bDxYzdJUflQokBADCnEmLfmyw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1881,8 +1881,24 @@
                         </div>
                     </div>
 
+                    <div class="accordion-item" data-palette-group="attack">
+                        <h2 class="accordion-header" id="headingAttackPaths">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseAttackPaths" aria-expanded="false"
+                                aria-controls="collapseAttackPaths">
+                                Attack Paths &amp; Trees
+                            </button>
+                        </h2>
+                        <div id="collapseAttackPaths" class="accordion-collapse collapse"
+                            aria-labelledby="headingAttackPaths">
+                            <div class="accordion-body d-flex flex-column gap-1" id="palette-attack-body">
+                                <!-- Attack-path and attack-tree shapes -->
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Text Items -->
-                    <div class="accordion-item">
+                    <div class="accordion-item" data-palette-group="text">
                         <h2 class="accordion-header" id="headingTextItems">
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
                                 data-bs-target="#collapseTextItems" aria-expanded="false"
@@ -1957,7 +1973,7 @@
                     </div>
 
                     <!-- Data Nodes & Icons -->
-                    <div class="accordion-item">
+                    <div class="accordion-item" data-palette-group="data-nodes">
                         <h2 class="accordion-header" id="headingDataNodes">
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
                                 data-bs-target="#collapseDataNodes" aria-expanded="false"
@@ -2009,6 +2025,8 @@
                                             infrastructure layers.</div>
                                     </div>
                                 </div>
+                                <!-- Ready-made nodes (icon, type and subtype preset) -->
+                                <div id="palette-ready-nodes" class="d-flex flex-column gap-1" data-palette-group="ready-nodes" role="group" aria-label="Ready-made nodes"></div>
                                 <!-- Cloud stencils -->
                                 <div id="stencil-sets" class="d-flex flex-column gap-1 mt-1" role="group" aria-label="Cloud stencils"></div>
                             </div>
@@ -2016,7 +2034,7 @@
                     </div>
 
                     <!-- Flowchart Diagram Items -->
-                    <div class="accordion-item">
+                    <div class="accordion-item" data-palette-group="flowchart">
                         <h2 class="accordion-header" id="headingFlowchart">
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
                                 data-bs-target="#collapseFlowchart" aria-expanded="false"
@@ -2280,6 +2298,32 @@
                                             server, a container, a package or any other physical or deployable unit.
                                             Common in system/architecture diagrams.</div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="accordion-item" data-palette-group="diagrams">
+                        <h2 class="accordion-header" id="headingOtherDiagrams">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#collapseOtherDiagrams" aria-expanded="false"
+                                aria-controls="collapseOtherDiagrams">
+                                Architecture &amp; Process Diagrams
+                            </button>
+                        </h2>
+                        <div id="collapseOtherDiagrams" class="accordion-collapse collapse"
+                            aria-labelledby="headingOtherDiagrams">
+                            <div class="accordion-body d-flex flex-column gap-1" id="palette-diagrams-body">
+                                <div class="palette-subgroup d-flex flex-column gap-1" data-palette-group="c4" id="palette-c4" role="group" aria-label="C4 model">
+                                    <div class="palette-subgroup-title small fw-bold text-muted">C4 model</div>
+                                </div>
+                                <div class="palette-subgroup d-flex flex-column gap-1" data-palette-group="uml" id="palette-uml" role="group" aria-label="UML">
+                                    <div class="palette-subgroup-title small fw-bold text-muted">UML</div>
+                                </div>
+                                <div class="palette-subgroup d-flex flex-column gap-1" data-palette-group="bpmn" id="palette-bpmn" role="group" aria-label="BPMN">
+                                    <div class="palette-subgroup-title small fw-bold text-muted">BPMN</div>
+                                </div>
+                                <div class="palette-subgroup d-flex flex-column gap-1" data-palette-group="erd" id="palette-erd" role="group" aria-label="Entity-relationship">
+                                    <div class="palette-subgroup-title small fw-bold text-muted">Entity-relationship</div>
                                 </div>
                             </div>
                         </div>
@@ -3459,13 +3503,22 @@
     </div>
 
     <div class="modal fade" id="modal-settings" tabindex="-1" aria-labelledby="modal-settings-title" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-dark text-light">
                     <h5 class="modal-title fs-6 fw-bold" id="modal-settings-title"><i class="bi bi-gear me-2" aria-hidden="true"></i>Settings</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-3">
+                    <h6 class="fw-bold mb-1"><i class="bi bi-palette me-1" aria-hidden="true"></i>Palette</h6>
+                    <p class="small text-muted mb-2">Choose what the palette and the icon picker show. Hiding something only tidies the palette in this browser:
+                        shapes already on the canvas stay as they are.</p>
+                    <div class="row g-2 mb-3" id="settings-palette">
+                        <fieldset class="col-12 col-sm-4"><legend class="small fw-semibold mb-1 fs-6">Palette sections</legend><div id="settings-palette-groups"></div></fieldset>
+                        <fieldset class="col-12 col-sm-4"><legend class="small fw-semibold mb-1 fs-6">Icon sets</legend><div id="settings-stencil-sets"></div></fieldset>
+                        <fieldset class="col-12 col-sm-4"><legend class="small fw-semibold mb-1 fs-6">Icon picker groups</legend><div id="settings-icon-groups"></div></fieldset>
+                    </div>
+                    <hr class="my-3">
                     <h6 class="fw-bold mb-1"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Git sync (GitHub / GitLab)</h6>
                     <p class="small text-muted mb-2">Save this model to a file in a repository and load it from there with the sync button next to ☰.
                         Server, repository, branch and file are saved in the model and its exports, so a colleague only needs their own token.
@@ -5190,6 +5243,9 @@
         }
 
         // ── Cloud stencils ───────────────────────────────────────────────────────────
+        // Palette sections and sub-groups that Settings → Palette can hide ([data-palette-group] in the palette).
+        const PALETTE_GROUPS = [['attack', 'Attack paths & trees'], ['text', 'Text items'], ['data-nodes', 'Data nodes & icons'], ['ready-nodes', 'Ready-made nodes'],
+            ['flowchart', 'Flowchart items'], ['diagrams', 'Architecture & process diagrams'], ['c4', 'C4 model'], ['uml', 'UML'], ['bpmn', 'BPMN'], ['erd', 'Entity-relationship']];
         const STENCIL_SETS = [['fluent', 'Devices & security'], ['brands', 'Security & DevOps brands'], ['devicon', 'Tech & OS logos'], ['aws', 'AWS'], ['azure', 'Azure'], ['entra', 'Microsoft Entra'], ['gcp', 'Google Cloud'], ['k8s', 'Kubernetes']];
         const STENCIL_ID = /^[a-z0-9]+:[\w.-]{1,120}$/i;
         const STENCIL_DRAG_TYPE = 'application/x-threat-tiger-stencil';
@@ -7587,6 +7643,7 @@
                 document.getElementById('btn-menu-minimap').addEventListener('click', () => this.toggleMinimap());
                 this.setupViewMenu();
                 this.setupStencils();
+                this.setupPaletteVisibility();
                 try { this.lineJumps = localStorage.getItem('line_jumps') !== 'false'; } catch { this.lineJumps = true; }
                 document.getElementById('btn-menu-line-jumps').setAttribute('aria-checked', String(this.lineJumps));
                 document.getElementById('btn-menu-line-jumps').addEventListener('click', () => this.toggleLineJumps());
@@ -9046,6 +9103,7 @@
             }
 
             openGitSettings(message = '', variant = 'muted') {
+                this.renderPaletteSettings();
                 const cfg = normalizeGitSync(this.state.gitSync) || { provider: 'github', host: GIT_PROVIDERS.github.host, repo: '', branch: 'main', path: 'threat-model.json' };
                 document.getElementById('git-provider').value = cfg.provider;
                 document.getElementById('git-host').value = cfg.host;
@@ -9624,12 +9682,51 @@
                 }));
                 document.querySelectorAll('#menu-view-items [data-stencil-toggle]').forEach(item => item.addEventListener('click', () => {
                     const id = item.dataset.stencilToggle;
-                    if (this.hiddenStencilSets.has(id)) this.hiddenStencilSets.delete(id); else this.hiddenStencilSets.add(id);
-                    try { localStorage.setItem('hidden_stencil_sets', JSON.stringify([...this.hiddenStencilSets])); } catch { /* view setting only */ }
-                    const box = document.querySelector(`[data-stencil-set="${id}"]`);
-                    if (box) box.classList.toggle('d-none', this.hiddenStencilSets.has(id));
-                    this.syncViewMenu();
+                    this.setStencilSetHidden(id, !this.hiddenStencilSets.has(id));
                 }));
+            }
+            // Shows or hides one icon set in the palette (View menu and Settings → Palette).
+            setStencilSetHidden(id, hidden) {
+                if (hidden) this.hiddenStencilSets.add(id); else this.hiddenStencilSets.delete(id);
+                try { localStorage.setItem('hidden_stencil_sets', JSON.stringify([...this.hiddenStencilSets])); } catch { /* view setting only */ }
+                const box = document.querySelector(`.stencil-set[data-stencil-set="${id}"]`);
+                if (box) box.classList.toggle('d-none', this.hiddenStencilSets.has(id));
+                this.syncViewMenu();
+                const sw = document.querySelector(`#settings-stencil-sets input[data-settings-stencil="${id}"]`);
+                if (sw) sw.checked = !this.hiddenStencilSets.has(id);
+            }
+
+            // ── Palette visibility (Settings → Palette) ─────────────────────────────
+            // Hidden palette groups and icon-picker groups are view settings of this browser, never part of the model.
+            setupPaletteVisibility() {
+                const read = (key, valid) => { try { return new Set(JSON.parse(localStorage.getItem(key) || '[]').filter(x => typeof x === 'string' && valid.has(x))); } catch { return new Set(); } };
+                this.hiddenPaletteGroups = read('hidden_palette_groups', new Set(PALETTE_GROUPS.map(g => g[0])));
+                this.hiddenIconGroups = read('hidden_icon_groups', new Set(Object.keys(ICON_LIBRARY)));
+                this.applyPaletteVisibility();
+            }
+            applyPaletteVisibility() {
+                document.querySelectorAll('#paletteAccordion [data-palette-group]').forEach(el => el.classList.toggle('d-none', this.hiddenPaletteGroups.has(el.dataset.paletteGroup)));
+            }
+            // Fills the three switch lists in Settings → Palette; each switch applies at once.
+            renderPaletteSettings() {
+                const sw = (id, label, on, data, onChange) => {
+                    const wrap = document.createElement('div'); wrap.className = 'form-check form-switch small mb-1';
+                    const input = document.createElement('input'); input.type = 'checkbox'; input.className = 'form-check-input'; input.id = id; input.checked = on;
+                    Object.assign(input.dataset, data);
+                    input.addEventListener('change', () => onChange(input.checked));
+                    const lab = document.createElement('label'); lab.className = 'form-check-label'; lab.htmlFor = id; lab.textContent = label;
+                    wrap.append(input, lab); return wrap;
+                };
+                const saveSet = (key, set) => { try { localStorage.setItem(key, JSON.stringify([...set])); } catch { /* view setting only */ } };
+                document.getElementById('settings-palette-groups').replaceChildren(...PALETTE_GROUPS.map(([id, title], i) => sw(`set-pal-group-${i}`, title, !this.hiddenPaletteGroups.has(id), { paletteGroup: id }, on => {
+                    if (on) this.hiddenPaletteGroups.delete(id); else this.hiddenPaletteGroups.add(id);
+                    saveSet('hidden_palette_groups', this.hiddenPaletteGroups); this.applyPaletteVisibility();
+                })));
+                document.getElementById('settings-stencil-sets').replaceChildren(...STENCIL_SETS.map(([id, title], i) => sw(`set-pal-stencil-${i}`, title, !this.hiddenStencilSets.has(id), { settingsStencil: id }, on => this.setStencilSetHidden(id, !on))));
+                document.getElementById('settings-icon-groups').replaceChildren(...Object.keys(ICON_LIBRARY).map((name, i) => sw(`set-pal-icons-${i}`, name, !this.hiddenIconGroups.has(name), { iconGroup: name }, on => {
+                    if (on) this.hiddenIconGroups.delete(name); else this.hiddenIconGroups.add(name);
+                    saveSet('hidden_icon_groups', this.hiddenIconGroups);
+                })));
             }
 
             // Loads vendor/stencils/<id>.js once (a <script>, so it also works from file://).
@@ -11464,7 +11561,7 @@
                     seen.add(val);
                     parent.appendChild(new Option(labelText, val, false, item.icon === val));
                 };
-                const groups = ICON_GROUPS_FOR_TYPE[item.type] || ICON_GROUPS_FOR_TYPE.default;
+                const groups = (ICON_GROUPS_FOR_TYPE[item.type] || ICON_GROUPS_FOR_TYPE.default).filter(name => !(this.hiddenIconGroups && this.hiddenIconGroups.has(name)));   // Settings → Palette
                 const candidates = [...baseOptions.map(o => [o.val, o.label]), ...groups.flatMap(name => ICON_LIBRARY[name])];
                 const wanted = this.templateSubtypesFor(this.libraryKeyFor(item));
                 const mapped = [];
@@ -14067,7 +14164,7 @@
                 clearTimeout(this.saveTimer); this.saveTimer = null;
                 clearTimeout(this.viewSaveTimer); this.viewSaveTimer = null;   // a pending view save would write canvas_view back
                 const prefixes = ['stride_workbench_', 'threat_tiger_', 'canvas_'];
-                const prefs = ['license_accepted', 'hidden_tabs', 'hidden_stencil_sets', 'line_jumps', 'minimap_visible', 'title_block', GIT_SECRETS_KEY, GIT_STATE_KEY, GIT_APPROVED_KEY];
+                const prefs = ['license_accepted', 'hidden_tabs', 'hidden_stencil_sets', 'hidden_palette_groups', 'hidden_icon_groups', 'line_jumps', 'minimap_visible', 'title_block', GIT_SECRETS_KEY, GIT_STATE_KEY, GIT_APPROVED_KEY];
                 if (this.gitTokens) this.gitTokens.clear();
                 Object.keys(localStorage).filter(k => prefixes.some(p => k.startsWith(p)) || prefs.includes(k)).forEach(k => localStorage.removeItem(k));
                 if (SnapshotStore.db) { SnapshotStore.db.close(); SnapshotStore.db = null; }
