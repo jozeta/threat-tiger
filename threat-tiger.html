@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YQ51vvEzsy0AkA2Wi0bDxYzdJUflQokBADCnEmLfmyw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-xKWdLK0T1FHDI8E9+AYLViQe6ckLjKF6h2hLKtHD3xY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1340,6 +1340,14 @@
         .stencil-item { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 2px; border: 1px solid #e9ecef; border-radius: 6px; background: #fff; font-size: 9px; line-height: 1.1; text-align: center; color: #343a40; overflow: hidden; }
         .stencil-item:hover, .stencil-item:focus-visible { border-color: #0d6efd; background: #eef4ff; }
         .stencil-item img { width: 28px; height: 28px; object-fit: contain; }
+        .ready-node-heading { font-size: 11px; font-weight: 700; color: #6c757d; margin: 4px 2px 2px; }
+        .stencil-grid.ready-node-grid { max-height: none; overflow: visible; }
+        .ready-node-item { min-height: 44px; min-width: 44px; cursor: grab; }
+        .ready-node-item > .bi { font-size: 20px; line-height: 24px; }
+        .ready-node-process > .bi { color: #0d6efd; }
+        .ready-node-datastore > .bi { color: #b58100; }
+        .ready-node-interactor > .bi { color: #198754; }
+        .ready-node-infrastructure > .bi { color: #0a7d94; }
         .stencil-item span { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; width: 100%; }
         .layer-row { display: flex; align-items: center; gap: 2px; padding: 2px 4px; border: 1px solid #e9ecef; border-radius: 6px; background: #fff; }
         .layer-row.active { border-color: #0d6efd; background: #eef4ff; }
@@ -4811,6 +4819,18 @@
         /** Icon -> subtypes. An entry matches the icon itself or its variants ("bi-database" matches "bi-database-lock",
          *  not "bi-databases"); the first match wins, so specific entries come first. */
         const ICON_SUBTYPES = [
+            // Icons of the 'Attack & threat', 'Security artefacts' and 'Identity & directory' picker groups (before any prefix they share)
+            ['bi-virus', ['threat-actor']], ['bi-virus2', ['threat-actor']], ['bi-hammer', ['threat-actor']], ['bi-file-earmark-binary', ['executable', 'threat-actor']],
+            ['bi-usb-drive-fill', ['removable-media', 'threat-actor']], ['bi-cookie', ['secrets', 'identity']], ['bi-crosshair', ['threat-actor']],
+            ['bi-shield-x', ['security-control']], ['bi-flag-fill', ['monitoring']], ['bi-ticket-perforated', ['monitoring']],
+            ['bi-journal-check', ['config', 'security-control']], ['bi-clipboard-data', ['logs', 'documents']], ['bi-bandaid', ['supply-chain']],
+            ['bi-file-earmark-lock2', ['threat-actor']], ['bi-joystick', ['threat-actor']], ['bi-door-open', ['threat-actor']], ['bi-mask', ['threat-actor']],
+            ['bi-person-fill-exclamation', ['threat-actor', 'human']], ['bi-diagram-2-fill', ['threat-actor', 'bot']],
+            ['bi-journal-text', ['logs']], ['bi-file-earmark-ruled', ['supply-chain']], ['bi-award', ['identity']], ['bi-hexagon', ['security-control', 'monitoring']],
+            ['bi-box2', ['security-control']], ['bi-binoculars', ['security-control']],
+            ['bi-building-lock', ['identity']], ['bi-building-gear', ['identity', 'host']], ['bi-diagram-2', ['identity']], ['bi-sliders2', ['config', 'identity']],
+            ['bi-file-earmark-person', ['identity', 'config']], ['bi-hourglass-split', ['identity']], ['bi-buildings', ['identity', 'cloud-host']],
+            ['bi-app-indicator', ['identity']], ['bi-shield-fill-check', ['identity']], ['bi-cloud-check-fill', ['identity', 'cloud-host']],
             ['bi-bucket', ['object-storage']], ['bi-braces-asterisk', ['api']], ['bi-database', ['database']], ['bi-braces', ['nosql']],
             ['bi-inboxes', ['queue']], ['bi-arrow-left-right', ['queue']], ['bi-memory', ['cache']],
             ['bi-safe', ['secrets']], ['bi-safe2', ['secrets']], ['bi-key', ['secrets']],
@@ -4874,9 +4894,10 @@
                 'bi-diagram-3-fill': ['nosql'], 'bi-archive-fill': ['object-storage'], 'bi-activity': ['logs'],
                 'bi-link-45deg': ['ledger'], 'bi-person-lock': ['identity'], 'bi-incognito': ['open-access'], 'bi-bug-fill': ['open-access'], 'bi-calendar-check': ['scheduler']
             },
-            process: { 'bi-cloud-haze2-fill': ['web', 'cdn'], 'bi-pc-display': ['admin'], 'bi-file-earmark-code': ['script', 'config'] },
+            process: { 'bi-cloud-haze2-fill': ['web', 'cdn'], 'bi-pc-display': ['admin'], 'bi-file-earmark-code': ['script', 'config'],
+                'bi-person-fill': ['identity'], 'bi-people-fill': ['identity'] },   // directory objects (Identity & directory icons)
             interactor: {
-                'bi-laptop': ['admin', 'human'], 'bi-terminal-fill': ['admin', 'human'], 'bi-cpu': ['iot'], 'bi-device-ssd-fill': ['iot'],
+                'bi-laptop': ['admin', 'human'], 'bi-terminal-fill': ['admin', 'human'], 'bi-pc-display-horizontal': ['human'], 'bi-cpu': ['iot'], 'bi-device-ssd-fill': ['iot'],
                 'bi-cloud-arrow-up-fill': ['partner-system'], 'bi-browser-safari': ['mobile', 'human'], 'bi-window': ['human'],
                 'bi-pass': ['human'], 'bi-fingerprint': ['human', 'biometric'], 'bi-smartwatch': ['mobile', 'human'],
                 'bi-link-45deg': ['partner-system', 'integration'], 'bi-share': ['partner-system', 'integration'], 'bi-broadcast': ['partner-system', 'integration'],
@@ -5188,13 +5209,33 @@
                 ['bi-person-workspace', 'Employee'], ['bi-headset', 'Support agent'], ['bi-phone', 'Mobile app'], ['bi-tablet', 'Tablet'],
                 ['bi-robot', 'Bot / automation'], ['bi-building', 'Organisation / partner'], ['bi-shop', 'Merchant'], ['bi-bank', 'Bank'],
                 ['bi-credit-card', 'Payment'], ['bi-truck', 'Logistics / IoT device']
+            ],
+            'Attack & threat': [
+                ['bi-hammer', 'Exploit'], ['bi-file-earmark-binary', 'Payload'], ['bi-virus', 'Malware'], ['bi-file-earmark-lock2', 'Ransomware'],
+                ['bi-envelope-exclamation', 'Phishing email'], ['bi-joystick', 'C2 server'], ['bi-key-fill', 'Credential theft'],
+                ['bi-cookie', 'Stolen token / cookie'], ['bi-door-open', 'Backdoor'], ['bi-person-fill-exclamation', 'Insider threat'],
+                ['bi-diagram-2-fill', 'Botnet'], ['bi-usb-drive-fill', 'Removable-media attack'], ['bi-mask', 'Threat actor'], ['bi-crosshair', 'Target']
+            ],
+            'Security artefacts': [
+                ['bi-shield-x', 'Vulnerability (CVE)'], ['bi-flag-fill', 'Indicator of compromise'], ['bi-journal-text', 'Log / audit trail'],
+                ['bi-exclamation-octagon', 'Alert'], ['bi-ticket-perforated', 'Incident ticket'], ['bi-file-earmark-ruled', 'SBOM'],
+                ['bi-award', 'Certificate'], ['bi-safe-fill', 'Secret'], ['bi-journal-check', 'Policy'], ['bi-clipboard-data', 'Evidence'],
+                ['bi-hexagon', 'Honeypot'], ['bi-box2', 'Sandbox'], ['bi-binoculars', 'Scanner'], ['bi-bandaid', 'Patch']
+            ],
+            'Identity & directory': [
+                ['bi-person-fill', 'User'], ['bi-people-fill', 'Group'], ['bi-pc-display-horizontal', 'Computer'], ['bi-building-lock', 'Domain'],
+                ['bi-building-gear', 'Domain controller'], ['bi-diagram-2', 'Organisational unit (OU)'], ['bi-sliders2', 'Group policy (GPO)'],
+                ['bi-patch-check-fill', 'Certificate authority'], ['bi-file-earmark-person', 'Certificate template'], ['bi-person-badge-fill', 'Service account'],
+                ['bi-hourglass-split', 'Session'], ['bi-buildings', 'Tenant'], ['bi-app-indicator', 'App / service principal'], ['bi-shield-fill-check', 'Role'],
+                ['bi-cloud-check-fill', 'Managed identity']
             ]
         };
         const ICON_GROUPS_FOR_TYPE = {
-            interactor: ['People & clients', 'Security & identity', 'Web & network'],
-            datastore: ['Databases & storage', 'Security & identity', 'Infrastructure & cloud'],
+            interactor: ['People & clients', 'Security & identity', 'Web & network', 'Identity & directory', 'Attack & threat'],
+            datastore: ['Databases & storage', 'Security & identity', 'Infrastructure & cloud', 'Security artefacts'],
             infrastructure: Object.keys(ICON_LIBRARY),
-            default: ['Servers & compute', 'Code & development', 'Web & network', 'Infrastructure & cloud', 'Security & identity', 'Databases & storage']
+            default: ['Servers & compute', 'Code & development', 'Web & network', 'Infrastructure & cloud', 'Security & identity', 'Databases & storage',
+                'Identity & directory', 'Security artefacts', 'Attack & threat']
         };
         /** Icons that were renamed or never existed in Bootstrap Icons. */
         const ICON_ALIASES = { 'bi-cloud-arrow-right-fill': 'bi-cloud-arrow-up-fill' };
@@ -5248,6 +5289,45 @@
             ['flowchart', 'Flowchart items'], ['diagrams', 'Architecture & process diagrams'], ['c4', 'C4 model'], ['uml', 'UML'], ['bpmn', 'BPMN'], ['erd', 'Entity-relationship']];
         const STENCIL_SETS = [['fluent', 'Devices & security'], ['brands', 'Security & DevOps brands'], ['devicon', 'Tech & OS logos'], ['aws', 'AWS'], ['azure', 'Azure'], ['entra', 'Microsoft Entra'], ['gcp', 'Google Cloud'], ['k8s', 'Kubernetes']];
         const STENCIL_ID = /^[a-z0-9]+:[\w.-]{1,120}$/i;
+        // Ready-made nodes (Palette → Data Nodes & Icons): normal components with a preset name, icon and subtypes.
+        // The subtypes travel as stencilTags, so the tailored threats stay when the node is renamed.
+        const READY_NODE_DRAG_TYPE = 'application/x-threat-tiger-ready-node';
+        const READY_NODE_GROUPS = [['network', 'Network'], ['security', 'Security tooling'], ['platform', 'Platforms & devices']];
+        const READY_NODES = [
+            // [id, group, short label, type, icon, name, subtypes]
+            ['firewall', 'network', 'Firewall', 'infrastructure', 'bi-bricks', 'Firewall', ['network-device', 'security-control']],
+            ['waf', 'network', 'WAF', 'process', 'bi-shield-check', 'Web Application Firewall (WAF)', ['security-control', 'network-device', 'web']],
+            ['load-balancer', 'network', 'Load balancer', 'infrastructure', 'bi-signpost-split', 'Load Balancer', ['network-device']],
+            ['api-gateway', 'network', 'API gateway', 'process', 'bi-router-fill', 'API Gateway', ['api', 'network-device']],
+            ['vpn-gateway', 'network', 'VPN gateway', 'infrastructure', 'bi-shield-lock', 'VPN Gateway', ['vpn', 'network-device']],
+            ['ids-ips', 'network', 'IDS / IPS', 'infrastructure', 'bi-shield-exclamation', 'IDS / IPS Sensor', ['security-control', 'monitoring', 'network-device']],
+            ['reverse-proxy', 'network', 'Reverse proxy', 'infrastructure', 'bi-hdd-network', 'Reverse Proxy', ['network-device', 'web']],
+            ['dns', 'network', 'DNS', 'infrastructure', 'bi-globe2', 'DNS Server', ['dns', 'network-device']],
+            ['cdn', 'network', 'CDN', 'infrastructure', 'bi-cloud-haze2', 'CDN', ['cdn']],
+            ['switch', 'network', 'Switch', 'infrastructure', 'bi-ethernet', 'Network Switch', ['network-device']],
+            ['router', 'network', 'Router', 'infrastructure', 'bi-router', 'Router', ['network-device']],
+            ['wifi-ap', 'network', 'Wi-Fi AP', 'infrastructure', 'bi-wifi', 'Wi-Fi Access Point', ['network-device']],
+            ['siem', 'security', 'SIEM', 'datastore', 'bi-activity', 'SIEM', ['logs', 'monitoring', 'security-control']],
+            ['edr', 'security', 'EDR agent', 'process', 'bi-radar', 'EDR Agent', ['security-control', 'monitoring']],
+            ['secrets-vault', 'security', 'Secrets vault', 'datastore', 'bi-safe', 'Secrets Vault', ['secrets']],
+            ['hsm', 'security', 'HSM', 'infrastructure', 'bi-safe2', 'Hardware Security Module (HSM)', ['secrets', 'security-control']],
+            ['idp', 'security', 'Identity provider', 'process', 'bi-person-badge', 'Identity Provider', ['identity']],
+            ['pam', 'security', 'PAM', 'process', 'bi-key', 'Privileged Access Management (PAM)', ['identity', 'security-control', 'admin', 'secrets']],
+            ['message-queue', 'platform', 'Message queue', 'datastore', 'bi-inboxes', 'Message Queue', ['queue']],
+            ['cache', 'platform', 'Cache', 'datastore', 'bi-memory', 'Cache', ['cache']],
+            ['object-storage', 'platform', 'Object storage', 'datastore', 'bi-bucket', 'Object Storage Bucket', ['object-storage']],
+            ['backup', 'platform', 'Backup', 'datastore', 'bi-archive-fill', 'Backup Storage', ['object-storage']],
+            ['container', 'platform', 'Container', 'process', 'bi-box-seam', 'Container', ['container']],
+            ['kubernetes', 'platform', 'Kubernetes', 'infrastructure', 'bi-grid-3x3-gap', 'Kubernetes Cluster', ['container']],
+            ['serverless', 'platform', 'Serverless function', 'process', 'bi-lightning-charge', 'Serverless Function', ['serverless']],
+            ['llm', 'platform', 'AI / LLM model', 'process', 'bi-stars', 'AI / LLM Model', ['llm']],
+            ['ci-cd', 'platform', 'CI/CD pipeline', 'process', 'bi-gear-wide-connected', 'CI/CD Pipeline', ['ci-cd', 'supply-chain']],
+            ['git-repo', 'platform', 'Git repository', 'datastore', 'bi-git', 'Git Repository', ['ci-cd', 'supply-chain']],
+            ['mail-server', 'platform', 'Mail server', 'process', 'bi-envelope-at', 'Mail Server', ['email']],
+            ['workstation', 'platform', 'Workstation', 'infrastructure', 'bi-laptop', 'Workstation', ['workstation']],
+            ['mobile-app', 'platform', 'Mobile app', 'interactor', 'bi-phone', 'Mobile App', ['mobile']],
+            ['iot-device', 'platform', 'IoT device', 'infrastructure', 'bi-broadcast-pin', 'IoT Device', ['iot']]
+        ].map(([id, group, label, type, icon, name, subtypes]) => Object.freeze({ id, group, label, type, icon, name, subtypes: Object.freeze(subtypes) }));
         const STENCIL_DRAG_TYPE = 'application/x-threat-tiger-stencil';
         const STENCIL_ICON = /^data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+$/;
         // A placed stencil's icon: only a base64 SVG data URL (shown as <img>, where SVG cannot run script).
@@ -7643,6 +7723,7 @@
                 document.getElementById('btn-menu-minimap').addEventListener('click', () => this.toggleMinimap());
                 this.setupViewMenu();
                 this.setupStencils();
+                this.setupReadyNodes();
                 this.setupPaletteVisibility();
                 try { this.lineJumps = localStorage.getItem('line_jumps') !== 'false'; } catch { this.lineJumps = true; }
                 document.getElementById('btn-menu-line-jumps').setAttribute('aria-checked', String(this.lineJumps));
@@ -8341,6 +8422,8 @@
                     const coords = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
                     const stencil = ev.dataTransfer.getData(STENCIL_DRAG_TYPE);
                     if (stencil) { this.dropStencilNode(stencil, coords.x, coords.y); return; }
+                    const ready = ev.dataTransfer.getData(READY_NODE_DRAG_TYPE);
+                    if (ready) { this.addReadyNode(ready, coords.x, coords.y); return; }   // an id not in READY_NODES adds nothing
                     const type = ev.dataTransfer.getData('text/plain');
                     // Only palette items: text dragged in from elsewhere (another page, a file) is not a shape type.
                     if (ELEMENT_TYPES.has(type)) this.instantiateNewCanvasElementNode(type, coords.x, coords.y);
@@ -9782,6 +9865,58 @@
                 }).catch(() => {
                     body.replaceChildren(Object.assign(document.createElement('div'), { className: 'extra-small text-danger p-1', textContent: 'Could not load this icon set. Open the app from its folder (with vendor/stencils) and try again.' }));
                 });
+            }
+
+            // ── Ready-made nodes (Palette → Data Nodes & Icons) ─────────────────────
+            // A collapsible box like the icon sets: one small icon grid per group, built from READY_NODES (DOM nodes, no innerHTML).
+            setupReadyNodes() {
+                const root = document.getElementById('palette-ready-nodes');
+                if (!root) return;
+                const box = document.createElement('div'); box.className = 'stencil-set border rounded';
+                const toggle = document.createElement('button');
+                toggle.type = 'button'; toggle.className = 'btn btn-sm btn-light w-100 text-start fw-semibold stencil-set-toggle ready-nodes-toggle d-flex align-items-center';
+                toggle.setAttribute('aria-expanded', 'false'); toggle.setAttribute('aria-controls', 'palette-ready-nodes-body');
+                const label = document.createElement('span'); label.textContent = 'Ready-made nodes';
+                const chev = document.createElement('i'); chev.className = 'bi bi-chevron-down ms-auto'; chev.setAttribute('aria-hidden', 'true');
+                toggle.append(label, chev);
+                const body = document.createElement('div'); body.className = 'stencil-set-body p-1 d-none'; body.id = 'palette-ready-nodes-body';
+                READY_NODE_GROUPS.forEach(([groupId, title]) => {
+                    const head = document.createElement('div'); head.className = 'ready-node-heading'; head.id = `ready-nodes-head-${groupId}`; head.textContent = title;
+                    const grid = document.createElement('div'); grid.className = 'stencil-grid ready-node-grid';
+                    grid.setAttribute('role', 'group'); grid.setAttribute('aria-labelledby', head.id);
+                    grid.append(...READY_NODES.filter(n => n.group === groupId).map(n => {
+                        const b = document.createElement('button');
+                        b.type = 'button'; b.className = `stencil-item ready-node-item ready-node-${n.type}`;
+                        b.dataset.readyNode = n.id;
+                        b.title = `${n.name} (${MODEL_NODE_TYPES[n.type]})`;
+                        b.setAttribute('aria-label', `${n.name} (${MODEL_NODE_TYPES[n.type]})`);
+                        const icon = document.createElement('i'); icon.className = `bi ${safeIcon(n.icon)}`; icon.setAttribute('aria-hidden', 'true');
+                        const span = document.createElement('span'); span.textContent = n.label;
+                        b.append(icon, span);
+                        b.addEventListener('click', (ev) => { if (ev.detail > 1) return; this.addReadyNode(n.id); });   // the 2nd click of a double-click adds nothing
+                        b.draggable = true;   // drag onto the canvas like the other palette items
+                        b.addEventListener('dragstart', (ev) => {
+                            ev.dataTransfer.setData(READY_NODE_DRAG_TYPE, n.id);
+                            ev.dataTransfer.effectAllowed = 'copy';
+                        });
+                        return b;
+                    }));
+                    body.append(head, grid);
+                });
+                toggle.addEventListener('click', () => {
+                    const open = body.classList.contains('d-none');
+                    body.classList.toggle('d-none', !open); toggle.setAttribute('aria-expanded', String(open));
+                    chev.className = `bi ${open ? 'bi-chevron-up' : 'bi-chevron-down'} ms-auto`;
+                });
+                box.append(toggle, body);
+                root.replaceChildren(box);
+            }
+
+            // Adds a ready-made node by its id (click, or a drop at x/y): a normal component, one undo step. Unknown ids add nothing.
+            addReadyNode(id, x = null, y = null) {
+                const n = READY_NODES.find(r => r.id === id);
+                if (!n) return null;
+                return this.instantiateNewCanvasElementNode(n.type, x, y, { name: n.name, icon: safeIcon(n.icon), stencilTags: n.subtypes.filter(t => SUBTYPE_LABELS[t]) });
             }
 
             // Places a stencil as a normal component of the icon's type, carrying its icon and subtypes (one undo step).
