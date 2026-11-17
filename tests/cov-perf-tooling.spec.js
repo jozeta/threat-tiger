@@ -78,7 +78,7 @@ function lintInlineApp() {
   const body = scripts[scripts.length - 1][1];
   const offset = html.slice(0, scripts[scripts.length - 1].index).split('\n').length;   // line of <script>
   let out;
-  try { out = execFileSync(ESLINT, ['--stdin', '--stdin-filename', 'threat-tiger-inline.js', '-f', 'json'], { cwd: C.ROOT, input: '/* global bootstrap */\n' + body, encoding: 'utf8' }); }
+  try { out = execFileSync(ESLINT, ['--stdin', '--stdin-filename', 'threat-tiger-inline.js', '-f', 'json'], { cwd: C.ROOT, input: '/* global bootstrap */\n' + body, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }); }
   catch (e) { out = e.stdout; }   // eslint exits 1 when it finds errors
   return JSON.parse(out)[0].messages.map((m) => ({ line: m.line - 2 + offset, rule: m.ruleId, severity: m.severity, message: m.message }));
 }
