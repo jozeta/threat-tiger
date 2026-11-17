@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-g++8C7alvUVQRRGMCTWf3GmGjxSj0sK7nC+nfm/Ay5M='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-u9q6tIh/dLvSs9ICLi+lOwuGg4bCoC05w2Ri34Bqo/4='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1371,6 +1371,26 @@
         #btn-format-painter:disabled { opacity: .3; }
         #btn-format-painter[aria-pressed="true"] { background: #dbeafe; color: #1d4ed8; }
         #canvas-title-block { position: absolute; right: 1rem; bottom: 1rem; z-index: 9; pointer-events: none; filter: drop-shadow(0 .125rem .25rem rgba(0,0,0,.12)); }
+        /* ── Title block & legend: corner positions and the free-floating legend ── */
+        #canvas-title-block.tb-pos-top-left { top: 3.25rem; left: 1rem; right: auto; bottom: auto; }
+        #canvas-title-block.tb-pos-top-right { top: 1rem; right: 1rem; left: auto; bottom: auto; }
+        #canvas-title-block.tb-pos-bottom-left { bottom: 4.5rem; left: 1rem; right: auto; top: auto; }
+        #canvas-title-block.tb-pos-bottom-right { bottom: 1rem; right: 1rem; left: auto; top: auto; }
+        :has(> #minimap:not(.d-none)) > #canvas-title-block.tb-pos-top-right { top: calc(2rem + 140px); }
+        @media print { #canvas-title-block.tb-pos-top-left { top: 1rem; } #canvas-title-block.tb-pos-bottom-left { bottom: 1rem; } }
+        #canvas-legend-float { pointer-events: none; filter: drop-shadow(0 .125rem .25rem rgba(0,0,0,.12)); }
+        #canvas-legend-float.legend-movable { pointer-events: auto; cursor: move; touch-action: none; }
+        #canvas-legend-float.legend-movable:focus { outline: none; }
+        #canvas-legend-float.legend-movable:focus-visible .title-block > rect:first-child { stroke: #0d6efd; stroke-width: 2.5; }
+        #canvas-legend-float.legend-dragging { cursor: grabbing; opacity: .85; }
+        @media (min-width: 576px) { #legend-items { max-height: min(46vh, 420px); overflow-y: auto; } }
+        @media (pointer: coarse), (max-width: 575.98px) { #modal-legend .btn, #modal-legend .form-select, #modal-legend .form-control { min-height: 44px; } }
+        #legend-items .legend-item-row { min-height: 44px; }
+        #legend-items .legend-item-row .form-check-input { width: 1.25rem; height: 1.25rem; margin: 0; flex: none; }
+        #legend-items .legend-item-symbol { flex: none; width: 28px; height: 20px; }
+        #legend-items .legend-item-reset { min-width: 44px; min-height: 38px; }
+        #modal-legend .legend-opt { min-height: 44px; }
+        /* ── end title block & legend ── */
         @media print { #canvas-title-block:not(.d-none) { display: block !important; } }
         /* Phones: the block would sit behind the canvas controls and cover most of the canvas (it stays in PNG and print). */
         @media screen and (max-width: 575.98px) { #canvas-title-block { display: none !important; } }
@@ -1751,7 +1771,7 @@
                     <li class="dropdown-submenu"><button class="dropdown-item d-flex align-items-center submenu-toggle" type="button" id="btn-menu-view" aria-haspopup="true" aria-expanded="false" aria-controls="menu-view-items"><i class="bi bi-window-sidebar me-2"></i>View<i class="bi bi-chevron-right ms-auto submenu-chevron" aria-hidden="true"></i></button>
                         <ul class="dropdown-menu submenu shadow" id="menu-view-items" aria-label="View">
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-review-mode" role="menuitemcheckbox" aria-checked="false" title="Freeze the layout while threats and properties stay editable (saved with the model)"><i class="bi bi-lock me-2"></i>Review mode (freeze layout)<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
-                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-title-block" role="menuitemcheckbox" aria-checked="false"><i class="bi bi-card-heading me-2"></i>Show title block and legend<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center" type="button" id="btn-menu-title-block" aria-haspopup="dialog"><i class="bi bi-card-heading me-2"></i>Title block &amp; legend…</button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-minimap" role="menuitemcheckbox" aria-checked="false"><i class="bi bi-map me-2"></i>Show minimap<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-line-jumps" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-bezier2 me-2"></i>Line jumps where flows cross<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-panel-left" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-layout-sidebar me-2"></i>Show left panel<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
@@ -2727,6 +2747,7 @@
                         <rect id="selection-marquee" fill="rgba(13, 110, 253, 0.08)" stroke="#0d6efd" stroke-width="1.5"
                             stroke-dasharray="3,3" visibility="hidden" style="pointer-events: none;" />
                     </g>
+                    <g id="canvas-legend-float" class="d-none" aria-label="Title block and legend"></g>
                 </g>
             </svg>
 
@@ -3935,6 +3956,78 @@
             </div>
         </div>
     </div>
+
+    <!-- ── Title block & legend dialog ── -->
+    <div class="modal fade" id="modal-legend" tabindex="-1" aria-labelledby="modal-legend-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-light">
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-legend-title"><i class="bi bi-card-heading me-2" aria-hidden="true"></i>Title block &amp; legend</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <p class="small text-muted mb-2">Shown on the canvas, in the PNG export and when printing. Saved with the model; changes apply straight away and closing the dialog makes them one undo step.</p>
+                    <div class="row g-2 mb-2">
+                        <div class="col-12 col-sm-6">
+                            <div class="form-check form-switch legend-opt d-flex align-items-center gap-2 mb-0">
+                                <input class="form-check-input" type="checkbox" role="switch" id="legend-show-title-block">
+                                <label class="form-check-label small" for="legend-show-title-block">Show the title block <span class="text-muted">(title and diagram details)</span></label>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <div class="form-check form-switch legend-opt d-flex align-items-center gap-2 mb-0">
+                                <input class="form-check-input" type="checkbox" role="switch" id="legend-show-legend">
+                                <label class="form-check-label small" for="legend-show-legend">Show the legend</label>
+                            </div>
+                        </div>
+                        <div class="col-12 col-sm-6">
+                            <label class="form-label small fw-semibold mb-1" for="legend-title">Legend title</label>
+                            <input type="text" class="form-control form-control-sm" id="legend-title" maxlength="60" placeholder="No heading" autocomplete="off">
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <span class="form-label small fw-semibold mb-1 d-block" id="legend-columns-label">Columns</span>
+                            <div class="btn-group btn-group-sm w-100" role="radiogroup" aria-labelledby="legend-columns-label">
+                                <input type="radio" class="btn-check" name="legend-columns" id="legend-columns-1" value="1" autocomplete="off">
+                                <label class="btn btn-outline-secondary" for="legend-columns-1">One</label>
+                                <input type="radio" class="btn-check" name="legend-columns" id="legend-columns-2" value="2" autocomplete="off">
+                                <label class="btn btn-outline-secondary" for="legend-columns-2">Two</label>
+                            </div>
+                        </div>
+                        <div class="col-6 col-sm-3">
+                            <label class="form-label small fw-semibold mb-1" for="legend-position">Position</label>
+                            <select class="form-select form-select-sm" id="legend-position">
+                                <option value="top-left">Top left</option>
+                                <option value="top-right">Top right</option>
+                                <option value="bottom-left">Bottom left</option>
+                                <option value="bottom-right">Bottom right</option>
+                                <option value="free">Free-floating</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check legend-opt d-flex align-items-center gap-2 mb-0">
+                                <input class="form-check-input" type="checkbox" id="legend-locked" aria-describedby="legend-locked-help">
+                                <label class="form-check-label small" for="legend-locked">Lock position</label>
+                            </div>
+                            <div class="form-text mt-0" id="legend-locked-help">Free-floating: drag the block on the canvas (or focus it and use the arrow keys). Locked, it stays put and clicks go through to the shapes under it.</div>
+                        </div>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                        <h6 class="fw-bold small mb-0 me-auto" id="legend-items-heading">Items on this page</h6>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="legend-items-show-all">Show all</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="legend-items-hide-all">Hide all</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="legend-items-reset-labels">Reset labels</button>
+                    </div>
+                    <p class="small text-muted mb-2">Everything the page draws: tick what the legend shows and edit its text. New kinds of items are shown until you untick them.</p>
+                    <ul class="list-unstyled mb-0 border rounded" id="legend-items" aria-labelledby="legend-items-heading"></ul>
+                </div>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-dismiss="modal">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- ── end title block & legend dialog ── -->
 
     <div class="modal fade" id="modal-settings" tabindex="-1" aria-labelledby="modal-settings-title" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
@@ -6220,6 +6313,42 @@
             return { level: pick(r.level, DIAGRAM_LEVELS), version: clip(r.version, 40), status: pick(r.status, DIAGRAM_STATUSES), author: clip(r.author, 60), date: realDate ? date : '' };
         }
 
+        // ── Title block & legend settings (saved in the model as `legend`) ──────────
+        // { showTitleBlock, showLegend, title, columns: 1|2, position: corner|'free', x, y (free: model coordinates,
+        //   x relative to the page's area), locked, items: { <itemKey>: { show, label } } }. Items keep only what the
+        // user changed: an item missing from `items` is shown with its automatic label. Untrusted on import.
+        const LEGEND_POSITIONS = ['top-left', 'top-right', 'bottom-left', 'bottom-right', 'free'];
+        const LEGEND_ITEM_KEY = /^[A-Za-z0-9_:+.-]{1,170}$/;
+        const LEGEND_LIMITS = { title: 60, label: 80, items: 500, coord: 1e6 };
+        function defaultLegend() {
+            return { showTitleBlock: false, showLegend: false, title: 'Legend', columns: 2, position: 'bottom-right', x: 0, y: 0, locked: false, items: {} };
+        }
+        function normalizeLegend(raw) {
+            const r = isPlainObject(raw) ? raw : {}, d = defaultLegend();
+            const clip = (v, n) => toText(v).replace(/\s+/g, ' ').trim().slice(0, n);
+            const coord = (v) => { const n = toNumber(v, 0); return Math.round(Math.max(-LEGEND_LIMITS.coord, Math.min(LEGEND_LIMITS.coord, n))); };
+            const items = {};
+            if (isPlainObject(r.items)) {
+                let n = 0;
+                for (const key of Object.keys(r.items)) {
+                    if (n >= LEGEND_LIMITS.items) break;
+                    const v = r.items[key];
+                    if (!LEGEND_ITEM_KEY.test(key) || !isPlainObject(v)) continue;
+                    const show = v.show !== false, label = clip(v.label, LEGEND_LIMITS.label);
+                    if (show && !label) continue;   // the default: nothing to keep
+                    items[key] = { show, label }; n++;
+                }
+            }
+            return {
+                showTitleBlock: r.showTitleBlock === true, showLegend: r.showLegend === true,
+                title: Object.hasOwn(r, 'title') ? clip(r.title, LEGEND_LIMITS.title) : d.title,
+                columns: r.columns === 1 ? 1 : 2,
+                position: LEGEND_POSITIONS.includes(r.position) ? r.position : d.position,
+                x: coord(r.x), y: coord(r.y), locked: r.locked === true, items
+            };
+        }
+        // ── end title block & legend settings ──
+
         // ── Git sync (GitHub / GitLab) ───────────────────────────────────────────
         // The model stores where it syncs to (no secrets). The access token is kept per server in localStorage,
         // encrypted with AES-GCM under a key derived from the user's passphrase (PBKDF2-SHA-256), and in memory once unlocked.
@@ -6443,6 +6572,7 @@
                 activeUser: toText(raw.activeUser),
                 activityLog, elements, flows, threats, mitigations, layers, activeLayerId, pages, activePageId,
                 reviewMode: raw.reviewMode === true, diagramInfo: normalizeDiagramInfo(raw.diagramInfo),
+                legend: normalizeLegend(raw.legend),   // title block & legend settings
                 gitSync: normalizeGitSync(raw.gitSync),
                 selectedElementIds: [], selectedFlowId: null
             };
@@ -6491,6 +6621,7 @@
                 this.layers = [{ ...DEFAULT_LAYER }]; this.activeLayerId = 'main';
                 this.pages = [{ ...DEFAULT_PAGE }]; this.activePageId = 'p1';
                 this.reviewMode = false; this.diagramInfo = emptyDiagramInfo(); this.gitSync = null;
+                this.legend = defaultLegend();   // title block & legend settings
                 this.selectedElementIds = []; this.selectedFlowId = null;
             }
 
@@ -6909,7 +7040,7 @@
                     }
                 });
 
-                return { minX, minY, maxX, maxY };
+                return this.legendExtendBounds({ minX, minY, maxX, maxY });   // a free-floating legend is part of the drawing
             }
 
             applyViewMode() {
@@ -7137,7 +7268,7 @@
             // Every logged model change is one undo step. The activity log itself is not rewound.
             serializeModel() {
                 const s = this.state;
-                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [], layers: s.layers || [{ ...DEFAULT_LAYER }], activeLayerId: s.activeLayerId, pages: s.pages || [{ ...DEFAULT_PAGE }], diagramInfo: s.diagramInfo || emptyDiagramInfo(), gitSync: s.gitSync || null });
+                return JSON.stringify({ projectTitle: s.projectTitle, scopeDefinition: s.scopeDefinition, participants: s.participants, elements: s.elements, flows: s.flows, threats: s.threats, mitigations: s.mitigations || [], layers: s.layers || [{ ...DEFAULT_LAYER }], activeLayerId: s.activeLayerId, pages: s.pages || [{ ...DEFAULT_PAGE }], diagramInfo: s.diagramInfo || emptyDiagramInfo(), gitSync: s.gitSync || null, legend: s.legend || defaultLegend() });
             }
 
             // New elements and flows go to the active layer (runs before every undo point and render).
@@ -7904,8 +8035,11 @@
                     const minY = bbox.minY - padding;
                     const maxX = bbox.maxX + padding;
                     const maxY = bbox.maxY + padding;
-                    // Title block and legend (when shown): below the diagram, right-aligned.
-                    const titleBlock = this.titleBlockVisible ? this.buildTitleBlockSvg() : null;
+                    // Title block and legend in a corner: above or below the diagram, at its left or right. Free-floating,
+                    // it is part of the drawing already (and of the bounds above).
+                    const legendPos = this.legendSettings().position;
+                    const titleBlock = this.titleBlockVisible && legendPos !== 'free' ? this.buildTitleBlockSvg() : null;
+                    const tbTop = !!titleBlock && legendPos.startsWith('top'), tbLeft = legendPos.endsWith('left');
                     const diagramH = Math.max(100, maxY - minY);
                     const width = Math.max(100, maxX - minX, titleBlock ? titleBlock.width + 40 : 0);
                     const height = diagramH + (titleBlock ? titleBlock.height + 20 : 0);
@@ -7921,10 +8055,10 @@
                     // 5. Setup clone dimensions & viewbox
                     clone.setAttribute('width', width);
                     clone.setAttribute('height', height);
-                    clone.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
+                    clone.setAttribute('viewBox', `${minX} ${tbTop ? minY - titleBlock.height - 20 : minY} ${width} ${height}`);
                     if (titleBlock) {
                         titleBlock.node.setAttribute('class', 'export-title-block');
-                        titleBlock.node.setAttribute('transform', `translate(${minX + width - titleBlock.width - 20}, ${minY + diagramH})`);
+                        titleBlock.node.setAttribute('transform', `translate(${tbLeft ? minX + 20 : minX + width - titleBlock.width - 20}, ${tbTop ? minY - titleBlock.height : minY + diagramH})`);
                         clone.appendChild(titleBlock.node);
                     }
 
@@ -8415,8 +8549,7 @@
                 document.getElementById('btn-menu-review-mode').addEventListener('click', () => this.toggleReviewMode());
                 this.setupGitSync();
                 document.getElementById('review-mode-badge').addEventListener('click', () => this.toggleReviewMode(false));
-                try { this.titleBlockVisible = localStorage.getItem('title_block') === 'true'; } catch { this.titleBlockVisible = false; }
-                document.getElementById('btn-menu-title-block').addEventListener('click', () => this.toggleTitleBlock());
+                this.setupLegendDialog();   // ☰ → View → Title block & legend…
                 document.getElementById('btn-flow-clear-points').addEventListener('click', () => this.clearFlowBendPoints());
                 this.setupMinimap();
                 this.applySvgViewportTransformations();   // show the remembered view straight away
@@ -10184,59 +10317,187 @@
                 });
             }
 
-            // View setting (no undo step): title block and legend in the canvas corner, PNG and print.
+            // ── Title block & legend ─────────────────────────────────────────────────────
+            // Saved in the model (state.legend, see normalizeLegend). In a corner it is an overlay on the canvas
+            // (#canvas-title-block, never in the way of clicks); free-floating it is drawn inside the canvas
+            // (#canvas-legend-float, in model coordinates, so it pans and zooms with the diagram and is part of the
+            // PNG and print). It is not a shape: no selection, threats, alignment or layers.
+
+            /** The model's legend settings, repaired if something replaced them with an invalid value. */
+            legendSettings() {
+                if (!this.state) return defaultLegend();
+                const L = this.state.legend;
+                if (!isPlainObject(L) || !LEGEND_POSITIONS.includes(L.position) || !isPlainObject(L.items)) this.state.legend = normalizeLegend(L);
+                return this.state.legend;
+            }
+
+            /** True when the title block or the legend is switched on. */
+            get titleBlockVisible() { const L = this.state && this.state.legend; return !!(L && (L.showTitleBlock || L.showLegend)); }
+
+            /** Switches the title block and the legend on or off together (one undo step). */
             toggleTitleBlock() {
-                this.titleBlockVisible = !this.titleBlockVisible;
-                try { localStorage.setItem('title_block', String(this.titleBlockVisible)); } catch { /* view setting only */ }
-                this.syncViewMenu();
+                const L = this.legendSettings(), on = !this.titleBlockVisible;
+                L.showTitleBlock = on; L.showLegend = on;
+                this.logEvent('CONFIGURE', on ? 'Showed the title block and legend' : 'Hid the title block and legend');
                 this.renderTitleBlock();
             }
 
-            renderTitleBlock() {
-                const svg = document.getElementById('canvas-title-block');
-                if (!svg) return;
-                svg.classList.toggle('d-none', !this.titleBlockVisible);
-                svg.replaceChildren();
-                if (!this.titleBlockVisible) return;
-                const tb = this.buildTitleBlockSvg();
-                svg.setAttribute('width', tb.width); svg.setAttribute('height', tb.height);
-                svg.setAttribute('viewBox', `0 0 ${tb.width} ${tb.height}`);
-                svg.appendChild(tb.node);
+            /** Before 1.20 "Show title block and legend" was a browser setting (title_block): it moves into the model once. */
+            migrateTitleBlockPref() {
+                if (this.legendPrefMigrated) return;
+                this.legendPrefMigrated = true;
+                let old = null;
+                try { old = localStorage.getItem('title_block'); localStorage.removeItem('title_block'); } catch { return; }
+                const L = this.legendSettings();
+                if (old !== 'true' || L.showTitleBlock || L.showLegend) return;
+                L.showTitleBlock = true; L.showLegend = true;
+                if (this.undoBaseline !== undefined) this.undoBaseline = this.serializeModel();   // not an undo step
+                this.saveSessionToLocalStorage();
             }
 
-            /** What the legend shows: only the kinds of shapes, line styles and colours drawn on the page (visible layers). */
+            legendPageOffset() { const p = this.pageById(this.state.activePageId); return p ? p.offset : 0; }
+            /** Top-left corner of the free-floating legend in canvas (projected) coordinates. */
+            legendOrigin() { const L = this.legendSettings(); return this.projectCoordinates(this.legendPageOffset() + L.x, L.y); }
+            legendMovable() { const L = this.legendSettings(); return L.position === 'free' && !L.locked && !this.state.reviewMode && this.titleBlockVisible; }
+            legendClamp(v) { return Math.round(Math.max(-LEGEND_LIMITS.coord, Math.min(LEGEND_LIMITS.coord, v))); }
+
+            /** Bounds (zoom to fit, PNG, print) grow to hold a free-floating legend. */
+            legendExtendBounds(b) {
+                if (!this.state || !this.titleBlockVisible || this.legendSettings().position !== 'free') return b;
+                if (!this.legendFloatSize) { const tb = this.buildTitleBlockSvg(); this.legendFloatSize = tb ? { width: tb.width, height: tb.height } : null; }
+                if (!this.legendFloatSize) return b;
+                const o = this.legendOrigin();
+                return { minX: Math.min(b.minX, o.x), minY: Math.min(b.minY, o.y), maxX: Math.max(b.maxX, o.x + this.legendFloatSize.width), maxY: Math.max(b.maxY, o.y + this.legendFloatSize.height) };
+            }
+
+            renderTitleBlock() {
+                const svg = document.getElementById('canvas-title-block'), float = document.getElementById('canvas-legend-float');
+                if (!svg || !this.state) return;
+                this.migrateTitleBlockPref();
+                const L = this.legendSettings(), free = L.position === 'free';
+                const tb = this.titleBlockVisible ? this.buildTitleBlockSvg() : null;
+                svg.replaceChildren();
+                LEGEND_POSITIONS.forEach(p => svg.classList.toggle(`tb-pos-${p}`, !free && p === L.position));
+                svg.classList.toggle('d-none', !tb || free);
+                if (tb && !free) {
+                    svg.setAttribute('width', tb.width); svg.setAttribute('height', tb.height);
+                    svg.setAttribute('viewBox', `0 0 ${tb.width} ${tb.height}`);
+                    svg.appendChild(tb.node);
+                }
+                this.legendFloatSize = tb && free ? { width: tb.width, height: tb.height } : null;
+                if (float) {
+                    float.replaceChildren();
+                    float.classList.toggle('d-none', !tb || !free);
+                    const movable = !!tb && free && this.legendMovable();
+                    float.classList.toggle('legend-movable', movable);
+                    if (movable) {
+                        float.setAttribute('tabindex', '0'); float.setAttribute('role', 'button');
+                        float.setAttribute('aria-label', 'Title block and legend: drag, or use the arrow keys, to move it');
+                    } else {
+                        float.removeAttribute('tabindex'); float.setAttribute('role', 'img'); float.setAttribute('aria-label', 'Title block and legend');
+                    }
+                    if (tb && free) {
+                        const o = this.legendOrigin();
+                        float.setAttribute('transform', `translate(${o.x}, ${o.y})`);
+                        float.appendChild(tb.node);
+                    }
+                }
+                if (this.legendDialogOpen) this.renderLegendItemsList();
+            }
+
+            /** Label of a shape type in the legend ("Process", "Decision (diamond)", "C4 container", "Pool (horizontal lanes)", …). */
+            legendTypeLabel(key) {
+                const [t, variant] = key.split('+');
+                const fixed = { process: 'Process', datastore: 'Data store', interactor: 'External entity', infrastructure: 'Infrastructure', custom_image: 'Image',
+                    boundary: 'Trust zone', boundary_line: 'Trust boundary line', swimlane: 'Swimlane', step_activity: 'Step', textbox: 'Text box', headline: 'Headline', table: 'Table' };
+                let label = fixed[t];
+                if (!label && isDiagramShape(t)) label = `${({ c4: 'C4', uml: 'UML', bpmn: 'BPMN', erd: 'ERD' })[DIAGRAM_SHAPES[t].group] || ''} ${DIAGRAM_SHAPES[t].label.toLowerCase()}`.trim();
+                if (!label) label = (FLOWCHART_DEFAULTS[t] || ATTACK_SHAPE_DEFAULTS[t] || LANE_CONTAINER_DEFAULTS[t] || {}).label || t;
+                return variant === '3d' ? `${label}, 3D` : label;
+            }
+
+            /** Label of a Bootstrap icon: its name in the icon picker, else made from the class name. */
+            legendIconLabel(icon) {
+                if (!this.legendIconNames) {
+                    this.legendIconNames = new Map();
+                    Object.values(ICON_LIBRARY).forEach(list => list.forEach(([cls, name]) => { if (!this.legendIconNames.has(cls)) this.legendIconNames.set(cls, name); }));
+                }
+                const name = this.legendIconNames.get(icon) || icon.replace(/^bi-/, '').replace(/-fill$/, '').replace(/-/g, ' ');
+                return name.charAt(0).toUpperCase() + name.slice(1);
+            }
+
+            /** Label of a stencil: its title in the loaded pack, else made from its id ("aws:Amazon-EC2" → "Amazon EC2"). */
+            legendStencilLabel(id) {
+                const [set, name] = [id.slice(0, id.indexOf(':')), id.slice(id.indexOf(':') + 1)];
+                const pack = window.TT_STENCILS && window.TT_STENCILS[set];
+                const hit = pack && Array.isArray(pack.icons) && pack.icons.find(i => Array.isArray(i) && i[0] === name);
+                return toText(hit && hit[1]) || name.replace(/[-_]+/g, ' ').trim() || id;
+            }
+
+            /**
+             * Everything the page draws that a legend can explain (visible layers of the active page): one entry per
+             * shape type (3D variants apart), icon, stencil, line style, flow colour and marker. Each entry has a stable
+             * `key` (the key of its settings in state.legend.items), a `kind`, and its automatic `label`.
+             */
             legendEntries() {
-                const s = this.state, out = [];
+                const s = this.state, out = [], have = new Set();
+                const add = (key, kind, label, extra = {}) => { if (have.has(key) || !LEGEND_ITEM_KEY.test(key)) return; have.add(key); out.push({ key, kind, label, ...extra }); };
                 this.indexLayers();
                 const elements = s.elements.filter(e => this.isItemVisible(e));
                 const shown = new Set(elements.map(e => e.id));
                 const flows = s.flows.filter(f => shown.has(f.sourceId) && shown.has(f.targetId) && this.isItemVisible(f));
-                const kinds = [['process', 'Process'], ['datastore', 'Data store'], ['interactor', 'External entity'], ['infrastructure', 'Infrastructure'],
-                    ['custom_image', 'Icon'], ['boundary', 'Trust zone'], ['boundary_line', 'Trust boundary line']];
-                const types = new Set(elements.map(e => e.type));
-                kinds.forEach(([t, label]) => { if (types.has(t)) out.push({ kind: t, label }); });
-                if (elements.some(e => typeof e.type === 'string' && e.type.startsWith('fc_'))) out.push({ kind: 'fc', label: 'Flowchart shape' });
-                if (flows.length) out.push({ kind: 'flow', label: 'Data flow' });
-                if (flows.some(f => f.isDashed)) out.push({ kind: 'dashed', label: 'Dashed flow' });
-                if (flows.some(f => f.secProps && f.secProps.authenticated === 'true')) out.push({ kind: 'auth', label: 'Authenticated flow' });
-                if (flows.some(f => f.isBidirectional)) out.push({ kind: 'twoway', label: 'Two-way flow' });
-                if (flows.some(f => f.isDisabled)) out.push({ kind: 'disabled', label: 'Disabled flow' });
-                if (this.trustAnalysis && flows.some(f => (this.trustAnalysis.crossings.get(f.id) || {}).crosses)) out.push({ kind: 'crossing', label: 'Crosses a boundary' });
-                flows.forEach(f => shown.add(f.id));
-                if (s.threats.some(t => shown.has(t.elementId))) out.push({ kind: 'threat', label: 'Has threats' });
+                // Shapes, in palette order. A stencil is drawn as its icon only, so it is listed as the stencil, not by type.
+                const order = ['process', 'datastore', 'interactor', 'infrastructure', 'custom_image', 'boundary', 'boundary_line', 'swimlane', ...TT_DECOR_TYPES,
+                    ...Object.keys(FLOWCHART_DEFAULTS), ...ATTACK_SHAPE_TYPES, 'step_activity', 'textbox', 'headline'];
+                const rank = (k) => { const [t, v] = k.split('+'), i = order.indexOf(t); return (i < 0 ? order.length : i) * 2 + (v ? 1 : 0); };
+                const types = new Map(), icons = new Map(), stencils = new Map();
+                elements.forEach(e => {
+                    const t = toText(e.type);
+                    if (e.stencil && safeStencilIcon(e.stencilIcon)) { if (!stencils.has(e.stencil)) stencils.set(e.stencil, e); return; }
+                    const k = t.startsWith('fc_') && e.threeD && !FC_SOLID_TYPES.has(t) ? `${t}+3d` : t;
+                    if (!types.has(k)) types.set(k, e);
+                    if (MODEL_NODE_TYPES[t] && !isDiagramShape(t)) { const icon = safeIcon(e.icon); if (!icons.has(icon)) icons.set(icon, e); }
+                });
+                [...types.keys()].sort((a, b) => rank(a) - rank(b) || a.localeCompare(b)).forEach(k => add(`type:${k}`, 'type', this.legendTypeLabel(k), { type: k.split('+')[0], threeD: k.endsWith('+3d'), sample: types.get(k) }));
+                [...icons.keys()].sort().forEach(icon => add(`icon:${icon}`, 'icon', this.legendIconLabel(icon), { icon, sample: icons.get(icon) }));
+                [...stencils.keys()].sort().forEach(id => add(`stencil:${id}`, 'stencil', this.legendStencilLabel(id), { src: safeStencilIcon(stencils.get(id).stencilIcon) }));
+                // Line styles and markers.
+                if (flows.length) add('flow', 'flow', 'Data flow');
+                if (flows.some(f => f.isDashed)) add('dashed', 'dashed', 'Dashed flow');
+                if (flows.some(f => f.secProps && f.secProps.encrypted === 'true' && !f.isDisabled)) add('encrypted', 'encrypted', 'Encrypted flow');
+                if (flows.some(f => f.secProps && f.secProps.authenticated === 'true')) add('auth', 'auth', 'Authenticated flow');
+                if (flows.some(f => f.isBidirectional)) add('twoway', 'twoway', 'Two-way flow');
+                if (flows.some(f => f.isDisabled)) add('disabled', 'disabled', 'Disabled flow');
+                if (this.trustAnalysis && flows.some(f => (this.trustAnalysis.crossings.get(f.id) || {}).crosses)) add('crossing', 'crossing', 'Crosses a boundary');
+                const targets = new Set([...shown, ...flows.map(f => f.id)]);
+                if (s.threats.some(t => targets.has(t.elementId))) add('threat', 'threat', 'Has threats');
+                if (elements.some(e => e.secProps && e.secProps.isCrownJewel === 'true')) add('crown', 'crown', 'Crown jewel');
                 // Colours as drawn: black is the default, and disabled and encrypted flows are drawn in their own colour.
                 const colours = [...new Set(flows.filter(f => f.color && f.color !== 'black' && FLOW_LEGEND_COLOURS[f.color] && !f.isDisabled
                     && !(f.secProps && f.secProps.encrypted === 'true')).map(f => f.color))].sort();
-                colours.forEach(c => out.push({ kind: 'colour', colour: FLOW_LEGEND_COLOURS[c], label: `${c[0].toUpperCase()}${c.slice(1)} flow` }));
+                colours.forEach(c => add(`colour:${c}`, 'colour', `${c[0].toUpperCase()}${c.slice(1)} flow`, { colour: FLOW_LEGEND_COLOURS[c] }));
                 return out;
+            }
+
+            /** The entries the legend shows: ticked ones, with the user's text where there is one. */
+            legendShownEntries() {
+                const items = this.legendSettings().items;
+                return this.legendEntries().filter(e => !(items[e.key] && items[e.key].show === false))
+                    .map(e => (items[e.key] && items[e.key].label ? { ...e, label: items[e.key].label } : e));
             }
 
             /**
              * Builds the title block and legend as an SVG group (text through textContent only, never markup).
-             * Fixed light colours, so it reads the same on a dark canvas, in PNG and on paper. Returns { node, width, height }.
+             * Fixed light colours, so it reads the same on a dark canvas, in PNG and on paper.
+             * Returns { node, width, height }, or null when there is nothing to show.
              */
             buildTitleBlockSvg() {
-                const NS = 'http://www.w3.org/2000/svg', W = 280, PAD = 10, ROW = 17;
+                const L = this.legendSettings();
+                const entries = L.showLegend ? this.legendShownEntries() : [];
+                const heading = L.showLegend ? toText(L.title) : '';
+                if (!L.showTitleBlock && !entries.length && !heading) return null;
+                const cols = L.columns === 1 ? 1 : 2;
+                const NS = 'http://www.w3.org/2000/svg', W = L.showTitleBlock || cols === 2 ? 280 : 200, PAD = 10, ROW = 17;
                 const el = (tag, attrs, text) => {
                     const n = document.createElementNS(NS, tag);
                     Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, String(v)));
@@ -10270,38 +10531,44 @@
                 const g = el('g', { class: 'title-block', 'font-family': FONT });
                 const bg = el('rect', { x: 0.5, y: 0.5, width: W - 1, height: 10, rx: 4, fill: '#ffffff', stroke: '#495057', 'stroke-width': 1 });
                 g.appendChild(bg);
-                let y = PAD + 13;
-                titleLines(s.projectTitle).forEach((t, i) => {
-                    if (i) y += 18;
-                    g.appendChild(el('text', { x: PAD, y, 'font-size': 14, 'font-weight': 700, fill: '#212529' }, t));
-                });
-                const line1 = [DIAGRAM_LEVELS[info.level], info.version && `Version ${clip(info.version, 20)}`, DIAGRAM_STATUSES[info.status]].filter(Boolean).join('  ·  ');
-                const line2 = [info.author && clip(info.author, 30), info.date].filter(Boolean).join('  ·  ');
-                [line1, line2].filter(Boolean).forEach(t => { y += ROW; g.appendChild(el('text', { x: PAD, y, 'font-size': 11, fill: '#495057' }, fit(t, MAX, 11))); });
-                if (s.reviewMode) { y += ROW; g.appendChild(el('text', { x: PAD, y, 'font-size': 11, 'font-weight': 600, fill: '#9a6700' }, 'Review mode: layout frozen')); }
-                const entries = this.legendEntries();
-                if (entries.length) {
-                    y += 10;
-                    g.appendChild(el('line', { x1: PAD, x2: W - PAD, y1: y, y2: y, stroke: '#dee2e6' }));
-                    y += 15;
-                    g.appendChild(el('text', { x: PAD, y, 'font-size': 11, 'font-weight': 700, fill: '#212529' }, 'Legend'));
-                    const colW = (W - 2 * PAD) / 2;
-                    entries.forEach((e, i) => {
-                        const cx = PAD + (i % 2) * colW, cy = y + 8 + Math.floor(i / 2) * ROW;
-                        g.appendChild(this.legendSymbol(el, e, cx, cy));
-                        g.appendChild(el('text', { x: cx + 26, y: cy + 4, 'font-size': 10, fill: '#343a40' }, fit(e.label, colW - 30, 10)));
+                let y = PAD;
+                if (L.showTitleBlock) {
+                    y += 13;
+                    titleLines(s.projectTitle).forEach((t, i) => {
+                        if (i) y += 18;
+                        g.appendChild(el('text', { x: PAD, y, 'font-size': 14, 'font-weight': 700, fill: '#212529' }, t));
                     });
-                    y += 8 + Math.ceil(entries.length / 2) * ROW - 4;
+                    const line1 = [DIAGRAM_LEVELS[info.level], info.version && `Version ${clip(info.version, 20)}`, DIAGRAM_STATUSES[info.status]].filter(Boolean).join('  ·  ');
+                    const line2 = [info.author && clip(info.author, 30), info.date].filter(Boolean).join('  ·  ');
+                    [line1, line2].filter(Boolean).forEach(t => { y += ROW; g.appendChild(el('text', { x: PAD, y, 'font-size': 11, fill: '#495057' }, fit(t, MAX, 11))); });
+                    if (s.reviewMode) { y += ROW; g.appendChild(el('text', { x: PAD, y, 'font-size': 11, 'font-weight': 600, fill: '#9a6700' }, 'Review mode: layout frozen')); }
+                }
+                if (entries.length || heading) {
+                    if (L.showTitleBlock) { y += 10; g.appendChild(el('line', { x1: PAD, x2: W - PAD, y1: y, y2: y, stroke: '#dee2e6' })); }
+                    if (heading) { y += 15; g.appendChild(el('text', { class: 'legend-title', x: PAD, y, 'font-size': 11, 'font-weight': 700, fill: '#212529' }, fit(heading, MAX, 11, 700))); }
+                    else y += 4;
+                    const colW = (W - 2 * PAD) / cols;
+                    entries.forEach((e, i) => {
+                        const col = i % cols, cx = PAD + col * colW, cy = y + (heading ? 12 : 10) + Math.floor(i / cols) * ROW;
+                        const row = el('g', { class: 'legend-row', 'data-key': e.key, 'data-col': col });
+                        row.appendChild(this.legendSymbol(el, e, cx, cy));
+                        row.appendChild(el('text', { class: 'legend-label', x: cx + 26, y: cy + 4, 'font-size': 10, fill: '#343a40' }, fit(e.label, colW - 30, 10)));
+                        g.appendChild(row);
+                    });
+                    if (entries.length) y += (heading ? 12 : 10) + Math.ceil(entries.length / cols) * ROW - 4;
                 }
                 const H = Math.round(y + PAD);
                 bg.setAttribute('height', H - 1);
                 return { node: g, width: W, height: H };
             }
 
+            /** A small symbol (20 × 14, centred on y) for a legend entry, drawn with fixed light-theme colours. */
             legendSymbol(el, e, x, y) {
-                const g = el('g', {});
+                const g = el('g', { class: 'legend-symbol' });
                 const line = (attrs) => el('line', Object.assign({ x1: x, x2: x + 20, y1: y, y2: y, 'stroke-width': 2, stroke: '#212529' }, attrs));
-                switch (e.kind) {
+                const hex = (v, d) => (/^#[0-9a-f]{6}$/i.test(toText(v)) ? v : d);
+                const kind = e.kind === 'type' ? e.type : e.kind;
+                switch (kind) {
                     case 'process': g.appendChild(el('rect', { x, y: y - 6, width: 20, height: 12, rx: 4, fill: '#e7f1ff', stroke: '#0d6efd' })); break;
                     case 'datastore': g.appendChild(line({ y1: y - 5, y2: y - 5, 'stroke-width': 1.5 })); g.appendChild(line({ y1: y + 5, y2: y + 5, 'stroke-width': 1.5 })); break;
                     case 'interactor': g.appendChild(el('rect', { x, y: y - 6, width: 20, height: 12, fill: '#f8f9fa', stroke: '#212529' })); break;
@@ -10309,18 +10576,252 @@
                     case 'custom_image': g.appendChild(el('rect', { x: x + 4, y: y - 6, width: 12, height: 12, fill: 'none', stroke: '#6c757d', 'stroke-dasharray': '2,2' })); break;
                     case 'boundary': g.appendChild(el('rect', { x, y: y - 6, width: 20, height: 12, rx: 2, fill: 'none', stroke: '#b70918', 'stroke-dasharray': '4,2' })); break;
                     case 'boundary_line': g.appendChild(line({ stroke: '#b70918', 'stroke-dasharray': '4,2' })); break;
-                    case 'fc': g.appendChild(el('path', { d: `M ${x + 10} ${y - 7} L ${x + 20} ${y} L ${x + 10} ${y + 7} L ${x} ${y} Z`, fill: '#fff8e1', stroke: '#6c757d' })); break;
+                    case 'swimlane': case 'pool': case 'phases':
+                        g.appendChild(el('rect', { x, y: y - 7, width: 20, height: 14, fill: '#f8f9fa', stroke: '#6c757d' }));
+                        g.appendChild(el('path', { d: kind === 'phases' ? `M ${x + 7} ${y - 7} v 14 M ${x + 14} ${y - 7} v 14` : `M ${x + 5} ${y - 7} v 14 M ${x} ${y} h 20`, stroke: '#6c757d', fill: 'none' })); break;
+                    case 'vlanes': g.appendChild(el('rect', { x, y: y - 7, width: 20, height: 14, fill: '#f8f9fa', stroke: '#6c757d' })); g.appendChild(el('path', { d: `M ${x} ${y - 3} h 20 M ${x + 7} ${y - 7} v 14 M ${x + 14} ${y - 7} v 14`, stroke: '#6c757d', fill: 'none' })); break;
+                    case 'group_frame': g.appendChild(el('rect', { x, y: y - 7, width: 20, height: 14, rx: 2, fill: 'none', stroke: '#6c757d' })); g.appendChild(el('rect', { x, y: y - 7, width: 9, height: 4, fill: '#6c757d' })); break;
+                    case 'table': g.appendChild(el('rect', { x, y: y - 7, width: 20, height: 14, fill: '#ffffff', stroke: '#6c757d' })); g.appendChild(el('path', { d: `M ${x} ${y - 2} h 20 M ${x} ${y + 3} h 20 M ${x + 10} ${y - 7} v 14`, stroke: '#6c757d', fill: 'none' })); break;
+                    case 'step_activity': g.appendChild(el('circle', { cx: x + 10, cy: y, r: 7, fill: '#0dcaf0' })); g.appendChild(el('text', { x: x + 10, y: y + 3.5, 'text-anchor': 'middle', 'font-size': 9, 'font-weight': 700, fill: '#ffffff' }, '1')); break;
+                    case 'textbox': case 'headline': g.appendChild(el('text', { x: x + 10, y: y + 5, 'text-anchor': 'middle', 'font-size': kind === 'headline' ? 15 : 13, 'font-weight': kind === 'headline' ? 800 : 400, fill: '#212529' }, kind === 'headline' ? 'H' : 'T')); break;
+                    case 'icon': {
+                        // The Bootstrap icon itself (the class is checked by safeIcon; no markup from the model).
+                        const fo = el('foreignObject', { x, y: y - 8, width: 20, height: 16 });
+                        const box = document.createElementNS('http://www.w3.org/1999/xhtml', 'div');
+                        box.setAttribute('style', 'width:20px;height:16px;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;color:#495057;');
+                        const i = document.createElementNS('http://www.w3.org/1999/xhtml', 'i');
+                        i.setAttribute('class', `bi ${safeIcon(e.icon)}`);
+                        box.appendChild(i); fo.appendChild(box); g.appendChild(fo); break;
+                    }
+                    case 'stencil': { const src = safeStencilIcon(e.src); if (src) g.appendChild(el('image', { x: x + 2, y: y - 8, width: 16, height: 16, href: src, preserveAspectRatio: 'xMidYMid meet' })); break; }
                     case 'dashed': g.appendChild(line({ 'stroke-dasharray': '5,3' })); break;
                     case 'disabled': g.appendChild(line({ stroke: '#ced4da' })); break;
+                    case 'encrypted': g.appendChild(line({})); g.appendChild(el('rect', { x: x + 6, y: y - 3, width: 8, height: 7, rx: 1, fill: '#212529' })); g.appendChild(el('path', { d: `M ${x + 7.5} ${y - 3} v -2 a 2.5 2.5 0 0 1 5 0 v 2`, fill: 'none', stroke: '#212529', 'stroke-width': 1.3 })); break;
                     case 'twoway': g.appendChild(line({})); g.appendChild(el('path', { d: `M ${x} ${y} l 5 -3 v 6 Z M ${x + 20} ${y} l -5 -3 v 6 Z`, fill: '#212529' })); break;
                     case 'auth': g.appendChild(el('path', { d: `M ${x + 10} ${y - 7} L ${x + 16} ${y - 4} L ${x + 15} ${y + 3} L ${x + 10} ${y + 7} L ${x + 5} ${y + 3} L ${x + 4} ${y - 4} Z`, fill: '#0d6efd' })); break;
                     case 'crossing': g.appendChild(el('rect', { x, y: y - 6, width: 20, height: 12, rx: 2, fill: '#fff', stroke: '#b45309' })); g.appendChild(el('path', { d: `M ${x + 3} ${y} h 14 M ${x + 10} ${y - 6} v 12`, stroke: '#b45309' })); break;
                     case 'threat': g.appendChild(el('rect', { x, y: y - 6, width: 20, height: 12, rx: 3, fill: '#dc3545' })); break;
+                    case 'crown': g.appendChild(el('circle', { cx: x + 10, cy: y, r: 7, fill: '#f59f00', stroke: '#ffffff' })); g.appendChild(el('path', { d: `M ${x + 6} ${y + 3} l -1 -6 l 3 2.5 l 2 -3.5 l 2 3.5 l 3 -2.5 l -1 6 Z`, fill: '#ffffff' })); break;
                     case 'colour': g.appendChild(line({ stroke: e.colour, 'stroke-width': 3 })); break;
-                    default: g.appendChild(line({})); g.appendChild(el('path', { d: `M ${x + 20} ${y} l -5 -3 v 6 Z`, fill: '#212529' }));
+                    case 'flow': g.appendChild(line({})); g.appendChild(el('path', { d: `M ${x + 20} ${y} l -5 -3 v 6 Z`, fill: '#212529' })); break;
+                    default: {
+                        // Flowchart, attack-tree and diagram shapes: the canvas's own outline, scaled down.
+                        const t = kind, d = (isDiagramShape(t) ? DIAGRAM_SHAPES[t] : fcLikeDefaults(t)) || FLOWCHART_DEFAULTS.fc_process;
+                        const sample = e.sample || {}, fill = hex(sample.fcFillColor, d.fill), stroke = hex(sample.fcStrokeColor, d.stroke);
+                        const w = e.threeD ? 120 : d.w, h = e.threeD ? 100 : d.h, k = Math.min(20 / w, 14 / h);
+                        const inner = el('g', { transform: `translate(${x + (20 - w * k) / 2}, ${y - h * k / 2}) scale(${k})` });
+                        try {
+                            if (isDiagramShape(t)) this.renderDiagramShapeSvg(inner, t, w, h, fill, stroke, 1.4 / k, '', { type: t, ...(d.props || {}) }, true);
+                            else if (isFcLikeType(t)) this.renderFlowchartShapeSvg(inner, t, w, h, fill, stroke, 1.4 / k, false, null, !!e.threeD);
+                        } catch { inner.replaceChildren(); }
+                        if (!inner.childNodes.length) inner.appendChild(el('rect', { x: 0, y: 0, width: w, height: h, rx: 6, fill, stroke, 'stroke-width': 1.4 / k }));
+                        // Small symbols: no glow, no selection or interaction hooks.
+                        inner.querySelectorAll('*').forEach(n => { n.removeAttribute('filter'); if (n.style) n.style.filter = ''; n.removeAttribute('id'); n.removeAttribute('data-anchor'); n.removeAttribute('class'); });
+                        g.appendChild(inner);
+                    }
                 }
                 return g;
             }
+
+            // ── Title block & legend dialog (☰ → View → Title block & legend…) ──
+            setupLegendDialog() {
+                const $ = (id) => document.getElementById(id);
+                const modalEl = $('modal-legend');
+                if (!modalEl) return;
+                this.legendModal = window.bootstrap ? bootstrap.Modal.getOrCreateInstance(modalEl) : null;
+                $('btn-menu-title-block').addEventListener('click', () => this.openLegendDialog());
+                const L = () => this.legendSettings();
+                const changed = () => { this.renderTitleBlock(); this.saveSessionToLocalStorage(); this.syncLegendDialog(); };
+                $('legend-show-title-block').addEventListener('change', (ev) => { L().showTitleBlock = ev.target.checked; changed(); });
+                $('legend-show-legend').addEventListener('change', (ev) => { L().showLegend = ev.target.checked; changed(); });
+                $('legend-title').addEventListener('input', (ev) => { L().title = toText(ev.target.value).replace(/\s+/g, ' ').trim().slice(0, LEGEND_LIMITS.title); this.renderTitleBlock(); this.saveSessionToLocalStorage(); });
+                modalEl.querySelectorAll('input[name="legend-columns"]').forEach(r => r.addEventListener('change', () => { if (r.checked) { L().columns = r.value === '1' ? 1 : 2; changed(); } }));
+                $('legend-position').addEventListener('change', (ev) => this.setLegendPosition(ev.target.value));
+                $('legend-locked').addEventListener('change', (ev) => { L().locked = ev.target.checked; changed(); });
+                const everyItem = (fn) => { this.legendEntries().forEach(e => this.setLegendItem(e.key, fn(L().items[e.key] || { show: true, label: '' }))); this.renderLegendItemsList(true); changed(); };
+                $('legend-items-show-all').addEventListener('click', () => everyItem(() => ({ show: true })));
+                $('legend-items-hide-all').addEventListener('click', () => everyItem(() => ({ show: false })));
+                $('legend-items-reset-labels').addEventListener('click', () => { Object.keys(L().items).forEach(k => this.setLegendItem(k, { label: '' })); this.renderLegendItemsList(true); changed(); });
+                const list = $('legend-items');
+                const rowOf = (ev) => { const li = ev.target.closest('.legend-item-row'); return li && list.contains(li) ? li : null; };
+                list.addEventListener('change', (ev) => {
+                    const li = rowOf(ev);
+                    if (!li || !ev.target.classList.contains('legend-item-show')) return;
+                    this.setLegendItem(li.dataset.key, { show: ev.target.checked }); this.renderTitleBlock(); this.saveSessionToLocalStorage();
+                });
+                list.addEventListener('input', (ev) => {
+                    const li = rowOf(ev);
+                    if (!li || !ev.target.classList.contains('legend-item-label')) return;
+                    const auto = li.dataset.auto || '', v = toText(ev.target.value).replace(/\s+/g, ' ').trim();
+                    this.setLegendItem(li.dataset.key, { label: v === auto ? '' : v });
+                    li.querySelector('.legend-item-reset').disabled = !(L().items[li.dataset.key] && L().items[li.dataset.key].label);
+                    this.renderTitleBlock(); this.saveSessionToLocalStorage();
+                });
+                list.addEventListener('click', (ev) => {
+                    const li = rowOf(ev), btn = ev.target.closest('.legend-item-reset');
+                    if (!li || !btn) return;
+                    this.setLegendItem(li.dataset.key, { label: '' });
+                    const input = li.querySelector('.legend-item-label'); input.value = li.dataset.auto || '';
+                    btn.disabled = true;
+                    this.renderTitleBlock(); this.saveSessionToLocalStorage();
+                    input.focus();
+                });
+                modalEl.addEventListener('hidden.bs.modal', () => {
+                    this.legendDialogOpen = false;
+                    if (this.serializeModel() !== this.undoBaseline) this.logEvent('CONFIGURE', 'Changed the title block and legend');
+                });
+                this.bindLegendDrag();
+            }
+
+            openLegendDialog() {
+                if (!this.legendModal) return;
+                this.recordUndoPoint();   // earlier edits stay their own undo step
+                this.legendDialogOpen = true;
+                this.syncLegendDialog();
+                this.renderLegendItemsList(true);
+                this.legendModal.show();
+            }
+
+            /** Sets an item's visibility and/or text; an item back at its defaults is dropped from the model. */
+            setLegendItem(key, patch) {
+                if (!LEGEND_ITEM_KEY.test(key)) return;
+                const items = this.legendSettings().items;
+                const next = { show: true, label: '', ...(items[key] || {}), ...patch };
+                next.show = next.show !== false;
+                next.label = toText(next.label).replace(/\s+/g, ' ').trim().slice(0, LEGEND_LIMITS.label);
+                if (next.show && !next.label) delete items[key]; else items[key] = next;
+            }
+
+            /** Corner or free-floating. Going free-floating starts the block where it is on screen now. */
+            setLegendPosition(pos) {
+                const L = this.legendSettings();
+                if (!LEGEND_POSITIONS.includes(pos) || pos === L.position) return;
+                if (pos === 'free') {
+                    const overlay = document.getElementById('canvas-title-block'), canvas = this.dom.svg.getBoundingClientRect();
+                    const r = overlay && !overlay.classList.contains('d-none') ? overlay.getBoundingClientRect() : null;
+                    const at = r && r.width ? { x: r.left, y: r.top } : { x: canvas.left + 24, y: canvas.top + 64 };
+                    const m = this.convertClientScreenCoordinatesToCanvasSpace(at.x, at.y);
+                    L.x = this.legendClamp(m.x - this.legendPageOffset()); L.y = this.legendClamp(m.y);
+                }
+                L.position = pos;
+                this.renderTitleBlock(); this.saveSessionToLocalStorage(); this.syncLegendDialog();
+            }
+
+            syncLegendDialog() {
+                const $ = (id) => document.getElementById(id), L = this.legendSettings();
+                if (!$('modal-legend')) return;
+                $('legend-show-title-block').checked = L.showTitleBlock;
+                $('legend-show-legend').checked = L.showLegend;
+                if ($('legend-title') !== document.activeElement) $('legend-title').value = L.title;
+                $(`legend-columns-${L.columns === 1 ? 1 : 2}`).checked = true;
+                $('legend-position').value = L.position;
+                $('legend-locked').checked = L.locked;
+                $('legend-locked').disabled = L.position !== 'free';
+            }
+
+            /** The dialog's item list: rebuilt only when the items on the page change, so typing keeps its focus. */
+            renderLegendItemsList(force = false) {
+                const list = document.getElementById('legend-items');
+                if (!list) return;
+                const entries = this.legendEntries(), sig = entries.map(e => `${e.key}\u0000${e.label}`).join('\u0001');
+                if (!force && sig === this.legendListSig) return;
+                this.legendListSig = sig;
+                const items = this.legendSettings().items, NS = 'http://www.w3.org/2000/svg';
+                const el = (tag, attrs, text) => {
+                    const n = document.createElementNS(NS, tag);
+                    Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, String(v)));
+                    if (text !== undefined) n.textContent = text;
+                    return n;
+                };
+                const rows = entries.map((e, i) => {
+                    const cur = items[e.key] || { show: true, label: '' };
+                    const li = document.createElement('li');
+                    li.className = 'legend-item-row d-flex align-items-center gap-2 px-2 py-1 border-bottom';
+                    li.dataset.key = e.key; li.dataset.auto = e.label;
+                    const cb = document.createElement('input');
+                    cb.type = 'checkbox'; cb.className = 'form-check-input legend-item-show'; cb.id = `legend-item-show-${i}`;
+                    cb.checked = cur.show !== false;
+                    cb.setAttribute('aria-label', `Show “${e.label}” on the legend`);
+                    const sym = el('svg', { class: 'legend-item-symbol', viewBox: '0 0 28 20', 'aria-hidden': 'true' });
+                    sym.appendChild(el('rect', { x: 0, y: 0, width: 28, height: 20, rx: 3, fill: '#ffffff' }));
+                    sym.appendChild(this.legendSymbol(el, e, 4, 10));
+                    const input = document.createElement('input');
+                    input.type = 'text'; input.className = 'form-control form-control-sm legend-item-label';
+                    input.maxLength = LEGEND_LIMITS.label; input.autocomplete = 'off';
+                    input.value = cur.label || e.label; input.placeholder = e.label;
+                    input.setAttribute('aria-label', `Legend text for “${e.label}”`);
+                    const reset = document.createElement('button');
+                    reset.type = 'button'; reset.className = 'btn btn-sm btn-outline-secondary legend-item-reset';
+                    reset.title = 'Use the automatic text'; reset.setAttribute('aria-label', `Use the automatic text for “${e.label}”`);
+                    reset.disabled = !cur.label;
+                    const icon = document.createElement('i'); icon.className = 'bi bi-arrow-counterclockwise'; icon.setAttribute('aria-hidden', 'true');
+                    reset.appendChild(icon);
+                    li.append(cb, sym, input, reset);
+                    return li;
+                });
+                if (!rows.length) {
+                    const li = document.createElement('li'); li.className = 'small text-muted px-2 py-3';
+                    li.textContent = 'Nothing on this page yet: shapes and flows you add appear here.';
+                    rows.push(li);
+                }
+                list.replaceChildren(...rows);
+            }
+
+            /** Dragging the free-floating legend (mouse, pen, touch) and moving it with the arrow keys. */
+            bindLegendDrag() {
+                const float = document.getElementById('canvas-legend-float');
+                if (!float) return;
+                const save = (keyboard) => {
+                    this.renderTitleBlock();
+                    this.renderMinimap();
+                    clearTimeout(this.legendMoveTimer);
+                    const log = () => this.logEvent('CHANGE', 'Moved the title block and legend');
+                    if (keyboard) this.legendMoveTimer = setTimeout(log, 600);   // a run of arrow-key presses is one undo step
+                    else log();
+                };
+                float.addEventListener('pointerdown', (ev) => {
+                    if (!this.legendMovable() || ev.button > 0) return;
+                    ev.preventDefault(); ev.stopPropagation();
+                    const L = this.legendSettings(), o = this.legendOrigin(), rect = this.dom.svg.getBoundingClientRect();
+                    this.legendDrag = { id: ev.pointerId, cx: ev.clientX, cy: ev.clientY, moved: false,
+                        dx: ev.clientX - (rect.left + this.panX + o.x * this.zoomScale), dy: ev.clientY - (rect.top + this.panY + o.y * this.zoomScale), x0: L.x, y0: L.y };
+                    try { float.setPointerCapture(ev.pointerId); } catch { /* synthetic events */ }
+                    float.classList.add('legend-dragging');
+                });
+                float.addEventListener('pointermove', (ev) => {
+                    const d = this.legendDrag;
+                    if (!d || ev.pointerId !== d.id) return;
+                    ev.preventDefault(); ev.stopPropagation();
+                    if (!d.moved && Math.hypot(ev.clientX - d.cx, ev.clientY - d.cy) < 3) return;
+                    d.moved = true;
+                    const L = this.legendSettings(), m = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX - d.dx, ev.clientY - d.dy);
+                    L.x = this.legendClamp(m.x - this.legendPageOffset()); L.y = this.legendClamp(m.y);
+                    const o = this.legendOrigin();
+                    float.setAttribute('transform', `translate(${o.x}, ${o.y})`);
+                });
+                const end = (ev) => {
+                    const d = this.legendDrag;
+                    if (!d || ev.pointerId !== d.id) return;
+                    this.legendDrag = null;
+                    float.classList.remove('legend-dragging');
+                    try { float.releasePointerCapture(ev.pointerId); } catch { /* already released */ }
+                    if (ev.type === 'pointercancel') { const L = this.legendSettings(); L.x = d.x0; L.y = d.y0; this.renderTitleBlock(); return; }
+                    if (d.moved) save(false);
+                };
+                float.addEventListener('pointerup', end);
+                float.addEventListener('pointercancel', end);
+                // The canvas must not start a selection box, pan or deselect under the legend.
+                ['mousedown', 'click', 'dblclick'].forEach(t => float.addEventListener(t, (ev) => { if (this.legendMovable()) ev.stopPropagation(); }));
+                float.addEventListener('keydown', (ev) => {
+                    const step = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[ev.key];
+                    if (!step || !this.legendMovable()) return;
+                    ev.preventDefault(); ev.stopPropagation();
+                    const L = this.legendSettings(), n = ev.shiftKey ? 50 : 10;
+                    L.x = this.legendClamp(L.x + step[0] * n); L.y = this.legendClamp(L.y + step[1] * n);
+                    save(true);
+                });
+            }
+            // ── end title block & legend ──
 
             // View setting (no undo step): hop arcs where flows cross.
             toggleLineJumps() {
@@ -10750,7 +11251,6 @@
                 document.querySelectorAll('#menu-view-items [data-tab-trigger]').forEach(item => item.setAttribute('aria-checked', String(!(this.hiddenTabs && this.hiddenTabs.has(item.dataset.tabTrigger)))));
                 set('btn-menu-minimap', this.minimapVisible);
                 set('btn-menu-line-jumps', this.lineJumps);
-                set('btn-menu-title-block', this.titleBlockVisible);
                 set('btn-menu-review-mode', this.state && this.state.reviewMode);
                 set('btn-menu-panel-left', !this.isLeftCollapsed);
                 set('btn-menu-panel-right', !this.isRightCollapsed);
@@ -16238,7 +16738,8 @@
                     elements: canon(s.elements), flows: canon(s.flows), threats: canon(s.threats), mitigations: canon(s.mitigations || []),
                     layers: canon(s.layers || [{ ...DEFAULT_LAYER }]), activeLayerId: s.activeLayerId || 'main',
                     pages: canon(s.pages || [{ ...DEFAULT_PAGE }]), activePageId: s.activePageId || 'p1',
-                    reviewMode: !!s.reviewMode, diagramInfo: canon(normalizeDiagramInfo(s.diagramInfo))
+                    reviewMode: !!s.reviewMode, diagramInfo: canon(normalizeDiagramInfo(s.diagramInfo)),
+                    legend: normalizeLegend(s.legend)   // title block & legend settings
                 };
                 const git = normalizeGitSync(s.gitSync);
                 if (git) payload.gitSync = canon(git);

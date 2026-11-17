@@ -191,11 +191,14 @@ test('diagram details are edited in the Session dialog, saved, exported and vali
   expect(r).toEqual({ level: '', version: 'x'.repeat(40), status: 'approved', author: '7', date: '' });
 });
 
-test('the title block and legend are off by default and toggled from the View menu', async ({ page }) => {
+test('the title block and legend are off by default and switched on from View → Title block & legend…', async ({ page }) => {
   await setup(page, (s) => { s.flows[0].isDashed = true; s.flows[0].color = 'red'; });
   await expect(page.locator('#canvas-title-block')).toBeHidden();
   await clickControl(page, '#btn-menu-view');
   await clickControl(page, '#btn-menu-title-block');
+  await page.check('#legend-show-title-block');
+  await page.check('#legend-show-legend');
+  await page.click('#modal-legend .btn-close');
   const block = page.locator('#canvas-title-block');
   await expect(block).toBeVisible();
   await expect(block).toContainText(await page.evaluate(() => app.state.projectTitle));
@@ -206,7 +209,9 @@ test('the title block and legend are off by default and toggled from the View me
   await expect(block).toContainText('Dashed');
   await expect(block).not.toContainText('Trust zone');
   await expect(block).not.toContainText('Two-way');
-  expect(await page.evaluate(() => localStorage.getItem('title_block'))).toBe('true');
+  // Saved with the model (it used to be a browser setting, title_block).
+  expect(await page.evaluate(() => [app.state.legend.showTitleBlock, app.state.legend.showLegend])).toEqual([true, true]);
+  await page.evaluate(() => app.flushSave());
   await page.reload();
   await page.waitForFunction(() => window.app && window.app.state);
   await expect(page.locator('#canvas-title-block')).toBeVisible();
