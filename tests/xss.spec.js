@@ -44,6 +44,11 @@ function poisonedModel() {
     s.elements.push({ id: 'el-layer', type: 'process', name: 'On evil layer', x: 3000, y: 0, width: 240, height: 80, secProps: {}, layerId: 'evil' });
     s.elements.push({ id: 'el-stencil', type: 'process', name: 'Stencil', x: 3400, y: 0, width: 240, height: 80, secProps: {}, stencil: P('stencil')[1], stencilIcon: `data:image/svg+xml;base64," onerror="__xss.push('stencilIcon')`, stencilTags: [P('tag')[0]] });
     s.elements.push({ id: 'el-swim', type: 'swimlane', name: P('swim')[0], x: 2000, y: 2000, width: 700, height: 500, columns: [P('col')[0], 'b'], rows: [P('row')[0], 'd'] });
+    // Table and lane containers: cell text, titles, lane names and themes.
+    s.elements.push({ id: 'el-table', type: 'table', name: P('tableTitle')[0], x: 4000, y: 0, width: 300, height: 120, headerRow: true, theme: P('tableTheme')[1], cells: [[P('cell')[0], P('cell2')[1]], [P('cell3')[2], 'x']] });
+    s.elements.push({ id: 'el-pool', type: 'pool', name: P('pool')[0], x: 4000, y: 400, width: 600, height: 300, lanes: [P('lane')[0], P('lane2')[1]], theme: P('poolTheme')[2] });
+    s.elements.push({ id: 'el-phases', type: 'phases', name: P('phases')[1], x: 4000, y: 800, width: 600, height: 300, lanes: [P('phase')[0]] });
+    s.elements.push({ id: 'el-frame', type: 'group_frame', name: P('frame')[0], x: 4800, y: 0, width: 300, height: 200 });
     // 1.16.0: title block fields and review mode (the block is shown by exerciseUi).
     s.diagramInfo = { level: P('level')[0], version: P('version')[0], status: P('status')[1], author: P('author')[0], date: P('date')[0] };
     s.reviewMode = true;
@@ -126,6 +131,9 @@ function attributeContextModel() {
     const bline = byType('boundary_line');
     bline.name = INJ[0]; bline.textOffset = INJ[3]; bline.x2 = INJ[3]; bline.bendX = INJ[1];
     s.elements.push({ id: 'el-swim2', type: 'swimlane', name: INJ[1], x: 3000, y: 3000, width: 700, height: 500, columns: [INJ[1], INJ[2]], rows: [INJ[1], INJ[2]] });
+    s.elements.push({ id: 'el-table2', type: 'table', name: INJ[1], x: 4000, y: 3000, width: 400, height: 160, headerRow: true, headerCol: true, theme: INJ[3], cells: [[INJ[0], INJ[1]], [INJ[2], INJ[3]]] });
+    s.elements.push({ id: 'el-vlanes2', type: 'vlanes', name: INJ[2], x: 4000, y: 3400, width: INJ[3], height: 300, lanes: [INJ[0], INJ[1], INJ[2]], theme: INJ[1] });
+    s.elements.push({ id: 'el-frame2', type: 'group_frame', name: INJ[1], x: 4600, y: 3400, width: 300, height: 200, theme: INJ[3] });
     s.flows.forEach((f) => { f.name = INJ[1]; f.ports = INJ[2]; f.color = INJ[3]; f.thickness = INJ[3]; f.secProps = Object.assign({}, f.secProps, { [INJ[2]]: 'true' }); });
     s.mitigations = [
       { id: 'M-1', title: INJ[1], desc: INJ[2], owner: INJ[0], status: INJ[1], ticketUrl: 'https://example.test/" data-injected="url' },
@@ -169,11 +177,18 @@ test('payloads in attribute, style and SVG contexts never inject markup (SEC-DOM
     app.renderMitigationTable();
     app.buildPrintThreatReport();
     document.querySelectorAll('.threat-bug-badge').forEach((b) => b.dispatchEvent(new MouseEvent('mouseenter', { clientX: 10, clientY: 10 })));
-    return { cards, swimInputs: document.querySelectorAll('.col-rename-input').length, mitRows: document.querySelectorAll('#mitigation-tbody tr').length };
+    // The table and lane editors render for the last selected ones too.
+    app.state.selectedElementIds = ['el-table2']; app.refreshAppViewVisualWorkspace();
+    const tableInputs = document.querySelectorAll('#props-table-cells .tt-table-cell-input').length;
+    app.state.selectedElementIds = ['el-vlanes2']; app.refreshAppViewVisualWorkspace();
+    const laneInputs = document.querySelectorAll('#props-lanes-list .tt-lane-rename-input').length;
+    return { cards, swimInputs: document.querySelectorAll('.col-rename-input').length, mitRows: document.querySelectorAll('#mitigation-tbody tr').length, tableInputs, laneInputs };
   });
   // The views were really rendered (otherwise the assertion below proves nothing).
   expect(checked.cards).toBeGreaterThan(0);
   expect(checked.swimInputs).toBeGreaterThan(0);
+  expect(checked.tableInputs).toBe(4);
+  expect(checked.laneInputs).toBe(3);
   expect(checked.mitRows).toBe(2);
   expect(await injectedNodes(page)).toEqual([]);
   // Invalid ticket addresses were dropped on import, so neither becomes a link.

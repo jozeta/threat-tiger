@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YQ51vvEzsy0AkA2Wi0bDxYzdJUflQokBADCnEmLfmyw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-O6xmVvfKkdvpmFgwd0sfBcSwy0dAjeloR42EZ0JxgHY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1642,6 +1642,37 @@
         .swimlane-theme-swatch { width: 26px; height: 26px; border-radius: 5px; border: 2px solid transparent; padding: 0; display: inline-flex; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(0,0,0,0.2); }
         .swimlane-theme-swatch span { flex: 1; }
         .swimlane-theme-swatch[aria-pressed="true"] { border-color: #0d6efd; box-shadow: 0 0 0 2px rgba(13,110,253,0.35); }
+        /* Table and lane containers: their groups also carry .swimlane-group, so the colours are the swimlane theme variables. */
+        .tt-table-cell { fill: var(--sl-bg); stroke: var(--sl-grid); stroke-width: 1px; }
+        .tt-table-cell.tt-table-head { fill: var(--sl-head); }
+        .tt-table-cell.tt-table-rowhead { fill: var(--sl-rowhead); }
+        .tt-table-frame, .tt-lane-frame { fill: none; stroke: var(--sl-border); stroke-width: 1.5px; pointer-events: none; }
+        .tt-table-title-bg { fill: var(--sl-title); }
+        .tt-table-title { fill: var(--sl-title-text); font-size: 12px; font-weight: 700; letter-spacing: 0.3px; pointer-events: none; }
+        .tt-table-text { fill: var(--sl-rowhead-text); font-size: 11px; pointer-events: none; }
+        .tt-table-text.tt-head-text { fill: var(--sl-head-text); font-weight: 700; }
+        .tt-table-text.tt-rowhead-text { font-weight: 700; }
+        .tt-lane-bg { fill: var(--sl-bg); stroke: var(--sl-border); stroke-width: 1.5px; transition: fill 0.15s, stroke 0.15s; }
+        .tt-lane-title-band { fill: var(--sl-title); }
+        .tt-lane-title { fill: var(--sl-title-text); font-size: 13px; font-weight: 700; letter-spacing: 0.5px; pointer-events: none; }
+        .tt-lane-head { fill: var(--sl-head); }
+        .tt-lane-head-text { fill: var(--sl-head-text); font-size: 11px; font-weight: 700; letter-spacing: 0.3px; pointer-events: none; }
+        .tt-lane-rowhead { fill: var(--sl-rowhead); }
+        .tt-lane-rowhead-text { fill: var(--sl-rowhead-text); font-size: 11px; font-weight: 700; letter-spacing: 0.3px; pointer-events: none; }
+        .tt-lane-line { stroke: var(--sl-grid); stroke-width: 1px; pointer-events: none; }
+        .tt-lane-line.tt-lane-dashed { stroke: var(--sl-line); stroke-dasharray: 6 5; }
+        .tt-phase-chevron { fill: var(--sl-head); stroke: var(--sl-bg); stroke-width: 3px; }
+        .node-element.selected .tt-table-frame, .node-element.selected .tt-lane-bg { stroke: #0d6efd; stroke-width: 3px; filter: drop-shadow(0px 0px 6px rgba(13, 110, 253, 0.45)); }
+        /* The dark canvas makes all SVG text light; table and lane text keeps its theme colour (the dark defaults are in the variables). */
+        .dark-theme-canvas .tt-table-group text.tt-table-text, .dark-theme-canvas .tt-lane-group text.tt-lane-rowhead-text { fill: var(--sl-rowhead-text) !important; }
+        .dark-theme-canvas .tt-table-group text.tt-head-text, .dark-theme-canvas .tt-lane-group text.tt-lane-head-text { fill: var(--sl-head-text) !important; }
+        .dark-theme-canvas .tt-table-group text.tt-table-title, .dark-theme-canvas .tt-lane-group text.tt-lane-title { fill: var(--sl-title-text) !important; }
+        .tt-lane-drop { fill: rgba(13, 110, 253, 0.12); stroke: #0d6efd; stroke-width: 2; stroke-dasharray: 6 4; pointer-events: none; }
+        .tt-table-cells-grid { display: grid; gap: 2px; overflow-x: auto; max-height: 240px; overflow-y: auto; }
+        .tt-table-cells-grid input { min-width: 64px; font-size: 11px; }
+        .tt-table-cells-grid input.tt-cell-head { font-weight: 700; background: #eef2f7; }
+        .tt-table-step { min-width: 32px; min-height: 32px; }
+        @media (max-width: 767.98px) { .tt-table-step { min-width: 44px; min-height: 44px; } .tt-table-cells-grid input { min-height: 36px; } }
         /* FEAT-016: briefly highlight the component a threat belongs to */
         @keyframes focus-pulse-kf { 0%, 100% { filter: none; } 40% { filter: drop-shadow(0 0 10px rgba(13, 110, 253, 0.95)); } }
         .focus-pulse { animation: focus-pulse-kf 0.8s ease-in-out 2; }
@@ -1968,6 +1999,23 @@
                                             architecture charts into clear visual blocks or create master banners.</div>
                                     </div>
                                 </div>
+                                <!-- Table (rows, columns, header row/column, swimlane colour themes) -->
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="table" id="pal-table">
+                                        <i class="bi bi-table text-primary fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Table</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-primary"><i class="bi bi-table"></i> Table</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">A grid of text cells with an optional
+                                            header row and header column, in the swimlane colours. Add or remove rows and
+                                            columns and edit the cells in Properties.</div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -2061,6 +2109,70 @@
                                         <div class="small text-light opacity-75 mb-2">A dynamic matrix grid component
                                             that automatically groups, bounds, and resizes relative to elements placed
                                             inside its cells. Supports adding/deleting rows and columns.</div>
+                                    </div>
+                                </div>
+                                <!-- Swimlane-family containers (pool, vertical lanes, group / frame, phases) -->
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="pool" id="pal-pool">
+                                        <i class="bi bi-view-stacked text-success fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Pool (Horizontal Lanes)</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-success"><i class="bi bi-view-stacked"></i> Pool (Horizontal Lanes)</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">A BPMN-style pool: a vertical title band
+                                            on the left and horizontal lanes for each participant. Shapes placed inside move
+                                            with it. Add, remove and rename lanes in Properties.</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="vlanes" id="pal-vlanes">
+                                        <i class="bi bi-layout-three-columns text-success fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Vertical Lanes</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-success"><i class="bi bi-layout-three-columns"></i> Vertical Lanes</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">Side-by-side columns with a header each,
+                                            for teams, systems or stages. Shapes placed inside move with it. Add, remove and
+                                            rename columns in Properties.</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="group_frame" id="pal-group-frame">
+                                        <i class="bi bi-bounding-box text-success fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Group / Frame</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-success"><i class="bi bi-bounding-box"></i> Group / Frame</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">A titled box that groups related shapes.
+                                            It is drawn behind them and carries them along when moved. Not a trust zone.</div>
+                                    </div>
+                                </div>
+                                <div class="palette-item-container">
+                                    <div class="palette-item p-2 rounded bg-light d-flex align-items-center"
+                                        data-type="phases" id="pal-phases">
+                                        <i class="bi bi-chevron-double-right text-success fs-5 me-3"></i>
+                                        <div>
+                                            <div class="fw-semibold small">Phases / Timeline</div>
+                                        </div>
+                                    </div>
+                                    <div class="palette-popover-panel">
+                                        <div class="popover-header-title text-success"><i class="bi bi-chevron-double-right"></i> Phases / Timeline</div>
+                                        <div class="small fw-bold text-white-50 mb-1">Functional Definition:</div>
+                                        <div class="small text-light opacity-75 mb-2">Columns as phases with arrow-shaped
+                                            headers, for a timeline or a delivery process. Add, remove and rename phases in
+                                            Properties.</div>
                                     </div>
                                 </div>
                                 <!-- FC: Process (Rectangle) -->
@@ -2864,6 +2976,70 @@
                                         style="max-height: 120px;">
                                         <!-- rows dynamic list with rename and delete buttons -->
                                     </div>
+                                </div>
+                            </div>
+
+                            <!-- Table properties -->
+                            <div id="box-props-table" class="card card-body p-2 bg-light border d-none">
+                                <h6 class="small fw-bold text-dark border-bottom pb-1 mb-2">
+                                    <i class="bi bi-table me-1 text-primary"></i>Table
+                                </h6>
+                                <div class="mb-2">
+                                    <label class="extra-small text-muted fw-bold mb-1" for="props-table-title">Title (optional)</label>
+                                    <input type="text" class="form-control form-control-sm shadow-none" id="props-table-title" maxlength="200" placeholder="No title">
+                                </div>
+                                <div class="mb-2">
+                                    <div class="extra-small text-muted fw-bold mb-1" id="props-table-theme-label">Colour</div>
+                                    <div id="props-table-theme" class="d-flex flex-wrap gap-1" role="group" aria-labelledby="props-table-theme-label"></div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-3 mb-2">
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input tt-review-freeze" type="checkbox" id="props-table-header-row">
+                                        <label class="form-check-label extra-small text-dark fw-bold" for="props-table-header-row">Header row</label>
+                                    </div>
+                                    <div class="form-check form-switch mb-0">
+                                        <input class="form-check-input tt-review-freeze" type="checkbox" id="props-table-header-col">
+                                        <label class="form-check-label extra-small text-dark fw-bold" for="props-table-header-col">Header column</label>
+                                    </div>
+                                </div>
+                                <div class="d-flex flex-wrap gap-3 mb-2">
+                                    <div class="d-flex align-items-center gap-1" role="group" aria-label="Rows">
+                                        <span class="extra-small text-muted fw-bold me-1">Rows</span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 tt-table-step tt-review-freeze" id="props-table-remove-row" aria-label="Remove the last row" title="Remove the last row"><i class="bi bi-dash-lg"></i></button>
+                                        <span class="small fw-semibold text-center" id="props-table-rows-count" style="min-width: 22px;" aria-live="polite"></span>
+                                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1 tt-table-step tt-review-freeze" id="props-table-add-row" aria-label="Add a row" title="Add a row"><i class="bi bi-plus-lg"></i></button>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-1" role="group" aria-label="Columns">
+                                        <span class="extra-small text-muted fw-bold me-1">Columns</span>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-1 tt-table-step tt-review-freeze" id="props-table-remove-col" aria-label="Remove the last column" title="Remove the last column"><i class="bi bi-dash-lg"></i></button>
+                                        <span class="small fw-semibold text-center" id="props-table-cols-count" style="min-width: 22px;" aria-live="polite"></span>
+                                        <button type="button" class="btn btn-sm btn-outline-primary py-0 px-1 tt-table-step tt-review-freeze" id="props-table-add-col" aria-label="Add a column" title="Add a column"><i class="bi bi-plus-lg"></i></button>
+                                    </div>
+                                </div>
+                                <div class="extra-small text-muted fw-bold mb-1" id="props-table-cells-label">Cells <span class="fw-normal">(double-click a cell on the canvas to jump here)</span></div>
+                                <div id="props-table-cells" class="tt-table-cells-grid" role="group" aria-labelledby="props-table-cells-label"></div>
+                            </div>
+
+                            <!-- Pool, vertical lanes, group / frame and phases -->
+                            <div id="box-props-lanes" class="card card-body p-2 bg-light border d-none">
+                                <h6 class="small fw-bold text-dark border-bottom pb-1 mb-2">
+                                    <i class="bi bi-view-stacked me-1 text-primary"></i><span id="props-lanes-heading">Lanes</span>
+                                </h6>
+                                <div class="mb-2">
+                                    <label class="extra-small text-muted fw-bold mb-1" for="props-lanes-title">Title</label>
+                                    <input type="text" class="form-control form-control-sm shadow-none" id="props-lanes-title" maxlength="200">
+                                </div>
+                                <div class="mb-2">
+                                    <div class="extra-small text-muted fw-bold mb-1" id="props-lanes-theme-label">Colour</div>
+                                    <div id="props-lanes-theme" class="d-flex flex-wrap gap-1" role="group" aria-labelledby="props-lanes-theme-label"></div>
+                                </div>
+                                <div class="mb-0" id="props-lanes-lanes-box">
+                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                        <span class="extra-small text-muted fw-bold mb-0" id="props-lanes-list-label">Lanes</span>
+                                        <button type="button" class="btn btn-xs btn-outline-primary py-0 px-1 extra-small tt-review-freeze"
+                                            id="props-lanes-add" style="font-size: 10px;"><i class="bi bi-plus-lg"></i> <span id="props-lanes-add-label">Add lane</span></button>
+                                    </div>
+                                    <div id="props-lanes-list" class="d-flex flex-column gap-1 overflow-y-auto" style="max-height: 180px;" role="group" aria-labelledby="props-lanes-list-label"></div>
                                 </div>
                             </div>
 
@@ -4000,9 +4176,26 @@
             fc_database:     { label: 'Database (cylinder)',    name: 'Database',     w: 120, h: 100, fill: '#ecfccb', stroke: '#65a30d' },
             fc_cube:         { label: 'Cube (3D box)',          name: 'Cube',         w: 140, h: 100, fill: '#e0e7ff', stroke: '#4f46e5' },
         };
+        // ── Table and swimlane-family containers ─────────────────────────────────────
+        // A table (Text Items) and the lane containers next to the swimlane (pool, vertical lanes, group / frame,
+        // phases). None of them is a model component (no threats, never a flow end); all use the swimlane colour
+        // themes (SWIMLANE_THEMES and the .sl-theme-* variables). The swimlane type itself is not touched.
+        const TABLE_LIMITS = { rows: 30, cols: 12, cell: 500, title: 200, minColW: 40, minRowH: 20, titleH: 28 };
+        const LANE_CONTAINER_DEFAULTS = {
+            pool:        { label: 'Pool (horizontal lanes)', name: 'Pool',           laneWord: 'Lane',   lanes: ['Lane 1', 'Lane 2'],                w: 800, h: 360 },
+            vlanes:      { label: 'Vertical lanes',          name: 'Vertical Lanes', laneWord: 'Column', lanes: ['Column 1', 'Column 2', 'Column 3'], w: 720, h: 420 },
+            group_frame: { label: 'Group / frame',           name: 'Group',          laneWord: '',       lanes: [],                                  w: 400, h: 280 },
+            phases:      { label: 'Phases / timeline',       name: 'Phases',         laneWord: 'Phase',  lanes: ['Phase 1', 'Phase 2', 'Phase 3'],    w: 840, h: 360 },
+        };
+        const LANE_LIMITS = { lanes: 20, name: 200, minLane: 60, maxSize: 20000 };
+        const LANE_CONTAINER_TYPES = new Set(Object.keys(LANE_CONTAINER_DEFAULTS));
+        // Decorative shapes: left out of threats, flow ends, swimlane layout, elbow routing, quick add and Mermaid.
+        const TT_DECOR_TYPES = ['table', ...LANE_CONTAINER_TYPES];
+        // ── end table and containers ──
         // Every shape type the palette can add; imported or dropped types outside this list are not trusted.
         const ELEMENT_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'boundary', 'boundary_line', 'step_activity', 'textbox', 'headline',
             'custom_image', 'swimlane', ...Object.keys(FLOWCHART_DEFAULTS)]);
+        TT_DECOR_TYPES.forEach(t => ELEMENT_TYPES.add(t));   // table and lane containers
         // Grid sizes offered in the View menu.
         const GRID_SIZES = [10, 20, 40, 80];
         // Quick add: space between a flowchart node and the node added from one of its anchors.
@@ -4011,6 +4204,7 @@
         // ── Align and distribute ─────────────────────────────────────────────────────
         // Shapes the align toolbar moves (flows, boundary lines, swimlanes and text are left alone).
         const ALIGNABLE_TYPES = new Set(['process', 'datastore', 'interactor', 'infrastructure', 'custom_image', 'step_activity', 'boundary', ...Object.keys(FLOWCHART_DEFAULTS)]);
+        TT_DECOR_TYPES.forEach(t => ALIGNABLE_TYPES.add(t));   // table and lane containers (always stored with a size)
         // An element's box in model coordinates; missing sizes use the renderer's per-type defaults.
         function alignableBox(e) {
             if (!e || !ALIGNABLE_TYPES.has(e.type)) return null;
@@ -4371,8 +4565,10 @@
             if (t === 'step_activity') return 'step';
             if (['process', 'datastore', 'interactor', 'infrastructure', 'custom_image'].includes(t)) return 'component';
             if (t === 'textbox' || t === 'headline') return 'text';
+            if (TT_DECOR_TYPES.includes(t)) return 'themed';   // table and lane containers share the swimlane themes
             return null;
         }
+        STYLE_FAMILIES.themed = ['theme'];
         function paintableStyle(src, dst) {
             const fam = styleFamily(src);
             if (!fam || styleFamily(dst) !== fam) return {};
@@ -5301,8 +5497,44 @@
             if (STENCIL_ID.test(toText(raw.stencil))) el.stencil = toText(raw.stencil);
             if (safeStencilIcon(raw.stencilIcon)) el.stencilIcon = safeStencilIcon(raw.stencilIcon);
             if (Array.isArray(raw.stencilTags)) el.stencilTags = raw.stencilTags.map(toText).filter(t => Object.prototype.hasOwnProperty.call(SUBTYPE_LABELS, t)).slice(0, 6);
+            if (TT_DECOR_TYPES.includes(el.type)) normalizeDecorElement(el, raw);   // table and lane containers
             return el;
         }
+
+        // ── Table and lane containers: model validation ──────────────────────────────
+        /** Table cells: a rectangular string grid of 1–30 rows × 1–12 columns, each cell at most 500 characters. */
+        function normalizeTableCells(raw) {
+            const rows = (Array.isArray(raw) ? raw : []).filter(Array.isArray).slice(0, TABLE_LIMITS.rows);
+            if (!rows.length) return [['']];
+            const cols = Math.min(TABLE_LIMITS.cols, Math.max(1, ...rows.map(r => r.length)));
+            return rows.map(r => Array.from({ length: cols }, (_, c) => toText(r[c]).slice(0, TABLE_LIMITS.cell)));
+        }
+        /** Sizes, theme, title, and the table's cells / header switches or a container's lane names (untrusted import). */
+        function normalizeDecorElement(el, raw) {
+            el.name = toText(raw.name).slice(0, LANE_LIMITS.name);
+            el.theme = SWIMLANE_THEME_IDS.has(toText(raw.theme)) ? toText(raw.theme) : '';
+            if (el.type === 'table') {
+                el.cells = normalizeTableCells(raw.cells);
+                el.headerRow = raw.headerRow === true;
+                el.headerCol = raw.headerCol === true;
+                delete el.lanes;
+            } else {
+                const def = LANE_CONTAINER_DEFAULTS[el.type];
+                const lanes = Array.isArray(raw.lanes) ? raw.lanes.slice(0, LANE_LIMITS.lanes).map(v => toText(v).slice(0, LANE_LIMITS.name)) : [];
+                el.lanes = def.lanes.length ? (lanes.length ? lanes : def.lanes.slice()) : [];
+                delete el.cells; delete el.headerRow; delete el.headerCol;
+            }
+            const size = (v, fallback) => { const n = toNumber(v, 0); return n > 0 ? Math.min(LANE_LIMITS.maxSize, n) : fallback; };
+            const def = el.type === 'table' ? { w: 360, h: 120 } : LANE_CONTAINER_DEFAULTS[el.type];
+            el.width = size(raw.width, def.w); el.height = size(raw.height, def.h);
+        }
+        /** Review mode: the part of a table's / container's structure that counts as layout. */
+        function ttLayoutOf(e) {
+            if (e.type === 'table') return [(e.cells || []).length, ((e.cells || [])[0] || []).length, !!e.headerRow, !!e.headerCol];
+            if (LANE_CONTAINER_TYPES.has(e.type)) return [(e.lanes || []).length];
+            return null;
+        }
+        // ── end table and containers: model validation ──
 
         function normalizeFlow(raw, ctx) {
             if (!isPlainObject(raw)) { ctx.warn('Skipped a data flow entry that was not an object.'); return null; }
@@ -6887,7 +7119,7 @@
             static layoutOf(json) {
                 const m = typeof json === 'string' ? JSON.parse(json) : json;
                 const pick = (o, keys) => keys.map(k => o[k] === undefined ? null : o[k]);
-                const lanes = (e) => e.type === 'swimlane' ? [(e.columns || []).length, (e.rows || []).length, e.colWidths, e.rowHeights] : null;
+                const lanes = (e) => e.type === 'swimlane' ? [(e.columns || []).length, (e.rows || []).length, e.colWidths, e.rowHeights] : ttLayoutOf(e);
                 return JSON.stringify([
                     (m.elements || []).map(e => [...pick(e, ['id', 'type', 'x', 'y', 'x2', 'y2', 'width', 'height', 'bendX', 'bendY', 'pageId']), lanes(e)]),
                     (m.flows || []).map(f => pick(f, ['id', 'sourceId', 'targetId', 'sourceAnchor', 'targetAnchor', 'points', 'bendX', 'bendY'])),
@@ -7748,6 +7980,8 @@
                 });
 
                 const paletteIds = ['pal-process', 'pal-datastore', 'pal-interactor', 'pal-boundary', 'pal-boundary-line', 'pal-step-activity', 'pal-textbox', 'pal-headline', 'pal-infrastructure', 'pal-custom-image', 'pal-swimlane', 'pal-fc-process', 'pal-fc-decision', 'pal-fc-terminator', 'pal-fc-data', 'pal-fc-document', 'pal-fc-manual-input', 'pal-fc-preparation', 'pal-fc-connector', 'pal-fc-stored-data', 'pal-fc-database', 'pal-fc-cube'];
+                paletteIds.push('pal-table', 'pal-pool', 'pal-vlanes', 'pal-group-frame', 'pal-phases');   // table and lane containers
+                this.ttBindDecorControls();
                 paletteIds.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) {
@@ -8428,7 +8662,7 @@
                                 // The flow's other end is excluded (no self-loops), as are shapes on hidden layers.
                                 const otherEnd = this.activeFlowDragMode === 'flow_source' ? flow.targetId : flow.sourceId;
                                 this.state.elements.forEach(el => {
-                                    if (['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(el.type)) return;
+                                    if (['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane', ...TT_DECOR_TYPES].includes(el.type)) return;
                                     if (el.id === otherEnd || !this.isItemVisible(el)) return;
                                     if (this.isPointInsideElement(el, canvasSpaceCoords)) {
                                         hoverEl = el;
@@ -8505,6 +8739,8 @@
                                 minW = 100;
                                 minH = 30;
                             }
+                            const ttMin = this.ttMinSize(targetEl);   // table and lane containers
+                            if (ttMin) { minW = ttMin.w; minH = ttMin.h; }
                             targetEl.width = Math.max(minW, this.snapValue(this.resizeStartDims.width + (canvasSpaceCoords.x - this.resizeStartCanvasCoords.x)));
                             targetEl.height = Math.max(minH, this.snapValue(this.resizeStartDims.height + (canvasSpaceCoords.y - this.resizeStartCanvasCoords.y)));
                             this.scheduleDiagramRender();
@@ -8775,7 +9011,7 @@
                         const canvasSpaceCoords = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
                         let dropTargetId = null;
                         this.state.elements.forEach(el => {
-                            if (el.id === this.phantomWireSourceId || ['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(el.type)) return;
+                            if (el.id === this.phantomWireSourceId || ['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane', ...TT_DECOR_TYPES].includes(el.type)) return;
                             if (this.isItemVisible(el) && this.isPointInsideElement(el, canvasSpaceCoords)) dropTargetId = el.id;
                         });
                         const press = this.phantomWirePress; this.phantomWirePress = null;
@@ -9325,7 +9561,7 @@
 
             /** The shapes elbow flows go around: everything solid on the page (not zones, lanes, boundary lines or text). */
             elbowObstacleBoxes() {
-                const skip = new Set(['boundary', 'boundary_line', 'swimlane', 'textbox', 'headline']);
+                const skip = new Set(['boundary', 'boundary_line', 'swimlane', 'textbox', 'headline', ...TT_DECOR_TYPES]);
                 return this.state.elements.filter(e => !skip.has(e.type) && this.isItemVisible(e)).map(e => {
                     let w = e.width, h = e.height;
                     if (!w || !h) {
@@ -9397,7 +9633,7 @@
             /** Review mode: the Properties controls that change the layout (type, flow ends, swimlane columns and rows) are disabled. */
             applyReviewModeToControls() {
                 const on = !!(this.state && this.state.reviewMode);
-                document.querySelectorAll('#props-node-type, #props-flow-src-select, #props-flow-dst-select, #props-swimlane-add-col, #props-swimlane-add-row, #props-swimlane-cols-list .col-delete-btn, #props-swimlane-rows-list .row-delete-btn').forEach(c => {
+                document.querySelectorAll('#props-node-type, #props-flow-src-select, #props-flow-dst-select, #props-swimlane-add-col, #props-swimlane-add-row, #props-swimlane-cols-list .col-delete-btn, #props-swimlane-rows-list .row-delete-btn, .tt-review-freeze').forEach(c => {
                     if (on) { if (!c.disabled) { c.disabled = true; c.dataset.reviewDisabled = '1'; c.title = 'Review mode is on: the layout is frozen'; } }
                     else if (c.dataset.reviewDisabled) { c.disabled = false; delete c.dataset.reviewDisabled; c.removeAttribute('title'); }
                 });
@@ -9867,7 +10103,7 @@
                     poly.setAttribute('class', 'minimap-item');
                     poly.setAttribute('data-minimap-id', e.id);
                     poly.setAttribute('points', pts);
-                    if (e.type === 'boundary' || e.type === 'swimlane') poly.setAttribute('fill-opacity', '0.35');
+                    if (e.type === 'boundary' || e.type === 'swimlane' || LANE_CONTAINER_TYPES.has(e.type)) poly.setAttribute('fill-opacity', '0.35');
                     map.appendChild(poly);
                 });
                 const vp = document.createElementNS(ns, 'rect');
@@ -9965,7 +10201,7 @@
                     const encloses = bx <= x1 && bx + bw >= x2 && by <= y1 && by + bh >= y2;
                     // Containers (zones, swimlanes) are selected only when the box fully encloses them,
                     // so a box drawn inside a zone selects the components, not the zone.
-                    const isContainer = el.type === 'boundary' || el.type === 'swimlane';
+                    const isContainer = el.type === 'boundary' || el.type === 'swimlane' || LANE_CONTAINER_TYPES.has(el.type);
                     if (isContainer ? encloses : overlaps) this.state.selectedElementIds.push(el.id);
                 });
                 this.refreshAppViewVisualWorkspace();
@@ -10014,6 +10250,7 @@
                     ...(type === 'swimlane' && { width: w, height: h, columns: ['Column 1', 'Column 2'], rows: ['Row 1', 'Row 2'] }),
                     ...(FLOWCHART_DEFAULTS[type] && { width: w, height: h, fcFillColor: FLOWCHART_DEFAULTS[type].fill, fcStrokeColor: FLOWCHART_DEFAULTS[type].stroke, fcStrokeWidth: 2 }),
                 };
+                if (TT_DECOR_TYPES.includes(type)) return this.ttElementDefaults(type);   // table and lane containers
                 return { name, width: w, height: h, props };
             }
 
@@ -10106,7 +10343,7 @@
                     bottom: { x: src.x, y: src.y + h + gap }, top: { x: src.x, y: src.y - gap - h },
                 }[dir];
                 const horizontal = dir === 'left' || dir === 'right';
-                const blockers = this.state.elements.filter(e => !['swimlane', 'boundary', 'boundary_line', 'headline', 'textbox'].includes(e.type));
+                const blockers = this.state.elements.filter(e => !['swimlane', 'boundary', 'boundary_line', 'headline', 'textbox', ...LANE_CONTAINER_TYPES].includes(e.type));
                 const free = (x, y) => !blockers.some(e => {
                     const ew = e.width || 240, eh = e.height || 80, m = 20;
                     return x < e.x + ew + m && x + w + m > e.x && y < e.y + eh + m && y + h + m > e.y;
@@ -10411,6 +10648,425 @@
                 return html;
             }
 
+            // ── Table and lane containers (pool, vertical lanes, group / frame, phases) ──────────
+            // Drawn with DOM APIs only (setAttribute / textContent): no cell text or lane name reaches innerHTML.
+
+            /** Defaults for a new table or lane container (used by elementDefaults). */
+            ttElementDefaults(type) {
+                if (type === 'table') {
+                    return { name: '', width: 360, height: 120, props: { width: 360, height: 120, headerRow: true, headerCol: false, theme: '',
+                        cells: [['Header 1', 'Header 2', 'Header 3'], ['', '', ''], ['', '', '']] } };
+                }
+                const d = LANE_CONTAINER_DEFAULTS[type];
+                return { name: d.name, width: d.w, height: d.h, props: { width: d.w, height: d.h, theme: '', lanes: d.lanes.slice() } };
+            }
+
+            /** Table layout: equal columns and rows that fill the table's size (never below the minimum cell size). */
+            ttTableGeometry(t) {
+                const cells = Array.isArray(t.cells) && t.cells.length ? t.cells : [['']];
+                const rows = cells.length, cols = Math.max(1, ...cells.map(r => (Array.isArray(r) ? r.length : 0)));
+                const titleH = toText(t.name).trim() ? TABLE_LIMITS.titleH : 0;
+                const w = Math.max(cols * TABLE_LIMITS.minColW, toNumber(t.width, 360));
+                const h = Math.max(titleH + rows * TABLE_LIMITS.minRowH, toNumber(t.height, 120));
+                return { cells, rows, cols, titleH, w, h, colW: w / cols, rowH: (h - titleH) / rows };
+            }
+
+            /** Lane container layout: the content box of each lane (model coordinates relative to the container). */
+            ttLaneGeometry(c) {
+                const d = LANE_CONTAINER_DEFAULTS[c.type];
+                const w = Math.max(120, toNumber(c.width, d.w)), h = Math.max(80, toNumber(c.height, d.h));
+                const lanes = d.lanes.length ? ((Array.isArray(c.lanes) && c.lanes.length) ? c.lanes : d.lanes) : [];
+                const titled = !!toText(c.name).trim();
+                if (c.type === 'pool') {
+                    const band = 40, head = 32, laneH = h / lanes.length;
+                    return { w, h, band, head, lanes: lanes.map((n, i) => ({ name: toText(n), x: band, y: i * laneH, w: w - band, h: laneH })) };
+                }
+                if (c.type === 'group_frame') {
+                    const top = titled ? 30 : 0;
+                    return { w, h, top, lanes: [{ name: '', x: 0, y: top, w, h: h - top }] };
+                }
+                const top = titled ? 40 : 0, head = c.type === 'phases' ? 40 : 35, colW = w / lanes.length;
+                return { w, h, top, head, lanes: lanes.map((n, i) => ({ name: toText(n), x: i * colW, y: top, w: colW, h: h - top })) };
+            }
+
+            /** Smallest size the corner resize handle allows for a table or a lane container (null for other shapes). */
+            ttMinSize(el) {
+                if (el.type === 'table') {
+                    const g = this.ttTableGeometry(Object.assign({}, el, { width: 0, height: 0 }));
+                    return { w: g.w, h: g.h };
+                }
+                if (!LANE_CONTAINER_TYPES.has(el.type)) return null;
+                const n = Math.max(1, (el.lanes || []).length);
+                if (el.type === 'pool') return { w: 200, h: Math.max(100, n * LANE_LIMITS.minLane) };
+                if (el.type === 'group_frame') return { w: 120, h: 80 };
+                return { w: Math.max(200, n * LANE_LIMITS.minLane), h: 120 };
+            }
+
+            /** Text shortened with an ellipsis to fit about `px` pixels (lane headers; table cells are clipped instead). */
+            static ttFit(text, px, charPx = 7) {
+                const t = toText(text), max = Math.max(1, Math.floor(px / charPx));
+                return t.length > max ? t.slice(0, Math.max(1, max - 1)) + '…' : t;
+            }
+
+            /** The resize handle at a decorative shape's drawn size. */
+            ttResizeHandle(item, w, h) {
+                return this.createResizeHandleSvgDOMItem({ id: item.id, width: w, height: h });
+            }
+
+            /** Tables, drawn on the nodes layer after the other shapes. */
+            ttRenderTables() {
+                const NS = 'http://www.w3.org/2000/svg';
+                const mk = (tag, attrs, cls) => { const n = document.createElementNS(NS, tag); Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v)); if (cls) n.setAttribute('class', cls); return n; };
+                this.state.elements.filter(e => e.type === 'table').forEach(t => {
+                    const isSelected = this.state.selectedElementIds.includes(t.id);
+                    const theme = t.theme && SWIMLANE_THEME_IDS.has(t.theme) ? ` sl-theme-${t.theme}` : '';
+                    const g = mk('g', { 'data-id': t.id, transform: `translate(${toNumber(t.x, 0)}, ${toNumber(t.y, 0)})` },
+                        `node-element swimlane-group tt-table-group${theme}${isSelected ? ' selected' : ''}${t.isDisabled ? ' disabled' : ''}`);
+                    const geo = this.ttTableGeometry(t);
+                    if (geo.titleH) {
+                        g.appendChild(mk('rect', { width: geo.w, height: geo.titleH }, 'tt-table-title-bg'));
+                        const clip = mk('svg', { x: 0, y: 0, width: geo.w, height: geo.titleH });
+                        const title = mk('text', { x: 8, y: geo.titleH / 2, 'dominant-baseline': 'central' }, 'tt-table-title');
+                        title.textContent = toText(t.name);
+                        clip.appendChild(title); g.appendChild(clip);
+                    }
+                    geo.cells.forEach((row, r) => {
+                        for (let c = 0; c < geo.cols; c++) {
+                            const head = !!t.headerRow && r === 0, rowHead = !head && !!t.headerCol && c === 0;
+                            const x = c * geo.colW, y = geo.titleH + r * geo.rowH;
+                            const cell = mk('rect', { x, y, width: geo.colW, height: geo.rowH, 'data-cell': `${r}:${c}` },
+                                `tt-table-cell${head ? ' tt-table-head' : ''}${rowHead ? ' tt-table-rowhead' : ''}`);
+                            // Double-click a cell: select the table and put the cursor in that cell's input in Properties.
+                            cell.addEventListener('mousedown', (ev) => {
+                                if (ev.button !== 0 || ev.detail < 2) return;
+                                ev.stopPropagation(); ev.preventDefault();
+                                this.ttFocusTableCell(t.id, r, c);
+                            });
+                            g.appendChild(cell);
+                            const text = toText((row || [])[c]);
+                            if (text) {
+                                const clip = mk('svg', { x, y, width: geo.colW, height: geo.rowH });   // clips long text to the cell
+                                const tx = mk('text', { x: 6, y: geo.rowH / 2, 'dominant-baseline': 'central' },
+                                    `tt-table-text${head ? ' tt-head-text' : ''}${rowHead ? ' tt-rowhead-text' : ''}`);
+                                tx.textContent = text;
+                                clip.appendChild(tx); g.appendChild(clip);
+                            }
+                        }
+                    });
+                    g.appendChild(mk('rect', { width: geo.w, height: geo.h }, 'tt-table-frame'));
+                    if (isSelected && this.state.selectedElementIds.length === 1 && !this.state.reviewMode && !this.isItemLocked(t)) g.appendChild(this.ttResizeHandle(t, geo.w, geo.h));
+                    this.attachNodeEventHandlersLayers(t, g);
+                    this.dom.layerNodes.appendChild(g);
+                });
+            }
+
+            /** Pool, vertical lanes, group / frame and phases, drawn on the swimlane layer (behind every shape). */
+            ttRenderLaneContainers() {
+                const NS = 'http://www.w3.org/2000/svg';
+                const mk = (tag, attrs, cls) => { const n = document.createElementNS(NS, tag); Object.entries(attrs).forEach(([k, v]) => n.setAttribute(k, v)); if (cls) n.setAttribute('class', cls); return n; };
+                const label = (attrs, cls, text) => { const n = mk('text', attrs, cls); n.textContent = text; return n; };
+                const fit = ThreatModelingApp.ttFit;
+                // Drop target while shapes are dragged: the lane under the centre of the first dragged shape.
+                let lead = null;
+                if (this.isDraggingElements && this.initialDragPositions) {
+                    const ids = new Set(this.initialDragPositions.map(p => p.id));
+                    const moving = this.state.elements.filter(e => ids.has(e.id));
+                    if (!moving.some(e => LANE_CONTAINER_TYPES.has(e.type) || e.type === 'swimlane')) lead = moving.find(e => !['boundary', 'boundary_line'].includes(e.type)) || null;
+                }
+                this.state.elements.filter(e => LANE_CONTAINER_TYPES.has(e.type)).forEach(c => {
+                    const isSelected = this.state.selectedElementIds.includes(c.id);
+                    const theme = c.theme && SWIMLANE_THEME_IDS.has(c.theme) ? ` sl-theme-${c.theme}` : '';
+                    const x0 = toNumber(c.x, 0), y0 = toNumber(c.y, 0);
+                    const g = mk('g', { 'data-id': c.id, 'data-kind': c.type, transform: `translate(${x0}, ${y0})` },
+                        `node-element swimlane-group tt-lane-group${theme}${isSelected ? ' selected' : ''}${c.isDisabled ? ' disabled' : ''}`);
+                    const geo = this.ttLaneGeometry(c), w = geo.w, h = geo.h, name = toText(c.name);
+                    g.appendChild(mk('rect', { width: w, height: h, rx: 8, ry: 8 }, 'tt-lane-bg'));
+                    if (c.type === 'pool') {
+                        g.appendChild(mk('path', { d: `M 8 0 L ${geo.band} 0 L ${geo.band} ${h} L 8 ${h} A 8 8 0 0 1 0 ${h - 8} L 0 8 A 8 8 0 0 1 8 0 Z` }, 'tt-lane-title-band'));
+                        g.appendChild(label({ x: geo.band / 2, y: h / 2, 'text-anchor': 'middle', 'dominant-baseline': 'central', transform: `rotate(-90 ${geo.band / 2} ${h / 2})` }, 'tt-lane-title', fit(name.toUpperCase(), h - 16, 9)));
+                        geo.lanes.forEach((l, i) => {
+                            g.appendChild(mk('rect', { x: l.x, y: l.y, width: geo.head, height: l.h }, 'tt-lane-rowhead'));
+                            const cx = l.x + geo.head / 2, cy = l.y + l.h / 2;
+                            g.appendChild(label({ x: cx, y: cy, 'text-anchor': 'middle', 'dominant-baseline': 'central', transform: `rotate(-90 ${cx} ${cy})` }, 'tt-lane-rowhead-text', fit(l.name.toUpperCase(), l.h - 12, 8)));
+                            if (i) g.appendChild(mk('line', { x1: geo.band, y1: l.y, x2: w, y2: l.y }, 'tt-lane-line'));
+                        });
+                        g.appendChild(mk('line', { x1: geo.band + geo.head, y1: 0, x2: geo.band + geo.head, y2: h }, 'tt-lane-line'));
+                    } else if (c.type === 'group_frame') {
+                        if (geo.top) {
+                            const tabW = Math.min(w, 28 + name.length * 7.5);
+                            g.appendChild(mk('path', { d: `M 0 8 A 8 8 0 0 1 8 0 L ${tabW - 8} 0 A 8 8 0 0 1 ${tabW} 8 L ${tabW} ${geo.top} L 0 ${geo.top} Z` }, 'tt-lane-title-band'));
+                            g.appendChild(label({ x: 12, y: geo.top / 2, 'dominant-baseline': 'central' }, 'tt-lane-title', fit(name, tabW - 18, 8)));
+                            g.appendChild(mk('line', { x1: 0, y1: geo.top, x2: w, y2: geo.top }, 'tt-lane-line'));
+                        }
+                    } else {
+                        if (geo.top) {
+                            g.appendChild(mk('path', { d: `M 0 8 A 8 8 0 0 1 8 0 L ${w - 8} 0 A 8 8 0 0 1 ${w} 8 L ${w} ${geo.top} L 0 ${geo.top} Z` }, 'tt-lane-title-band'));
+                            g.appendChild(label({ x: 15, y: geo.top / 2, 'dominant-baseline': 'central' }, 'tt-lane-title', fit(name.toUpperCase(), w - 30, 9)));
+                        }
+                        const hy = geo.top, hh = geo.head, notch = 14;
+                        geo.lanes.forEach((l, i) => {
+                            if (c.type === 'phases') {
+                                const a = l.x, b = l.x + l.w, tip = i < geo.lanes.length - 1 ? notch : 0;
+                                const pts = [[a, hy], [b - tip, hy], [b, hy + hh / 2], [b - tip, hy + hh], [a, hy + hh], [a + (i ? notch : 0), hy + hh / 2]];
+                                // The last phase ends square (it is the right edge of the shape).
+                                if (!tip) pts.splice(2, 1);
+                                g.appendChild(mk('polygon', { points: pts.map(p => p.join(',')).join(' ') }, 'tt-phase-chevron'));
+                                if (i) g.appendChild(mk('line', { x1: l.x, y1: hy + hh, x2: l.x, y2: h }, 'tt-lane-line tt-lane-dashed'));
+                            } else {
+                                g.appendChild(mk('rect', { x: l.x, y: hy, width: l.w, height: hh }, 'tt-lane-head'));
+                                if (i) g.appendChild(mk('line', { x1: l.x, y1: hy, x2: l.x, y2: h }, 'tt-lane-line'));
+                            }
+                            g.appendChild(label({ x: l.x + l.w / 2, y: hy + hh / 2, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, 'tt-lane-head-text', fit(l.name.toUpperCase(), l.w - 2 * notch - 4, 8)));
+                        });
+                        g.appendChild(mk('line', { x1: 0, y1: hy + hh, x2: w, y2: hy + hh }, 'tt-lane-line'));
+                    }
+                    g.appendChild(mk('rect', { width: w, height: h, rx: 8, ry: 8 }, 'tt-lane-frame'));
+                    if (lead) {
+                        const lw = lead.width || 240, lh = lead.height || 80, px = lead.x + lw / 2 - x0, py = lead.y + lh / 2 - y0;
+                        const hit = geo.lanes.findIndex(l => px >= l.x && px < l.x + l.w && py >= l.y && py < l.y + l.h);
+                        if (hit >= 0) {
+                            const l = geo.lanes[hit];
+                            g.appendChild(mk('rect', { x: l.x + 3, y: l.y + 3, width: Math.max(0, l.w - 6), height: Math.max(0, l.h - 6), rx: 6, 'data-lane': hit }, 'tt-lane-drop'));
+                        }
+                    }
+                    if (isSelected && this.state.selectedElementIds.length === 1 && !this.state.reviewMode && !this.isItemLocked(c)) g.appendChild(this.ttResizeHandle(c, w, h));
+                    this.attachNodeEventHandlersLayers(c, g);
+                    this.dom.layerSwimlanes.appendChild(g);
+                });
+            }
+
+            /** Moving a lane container carries the shapes whose centre is inside it (zones and containers only when wholly inside). */
+            ttAddContainerContents(dragIds) {
+                const els = this.state.elements;
+                [...dragIds].forEach(id => {
+                    const box = els.find(e => e.id === id);
+                    if (!box || !LANE_CONTAINER_TYPES.has(box.type)) return;
+                    const bx = toNumber(box.x, 0), by = toNumber(box.y, 0), bw = toNumber(box.width, 0), bh = toNumber(box.height, 0);
+                    els.forEach(e => {
+                        if (dragIds.has(e.id) || e.pageId !== box.pageId || ['boundary_line', 'swimlane'].includes(e.type)) return;
+                        if (this.isItemLocked(e) || !this.isItemVisible(e)) return;   // locked or hidden layers stay put
+                        const w = e.width || 240, h = e.height || 80;
+                        const whole = e.x >= bx && e.y >= by && e.x + w <= bx + bw && e.y + h <= by + bh;
+                        const centre = e.x + w / 2 >= bx && e.x + w / 2 <= bx + bw && e.y + h / 2 >= by && e.y + h / 2 <= by + bh;
+                        if (e.type === 'boundary' || LANE_CONTAINER_TYPES.has(e.type) ? whole : centre) dragIds.add(e.id);
+                    });
+                });
+            }
+
+            /** Select a table and focus the input of cell (r, c) in Properties (double-click on the canvas). */
+            ttFocusTableCell(id, r, c) {
+                if (!(this.state.selectedElementIds.length === 1 && this.state.selectedElementIds[0] === id)) this.handleElementSelectionEvent(id);
+                if (this.isRightCollapsed) this.toggleRightPanel();
+                const tab = document.getElementById('tab-props-trigger');
+                if (tab && !tab.classList.contains('active') && window.bootstrap) window.bootstrap.Tab.getOrCreateInstance(tab).show();
+                setTimeout(() => {
+                    const input = document.querySelector(`#props-table-cells input[data-r="${toNumber(r, 0)}"][data-c="${toNumber(c, 0)}"]`);
+                    if (input) { input.focus(); input.select(); }
+                }, 0);
+            }
+
+            /** One table edit = one undo step and one log entry. Structure changes are blocked in review mode. */
+            ttTableEdit(id, op, a, b, v) {
+                const t = this.state.elements.find(e => e.id === id && e.type === 'table');
+                if (!t) return false;
+                const structural = ['add-row', 'remove-row', 'add-col', 'remove-col', 'header-row', 'header-col'].includes(op);
+                if (structural && this.blockedByReviewMode('change the table\'s rows, columns or headers')) { this.updatePropertiesInspectorView(); return false; }
+                const geo = this.ttTableGeometry(t), label = toText(t.name) || 'Table';
+                t.cells = geo.cells.map(row => Array.from({ length: geo.cols }, (_, c) => toText((row || [])[c])));
+                let msg = '';
+                if (op === 'add-row') {
+                    if (geo.rows >= TABLE_LIMITS.rows) { this.notify(`A table has at most ${TABLE_LIMITS.rows} rows.`, 'info'); return false; }
+                    t.cells.push(Array(geo.cols).fill('')); t.height = Math.min(LANE_LIMITS.maxSize, geo.h + geo.rowH); msg = `Added a row to table "${label}"`;
+                } else if (op === 'remove-row') {
+                    if (geo.rows <= 1) return false;
+                    t.cells.pop(); t.height = Math.max(geo.titleH + (geo.rows - 1) * TABLE_LIMITS.minRowH, geo.h - geo.rowH); msg = `Removed the last row of table "${label}"`;
+                } else if (op === 'add-col') {
+                    if (geo.cols >= TABLE_LIMITS.cols) { this.notify(`A table has at most ${TABLE_LIMITS.cols} columns.`, 'info'); return false; }
+                    t.cells.forEach(row => row.push('')); t.width = Math.min(LANE_LIMITS.maxSize, geo.w + geo.colW); msg = `Added a column to table "${label}"`;
+                } else if (op === 'remove-col') {
+                    if (geo.cols <= 1) return false;
+                    t.cells.forEach(row => row.pop()); t.width = Math.max((geo.cols - 1) * TABLE_LIMITS.minColW, geo.w - geo.colW); msg = `Removed the last column of table "${label}"`;
+                } else if (op === 'header-row' || op === 'header-col') {
+                    const key = op === 'header-row' ? 'headerRow' : 'headerCol', on = !!a;
+                    if (!!t[key] === on) return false;
+                    t[key] = on; msg = `Turned the header ${op === 'header-row' ? 'row' : 'column'} of table "${label}" ${on ? 'on' : 'off'}`;
+                } else if (op === 'cell') {
+                    const r = toNumber(a, -1), c = toNumber(b, -1), value = toText(v).slice(0, TABLE_LIMITS.cell);
+                    if (!t.cells[r] || c < 0 || c >= geo.cols || t.cells[r][c] === value) return false;
+                    t.cells[r][c] = value; msg = `Edited cell ${r + 1}, ${c + 1} of table "${label}"`;
+                } else if (op === 'title') {
+                    const value = toText(a).slice(0, TABLE_LIMITS.title);
+                    if (value === toText(t.name)) return false;
+                    const oldTitleH = geo.titleH, newTitleH = value.trim() ? TABLE_LIMITS.titleH : 0;
+                    t.name = value; t.height = Math.max(newTitleH + geo.rows * TABLE_LIMITS.minRowH, geo.h + newTitleH - oldTitleH);   // rows keep their height
+                    msg = `Renamed table "${label}" to "${value || 'untitled'}"`;
+                } else if (op === 'theme') {
+                    const theme = SWIMLANE_THEME_IDS.has(toText(a)) ? toText(a) : '';
+                    if ((t.theme || '') === theme) return false;
+                    t.theme = theme; msg = `Changed colour of table "${label}" to ${(SWIMLANE_THEMES.find(x => x.id === theme) || {}).label}`;
+                } else return false;
+                this.logEvent('CHANGE', msg);
+                this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace();
+                return true;
+            }
+
+            /** One lane container edit = one undo step and one log entry. Adding and removing lanes is blocked in review mode. */
+            ttLaneEdit(id, op, index, value) {
+                const c = this.state.elements.find(e => e.id === id && LANE_CONTAINER_TYPES.has(e.type));
+                if (!c) return false;
+                const d = LANE_CONTAINER_DEFAULTS[c.type], word = (d.laneWord || 'lane').toLowerCase(), label = toText(c.name) || d.name;
+                if ((op === 'add' || op === 'remove') && (!d.lanes.length || this.blockedByReviewMode(`add or remove ${word}s`))) { this.updatePropertiesInspectorView(); return false; }
+                const geo = this.ttLaneGeometry(c);
+                c.lanes = d.lanes.length ? geo.lanes.map(l => l.name) : [];
+                const horizontal = c.type === 'pool', n = c.lanes.length, i = toNumber(index, -1);
+                let msg = '';
+                if (op === 'add') {
+                    if (n >= LANE_LIMITS.lanes) { this.notify(`At most ${LANE_LIMITS.lanes} ${word}s.`, 'info'); return false; }
+                    c.lanes.push(`${d.laneWord} ${n + 1}`);
+                    if (horizontal) c.height = Math.min(LANE_LIMITS.maxSize, geo.h + geo.h / n); else c.width = Math.min(LANE_LIMITS.maxSize, geo.w + geo.w / n);
+                    msg = `Added a ${word} to ${d.label.toLowerCase()} "${label}"`;
+                } else if (op === 'remove') {
+                    if (n <= 1 || i < 0 || i >= n) return false;
+                    c.lanes.splice(i, 1);
+                    const min = this.ttMinSize(c);
+                    if (horizontal) c.height = Math.max(min.h, geo.h - geo.h / n); else c.width = Math.max(min.w, geo.w - geo.w / n);
+                    msg = `Removed ${word} ${i + 1} from ${d.label.toLowerCase()} "${label}"`;
+                } else if (op === 'rename') {
+                    const v = toText(value).slice(0, LANE_LIMITS.name);
+                    if (i < 0 || i >= n || c.lanes[i] === v) return false;
+                    c.lanes[i] = v; msg = `Renamed ${word} ${i + 1} of "${label}" to "${v}"`;
+                } else if (op === 'title') {
+                    const v = toText(value).slice(0, LANE_LIMITS.name);
+                    if (v === toText(c.name)) return false;
+                    c.name = v; msg = `Renamed ${d.label.toLowerCase()} "${label}" to "${v}"`;
+                } else if (op === 'theme') {
+                    const theme = SWIMLANE_THEME_IDS.has(toText(value)) ? toText(value) : '';
+                    if ((c.theme || '') === theme) return false;
+                    c.theme = theme; msg = `Changed colour of ${d.label.toLowerCase()} "${label}" to ${(SWIMLANE_THEMES.find(x => x.id === theme) || {}).label}`;
+                } else return false;
+                this.logEvent('CHANGE', msg);
+                this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace();
+                return true;
+            }
+
+            /** The swimlane colour swatches (same themes, same swatch style) for a table or a lane container. */
+            ttRenderThemePicker(boxId, item, onPick) {
+                const box = document.getElementById(boxId);
+                if (!box) return;
+                box.replaceChildren();
+                const current = SWIMLANE_THEME_IDS.has(item.theme) ? item.theme : '';
+                SWIMLANE_THEMES.forEach(t => {
+                    const b = document.createElement('button');
+                    b.type = 'button'; b.className = 'swimlane-theme-swatch';
+                    b.dataset.theme = t.id; b.title = t.label; b.setAttribute('aria-label', `${t.label} colour`);
+                    b.setAttribute('aria-pressed', String(t.id === current));
+                    const top = document.createElement('span'); top.style.background = t.title;
+                    const bottom = document.createElement('span'); bottom.style.background = t.body;
+                    b.style.flexDirection = 'column'; b.append(top, bottom);
+                    b.addEventListener('click', () => onPick(t.id));
+                    box.appendChild(b);
+                });
+            }
+
+            /** Properties for a table or a lane container. Inputs keep their focus and typing across re-renders. */
+            ttRenderDecorProperties(item) {
+                const keep = (input, value) => { if (input && document.activeElement !== input) input.value = value; };
+                if (item.type === 'table') {
+                    document.getElementById('box-props-table').classList.remove('d-none');
+                    const geo = this.ttTableGeometry(item);
+                    keep(document.getElementById('props-table-title'), toText(item.name));
+                    this.ttRenderThemePicker('props-table-theme', item, (theme) => this.ttTableEdit(item.id, 'theme', theme));
+                    document.getElementById('props-table-header-row').checked = !!item.headerRow;
+                    document.getElementById('props-table-header-col').checked = !!item.headerCol;
+                    document.getElementById('props-table-rows-count').textContent = String(geo.rows);
+                    document.getElementById('props-table-cols-count').textContent = String(geo.cols);
+                    [['props-table-remove-row', geo.rows <= 1], ['props-table-add-row', geo.rows >= TABLE_LIMITS.rows],
+                        ['props-table-remove-col', geo.cols <= 1], ['props-table-add-col', geo.cols >= TABLE_LIMITS.cols],
+                        ['props-table-header-row', false], ['props-table-header-col', false]].forEach(([bid, off]) => {
+                        const btn = document.getElementById(bid); btn.disabled = off; delete btn.dataset.reviewDisabled;
+                    });
+                    const grid = document.getElementById('props-table-cells');
+                    const key = `${item.id}|${geo.rows}x${geo.cols}|${!!item.headerRow}|${!!item.headerCol}`;
+                    if (grid.dataset.key !== key) {
+                        grid.dataset.key = key;
+                        grid.replaceChildren();
+                        grid.style.gridTemplateColumns = `repeat(${geo.cols}, minmax(64px, 1fr))`;
+                        geo.cells.forEach((row, r) => {
+                            for (let c = 0; c < geo.cols; c++) {
+                                const input = document.createElement('input');
+                                input.type = 'text'; input.maxLength = TABLE_LIMITS.cell;
+                                const head = (item.headerRow && r === 0) || (item.headerCol && c === 0);
+                                input.className = `form-control form-control-sm py-0 px-1 shadow-none tt-table-cell-input${head ? ' tt-cell-head' : ''}`;
+                                input.dataset.r = String(r); input.dataset.c = String(c);
+                                input.setAttribute('aria-label', `Row ${r + 1}, column ${c + 1}${head ? ' (header)' : ''}`);
+                                input.value = toText((row || [])[c]);
+                                grid.appendChild(input);
+                            }
+                        });
+                    } else {
+                        grid.querySelectorAll('input.tt-table-cell-input').forEach(inp => keep(inp, toText((geo.cells[+inp.dataset.r] || [])[+inp.dataset.c])));
+                    }
+                    return;
+                }
+                const d = LANE_CONTAINER_DEFAULTS[item.type];
+                document.getElementById('box-props-lanes').classList.remove('d-none');
+                document.getElementById('props-lanes-heading').textContent = d.label;
+                keep(document.getElementById('props-lanes-title'), toText(item.name));
+                this.ttRenderThemePicker('props-lanes-theme', item, (theme) => this.ttLaneEdit(item.id, 'theme', null, theme));
+                const lanesBox = document.getElementById('props-lanes-lanes-box');
+                lanesBox.classList.toggle('d-none', !d.lanes.length);
+                if (!d.lanes.length) return;
+                document.getElementById('props-lanes-list-label').textContent = `${d.laneWord}s`;
+                document.getElementById('props-lanes-add-label').textContent = `Add ${d.laneWord.toLowerCase()}`;
+                const lanes = this.ttLaneGeometry(item).lanes.map(l => l.name);
+                const addBtn = document.getElementById('props-lanes-add');
+                addBtn.disabled = lanes.length >= LANE_LIMITS.lanes; delete addBtn.dataset.reviewDisabled;
+                const list = document.getElementById('props-lanes-list');
+                const key = `${item.id}|${lanes.length}`;
+                if (list.dataset.key === key) { list.querySelectorAll('.tt-lane-rename-input').forEach(inp => keep(inp, lanes[+inp.dataset.index] || '')); return; }
+                list.dataset.key = key;
+                list.replaceChildren();
+                lanes.forEach((name, i) => {
+                    const row = document.createElement('div'); row.className = 'd-flex gap-1 align-items-center';
+                    const input = document.createElement('input');
+                    input.type = 'text'; input.maxLength = LANE_LIMITS.name; input.value = name; input.dataset.index = String(i);
+                    input.className = 'form-control form-control-sm py-0 px-1 shadow-none tt-lane-rename-input'; input.style.fontSize = '11px';
+                    input.setAttribute('aria-label', `${d.laneWord} ${i + 1} name`);
+                    const del = document.createElement('button');
+                    del.type = 'button'; del.dataset.index = String(i); del.disabled = lanes.length <= 1;
+                    del.className = 'btn btn-xs btn-outline-danger p-0 d-flex align-items-center justify-content-center tt-lane-delete-btn tt-review-freeze';
+                    del.style.width = '24px'; del.style.height = '24px'; del.style.fontSize = '10px';
+                    del.setAttribute('aria-label', `Remove ${d.laneWord.toLowerCase()} ${i + 1}`); del.title = `Remove ${d.laneWord.toLowerCase()}`;
+                    const icon = document.createElement('i'); icon.className = 'bi bi-trash'; del.appendChild(icon);
+                    row.append(input, del);
+                    list.appendChild(row);
+                });
+            }
+
+            /** Properties controls for tables and lane containers (bound once; they act on the single selected shape). */
+            ttBindDecorControls() {
+                const selected = (pred) => { const s = this.state.selectedElementIds; const e = s.length === 1 ? this.state.elements.find(x => x.id === s[0]) : null; return e && pred(e) ? e : null; };
+                const table = () => selected(e => e.type === 'table');
+                const lane = () => selected(e => LANE_CONTAINER_TYPES.has(e.type));
+                const on = (id, ev, fn) => { const n = document.getElementById(id); if (n) n.addEventListener(ev, fn); };
+                on('props-table-title', 'change', (ev) => { const t = table(); if (t) this.ttTableEdit(t.id, 'title', ev.target.value); });
+                on('props-table-header-row', 'change', (ev) => { const t = table(); if (t) this.ttTableEdit(t.id, 'header-row', ev.target.checked); });
+                on('props-table-header-col', 'change', (ev) => { const t = table(); if (t) this.ttTableEdit(t.id, 'header-col', ev.target.checked); });
+                ['add-row', 'remove-row', 'add-col', 'remove-col'].forEach(op => on(`props-table-${op}`, 'click', () => { const t = table(); if (t) this.ttTableEdit(t.id, op); }));
+                on('props-table-cells', 'change', (ev) => {
+                    const inp = ev.target, t = table();
+                    if (t && inp.classList.contains('tt-table-cell-input')) this.ttTableEdit(t.id, 'cell', inp.dataset.r, inp.dataset.c, inp.value);
+                });
+                on('props-lanes-title', 'change', (ev) => { const c = lane(); if (c) this.ttLaneEdit(c.id, 'title', null, ev.target.value); });
+                on('props-lanes-add', 'click', () => { const c = lane(); if (c) this.ttLaneEdit(c.id, 'add'); });
+                on('props-lanes-list', 'change', (ev) => { const c = lane(); if (c && ev.target.classList.contains('tt-lane-rename-input')) this.ttLaneEdit(c.id, 'rename', ev.target.dataset.index, ev.target.value); });
+                on('props-lanes-list', 'click', (ev) => {
+                    const btn = ev.target.closest('.tt-lane-delete-btn'), c = lane();
+                    if (btn && c && !btn.disabled) this.ttLaneEdit(c.id, 'remove', btn.dataset.index);
+                });
+            }
+            // ── end table and lane containers ──
+
             /** Swimlane geometry shared by layout, rendering, hit-testing and the drop highlight. */
             swimlaneGeometry(swim) {
                 const cols = swim.columns && swim.columns.length ? swim.columns : ['Column 1', 'Column 2'];
@@ -10446,7 +11102,7 @@
              */
             layoutSwimlanes() {
                 const pad = SWIMLANE_PADDING;
-                const skip = ['swimlane', 'boundary', 'boundary_line', 'textbox', 'headline'];
+                const skip = ['swimlane', 'boundary', 'boundary_line', 'textbox', 'headline', ...TT_DECOR_TYPES];
                 const dragIds = this.isDraggingElements ? new Set((this.initialDragPositions || []).map(p => p.id)) : null;
                 this.swimlaneDropTarget = null;
                 if (dragIds) {
@@ -11822,6 +12478,7 @@
                     this.attachNodeEventHandlersLayers(swim, g);
                     this.dom.layerSwimlanes.appendChild(g);
                 });
+                this.ttRenderLaneContainers();   // pool, vertical lanes, group / frame, phases (after the swimlanes, before every shape)
 
                 this.dom.layerBoundaries.innerHTML = ''; this.dom.layerBoundaryLinesPaths.innerHTML = '';
                 this.dom.layerFlowsPaths.innerHTML = ''; this.dom.layerFlowsTexts.innerHTML = '';
@@ -12228,7 +12885,7 @@
                 });
 
                 this.hideQuickAddGhost();   // anchor dots are recreated, so their hover state is lost
-                this.state.elements.filter(e => e.type !== 'boundary' && e.type !== 'boundary_line' && e.type !== 'swimlane').forEach(node => {
+                this.state.elements.filter(e => e.type !== 'boundary' && e.type !== 'boundary_line' && e.type !== 'swimlane' && !TT_DECOR_TYPES.includes(e.type)).forEach(node => {
                     const isSelected = this.state.selectedElementIds.includes(node.id);
                     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
                     g.setAttribute('class', `node-element ${isSelected ? 'selected' : ''} ${node.isDisabled ? 'disabled' : ''}`);
@@ -12508,6 +13165,7 @@
                     this.attachNodeEventHandlersLayers(node, g); this.dom.layerNodes.appendChild(g);
 
                 });
+                this.ttRenderTables();   // table items
             }
 
             createResizeHandleSvgDOMItem(item) {
@@ -12552,6 +13210,7 @@
                             });
                         }
                     });
+                    this.ttAddContainerContents(dragIds);   // lane containers carry their contents too
 
                     this.initialDragPositions = Array.from(dragIds).map(id => {
                         const matched = this.state.elements.find(el => el.id === id); return { id, x: matched.x, y: matched.y };
@@ -12948,6 +13607,7 @@
                 this.updateAlignToolbar();
                 this.updateFormatPainterButton();
                 const boxIds = ['box-props-node-type', 'box-props-standard-name', 'box-props-status-state', 'box-props-icon-customization', 'box-props-flow-routing', 'box-props-step-activity', 'box-props-text-offset', 'box-props-textbox-textarea', 'box-props-headline-customization', 'box-props-security', 'box-props-zdepth', 'box-props-custom-image', 'box-props-isometric-toggle', 'box-props-swimlane', 'box-props-flowchart'];
+                boxIds.push('box-props-table', 'box-props-lanes');   // table and lane containers
                 boxIds.forEach(id => { const el = document.getElementById(id); if (el) el.classList.add('d-none'); });
 
                 const textContentInput = document.getElementById('props-input-text-content');
@@ -12985,6 +13645,7 @@
                     this.renderSwimlanePropertiesInspectorControls(targetItem);
                     return;
                 }
+                if (TT_DECOR_TYPES.includes(targetItem.type)) { this.ttRenderDecorProperties(targetItem); return; }   // table and lane containers
 
                 if (targetItem.type && targetItem.type.startsWith('fc_')) {
                     document.getElementById('box-props-flowchart').classList.remove('d-none');
@@ -13084,7 +13745,7 @@
                     // Shapes on this flow's page only; each list leaves out the shape at the other end (no self-loops).
                     const flowPage = (this.state.elements.find(e => e.id === targetItem.sourceId) || {}).pageId;
                     this.state.elements.forEach(el => {
-                        if (['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(el.type)) return;
+                        if (['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane', ...TT_DECOR_TYPES].includes(el.type)) return;
                         if (flowPage && el.pageId !== flowPage) return;
                         if (el.id !== targetItem.targetId) srcSel.add(new Option(el.name, el.id));
                         if (el.id !== targetItem.sourceId) dstSel.add(new Option(el.name, el.id));
@@ -13439,7 +14100,7 @@
                 const count = this.state.selectedElementIds.length;
                 let item = count === 1 ? this.state.elements.find(e => e.id === this.state.selectedElementIds[0]) : (this.state.selectedFlowId ? this.state.flows.find(f => f.id === this.state.selectedFlowId) : null);
 
-                if (!item || ['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(item.type)) {
+                if (!item || ['boundary', 'textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane', ...TT_DECOR_TYPES].includes(item.type)) {
                     this.dom.suggestEmpty.classList.remove('d-none'); this.dom.suggestContent.classList.add('d-none'); return;
                 }
                 this.dom.suggestEmpty.classList.add('d-none'); this.dom.suggestContent.classList.remove('d-none');
@@ -13792,7 +14453,7 @@
 
             repopulateThreatModalDropdownTargets() {
                 const select = document.getElementById('modal-threat-link-element'); select.innerHTML = '';
-                this.state.elements.forEach(e => { if (!['textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane'].includes(e.type)) select.add(new Option(`[Node] ${e.name}`, e.id)); });
+                this.state.elements.forEach(e => { if (!['textbox', 'headline', 'boundary_line', 'step_activity', 'swimlane', ...TT_DECOR_TYPES].includes(e.type)) select.add(new Option(`[Node] ${e.name}`, e.id)); });
                 this.state.flows.forEach(f => { select.add(new Option(`[Flow] ${f.name}`, f.id)); });
             }
 
@@ -13993,7 +14654,7 @@
                     inside.sort((a, b) => (a.width * a.height) - (b.width * b.height));   // innermost zone wins
                     return inside[0] || null;
                 };
-                const skip = ['boundary', 'boundary_line', 'textbox', 'headline', 'swimlane'];
+                const skip = ['boundary', 'boundary_line', 'textbox', 'headline', 'swimlane', ...TT_DECOR_TYPES];
                 const nodes = this.state.elements.filter(e => !skip.includes(e.type) && onPage(e));
                 const ids = new Map(nodes.map((e, i) => [e.id, `n${i + 1}`]));
                 const shape = (e) => {
