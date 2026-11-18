@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.23.3** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.24.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -56,6 +56,12 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 ---
 
 ## What's new 🆕
+
+**1.24.0**
+*   **Import a threat model from git:** ☰ → *Import threat model from git…*, paste the GitHub or GitLab link to a `.json` file, and it opens (public repositories need no token). See [Importing a model from GitHub or GitLab](#importing-a-model-from-github-or-gitlab).
+*   **Readable copy sections:** choose what the git sync Markdown file holds: Diagram, Risk summary, Threats, Mitigations, Data flows, Components.
+*   **Settings in tabs:** *Visuals*, *Profiles*, *Live status* and *Sync*. The window sits near the top and keeps its size, so it no longer jumps when you switch tabs.
+*   **Tidier ☰ menu:** *Import*, *Export* and *Reports* groups. *Export JSON for git* is gone: ☰ → Export JSON keeps the sync settings (never the token or passphrase), and git sync writes the compact format itself.
 
 **1.23.3:** trust boundaries now show in Mermaid diagrams (Export Mermaid diagram, the Markdown report and the git sync readable copy): flows that cross a boundary line or zone are drawn red and labelled *crosses …*. The readable copy no longer has an Attack paths section.
 
@@ -139,6 +145,12 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 5.  Open **Threat Templates** on a selected component to add threats — suggestions triggered by your model are listed first. Use the **Insights** tab to see what is still missing.
 
 All other actions (import, export, reports, History, help) are in the **☰ menu** at the top right.
+
+### Importing a model from GitHub or GitLab
+
+1.  Copy the link to the `.json` file: its page (`https://github.com/owner/repo/blob/main/threat-model.json`, GitLab `https://gitlab.com/group/project/-/blob/main/threat-model.json`) or its raw link. Self-hosted GitLab and GitHub Enterprise links work too; a branch name containing `/` is not supported.
+2.  Open **☰ → Import threat model from git…**, paste the link and press **Open**. Only the server in the link is contacted. The file is checked like any imported model and opened; your current model is saved to History first.
+3.  For a **private repository**, paste an access token that can read the file (used for that one download, never saved), or leave the field empty to use the token saved for that server under **Settings → Sync** (you are asked for its passphrase).
 
 ### Syncing with GitHub or GitLab
 

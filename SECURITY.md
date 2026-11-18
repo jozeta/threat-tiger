@@ -18,6 +18,13 @@ Threat models describe weaknesses of real systems, so of particular interest are
 through imported models, templates or images (XSS / CSP bypass), any data leaving the browser without
 the user's consent, and weaknesses in the Docker image or nginx configuration in `deploy/`.
 
+## Import from git
+
+**☰ → Import threat model from git…** downloads one file, only when you press *Open*, from the server named in the link
+you pasted (GitHub, GitHub Enterprise or GitLab API; redirects are not followed). The file is validated like any imported
+model. A token typed in that dialog is used for that request only and never stored; without one, the token saved for that
+server in Settings → Sync is used after you enter its passphrase, and only if the file cannot be read without a token.
+
 ## Git sync (GitHub / GitLab)
 
 Git sync is off until you set it up under **☰ → Settings…**. Then, and only when you press the sync button,

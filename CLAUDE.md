@@ -48,7 +48,8 @@ PW_BASE_URL=http://127.0.0.1:8080 npm test   # test the running container
 
 - **Data never leaves the browser unless the user asks.** Models live in localStorage, History in IndexedDB. No
   network requests except loading images an imported model references (only after asking) and git sync to the
-  server the user configured in Settings (only when they press sync), and live status checks (only when live status is
+  server the user configured in Settings (only when they press sync), import from git (only to the server in the link the user
+  pasted, when they press Open; `parseGitFileLink`), and live status checks (only when live status is
   on, and only to hosts the user allowed in this browser; redirects are not followed). Sync tokens are stored only encrypted
   (passphrase, AES-GCM) and never go into the model or its exports; sync settings in the model are validated
   by `normalizeGitSync()`.

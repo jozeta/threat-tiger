@@ -5,8 +5,12 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.24.0
+
 ### Added
 
+*   **Import threat model from git** (☰ → Import): paste a GitHub or GitLab link to a JSON file (page or raw link; self-hosted GitLab with groups and GitHub Enterprise too, `parseGitFileLink`). Public files open without a token; for a private repository a token typed in the dialog is used once and never stored, or the token saved for that server is unlocked with its passphrase. The file is validated like any import; errors stay in the dialog and change nothing. Git API requests without a token now send no authorization header.
+*   **☰ menu groups:** *Import* (JSON, from git, Mermaid, status file), *Export* (JSON, Mermaid diagram) and *Reports* (Print report, Markdown report, History).
 *   **Settings has tabs:** *Visuals* (title block & legend), *Profiles*, *Live status* and *Sync* (git sync, with its Connect, Forget token and Remove buttons). ☰ → Settings… opens Visuals; the sync button, live-status host approval and *Edit profiles…* open their own tab. The window now sits near the top of the screen with a fixed height, so it no longer moves when a tab or section changes size; the tab bar stays in place and only the content scrolls.
 
 ### Removed

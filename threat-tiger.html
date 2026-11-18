@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-o4xffc1MQPQe/8GnYKvu+++9OFowKcNISrtSfwFvbs8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-hNVNBhYFZy4QsWwJ8WIDC/LkFYZZRvjyI96qnyYSE1E='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1987,17 +1987,20 @@
                 <button class="btn btn-sm btn-outline-light px-2" type="button" id="btn-main-menu" data-bs-toggle="dropdown"
                     aria-expanded="false" aria-label="Main menu" title="Menu"><i class="bi bi-list fs-5 lh-1"></i></button>
                 <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="btn-main-menu" style="min-width: 260px;">
-                    <li><h6 class="dropdown-header">Model</h6></li>
+                    <li><h6 class="dropdown-header">Import</h6></li>
                     <li><button class="dropdown-item" type="button" id="btn-import"><i class="bi bi-file-earmark-arrow-up me-2"></i>Import JSON…</button></li>
+                    <li><button class="dropdown-item" type="button" id="btn-import-git" aria-haspopup="dialog"><i class="bi bi-git me-2"></i>Import threat model from git…</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-import-mermaid"><i class="bi bi-diagram-3 me-2"></i>Import Mermaid flowchart…</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-build-from-status"><i class="bi bi-activity me-2"></i>Build from status file…</button></li>
-                    <li><button class="dropdown-item" type="button" id="btn-export"><i class="bi bi-file-earmark-arrow-down me-2"></i>Export JSON</button></li>
-                    <li><button class="dropdown-item" type="button" id="btn-snapshots"><i class="bi bi-clock-history me-2"></i>History…</button></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><h6 class="dropdown-header">Reports &amp; diagrams</h6></li>
+                    <li><h6 class="dropdown-header">Export</h6></li>
+                    <li><button class="dropdown-item" type="button" id="btn-export"><i class="bi bi-file-earmark-arrow-down me-2"></i>Export JSON</button></li>
+                    <li><button class="dropdown-item" type="button" id="btn-export-mermaid"><i class="bi bi-diagram-3 me-2"></i>Export Mermaid diagram</button></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><h6 class="dropdown-header">Reports</h6></li>
                     <li><button class="dropdown-item" type="button" id="btn-print-report"><i class="bi bi-printer me-2"></i>Print report…</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-export-markdown"><i class="bi bi-markdown me-2"></i>Export Markdown report</button></li>
-                    <li><button class="dropdown-item" type="button" id="btn-export-mermaid"><i class="bi bi-diagram-3 me-2"></i>Export Mermaid diagram</button></li>
+                    <li><button class="dropdown-item" type="button" id="btn-snapshots"><i class="bi bi-clock-history me-2"></i>History…</button></li>
                     <li><hr class="dropdown-divider"></li>
                     <li class="dropdown-submenu"><button class="dropdown-item d-flex align-items-center submenu-toggle" type="button" id="btn-menu-view" aria-haspopup="true" aria-expanded="false" aria-controls="menu-view-items"><i class="bi bi-window-sidebar me-2"></i>View<i class="bi bi-chevron-right ms-auto submenu-chevron" aria-hidden="true"></i></button>
                         <ul class="dropdown-menu submenu shadow" id="menu-view-items" aria-label="View">
@@ -4633,6 +4636,33 @@
         </div>
     </div>
 
+    <!-- Import threat model from git (setupGitImport) -->
+    <div class="modal fade" id="modal-git-import" tabindex="-1" aria-labelledby="modal-git-import-title" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable settings-dialog">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header bg-dark text-light">
+                    <h5 class="modal-title fs-6 fw-bold" id="modal-git-import-title"><i class="bi bi-git me-2" aria-hidden="true"></i>Import threat model from git</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form class="modal-body p-3" id="form-git-import" autocomplete="off">
+                    <label class="form-label small fw-semibold mb-1" for="git-import-url">Link to the JSON file</label>
+                    <input type="url" class="form-control form-control-sm shadow-none" id="git-import-url" spellcheck="false" required aria-describedby="git-import-help"
+                        placeholder="https://github.com/owner/repo/blob/main/threat-model.json">
+                    <div class="form-text extra-small" id="git-import-help">Paste the file's address from GitHub or GitLab (also self-hosted GitLab or GitHub Enterprise): the normal page link or the raw link.
+                        The file is downloaded from that server only, checked like any imported model, and opened; your current model is saved to History first.</div>
+                    <label class="form-label small fw-semibold mb-1 mt-3" for="git-import-token">Access token <span class="fw-normal text-muted">(only for a private repository)</span></label>
+                    <input type="password" class="form-control form-control-sm shadow-none" id="git-import-token" autocomplete="off" spellcheck="false" aria-describedby="git-import-token-help">
+                    <div class="form-text extra-small" id="git-import-token-help">Used once for this download and not saved. Leave empty for a public repository, or to use the token saved for this server in Settings → Sync.</div>
+                    <div class="alert alert-danger small py-2 px-2 mt-3 mb-0 d-none" id="git-import-error" role="alert"></div>
+                </form>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="form-git-import" class="btn btn-sm btn-primary" id="btn-git-import-go"><i class="bi bi-cloud-download me-1" aria-hidden="true"></i>Open</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="modal fade" id="modal-git-unlock" tabindex="-1" aria-labelledby="modal-git-unlock-title" aria-hidden="true">
         <div class="modal-dialog modal-sm modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg">
@@ -4801,6 +4831,7 @@
                             <div class="tt-help-toc-group">Files &amp; sync</div>
                             <ul>
                                 <li><a href="#help/import-export" data-help-toc="import-export"><i class="bi bi-file-earmark-arrow-down" aria-hidden="true"></i>Import &amp; export</a></li>
+                                <li><a href="#help/git-import" data-help-toc="git-import"><i class="bi bi-cloud-download" aria-hidden="true"></i>Import from git</a></li>
                                 <li><a href="#help/git-sync" data-help-toc="git-sync"><i class="bi bi-git" aria-hidden="true"></i>Git sync</a></li>
                                 <li><a href="#help/history" data-help-toc="history"><i class="bi bi-clock-history" aria-hidden="true"></i>History &amp; clearing data</a></li>
                             </ul>
@@ -4973,8 +5004,9 @@
         <div>
             <p>Everything that isn’t drawing lives in the ☰ menu at the top right. It works like a desktop menu: hover or click an item with a ▸ to open its flyout, <kbd>→</kbd> / <kbd>Enter</kbd> open one, <kbd>←</kbd> / <kbd>Esc</kbd> close one level, and <kbd>↑</kbd> <kbd>↓</kbd> move inside the current level.</p>
             <ul>
-                <li><strong>Model:</strong> Import JSON…, Import Mermaid flowchart…, Export JSON, History…</li>
-                <li><strong>Reports &amp; diagrams:</strong> Print report…, Export Markdown report, Export Mermaid diagram.</li>
+                <li><strong>Import:</strong> Import JSON…, Import threat model from git…, Import Mermaid flowchart…, Build from status file…</li>
+                <li><strong>Export:</strong> Export JSON, Export Mermaid diagram.</li>
+                <li><strong>Reports:</strong> Print report…, Export Markdown report, History…</li>
                 <li><strong>View ▸</strong> Review mode, Title block &amp; legend…, <em>Canvas ▸</em> (minimap, line jumps, animate traffic, live status), show or hide the left, right and bottom panels, <em>Palette sections ▸</em>, <em>Icon sets ▸</em> and <em>Panel tabs ▸</em>. View changes are saved into the profile you are using.</li>
                 <li><strong>Build from status file…</strong> turns a CSV or JSON list of servers into a diagram (see <a href="#help/status-file" data-help-goto="status-file">Build from status file</a>).</li>
                 <li><strong>Settings…</strong>, <strong>Help</strong> (this guide, <kbd>F1</kbd>) and <strong>About &amp; License</strong> (version, licence, credits).</li>
@@ -5760,12 +5792,22 @@ Orders DB,down,datastore,App,,,</pre></div>
     <div class="tt-help-note"><strong>Imports are checked</strong>Imported models are treated as untrusted: every field is validated, unknown values are dropped with a warning, and threats with problems are marked <em>needs review</em>. A snapshot is taken before an import. If a model loads images from other websites, Threat Tiger asks first.</div>
 </section>
 
+<section class="tt-help-section" id="help-git-import" aria-labelledby="help-h-git-import">
+    <div class="tt-help-kicker">Files &amp; sync</div>
+    <h3 id="help-h-git-import" tabindex="-1"><i class="bi bi-cloud-download" aria-hidden="true"></i>Import a threat model from git</h3>
+    <ol class="tt-help-steps">
+        <li><strong>Copy the file's link</strong> on GitHub or GitLab: the page of the <code>.json</code> file (<code>…/blob/main/threat-model.json</code>, GitLab <code>…/-/blob/main/…</code>) or its raw link. Self-hosted GitLab and GitHub Enterprise work too.</li>
+        <li><strong>☰ → Import threat model from git…</strong>, paste the link and press <em>Open</em>. The file is downloaded from that server only, checked like any imported model and opened; your current model goes to History first.</li>
+        <li><strong>A private repository</strong> needs an access token that can read it: paste it in the dialog (used once, not saved), or leave it empty to use the token saved for that server in Settings → Sync (you are asked for its passphrase).</li>
+    </ol>
+</section>
+
 <section class="tt-help-section" id="help-git-sync" aria-labelledby="help-h-git-sync">
     <div class="tt-help-kicker">Files &amp; sync</div>
     <h3 id="help-h-git-sync" tabindex="-1"><i class="bi bi-git" aria-hidden="true"></i>Git sync with GitHub or GitLab</h3>
     <ol class="tt-help-steps">
         <li><strong>Create an access token:</strong> on GitHub a fine-grained token for the one repository with <em>Contents: Read and write</em>; on GitLab a personal or project token with the <em>api</em> scope.</li>
-        <li><strong>Fill in</strong> ☰ → Settings… → <em>Git sync</em>: service, server (defaults to <code>https://api.github.com</code> or <code>https://gitlab.com</code>; GitHub Enterprise <code>https://host/api/v3</code>), repository (<code>owner/name</code>, GitLab <code>group/subgroup/project</code>), branch (<code>main</code>), file (<code>threat-model.json</code>), the token and a passphrase (8+ characters) that encrypts it.</li>
+        <li><strong>Fill in</strong> ☰ → Settings… → <em>Sync</em>: service, server (defaults to <code>https://api.github.com</code> or <code>https://gitlab.com</code>; GitHub Enterprise <code>https://host/api/v3</code>), repository (<code>owner/name</code>, GitLab <code>group/subgroup/project</code>), branch (<code>main</code>), file (<code>threat-model.json</code>), the token and a passphrase (8+ characters) that encrypts it.</li>
         <li><strong>Connect.</strong> Threat Tiger checks that the token can open the repository, then shows the ⟳ button next to ☰.</li>
         <li><strong>Press ⟳ to sync.</strong> After a reload, the first sync asks for your passphrase.</li>
         <li><strong>Optional, a readable copy:</strong> tick <em>Also commit a readable copy (Markdown)</em> to also write a Markdown file to the repository (<code>README.md</code> by default, so it is the repository's front page; change it under <em>Readable copy file</em>) that GitHub and GitLab show as a page with the diagram drawn. Under <em>Include in the readable copy</em> choose the sections: Diagram, Risk summary, Threats, Mitigations, Data flows and Components; they are written in that order, like the printed report. It is written fresh on every sync and never read back, so it replaces any file with that name and edits made to it in the repository are overwritten; an unchanged model makes no new commit.</li>
@@ -6196,7 +6238,7 @@ Orders DB,down,datastore,App,,,</pre></div>
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.23.3';
+        const APP_VERSION = '1.24.0';
         const SCHEMA_VERSION = 1;
         const MAX_ZOOM = 2.5;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
@@ -8335,9 +8377,8 @@ Orders DB,down,datastore,App,,,</pre></div>
         }
         class GitSyncError extends Error { constructor(message, kind = 'error') { super(message); this.kind = kind; } }
         async function gitFetch(cfg, token, url, { method = 'GET', body } = {}) {
-            const headers = cfg.provider === 'github'
-                ? { Accept: 'application/vnd.github+json', Authorization: `Bearer ${token}`, 'X-GitHub-Api-Version': '2022-11-28' }
-                : { 'PRIVATE-TOKEN': token };
+            const headers = cfg.provider === 'github' ? { Accept: 'application/vnd.github+json', 'X-GitHub-Api-Version': '2022-11-28' } : {};
+            if (token) { if (cfg.provider === 'github') headers.Authorization = `Bearer ${token}`; else headers['PRIVATE-TOKEN'] = token; }   // none: public repositories
             if (body) headers['Content-Type'] = 'application/json';
             let res;
             try { res = await fetch(url, { method, headers, body: body ? JSON.stringify(body) : undefined, cache: 'no-store', credentials: 'omit', referrerPolicy: 'no-referrer', redirect: 'error' }); }
@@ -8351,6 +8392,29 @@ Orders DB,down,datastore,App,,,</pre></div>
             if (r.status === 401) return new GitSyncError('The server rejected the access token (401). Check that it is correct and has not expired.', 'auth');
             if (r.status === 403) return new GitSyncError(`The access token is not allowed to ${what} (403)${msg}. It needs read and write access to the repository's files.`, 'auth');
             return new GitSyncError(`Could not ${what}: the server answered ${r.status}${msg}.`);
+        }
+        /**
+         * A GitHub or GitLab link to a JSON file → { provider, host, repo, branch, path } (as normalizeGitSync), or null.
+         * Understands github.com/<o>/<r>/blob|raw/<branch>/<path>, raw.githubusercontent.com/<o>/<r>/<branch>/<path>,
+         * GitHub Enterprise (<host>/api/v3) and GitLab (also self-hosted, with groups) <host>/<group…>/<project>/-/blob|raw/<branch>/<path>.
+         * The branch is the first segment after blob/raw (a branch name with "/" in it is not supported).
+         */
+        function parseGitFileLink(input) {
+            let u;
+            try { u = new URL(toText(input).trim()); } catch { return null; }
+            if (u.protocol !== 'https:' || u.username || u.password) return null;
+            const segs = u.pathname.split('/').filter(Boolean).map(x => { try { return decodeURIComponent(x); } catch { return null; } });
+            if (segs.includes(null)) return null;
+            let cfg = null;
+            const dash = segs.indexOf('-');
+            if (u.host === 'raw.githubusercontent.com') {
+                if (segs.length >= 4) cfg = { provider: 'github', host: GIT_PROVIDERS.github.host, repo: segs.slice(0, 2).join('/'), branch: segs[2], path: segs.slice(3).join('/') };
+            } else if (dash >= 2 && ['blob', 'raw'].includes(segs[dash + 1]) && segs.length >= dash + 4) {
+                cfg = { provider: 'gitlab', host: u.origin, repo: segs.slice(0, dash).join('/'), branch: segs[dash + 2], path: segs.slice(dash + 3).join('/') };
+            } else if (segs.length >= 5 && ['blob', 'raw'].includes(segs[2])) {
+                cfg = { provider: 'github', host: u.host === 'github.com' ? GIT_PROVIDERS.github.host : `${u.origin}/api/v3`, repo: segs.slice(0, 2).join('/'), branch: segs[3], path: segs.slice(4).join('/') };
+            }
+            return cfg ? normalizeGitSync(cfg) : null;
         }
         const GitRemote = {
             fileUrl(cfg) {
@@ -10911,6 +10975,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                 document.getElementById('btn-export').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile());
                 document.getElementById('btn-import').addEventListener('click', () => this.triggerWorkspaceJsonImportSelector());
                 this.setupMermaidImport();
+                this.setupGitImport();
                 this.setupStatusFileImport();   // Build from status file (1.21)
                 document.getElementById('btn-reset-session').addEventListener('click', () => this.resetSession());
                 document.getElementById('btn-help-trigger').addEventListener('click', () => {
@@ -20718,6 +20783,62 @@ Orders DB,down,datastore,App,,,</pre></div>
             }
 
             // ── Mermaid flowchart import ─────────────────────────────────────────────
+            // ── Import threat model from git ─────────────────────────────────────────
+            // Only the server in the pasted link is contacted, only when the user presses Open. A token typed in the dialog is
+            // used for that one download and never stored; otherwise the token saved for that server (Settings → Sync) is used
+            // after the passphrase, and only if the file cannot be read without one.
+            setupGitImport() {
+                const modalEl = document.getElementById('modal-git-import'), form = document.getElementById('form-git-import');
+                document.getElementById('btn-import-git').addEventListener('click', () => {
+                    this.showGitImportError('');
+                    document.getElementById('git-import-token').value = '';
+                    bootstrap.Modal.getOrCreateInstance(modalEl).show();
+                });
+                modalEl.addEventListener('shown.bs.modal', () => document.getElementById('git-import-url').focus());
+                modalEl.addEventListener('hidden.bs.modal', () => { document.getElementById('git-import-token').value = ''; });
+                form.addEventListener('submit', (ev) => { ev.preventDefault(); this.importFromGit(); });
+            }
+
+            showGitImportError(msg) {
+                const el = document.getElementById('git-import-error');
+                el.textContent = msg; el.classList.toggle('d-none', !msg);
+            }
+
+            async importFromGit() {
+                if (this.gitImportBusy) return;
+                const link = document.getElementById('git-import-url').value, typed = document.getElementById('git-import-token').value.trim();
+                const cfg = parseGitFileLink(link);
+                if (!cfg) { this.showGitImportError('Paste a GitHub or GitLab link to a .json file, for example https://github.com/owner/repo/blob/main/threat-model.json.'); return; }
+                const btn = document.getElementById('btn-git-import-go');
+                this.gitImportBusy = true; btn.disabled = true; this.showGitImportError('');
+                const name = `${cfg.repo}/${cfg.path}`;
+                try {
+                    let remote = null, denied = false;
+                    const tryRead = async (token) => {
+                        try { const r = await GitRemote.read(cfg, token); if (r.exists) return r; denied = true; return null; }
+                        catch (err) { if (err instanceof GitSyncError && err.kind === 'auth') { denied = true; return null; } throw err; }
+                    };
+                    remote = await tryRead(typed || this.gitTokens.get(gitServerKey(cfg)) || null);
+                    if (!remote && !typed && !this.gitTokens.has(gitServerKey(cfg)) && this.readGitSecrets()[gitServerKey(cfg)] && window.crypto && crypto.subtle) {
+                        const saved = await this.gitTokenFor(cfg);   // asks for the passphrase
+                        if (saved) remote = await tryRead(saved);
+                    }
+                    if (!remote) {
+                        this.showGitImportError(denied ? `${name} was not found on branch ${cfg.branch}, or the repository is private. Check the link, or paste an access token that can read it.` : `Could not read ${name}.`);
+                        return;
+                    }
+                    let parsed;
+                    try { parsed = JSON.parse(remote.text); } catch { this.showGitImportError(`${cfg.path} is not valid JSON, so it was not opened.`); return; }
+                    try { normalizeSession(parsed); } catch (err) { this.showGitImportError(`${cfg.path} is not a Threat Tiger model: ${err.message}`); return; }
+                    bootstrap.Modal.getOrCreateInstance(document.getElementById('modal-git-import')).hide();
+                    this.importWorkspaceJsonText(JSON.stringify(parsed), name);
+                } catch (err) {
+                    this.showGitImportError(err instanceof GitSyncError ? err.message : `Could not download the file: ${err.message}`);
+                } finally {
+                    this.gitImportBusy = false; btn.disabled = false;
+                }
+            }
+
             setupMermaidImport() {
                 const modalEl = document.getElementById('modal-mermaid-import');
                 const text = document.getElementById('mermaid-import-text'), file = document.getElementById('mermaid-import-file');
