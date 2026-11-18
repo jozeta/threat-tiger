@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.22.1** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.23.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -56,6 +56,8 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 ---
 
 ## What's new 🆕
+
+**1.23.0** adds a **readable copy** to git sync: next to the JSON, Threat Tiger can also commit a Markdown file that GitHub and GitLab show as a page, with the Mermaid diagram drawn on top and (if you choose the full report) the risk summary, threats and mitigations below, like the printed report. See [Syncing with GitHub or GitLab](#syncing-with-github-or-gitlab).
 
 **1.22.1** fixes the format painter for processes, data stores, external entities and infrastructure: it now copies their display look (card, icon only, circle badge and colours), and says why when a paint changes nothing.
 
@@ -141,6 +143,7 @@ All other actions (import, export, reports, History, help) are in the **☰ menu
     - **Repository:** `owner/name` (GitLab: `group/subgroup/project`).
     - **Branch:** defaults to `main`.
     - **File in the repository:** defaults to `threat-model.json`.
+    - **Readable copy in the repository:** **Off** (default), **Diagram only** or **Full report**. Also writes a Markdown file with the same name ending in `.md` (e.g. `threat-model.md`) that GitHub and GitLab show with the diagram drawn. The full report puts the diagram on top, then the risk summary, the threats (one block each: severity, risk score, likelihood and impact, status, description, mitigations), the mitigations, attack paths, data flows and components. The file is written fresh on every sync and never read back: edits made to it in the repository are overwritten, and an unchanged model makes no new commit. To change this setting later, change it and press **Connect** again (the token can stay empty).
     - **Access token** and a **passphrase** (8+ characters) that encrypts the token in this browser.
 3.  Press **Connect**. Threat Tiger checks that the token can open the repository, then shows the **⟳** sync button next to ☰.
 4.  Press **⟳** to sync. If only your copy changed, it is saved to the repository (as a commit in the git-friendly JSON format); if only the repository copy changed, it is loaded (your previous version goes to History); if both changed, you choose **Keep mine**, **Take theirs** or **Cancel**. After a reload, the first sync asks for your passphrase.

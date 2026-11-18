@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-3XEqIKnPvqOJvG6jZjUs2q35biilnu5KRm0AXo6DyQY='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-mXh3w5FGD9wQQA7jXsON3L0tnUGWKSO8iFwNid2lw1o='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4563,6 +4563,16 @@
                                 <input type="text" class="form-control form-control-sm shadow-none" id="git-path" placeholder="threat-model.json" spellcheck="false">
                             </div>
                             <div class="col-12">
+                                <label class="form-label small text-muted mb-1" for="git-readable">Readable copy in the repository</label>
+                                <select class="form-select form-select-sm shadow-none" id="git-readable" aria-describedby="git-readable-help">
+                                    <option value="off">Off</option>
+                                    <option value="diagram">Diagram only</option>
+                                    <option value="report">Full report: diagram, then threats and mitigations</option>
+                                </select>
+                                <div class="form-text extra-small" id="git-readable-help">A Markdown file next to the JSON (same name, ending in .md). GitHub and GitLab show it as a page with the diagram drawn.
+                                    It is written fresh on every sync and never read back, so changes made to it in the repository are overwritten.</div>
+                            </div>
+                            <div class="col-12">
                                 <label class="form-label small text-muted mb-1" for="git-token">Access token</label>
                                 <input type="password" class="form-control form-control-sm shadow-none" id="git-token" autocomplete="off" spellcheck="false" aria-describedby="git-token-help">
                                 <div class="form-text extra-small" id="git-token-help">GitHub: a fine-grained token for this repository with <em>Contents: Read and write</em>.
@@ -5725,6 +5735,7 @@ Orders DB,down,datastore,App,,,</pre></div>
         <li><strong>Fill in</strong> ☰ → Settings… → <em>Git sync</em>: service, server (defaults to <code>https://api.github.com</code> or <code>https://gitlab.com</code>; GitHub Enterprise <code>https://host/api/v3</code>), repository (<code>owner/name</code>, GitLab <code>group/subgroup/project</code>), branch (<code>main</code>), file (<code>threat-model.json</code>), the token and a passphrase (8+ characters) that encrypts it.</li>
         <li><strong>Connect.</strong> Threat Tiger checks that the token can open the repository, then shows the ⟳ button next to ☰.</li>
         <li><strong>Press ⟳ to sync.</strong> After a reload, the first sync asks for your passphrase.</li>
+        <li><strong>Optional, a readable copy:</strong> <em>Readable copy in the repository</em> also writes a Markdown file next to the JSON (same name, <code>.md</code>) that GitHub and GitLab show as a page with the diagram drawn: <em>Diagram only</em>, or <em>Full report</em> (the diagram on top, then the risk summary, the threats, mitigations, attack paths, data flows and components, like the printed report). It is written fresh on every sync and never read back, so edits made to it in the repository are overwritten; an unchanged model makes no new commit.</li>
     </ol>
     <figure class="tt-help-fig">
         <svg viewBox="0 0 760 200" role="img" aria-labelledby="help-ill-git-t help-ill-git-d">
@@ -6152,7 +6163,7 @@ Orders DB,down,datastore,App,,,</pre></div>
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.22.1';
+        const APP_VERSION = '1.23.0';
         const SCHEMA_VERSION = 1;
         const MAX_ZOOM = 2.5;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
@@ -8220,7 +8231,7 @@ Orders DB,down,datastore,App,,,</pre></div>
         // encrypted with AES-GCM under a key derived from the user's passphrase (PBKDF2-SHA-256), and in memory once unlocked.
         const GIT_PROVIDERS = { github: { label: 'GitHub', host: 'https://api.github.com' }, gitlab: { label: 'GitLab', host: 'https://gitlab.com' } };
         const GIT_SECRETS_KEY = 'git_sync_secrets', GIT_STATE_KEY = 'git_sync_state', GIT_APPROVED_KEY = 'git_sync_approved', GIT_KDF_ITERATIONS = 310000;
-        /** Returns valid sync settings { provider, host, repo, branch, path } or null. Anything else (a token!) is dropped. */
+        /** Returns valid sync settings { provider, host, repo, branch, path, readable? } or null. Anything else (a token!) is dropped. */
         function normalizeGitSync(raw) {
             if (!isPlainObject(raw)) return null;
             const provider = typeof raw.provider === 'string' && Object.prototype.hasOwnProperty.call(GIT_PROVIDERS, raw.provider) ? raw.provider : null;
@@ -8239,8 +8250,13 @@ Orders DB,down,datastore,App,,,</pre></div>
             if (branch.length > 100 || !/^[A-Za-z0-9._/-]+$/.test(branch) || branch.includes('..') || /^[/-]|\/$/.test(branch)) return null;
             const parts = path.split('/');
             if (path.length > 200 || !/\.json$/i.test(path) || !parts.every(x => /^[A-Za-z0-9 _.-]+$/.test(x) && x !== '.' && x !== '..' && x.trim() === x)) return null;
-            return { provider, host, repo, branch, path };
+            const out = { provider, host, repo, branch, path };
+            if (GIT_READABLE.includes(raw.readable)) out.readable = raw.readable;   // the Markdown copy; absent means off
+            return out;
         }
+        /** The readable copy written next to the JSON: the diagram only, or the full report. Never read back. */
+        const GIT_READABLE = ['diagram', 'report'];
+        const gitReadablePath = (c) => c.path.replace(/\.json$/i, '.md');
         const gitConfigKey = (c) => [c.provider, c.host, c.repo, c.branch, c.path].join('|');
         const gitServerKey = (c) => `${c.provider} ${c.host}`;
         function bytesToBase64(bytes) { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
@@ -12642,6 +12658,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                 document.getElementById('git-repo').value = cfg.repo;
                 document.getElementById('git-branch').value = cfg.branch;
                 document.getElementById('git-path').value = cfg.path;
+                document.getElementById('git-readable').value = cfg.readable || 'off';
                 ['git-token', 'git-passphrase', 'git-passphrase2'].forEach(id => { document.getElementById(id).value = ''; });
                 if (!message && this.state.gitSync) {
                     const saved = this.gitTokens.has(gitServerKey(cfg)) || !!this.readGitSecrets()[gitServerKey(cfg)];
@@ -12654,7 +12671,7 @@ Orders DB,down,datastore,App,,,</pre></div>
             async connectGitFromSettings() {
                 if (this.gitConnecting) return;
                 const v = (id) => document.getElementById(id).value;
-                const cfg = normalizeGitSync({ provider: v('git-provider'), host: v('git-host'), repo: v('git-repo'), branch: v('git-branch'), path: v('git-path') });
+                const cfg = normalizeGitSync({ provider: v('git-provider'), host: v('git-host'), repo: v('git-repo'), branch: v('git-branch'), path: v('git-path'), readable: v('git-readable') });
                 if (!cfg) { this.setGitStatus('Check the server (an https:// address), the repository (GitHub: owner/name; GitLab: group/project), the branch and the file (ending in .json).', 'danger'); return; }
                 if (!(window.crypto && crypto.subtle)) { this.setGitStatus('Git sync needs the app to be opened over https:// or from localhost.', 'danger'); return; }
                 const token = v('git-token').trim(), pass = v('git-passphrase'), pass2 = v('git-passphrase2');
@@ -12799,6 +12816,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                         this.writeGitSyncState(cfg, { remoteId: id, hash: localHash });
                         this.logEvent('CONFIGURE', `Synced: saved the model to ${GIT_PROVIDERS[cfg.provider].label} ${where} ${cfg.path}`, { undoable: false });
                         this.notify(`Saved to ${where}.`, 'success');
+                        await this.writeGitReadableCopy(cfg, token);
                     };
                     const pull = async () => {
                         let parsed;
@@ -12812,19 +12830,20 @@ Orders DB,down,datastore,App,,,</pre></div>
                         if (gitConfigKey(normalizeGitSync(this.state.gitSync) || {}) !== gitConfigKey(cfg)) { this.state.gitSync = cfg; this.saveSessionToLocalStorage(); this.renderGitSyncButton(); }
                         this.writeGitSyncState(cfg, { remoteId: remote.id, hash: await this.gitModelHash(this.state) });
                         this.notify(`Loaded the latest version from ${where}. Your previous version is in History.`, 'success');
+                        await this.writeGitReadableCopy(cfg, token);
                     };
                     if (!remote.exists) { await push(); return; }
                     let localChanged, remoteChanged;
                     if (!st) {   // first sync on this browser: equal content counts as in sync
                         let remoteHash = null;
                         try { remoteHash = await this.gitModelHash(normalizeSession(JSON.parse(remote.text)).session); } catch { /* not a model */ }
-                        if (remoteHash === localHash) { this.writeGitSyncState(cfg, { remoteId: remote.id, hash: localHash }); this.notify(`Up to date with ${where}.`, 'success'); return; }
+                        if (remoteHash === localHash) { this.writeGitSyncState(cfg, { remoteId: remote.id, hash: localHash }); this.notify(`Up to date with ${where}.`, 'success'); await this.writeGitReadableCopy(cfg, token); return; }
                         localChanged = remoteChanged = true;
                     } else {
                         localChanged = localHash !== st.hash;
                         remoteChanged = remote.id !== st.remoteId;
                     }
-                    if (!localChanged && !remoteChanged) { this.notify(`Up to date with ${where}.`, 'success'); return; }
+                    if (!localChanged && !remoteChanged) { this.notify(`Up to date with ${where}.`, 'success'); await this.writeGitReadableCopy(cfg, token); return; }
                     if (localChanged && !remoteChanged) { await push(); return; }
                     if (!localChanged && remoteChanged) { await pull(); return; }
                     const choice = await this.askGitConflict(cfg);
@@ -12836,6 +12855,26 @@ Orders DB,down,datastore,App,,,</pre></div>
                     if (err instanceof GitSyncError && err.kind === 'auth') this.gitTokens.delete(gitServerKey(cfg));
                 } finally {
                     this.gitSyncBusy = false; btn.classList.remove('syncing'); btn.removeAttribute('aria-busy');
+                }
+            }
+
+            /**
+             * Writes the readable Markdown copy (cfg.readable) next to the JSON. It is generated from this model and
+             * overwritten every time; what is in the repository is only compared, never loaded. No commit when it is unchanged.
+             * A failure here is reported but never undoes the model sync that already happened.
+             */
+            async writeGitReadableCopy(cfg, token) {
+                if (!GIT_READABLE.includes(cfg.readable)) return;
+                const mdCfg = { ...cfg, path: gitReadablePath(cfg) };
+                try {
+                    const text = this.buildGitReadableMarkdown(cfg.readable, cfg.path.split('/').pop());
+                    const remote = await GitRemote.read(mdCfg, token);
+                    if (remote.exists && remote.text === text) return;
+                    const title = toText(this.state.projectTitle).replace(/\s+/g, ' ').trim().slice(0, 60) || 'threat model';
+                    await GitRemote.write(mdCfg, token, text, `Update readable copy of "${title}" (Threat Tiger)`, remote);
+                } catch (err) {
+                    console.warn('[ThreatTiger] Readable copy failed', err);
+                    this.notify(`The model is synced, but the readable copy ${mdCfg.path} could not be saved. ${err instanceof GitSyncError ? err.message : err.message || ''} It is tried again on the next sync.`, 'warning');
                 }
             }
 
@@ -17232,19 +17271,9 @@ Orders DB,down,datastore,App,,,</pre></div>
                     const list = s.threats.filter(t => risk(t).label === sev);
                     out.push(`| ${sev} | ${statuses.map(st => list.filter(t => t.status === st).length).join(' | ')} | ${list.length} |`);
                 });
-                if ((s.pages || []).length > 1) {
-                    out.push('', '## Diagrams', '');
-                    s.pages.forEach(pg => out.push(`### ${para(pg.name)}`, '', '```mermaid', this.buildMermaidDiagram({ pageId: pg.id }).trimEnd(), '```', ''));
-                } else out.push('', '## Diagram', '', '```mermaid', this.buildMermaidDiagram().trimEnd(), '```', '');
-                const ap = computeAttackPaths(this.attackPathModel());
-                out.push('## Attack paths', '');
-                if (!ap.targets.length) out.push('_No crown jewels are marked, so no attack paths were computed._', '');
-                else if (!ap.paths.length) out.push('_No route from an entry point to a crown jewel._', '');
-                else {
-                    out.push(`Routes from entry points to crown jewels, highest risk first (${ap.paths.length}${ap.truncated ? '+' : ''} found).`, '');
-                    ap.paths.slice(0, 10).forEach((p, i) => out.push(`${i + 1}. ${para(this.attackPathNames(p))} (score ${p.score}: ${this.attackPathReasons(p)})`));
-                    out.push('');
-                }
+                out.push('');
+                this.mdDiagramLines(out);
+                this.mdAttackPathLines(out);
                 out.push('## Threats', '');
                 if (!s.threats.length) out.push('_No threats recorded._', '');
                 const groups = new Map();
@@ -17269,17 +17298,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                     s.mitigations.forEach(m => out.push(`| ${cell(m.id)} | ${cell(m.title)} | ${cell(m.status)} | ${cell(m.owner)} | ${cell(this.threatsCoveredBy(m.id).map(t => t.id).join(', '))} | ${mdUrl(m.ticketUrl) ? `[link](${mdUrl(m.ticketUrl)})` : '—'} |`));
                     out.push('');
                 }
-                out.push('## Data flows', '', '| Flow | From | To | Ports | Encrypted | Authenticated | Crosses trust boundary |', '|---|---|---|---|---|---|---|');
-                s.flows.forEach(f => {
-                    const c = analysis.crossings.get(f.id) || { crosses: false, names: [] };
-                    const yn = (k) => f.secProps && f.secProps[k] === 'true' ? 'yes' : 'no';
-                    out.push(`| ${cell(f.name)} | ${cell((byId.get(f.sourceId) || {}).name)} | ${cell((byId.get(f.targetId) || {}).name)} | ${cell(f.ports)} | ${yn('encrypted')} | ${yn('authenticated')} | ${c.crosses ? cell(c.names.join(', ')) : 'no'} |`);
-                });
-                out.push('', '## Components', '', '| Component | Type | Trust zone | Security properties | Notes |', '|---|---|---|---|---|');
-                this.modelComponents().forEach(e => {
-                    const props = Object.entries(e.secProps || {}).filter(([, v]) => v === 'true').map(([k]) => k.replace(/([A-Z])/g, ' $1').toLowerCase()).join(', ');
-                    out.push(`| ${cell(e.name)} | ${e.type.replace(/_/g, ' ')} | ${cell((analysis.nodeZones.get(e.id) || []).map(z => z.name).join(', '))} | ${cell(props)} | ${cell(e.notes)} |`);
-                });
+                this.mdFlowAndComponentLines(out, analysis);
                 const allFindings = this.evaluateAllRules();
                 const pending = allFindings.filter(f => !f.added && !f.dismissed);
                 const warnings = this.computeModelWarnings();
@@ -17295,6 +17314,91 @@ Orders DB,down,datastore,App,,,</pre></div>
                     if (byKind.length) { out.push(`### Suggested for the kind of component (${byKind.length}, not yet in the register)`, ''); [...new Set(byKind.map(f => f.item))].forEach(it => { const fs = byKind.filter(f => f.item === it); out.push(`- **${para(it.name || 'unnamed')}** (${para(fs[0].reason)}): ${fs.map(f => para(f.rule.id)).join(', ')}`); }); out.push(''); }
                     if (warnings.length) { out.push('### Model checks', ''); warnings.forEach(x => out.push(`- ${para(x.text)}`)); out.push(''); }
                 }
+                return out.join('\n') + '\n';
+            }
+
+            /** Pushes the Mermaid diagram (one per page when there are several) as a Markdown section. */
+            mdDiagramLines(out) {
+                const pages = this.state.pages || [];
+                if (pages.length > 1) {
+                    out.push('## Diagrams', '');
+                    pages.forEach(pg => out.push(`### ${mdText(pg.name)}`, '', '```mermaid', this.buildMermaidDiagram({ pageId: pg.id }).trimEnd(), '```', ''));
+                } else out.push('## Diagram', '', '```mermaid', this.buildMermaidDiagram().trimEnd(), '```', '');
+            }
+
+            mdAttackPathLines(out) {
+                const ap = computeAttackPaths(this.attackPathModel());
+                out.push('## Attack paths', '');
+                if (!ap.targets.length) out.push('_No crown jewels are marked, so no attack paths were computed._', '');
+                else if (!ap.paths.length) out.push('_No route from an entry point to a crown jewel._', '');
+                else {
+                    out.push(`Routes from entry points to crown jewels, highest risk first (${ap.paths.length}${ap.truncated ? '+' : ''} found).`, '');
+                    ap.paths.slice(0, 10).forEach((p, i) => out.push(`${i + 1}. ${mdText(this.attackPathNames(p))} (score ${p.score}: ${this.attackPathReasons(p)})`));
+                    out.push('');
+                }
+            }
+
+            mdFlowAndComponentLines(out, analysis = this.computeTrustAnalysis()) {
+                const s = this.state, cell = (v) => mdText(v) || '—';
+                const byId = new Map([...s.elements, ...s.flows].map(x => [x.id, x]));
+                out.push('## Data flows', '', '| Flow | From | To | Ports | Encrypted | Authenticated | Crosses trust boundary |', '|---|---|---|---|---|---|---|');
+                s.flows.forEach(f => {
+                    const c = analysis.crossings.get(f.id) || { crosses: false, names: [] };
+                    const yn = (k) => f.secProps && f.secProps[k] === 'true' ? 'yes' : 'no';
+                    out.push(`| ${cell(f.name)} | ${cell((byId.get(f.sourceId) || {}).name)} | ${cell((byId.get(f.targetId) || {}).name)} | ${cell(f.ports)} | ${yn('encrypted')} | ${yn('authenticated')} | ${c.crosses ? cell(c.names.join(', ')) : 'no'} |`);
+                });
+                out.push('', '## Components', '', '| Component | Type | Trust zone | Security properties | Notes |', '|---|---|---|---|---|');
+                this.modelComponents().forEach(e => {
+                    const props = Object.entries(e.secProps || {}).filter(([, v]) => v === 'true').map(([k]) => k.replace(/([A-Z])/g, ' $1').toLowerCase()).join(', ');
+                    out.push(`| ${cell(e.name)} | ${e.type.replace(/_/g, ' ')} | ${cell((analysis.nodeZones.get(e.id) || []).map(z => z.name).join(', '))} | ${cell(props)} | ${cell(e.notes)} |`);
+                });
+            }
+
+            /**
+             * The readable copy git sync writes next to the JSON. Laid out like the printed report: the header, the diagram
+             * on top, then (kind 'report') the threat register as one block per threat and the mitigations. No date, so an
+             * unchanged model gives a byte-identical file and no commit. Every model value goes through mdText.
+             */
+            buildGitReadableMarkdown(kind, sourceName) {
+                const s = this.state, cell = (v) => mdText(v) || '—', para = (v) => mdText(v);
+                const category = (c) => STRIDE_CATEGORIES.includes(c) ? c : cell(c);
+                const risk = (t) => ThreatModelSession.calculateRisk(t.likelihood, t.impact);
+                const byId = new Map([...s.elements, ...s.flows].map(x => [x.id, x]));
+                const mitigations = s.mitigations || [];
+                const title = para(s.projectTitle) || 'Threat model';
+                const out = [];
+                out.push(kind === 'report' ? `# Threat Register Report — ${title}` : `# ${title}`, '');
+                out.push(`> This file is generated by Threat Tiger from \`${sourceName}\` on every sync and overwritten each time. Change the model in Threat Tiger, not here.`, '');
+                out.push(`**Scope:** ${cell(s.scopeDefinition)} | ${s.threats.length} threat(s) | ${mitigations.length} mitigation(s)`, '');
+                this.mdDiagramLines(out);
+                if (kind !== 'report') return out.join('\n') + '\n';
+                out.push('## Risk summary', '', `| Severity | ${THREAT_STATUSES.join(' | ')} | Total |`, `|---|${THREAT_STATUSES.map(() => '---:').join('|')}|---:|`);
+                ['Critical', 'High', 'Medium', 'Low'].forEach(sev => {
+                    const list = s.threats.filter(t => risk(t).label === sev);
+                    out.push(`| ${sev} | ${THREAT_STATUSES.map(st => list.filter(t => t.status === st).length).join(' | ')} | ${list.length} |`);
+                });
+                out.push('', '## Threats', '');
+                if (!s.threats.length) out.push('_No threats recorded._', '');
+                [...s.threats].sort((a, b) => risk(b).score - risk(a).score).forEach(t => {
+                    const r = risk(t), target = byId.get(t.elementId);
+                    const kindOf = target ? (target.sourceId !== undefined ? 'data flow' : para(toText(target.type).replace(/_/g, ' '))) : '';
+                    out.push(`### ${cell(t.id)} — ${para(t.title)}`, '');
+                    out.push(`**${target ? para(target.name) : 'Unknown component'}**${kindOf ? ` (${kindOf})` : ''} · ${category(t.category)}${t.needsReview ? ' · needs review' : ''}`, '');
+                    out.push('| Severity | Risk score | Likelihood / impact | Status |', '|---|---|---|---|', `| ${r.label} | ${r.score} / 25 | ${para(t.likelihood)} / ${para(t.impact)} | ${cell(t.status)} |`, '');
+                    if (toText(t.desc).trim()) out.push(toText(t.desc).trim().split(/\r?\n/).map(l => { const item = /^\s*- (.*)$/.exec(l); return (item ? `> - ${para(item[1])}` : `> ${para(l)}`).trimEnd(); }).join('\n'), '');
+                    const linked = (t.mitigationIds || []).map(id => this.mitigationById(id)).filter(Boolean);
+                    if (linked.length) out.push(`_Mitigations:_ ${linked.map(m => `${para(m.id)} ${para(m.title)} (${para(m.status)})`).join('; ')}`, '');
+                    if (t.mitigationExplanation) out.push(`_Mitigation:_ ${para(t.mitigationExplanation)}`, '');
+                    if (Array.isArray(t.refs) && t.refs.length) out.push(`_References:_ ${t.refs.map(x => { const u = mdUrl(refLink(x)); return u ? `[${mdText(x)}](${u})` : mdText(x); }).join(', ')}`, '');
+                });
+                if (mitigations.length) {
+                    const done = mitigations.filter(m => MITIGATION_DONE.includes(m.status)).length;
+                    out.push(`## Mitigations — ${done} of ${mitigations.length} implemented or verified`, '', '| ID | Mitigation | Status | Owner | Threats | Ticket |', '|---|---|---|---|---|---|');
+                    mitigations.forEach(m => out.push(`| ${cell(m.id)} | ${cell(m.title)} | ${cell(m.status)} | ${cell(m.owner)} | ${cell(this.threatsCoveredBy(m.id).map(t => t.id).join(', '))} | ${mdUrl(m.ticketUrl) ? `[link](${mdUrl(m.ticketUrl)})` : '—'} |`));
+                    out.push('');
+                }
+                this.mdAttackPathLines(out);
+                this.mdFlowAndComponentLines(out);
                 return out.join('\n') + '\n';
             }
 

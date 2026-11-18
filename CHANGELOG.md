@@ -5,6 +5,12 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.23.0
+
+### Added
+
+*   **Git sync: readable copy.** Settings → Git sync → *Readable copy in the repository* (Off, Diagram only, Full report) also commits a Markdown file next to the JSON (same name, `.md`) that GitHub and GitLab render with the Mermaid diagram drawn. The full report follows the printed report: header, diagram on top, risk summary, one block per threat, mitigations, then attack paths, data flows and components. The file is regenerated and overwritten on every sync and never read back; it has no date, so an unchanged model makes no commit. A failure to write it is reported and never undoes the model sync. Stored in the model as `gitSync.readable` (absent when off).
+
 ## 1.22.1
 
 ### Fixed
