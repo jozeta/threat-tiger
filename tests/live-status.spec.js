@@ -3,7 +3,7 @@
 // Every remote endpoint is faked with page.route; anything else on https:// is aborted and recorded, so no test
 // ever reaches the real internet.
 const { test } = require('@playwright/test');
-const { expect, openApp, clickControl, importJson, downloadText } = require('./helpers');
+const { expect, openApp, clickControl, importJson, downloadText, openSettingsTab } = require('./helpers');
 
 const SHEET_ID = '1AbCdEfGhIjKlMnOpQrStUvWxYz0123456789';
 const SHARE = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/edit?usp=sharing#gid=42`;
@@ -372,7 +372,7 @@ test('a source can be added, tested and removed in Settings → Live status', as
   const stray = await guardNetwork(page);
   const calls = await fake(page, 'https://status.example.com/s.json', () => ({ contentType: 'application/json', body: '[{"name":"API","status":"up"}]' }));
   await open(page, model());
-  await clickControl(page, '#btn-settings');
+  await openSettingsTab(page, 'live');
   await expect(page.locator('#settings-live')).toBeVisible();
   await page.click('#btn-live-add-source');
   await page.fill('#live-src-name', 'Feed');
@@ -434,7 +434,7 @@ test('the live status switch is off by default and remembered in this browser', 
   await page.waitForFunction(() => window.app && window.app.state);
   expect(await page.evaluate(() => app.liveOn)).toBe(true);
   await expect(page.locator('#btn-menu-live-status')).toHaveAttribute('aria-checked', 'true');
-  await clickControl(page, '#btn-settings');
+  await openSettingsTab(page, 'live');
   await expect(page.locator('#live-status-toggle')).toBeChecked();
   await page.locator('#live-status-toggle').uncheck();
   expect(await page.evaluate(() => [app.liveOn, localStorage.getItem('threat_tiger_live_status')])).toEqual([false, 'off']);
@@ -599,7 +599,7 @@ test('approvals are kept under a key that "Clear all data" removes', async ({ pa
   await open(page, model());
   await page.evaluate(() => app.approveLiveHosts(['status.example.com']));
   expect(await page.evaluate(() => Object.keys(localStorage).filter((k) => k.includes('live')))).toEqual(['threat_tiger_live_approved']);
-  await clickControl(page, '#btn-settings');
+  await openSettingsTab(page, 'live');
   await expect(page.locator('#live-approved-list')).toContainText('status.example.com');
   await page.locator('#settings-live details summary').click();
   await page.click('#btn-live-forget-approvals');

@@ -10,7 +10,7 @@ const activeHidden = (page, key) => page.evaluate((k) => {
 }, key);
 
 const openSettings = async (page) => {
-  await H.clickControl(page, '#btn-settings');
+  await H.openSettingsTab(page, 'profiles');
   await expect(page.locator('#modal-settings')).toBeVisible();
 };
 

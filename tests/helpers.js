@@ -89,4 +89,12 @@ async function registerRows(page) {
   return page.locator('#threat-register-tbody tr:has(td:nth-child(2))');
 }
 
-module.exports = { SHOW_EVERYTHING_PROFILES, clickControl, DEMO, SESSION_KEY, trackPageErrors, openApp, demoSession, importJson, downloadText, registerRows, expect };
+/** Opens Settings (if closed) on one tab: 'visuals', 'profiles', 'live' or 'sync'. */
+async function openSettingsTab(page, tab) {
+  if (!(await page.locator('#modal-settings').isVisible())) await clickControl(page, '#btn-settings');
+  await expect(page.locator('#modal-settings')).toBeVisible();
+  await page.click(`#settings-tab-${tab}`);
+  await expect(page.locator(`#settings-pane-${tab}`)).toBeVisible();
+}
+
+module.exports = { SHOW_EVERYTHING_PROFILES, clickControl, openSettingsTab, DEMO, SESSION_KEY, trackPageErrors, openApp, demoSession, importJson, downloadText, registerRows, expect };

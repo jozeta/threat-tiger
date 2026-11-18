@@ -2,7 +2,7 @@
 // Palette, outlines (light and dark canvas), multi-line compartments, import/export, flows, PNG export,
 // which of them count as model components (threats and suggestions), and hiding the sub-groups.
 const { test } = require('@playwright/test');
-const { expect, openApp, demoSession, importJson, downloadText, clickControl, trackPageErrors } = require('./helpers');
+const { expect, openApp, demoSession, importJson, downloadText, trackPageErrors, openSettingsTab } = require('./helpers');
 
 const GROUPS = {
   c4: ['c4_person', 'c4_system', 'c4_container', 'c4_component', 'c4_external'],
@@ -299,7 +299,7 @@ test('a shape with threats is not offered, and cannot be changed to, a notation 
 test('hiding a diagram sub-group in Settings hides it in the palette', async ({ page }) => {
   await setup(page);
   for (const g of Object.keys(GROUPS)) {
-    await clickControl(page, '#btn-settings');
+    await openSettingsTab(page, 'profiles');
     await expect(page.locator('#modal-settings')).toBeVisible();
     await page.locator(`#settings-palette-groups input[data-palette-group="${g}"]`).uncheck();
     expect(await page.locator(`#palette-${g}`).evaluate((n) => n.classList.contains('d-none'))).toBe(true);

@@ -6,7 +6,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { test } = require('@playwright/test');
-const { expect, openApp, clickControl } = require('./helpers');
+const { expect, openApp, clickControl, openSettingsTab } = require('./helpers');
 
 const ROOT = path.resolve(__dirname, '..');
 const SAMPLE_CSV = fs.readFileSync(path.join(ROOT, 'samples/status-servers.csv'), 'utf8');
@@ -384,7 +384,7 @@ test('update from file adds and updates rows, keeps moved shapes in place and as
     .map((l) => l.startsWith('web-01') ? 'web-01,up,process,bi-globe2,45,500,,,,,,DMZ,api-01|new-01,Public web server (node 1)' : l)
     .join('\n') + 'new-01,up,,,,,,,,,,Internal,,Brand new\n';
   // Settings → Live status → Update from file opens the dialog for that source.
-  await clickControl(page, '#btn-settings');
+  await openSettingsTab(page, 'live');
   await page.locator('#live-sources-list .live-source-row .live-source-update').click();
   await expect(page.locator('#modal-status-file')).toBeVisible();
   await expect(page.locator('#status-file-url')).toHaveValue('https://status.example.test/servers.csv');
@@ -431,7 +431,7 @@ test('Settings → Live status offers Google Sheet, CSV file and JSON file; a pl
   const stray = await guardNetwork(page);
   const calls = await fake(page, 'https://status.example.test/feed.csv', () => ({ body: 'host,state,latency\nAPI,down,20\n', contentType: 'text/csv' }));
   await open(page, { ...emptyModel(), elements: [{ id: 'n-api', type: 'process', name: 'API', x: 100, y: 100, width: 240, height: 80, secProps: {} }] });
-  await clickControl(page, '#btn-settings');
+  await openSettingsTab(page, 'live');
   const labels = await page.locator('#live-src-kind option').evaluateAll((o) => o.map((x) => [x.value, x.textContent]));
   expect(labels).toEqual([['sheet', 'Google Sheet'], ['csv', 'CSV file'], ['json', 'JSON file']]);
   await page.click('#btn-live-add-source');
@@ -453,7 +453,7 @@ test('Settings → Live status offers Google Sheet, CSV file and JSON file; a pl
   await expect(indFill(page, 'n-api')).toHaveAttribute('fill', '#dc3545');
   expect(calls).toHaveLength(1);
   // A same-origin path is accepted in the form too, and needs no approval.
-  await clickControl(page, '#btn-settings');
+  await openSettingsTab(page, 'live');
   await page.click('#btn-live-add-source');
   await page.selectOption('#live-src-kind', 'csv');
   await page.fill('#live-src-url', 'samples/status-servers.csv');

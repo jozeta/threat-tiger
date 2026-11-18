@@ -143,7 +143,7 @@ All other actions (import, export, reports, History, help) are in the **☰ menu
 ### Syncing with GitHub or GitLab
 
 1.  Create an access token: on GitHub a *fine-grained token* for the one repository with **Contents: Read and write**; on GitLab a personal or project access token with the **api** scope.
-2.  Open **☰ → Settings…** and fill in **Git sync**:
+2.  Open **☰ → Settings… → Sync** and fill in **Git sync**:
     - **Service:** GitHub or GitLab.
     - **Server:** defaults to `https://api.github.com` or `https://gitlab.com`. For GitHub Enterprise use `https://your-host/api/v3`; for self-hosted GitLab use `https://your-host`.
     - **Repository:** `owner/name` (GitLab: `group/subgroup/project`).
@@ -156,7 +156,7 @@ All other actions (import, export, reports, History, help) are in the **☰ menu
 3.  Press **Connect**. Threat Tiger checks that the token can open the repository, then shows the **⟳** sync button next to ☰.
 4.  Press **⟳** to sync. If only your copy changed, it is saved to the repository (as a commit in the git-friendly JSON format); if only the repository copy changed, it is loaded (your previous version goes to History); if both changed, you choose **Keep mine**, **Take theirs** or **Cancel**. After a reload, the first sync asks for your passphrase.
 
-The sync settings (not the token) are part of the model and its exports, so a colleague who opens your JSON gets the ⟳ button straight away and only needs to enter their own token. **Forget token** removes the token from this browser; **Remove sync from this model** removes the settings.
+The sync settings (service, server, repository, branch, file and the readable copy settings; never the token or passphrase) are part of the model and of **☰ → Export JSON**, so a colleague who opens your JSON gets the ⟳ button straight away and only needs to enter their own token. **Forget token** removes the token from this browser; **Remove sync from this model** removes the settings.
 
 ### Profiles: choosing what the screen shows
 
@@ -224,7 +224,7 @@ Select a data flow and, in **Properties → Traffic animation**, turn on *Animat
 
 ### Title block and legend
 
-Open **☰ → View → Title block & legend…** (or **☰ → Settings… → Title block & legend…**). The settings are saved with the model and appear on the canvas, in the PNG export and in print.
+Open **☰ → View → Title block & legend…** (or **☰ → Settings… → Visuals → Title block & legend…**). The settings are saved with the model and appear on the canvas, in the PNG export and in print.
 
 - **Title block** and **legend** switch on separately. The legend gets a **title** of your choice and **one or two columns**.
 - **Items:** everything the page draws is listed (shape types, 3D variants, icons and cloud icons, flow styles and colours, threat and crown-jewel markers). Tick what the legend shows and edit each item's text; *Reset labels* brings the automatic text back. New kinds of items are shown until you untick them.

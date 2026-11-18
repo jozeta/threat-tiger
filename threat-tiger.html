@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-id65Slxmyyvu9rlfNRIsftaFxWEI0PmMD4k9MqbJ+aA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-o4xffc1MQPQe/8GnYKvu+++9OFowKcNISrtSfwFvbs8='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1938,7 +1938,14 @@
         scroll-behavior: auto !important;
       }
     }
-    </style>
+            /* Settings: anchored near the top with a fixed height, so it never moves when a tab or section changes size;
+           the header and tab bar stay put and only the tab content scrolls. */
+        .settings-dialog { margin-top: max(0.75rem, env(safe-area-inset-top)); margin-bottom: 0.75rem; }
+        .settings-dialog .modal-content { height: min(860px, calc(100dvh - 1.5rem - env(safe-area-inset-top))); }
+                /* Settings tabs: 44 px touch targets; the bar scrolls sideways on its own on narrow screens. */
+        .settings-tabs { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; z-index: 2; }
+        .settings-tabs .nav-link { min-height: 44px; display: flex; align-items: center; }
+</style>
 </head>
 
 <body>
@@ -1985,7 +1992,6 @@
                     <li><button class="dropdown-item" type="button" id="btn-import-mermaid"><i class="bi bi-diagram-3 me-2"></i>Import Mermaid flowchart…</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-build-from-status"><i class="bi bi-activity me-2"></i>Build from status file…</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-export"><i class="bi bi-file-earmark-arrow-down me-2"></i>Export JSON</button></li>
-                    <li><button class="dropdown-item" type="button" id="btn-export-no-log" title="Smaller file that diffs cleanly in git"><i class="bi bi-git me-2"></i>Export JSON for git (no activity log)</button></li>
                     <li><button class="dropdown-item" type="button" id="btn-snapshots"><i class="bi bi-clock-history me-2"></i>History…</button></li>
                     <li><hr class="dropdown-divider"></li>
                     <li><h6 class="dropdown-header">Reports &amp; diagrams</h6></li>
@@ -4381,20 +4387,30 @@
     <!-- ── end title block & legend dialog ── -->
 
     <div class="modal fade" id="modal-settings" tabindex="-1" aria-labelledby="modal-settings-title" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-dialog modal-dialog-scrollable modal-lg settings-dialog">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header bg-dark text-light">
                     <h5 class="modal-title fs-6 fw-bold" id="modal-settings-title"><i class="bi bi-gear me-2" aria-hidden="true"></i>Settings</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body p-3">
+                <div class="modal-body p-0">
+                    <!-- Settings tabs (showSettingsTab): Visuals, Profiles, Live status, Sync -->
+                    <ul class="nav nav-tabs settings-tabs flex-nowrap px-3 pt-2 bg-body sticky-top" id="settings-tabs" role="tablist">
+                        <li class="nav-item" role="presentation"><button class="nav-link text-nowrap active" id="settings-tab-visuals" data-bs-toggle="tab" data-bs-target="#settings-pane-visuals" type="button" role="tab" aria-controls="settings-pane-visuals" aria-selected="true"><i class="bi bi-palette me-1" aria-hidden="true"></i>Visuals</button></li>
+                        <li class="nav-item" role="presentation"><button class="nav-link text-nowrap" id="settings-tab-profiles" data-bs-toggle="tab" data-bs-target="#settings-pane-profiles" type="button" role="tab" aria-controls="settings-pane-profiles" aria-selected="false" tabindex="-1"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Profiles</button></li>
+                        <li class="nav-item" role="presentation"><button class="nav-link text-nowrap" id="settings-tab-live" data-bs-toggle="tab" data-bs-target="#settings-pane-live" type="button" role="tab" aria-controls="settings-pane-live" aria-selected="false" tabindex="-1"><i class="bi bi-activity me-1" aria-hidden="true"></i>Live status</button></li>
+                        <li class="nav-item" role="presentation"><button class="nav-link text-nowrap" id="settings-tab-sync" data-bs-toggle="tab" data-bs-target="#settings-pane-sync" type="button" role="tab" aria-controls="settings-pane-sync" aria-selected="false" tabindex="-1"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Sync</button></li>
+                    </ul>
+                    <div class="tab-content p-3">
+                    <div class="tab-pane active" id="settings-pane-visuals" role="tabpanel" aria-labelledby="settings-tab-visuals" tabindex="0">
                     <!-- Title block & legend: opens its own dialog (openLegendDialog) -->
                     <section class="mb-3" aria-labelledby="settings-legend-title">
                         <h6 class="fw-bold mb-1" id="settings-legend-title"><i class="bi bi-card-heading me-1" aria-hidden="true"></i>Title block &amp; legend<button type="button" class="tt-help-link" data-help-open="legend" aria-label="Help: Title block and legend" title="Help: Title block and legend"><i class="bi bi-question-circle" aria-hidden="true"></i></button></h6>
                         <p class="small text-muted mb-2">Choose what the legend lists, its labels, title, columns and position, and whether the title block is shown.</p>
                         <button type="button" class="btn btn-sm btn-outline-primary" id="btn-settings-legend"><i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Title block &amp; legend…</button>
                     </section>
-                    <hr class="my-3">
+                    </div>
+                    <div class="tab-pane" id="settings-pane-profiles" role="tabpanel" aria-labelledby="settings-tab-profiles" tabindex="0">
                     <!-- View profiles editor (renderPaletteSettings) -->
                     <section id="settings-profiles" aria-labelledby="settings-profiles-title">
                     <h6 class="fw-bold mb-1" id="settings-profiles-title"><i class="bi bi-sliders me-1" aria-hidden="true"></i>Profiles<button type="button" class="tt-help-link" data-help-open="profiles" aria-label="Help: Profiles" title="Help: Profiles"><i class="bi bi-question-circle" aria-hidden="true"></i></button></h6>
@@ -4440,7 +4456,8 @@
                     </div>
                     </section>
                     <!-- /View profiles editor -->
-                    <hr class="my-3">
+                    </div>
+                    <div class="tab-pane" id="settings-pane-live" role="tabpanel" aria-labelledby="settings-tab-live" tabindex="0">
                     <!-- Live status: sources, switch, interval, approvals (renderLiveSettings) -->
                     <section id="settings-live" class="mb-3" aria-labelledby="settings-live-title">
                         <h6 class="fw-bold mb-1" id="settings-live-title"><i class="bi bi-activity me-1" aria-hidden="true"></i>Live status<button type="button" class="tt-help-link" data-help-open="live-status" aria-label="Help: Live status" title="Help: Live status"><i class="bi bi-question-circle" aria-hidden="true"></i></button></h6>
@@ -4532,7 +4549,8 @@
                             server a web check can only tell that the host answered, not its status code. Plain http:// addresses are blocked by the app's security policy.</p>
                     </section>
                     <!-- /Live status -->
-                    <hr class="my-3">
+                    </div>
+                    <div class="tab-pane" id="settings-pane-sync" role="tabpanel" aria-labelledby="settings-tab-sync" tabindex="0">
                     <h6 class="fw-bold mb-1"><i class="bi bi-arrow-repeat me-1" aria-hidden="true"></i>Git sync (GitHub / GitLab)<button type="button" class="tt-help-link" data-help-open="git-sync" aria-label="Help: Git sync" title="Help: Git sync"><i class="bi bi-question-circle" aria-hidden="true"></i></button></h6>
                     <p class="small text-muted mb-2">Save this model to a file in a repository and load it from there with the sync button next to ☰.
                         Server, repository, branch and file are saved in the model and its exports, so a colleague only needs their own token.
@@ -4600,11 +4618,16 @@
                         </div>
                     </form>
                     <div id="git-status" class="small mt-2" role="status" aria-live="polite"></div>
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <button type="button" class="btn btn-sm btn-outline-danger me-auto" id="btn-git-remove">Remove sync from this model</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-git-forget">Forget token</button>
+                        <button type="button" class="btn btn-sm btn-primary" id="btn-git-connect">Connect</button>
+                    </div>
+                    </div>
+                    </div>
                 </div>
                 <div class="modal-footer bg-light">
-                    <button type="button" class="btn btn-sm btn-outline-danger me-auto" id="btn-git-remove">Remove sync from this model</button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-git-forget">Forget token</button>
-                    <button type="button" class="btn btn-sm btn-primary" id="btn-git-connect">Connect</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-dismiss="modal">Close</button>
                 </div>
             </div>
         </div>
@@ -4950,7 +4973,7 @@
         <div>
             <p>Everything that isn’t drawing lives in the ☰ menu at the top right. It works like a desktop menu: hover or click an item with a ▸ to open its flyout, <kbd>→</kbd> / <kbd>Enter</kbd> open one, <kbd>←</kbd> / <kbd>Esc</kbd> close one level, and <kbd>↑</kbd> <kbd>↓</kbd> move inside the current level.</p>
             <ul>
-                <li><strong>Model:</strong> Import JSON…, Import Mermaid flowchart…, Export JSON, Export JSON for git (no activity log), History…</li>
+                <li><strong>Model:</strong> Import JSON…, Import Mermaid flowchart…, Export JSON, History…</li>
                 <li><strong>Reports &amp; diagrams:</strong> Print report…, Export Markdown report, Export Mermaid diagram.</li>
                 <li><strong>View ▸</strong> Review mode, Title block &amp; legend…, <em>Canvas ▸</em> (minimap, line jumps, animate traffic, live status), show or hide the left, right and bottom panels, <em>Palette sections ▸</em>, <em>Icon sets ▸</em> and <em>Panel tabs ▸</em>. View changes are saved into the profile you are using.</li>
                 <li><strong>Build from status file…</strong> turns a CSV or JSON list of servers into a diagram (see <a href="#help/status-file" data-help-goto="status-file">Build from status file</a>).</li>
@@ -5725,7 +5748,6 @@ Orders DB,down,datastore,App,,,</pre></div>
         <thead><tr><th>Format</th><th>Where</th><th>What you get</th></tr></thead>
         <tbody>
             <tr><td>JSON</td><td>☰ → Export JSON / Import JSON…</td><td>The whole model: pages, shapes, flows, threats, mitigations, settings and the activity log. The app version is recorded as <code>appVersion</code>.</td></tr>
-            <tr><td>JSON for git</td><td>☰ → Export JSON for git (no activity log)</td><td>A smaller file with a stable layout that diffs cleanly in a repository.</td></tr>
             <tr><td>Mermaid (import)</td><td>☰ → Import Mermaid flowchart…</td><td>Paste a <code>flowchart</code> / <code>graph</code>: nodes become flowchart shapes, subgraphs trust zones, laid out automatically. Add it next to the current model or replace it (undo brings it back).</td></tr>
             <tr><td>Mermaid (export)</td><td>☰ → Export Mermaid diagram</td><td>The diagram as Mermaid flowchart text. Trust zones become subgraphs; a data flow that crosses a trust boundary (line or zone) is drawn red and labelled with the boundaries it crosses, since Mermaid cannot draw the lines themselves.</td></tr>
             <tr><td>Markdown report</td><td>☰ → Export Markdown report</td><td>Scope, components, threats, mitigations, model checks and attack paths, with an embedded Mermaid diagram.</td></tr>
@@ -9202,7 +9224,6 @@ Orders DB,down,datastore,App,,,</pre></div>
 
                 document.getElementById('tab-insights-trigger').addEventListener('show.bs.tab', () => this.renderInsights());
                 document.getElementById('btn-export-markdown').addEventListener('click', () => this.exportMarkdownReport());
-                document.getElementById('btn-export-no-log').addEventListener('click', () => this.exportWorkspaceJsonPayloadFile({ includeLog: false }));
 
                 this.bindUiEvents(); this.bindCanvasEvents(); this.bindKeyboardShortcuts(); this.bindDialogFocusReturn();
                 this.bindResponsiveLayout();
@@ -12622,7 +12643,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                 this.gitSettingsModal = modal('modal-settings');
                 this.gitUnlockModal = modal('modal-git-unlock');
                 this.gitConflictModal = modal('modal-git-conflict');
-                document.getElementById('btn-settings').addEventListener('click', () => this.openGitSettings());
+                document.getElementById('btn-settings').addEventListener('click', () => this.openSettings('visuals'));
                 document.getElementById('btn-git-sync').addEventListener('click', () => this.syncWithGit());
                 document.getElementById('btn-git-connect').addEventListener('click', () => this.connectGitFromSettings());
                 document.getElementById('form-git-sync').addEventListener('submit', (ev) => { ev.preventDefault(); this.connectGitFromSettings(); });
@@ -12669,7 +12690,19 @@ Orders DB,down,datastore,App,,,</pre></div>
                 try { const v = JSON.parse(localStorage.getItem(GIT_SECRETS_KEY) || '{}'); return isPlainObject(v) ? v : {}; } catch { return {}; }
             }
 
-            openGitSettings(message = '', variant = 'muted') {
+            /** Settings tabs: 'visuals' (title block & legend), 'profiles', 'live' (live status), 'sync' (git). */
+            showSettingsTab(tab) {
+                const btn = document.getElementById(`settings-tab-${tab}`);
+                if (btn) bootstrap.Tab.getOrCreateInstance(btn).show();
+            }
+
+            /** Opens Settings on one tab (the git form is filled in every time, as it always was). */
+            openSettings(tab = 'visuals') {
+                this.openGitSettings('', 'muted', tab);
+            }
+
+            openGitSettings(message = '', variant = 'muted', tab = 'sync') {
+                this.showSettingsTab(tab);
                 this.renderPaletteSettings();
                 const cfg = normalizeGitSync(this.state.gitSync) || { provider: 'github', host: GIT_PROVIDERS.github.host, repo: '', branch: 'main', path: 'threat-model.json' };
                 document.getElementById('git-provider').value = cfg.provider;
@@ -13028,9 +13061,9 @@ Orders DB,down,datastore,App,,,</pre></div>
             openLiveSettings() {
                 const el = document.getElementById('modal-settings');
                 const scroll = () => { const s = document.getElementById(this.live.pendingAction ? 'live-approve-box' : 'settings-live'); if (s) s.scrollIntoView({ block: 'nearest' }); };
-                if (el.classList.contains('show')) { this.renderLiveSettings(); scroll(); return; }
+                if (el.classList.contains('show')) { this.showSettingsTab('live'); this.renderLiveSettings(); scroll(); return; }
                 el.addEventListener('shown.bs.modal', scroll, { once: true });
-                this.openGitSettings();
+                this.openSettings('live');
             }
 
             liveItems() {
@@ -14806,7 +14839,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                     document.getElementById('settings-profiles').scrollIntoView({ block: 'nearest' });
                     document.getElementById('settings-profile-select').focus();
                 }, { once: true });
-                this.openGitSettings();
+                this.openSettings('profiles');
             }
             setupProfileEditor() {
                 const select = document.getElementById('settings-profile-select'), name = document.getElementById('settings-profile-name');

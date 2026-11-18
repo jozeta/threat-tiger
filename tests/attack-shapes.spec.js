@@ -248,7 +248,7 @@ test('the PNG export includes the attack-tree shapes', async ({ page }) => {
 test('hiding "Attack paths & trees" in Settings hides the palette section', async ({ page }) => {
   await setup(page);
   await expect(page.locator('#palette-attack-body .palette-item')).toHaveCount(Object.keys(PAL).length);
-  await H.clickControl(page, '#btn-settings');
+  await H.openSettingsTab(page, 'profiles');
   await page.locator('#settings-palette-groups input[data-palette-group="attack"]').uncheck();
   await expect(page.locator('#paletteAccordion [data-palette-group="attack"]')).toBeHidden();
 });

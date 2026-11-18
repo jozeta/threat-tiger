@@ -113,11 +113,14 @@ test('FEAT-008: Markdown report contains summary, Mermaid diagram, threats and e
   expect(md).toContain('### Suggested by model rules');
 });
 
+// The git format (no activity log, stable layout) is what git sync writes; the menu item for it was removed in 1.24.0.
+const gitExport = async (page) => { const [d] = await Promise.all([page.waitForEvent('download'), page.evaluate(() => app.exportWorkspaceJsonPayloadFile({ includeLog: false }))]); return require('node:fs').readFileSync(await d.path(), 'utf8'); };
+
 test('FEAT-009: git export is deterministic; moving one component changes only its x/y lines', async ({ page }) => {
   await openApp(page, { session: smallModel() });
-  const a = await downloadText(page, '#btn-export-no-log');
+  const a = await gitExport(page);
   await page.evaluate(() => { const e = app.state.elements.find((x) => x.id === 'cache'); e.x += 37.4; e.y += 12.6; app.logEvent('CHANGE', 'moved'); });
-  const b = await downloadText(page, '#btn-export-no-log');
+  const b = await gitExport(page);
   expect(JSON.parse(a).activityLog).toBeUndefined();
   const la = a.split('\n'), lb = b.split('\n');
   expect(la.length).toBe(lb.length);

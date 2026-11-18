@@ -86,7 +86,7 @@ test('dragging a ready-made node onto the canvas adds one at the drop point; a f
 
 test('hiding "Ready-made nodes" in Settings hides them', async ({ page }) => {
   await H.openApp(page, { session: EMPTY });
-  await H.clickControl(page, '#btn-settings');
+  await H.openSettingsTab(page, 'profiles');
   await expect(page.locator('#modal-settings')).toBeVisible();
   await page.locator('#settings-palette-groups input[data-palette-group="ready-nodes"]').uncheck();
   await page.keyboard.press('Escape');

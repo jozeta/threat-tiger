@@ -7,6 +7,12 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ### Added
 
+*   **Settings has tabs:** *Visuals* (title block & legend), *Profiles*, *Live status* and *Sync* (git sync, with its Connect, Forget token and Remove buttons). ☰ → Settings… opens Visuals; the sync button, live-status host approval and *Edit profiles…* open their own tab. The window now sits near the top of the screen with a fixed height, so it no longer moves when a tab or section changes size; the tab bar stays in place and only the content scrolls.
+
+### Removed
+
+*   **☰ → Export JSON for git** is gone: git sync writes that format itself, and ☰ → Export JSON keeps the sync settings (never the token or passphrase).
+
 *   **Git sync readable copy: choose the sections.** Settings → Git sync now has a switch, *Also commit a readable copy (Markdown)*, and *Include in the readable copy* checkboxes: Diagram, Risk summary, Threats, Mitigations, Data flows, Components (all on by default). Stored as `gitSync.readable: true` and `gitSync.readableSections`; the 1.23 values `diagram` and `report` still load (as the diagram only, or every section). The sections are part of the approved sync target, so a changed choice needs Connect.
 
 ## 1.23.3

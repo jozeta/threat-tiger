@@ -11,7 +11,7 @@ const hidden = (page, sel) => page.locator(sel).first().evaluate(e => e.classLis
 const stored = (page) => page.evaluate(() => ({ profiles: JSON.parse(localStorage.getItem('view_profiles') || 'null'), active: localStorage.getItem('active_view_profile') }));
 const activeProfile = async (page) => { const s = await stored(page); return s.profiles.profiles.find(p => p.id === s.active); };
 const reload = async (page) => { await page.reload(); await page.waitForFunction(() => window.app && window.app.state && window.app.viewProfiles); };
-const openSettings = async (page) => { await H.clickControl(page, '#btn-settings'); await expect(page.locator('#modal-settings')).toBeVisible(); };
+const openSettings = async (page) => { await H.openSettingsTab(page, 'profiles'); };
 const chooseProfile = async (page, id) => {
   await page.click('#btn-view-profile');
   await page.click(`#menu-view-profiles [data-view-profile="${id}"]`);

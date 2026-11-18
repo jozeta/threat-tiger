@@ -1,7 +1,7 @@
 // Git sync (GitHub / GitLab): settings, encrypted token, sync button, push / pull / conflict. The APIs are faked with page.route.
 const crypto = require('node:crypto');
 const { test } = require('@playwright/test');
-const { expect, openApp, demoSession, clickControl, importJson, downloadText } = require('./helpers');
+const { expect, openApp, demoSession, importJson, downloadText, openSettingsTab } = require('./helpers');
 
 const TOKEN = 'ghp_TESTTOKEN0123456789';   // secret-scan:allow (fake test token)
 const PASS = 'correct horse battery';
@@ -68,8 +68,7 @@ async function setup(page) {
 }
 
 async function connect(page, { provider = 'github', host, repo = 'acme/models', branch = 'main', path = 'threat-model.json', token = TOKEN, pass = PASS, readable, readablePath, sections } = {}) {
-  if (!(await page.locator('#modal-settings').isVisible())) await clickControl(page, '#btn-settings');
-  await expect(page.locator('#modal-settings')).toBeVisible();
+  await openSettingsTab(page, 'sync');
   await page.selectOption('#git-provider', provider);
   if (host) await page.fill('#git-host', host);
   await page.fill('#git-repo', repo);
@@ -451,7 +450,31 @@ test('Settings chooses which sections go into the readable copy', async ({ page 
   expect(md).toContain('## Components');
   for (const gone of ['```mermaid', '## Risk summary', '## Mitigations', '## Data flows', '## Attack paths']) expect(md).not.toContain(gone);
   // Reopening Settings shows the choice; a changed choice needs Connect (approval) before it is written.
-  await clickControl(page, '#btn-settings');
+  await openSettingsTab(page, 'sync');
   await expect(page.locator('#git-readable-sec-threats')).toBeChecked();
   await expect(page.locator('#git-readable-sec-diagram')).not.toBeChecked();
+});
+
+test('exported JSON keeps every sync setting (readable copy included) but never the token or passphrase', async ({ page }) => {
+  await setup(page);
+  await fakeGitHub(page);
+  await connect(page, { readable: true, readablePath: 'docs/model.md', sections: ['diagram', 'threats'] });
+  {
+    const json = await downloadText(page, '#btn-export');
+    expect(JSON.parse(json).gitSync).toEqual({ provider: 'github', host: 'https://api.github.com', repo: 'acme/models', branch: 'main', path: 'threat-model.json',
+      readable: true, readablePath: 'docs/model.md', readableSections: ['diagram', 'threats'] });
+    expect(json).not.toContain(TOKEN);
+    expect(json).not.toContain(PASS);
+  }
+  // Imported again, the file brings the settings back into Settings → Sync.
+  const json = await downloadText(page, '#btn-export');
+  await page.evaluate(() => { app.state.gitSync = null; app.renderGitSyncButton(); });
+  await importJson(page, json);
+  await openSettingsTab(page, 'sync');
+  await expect(page.locator('#git-repo')).toHaveValue('acme/models');
+  await expect(page.locator('#git-readable')).toBeChecked();
+  await expect(page.locator('#git-readable-path')).toHaveValue('docs/model.md');
+  await expect(page.locator('#git-readable-sec-threats')).toBeChecked();
+  await expect(page.locator('#git-readable-sec-risk')).not.toBeChecked();
+  await expect(page.locator('#git-token')).toHaveValue('');
 });

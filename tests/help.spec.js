@@ -104,6 +104,7 @@ test('deep links: app.openHelp(id), #help/<id> in the address, and "?" links nex
   // A "?" link inside Settings closes Settings and opens the guide at that section.
   await C.clickControl(page, '#btn-settings');
   await C.modalReady(page, 'modal-settings');
+  await page.click('#settings-tab-profiles');
   await page.click('#modal-settings [data-help-open="profiles"]');
   await C.modalReady(page, 'modal-help-guide');
   await expect(page.locator('#modal-settings')).toBeHidden();

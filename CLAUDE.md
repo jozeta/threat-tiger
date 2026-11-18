@@ -70,6 +70,7 @@ PW_BASE_URL=http://127.0.0.1:8080 npm test   # test the running container
 - Help: the guide is static HTML in `#modal-help-guide` (sections `help-<id>`, `app.openHelp(id)`); screenshots in `docs/help/` come from `node scripts/help-shots.mjs [--readme]` (also writes `docs/images/`) — rerun it after UI changes and keep the `<img>` width/height in step. About & License is `#modal-help`.
 - Git sync's readable copy (`gitSync.readable: true` + `readableSections` from `GIT_READABLE_SECTIONS`, absent = off) is written by `writeGitReadableCopy()` from `buildGitReadableMarkdown()` to `gitSync.readablePath` (default `README.md`), compared but never read back, approved together with the JSON target (`gitApprovalKey`; sync state stays on `gitConfigKey`), and has no date (unchanged model → no commit). Report sections shared with Export Markdown report live in `mdDiagramLines` / `mdAttackPathLines` / `mdFlowAndComponentLines`.
 - Status files and live status: sample files in `samples/` (served same-origin, no host approval). Fetches never follow redirects (`redirect: 'manual'`) except the reply-less no-cors reachability request.
+- Settings is tabbed (`#settings-pane-visuals|profiles|live|sync`); open it with `app.openSettings(tab)` / `showSettingsTab(tab)`, tests with `openSettingsTab(page, tab)` from `tests/helpers.js`.
 - The title block & legend settings are in the model (`state.legend`, `normalizeLegend()`); component look is `display` (`card`/`icon`/`badge`, `normalizeNodeDisplay`).
 
 ## App standards

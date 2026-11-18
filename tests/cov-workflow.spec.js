@@ -118,8 +118,8 @@ test('workflow: JSON export, Reset canvas, Import JSON gives back the same model
 test('workflow: the git export has no log, is deterministic, and re-imports to the same model', async ({ page }) => {
   await C.emptyApp(page);
   await buildFull(page);
-  const a = await C.downloadFile(page, () => C.clickControl(page, '#btn-export-no-log'));
-  const b = await C.downloadFile(page, () => C.clickControl(page, '#btn-export-no-log'));
+  const a = await C.downloadFile(page, () => page.evaluate(() => app.exportWorkspaceJsonPayloadFile({ includeLog: false })));
+  const b = await C.downloadFile(page, () => page.evaluate(() => app.exportWorkspaceJsonPayloadFile({ includeLog: false })));
   expect(a.name).toBe('Coverage.threat-model.json');
   expect(a.buffer.equals(b.buffer)).toBe(true);
   const json = JSON.parse(a.buffer.toString('utf8'));
