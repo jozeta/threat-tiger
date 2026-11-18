@@ -5,6 +5,10 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+### Added
+
+*   **Git sync readable copy: choose the sections.** Settings → Git sync now has a switch, *Also commit a readable copy (Markdown)*, and *Include in the readable copy* checkboxes: Diagram, Risk summary, Threats, Mitigations, Data flows, Components (all on by default). Stored as `gitSync.readable: true` and `gitSync.readableSections`; the 1.23 values `diagram` and `report` still load (as the diagram only, or every section). The sections are part of the approved sync target, so a changed choice needs Connect.
+
 ## 1.23.3
 
 ### Changed

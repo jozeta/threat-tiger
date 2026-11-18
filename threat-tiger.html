@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-BPRbKLW/BSU1+h3BA8ormBtotcnV9w73YfnVxdsEBzE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-id65Slxmyyvu9rlfNRIsftaFxWEI0PmMD4k9MqbJ+aA='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4562,22 +4562,27 @@
                                 <label class="form-label small text-muted mb-1" for="git-path">File in the repository</label>
                                 <input type="text" class="form-control form-control-sm shadow-none" id="git-path" placeholder="threat-model.json" spellcheck="false">
                             </div>
-                            <div class="col-7">
-                                <label class="form-label small text-muted mb-1" for="git-readable">Readable copy in the repository</label>
-                                <select class="form-select form-select-sm shadow-none" id="git-readable" aria-describedby="git-readable-help">
-                                    <option value="off">Off</option>
-                                    <option value="diagram">Diagram only</option>
-                                    <option value="report">Full report: diagram, then threats and mitigations</option>
-                                </select>
+                            <div class="col-12">
+                                <div class="form-check mb-0">
+                                    <input class="form-check-input" type="checkbox" id="git-readable" aria-describedby="git-readable-help">
+                                    <label class="form-check-label small" for="git-readable">Also commit a readable copy (Markdown)</label>
+                                </div>
+                                <div class="form-text extra-small mt-0" id="git-readable-help">A Markdown file that GitHub and GitLab show as a page with the diagram drawn; README.md is the repository's front page.
+                                    It is written fresh on every sync and never read back, so it replaces any file with that name and changes made to it in the repository are overwritten.</div>
                             </div>
-                            <div class="col-5">
+                            <div class="col-12 git-readable-opts">
                                 <label class="form-label small text-muted mb-1" for="git-readable-path">Readable copy file</label>
-                                <input type="text" class="form-control form-control-sm shadow-none" id="git-readable-path" placeholder="README.md" spellcheck="false" aria-describedby="git-readable-help">
+                                <input type="text" class="form-control form-control-sm shadow-none" id="git-readable-path" placeholder="README.md" spellcheck="false">
                             </div>
-                            <div class="col-12 mt-1">
-                                <div class="form-text extra-small mt-0" id="git-readable-help">A Markdown file (path in the repository, ending in .md) that GitHub and GitLab show as a page with the diagram drawn;
-                                    README.md is the repository's front page. It is written fresh on every sync and never read back, so it replaces any file with that name and changes made to it in the repository are overwritten.</div>
-                            </div>
+                            <fieldset class="col-12 git-readable-opts">
+                                <legend class="form-label small text-muted mb-1 fs-6">Include in the readable copy</legend>
+                                    <div class="form-check form-check-inline small mb-0"><input class="form-check-input" type="checkbox" id="git-readable-sec-diagram" value="diagram" checked><label class="form-check-label" for="git-readable-sec-diagram">Diagram</label></div>
+                                    <div class="form-check form-check-inline small mb-0"><input class="form-check-input" type="checkbox" id="git-readable-sec-risk" value="risk" checked><label class="form-check-label" for="git-readable-sec-risk">Risk summary</label></div>
+                                    <div class="form-check form-check-inline small mb-0"><input class="form-check-input" type="checkbox" id="git-readable-sec-threats" value="threats" checked><label class="form-check-label" for="git-readable-sec-threats">Threats</label></div>
+                                    <div class="form-check form-check-inline small mb-0"><input class="form-check-input" type="checkbox" id="git-readable-sec-mitigations" value="mitigations" checked><label class="form-check-label" for="git-readable-sec-mitigations">Mitigations</label></div>
+                                    <div class="form-check form-check-inline small mb-0"><input class="form-check-input" type="checkbox" id="git-readable-sec-flows" value="flows" checked><label class="form-check-label" for="git-readable-sec-flows">Data flows</label></div>
+                                    <div class="form-check form-check-inline small mb-0"><input class="form-check-input" type="checkbox" id="git-readable-sec-components" value="components" checked><label class="form-check-label" for="git-readable-sec-components">Components</label></div>
+                            </fieldset>
                             <div class="col-12">
                                 <label class="form-label small text-muted mb-1" for="git-token">Access token</label>
                                 <input type="password" class="form-control form-control-sm shadow-none" id="git-token" autocomplete="off" spellcheck="false" aria-describedby="git-token-help">
@@ -5741,7 +5746,7 @@ Orders DB,down,datastore,App,,,</pre></div>
         <li><strong>Fill in</strong> ☰ → Settings… → <em>Git sync</em>: service, server (defaults to <code>https://api.github.com</code> or <code>https://gitlab.com</code>; GitHub Enterprise <code>https://host/api/v3</code>), repository (<code>owner/name</code>, GitLab <code>group/subgroup/project</code>), branch (<code>main</code>), file (<code>threat-model.json</code>), the token and a passphrase (8+ characters) that encrypts it.</li>
         <li><strong>Connect.</strong> Threat Tiger checks that the token can open the repository, then shows the ⟳ button next to ☰.</li>
         <li><strong>Press ⟳ to sync.</strong> After a reload, the first sync asks for your passphrase.</li>
-        <li><strong>Optional, a readable copy:</strong> <em>Readable copy in the repository</em> also writes a Markdown file to the repository (<code>README.md</code> by default, so it is the repository's front page; change the name under <em>Readable copy file</em>) that GitHub and GitLab show as a page with the diagram drawn: <em>Diagram only</em>, or <em>Full report</em> (the diagram on top, then the risk summary, the threats, mitigations, data flows and components, like the printed report). It is written fresh on every sync and never read back, so it replaces any file with that name and edits made to it in the repository are overwritten; an unchanged model makes no new commit.</li>
+        <li><strong>Optional, a readable copy:</strong> tick <em>Also commit a readable copy (Markdown)</em> to also write a Markdown file to the repository (<code>README.md</code> by default, so it is the repository's front page; change it under <em>Readable copy file</em>) that GitHub and GitLab show as a page with the diagram drawn. Under <em>Include in the readable copy</em> choose the sections: Diagram, Risk summary, Threats, Mitigations, Data flows and Components; they are written in that order, like the printed report. It is written fresh on every sync and never read back, so it replaces any file with that name and edits made to it in the repository are overwritten; an unchanged model makes no new commit.</li>
     </ol>
     <figure class="tt-help-fig">
         <svg viewBox="0 0 760 200" role="img" aria-labelledby="help-ill-git-t help-ill-git-d">
@@ -8257,19 +8262,21 @@ Orders DB,down,datastore,App,,,</pre></div>
             const parts = path.split('/');
             if (path.length > 200 || !/\.json$/i.test(path) || !parts.every(x => /^[A-Za-z0-9 _.-]+$/.test(x) && x !== '.' && x !== '..' && x.trim() === x)) return null;
             const out = { provider, host, repo, branch, path };
-            if (GIT_READABLE.includes(raw.readable)) {   // the Markdown copy; absent means off
+            if (raw.readable === true || raw.readable === 'diagram' || raw.readable === 'report') {   // the Markdown copy; absent means off ('diagram'/'report': 1.23.0–1.23.3)
                 const rp = toText(raw.readablePath).trim() || GIT_READABLE_DEFAULT_PATH, rparts = rp.split('/');
                 if (rp.length > 200 || !/\.md$/i.test(rp) || !rparts.every(x => /^[A-Za-z0-9 _.-]+$/.test(x) && x !== '.' && x !== '..' && x.trim() === x)) return null;
-                out.readable = raw.readable; out.readablePath = rp;
+                let secs = Array.isArray(raw.readableSections) ? GIT_READABLE_SECTIONS.filter(k => raw.readableSections.includes(k)) : [];
+                if (!secs.length) secs = raw.readable === 'diagram' ? ['diagram'] : [...GIT_READABLE_SECTIONS];
+                out.readable = true; out.readablePath = rp; out.readableSections = secs;
             }
             return out;
         }
-        /** The readable copy written next to the JSON: the diagram only, or the full report. Never read back. */
-        const GIT_READABLE = ['diagram', 'report'], GIT_READABLE_DEFAULT_PATH = 'README.md';
+        /** The readable copy (a Markdown file) and the sections it can hold, in the order they are written. Never read back. */
+        const GIT_READABLE_SECTIONS = ['diagram', 'risk', 'threats', 'mitigations', 'flows', 'components'], GIT_READABLE_DEFAULT_PATH = 'README.md';
         const gitReadablePath = (c) => c.readablePath || GIT_READABLE_DEFAULT_PATH;
         const gitConfigKey = (c) => [c.provider, c.host, c.repo, c.branch, c.path].join('|');   // the JSON target: keys the sync state
         /** Everything sync may write to: the JSON target plus the readable copy, so an imported model cannot aim it at another file. */
-        const gitApprovalKey = (c) => gitConfigKey(c) + (c.readable ? `|${c.readable}|${c.readablePath}` : '');
+        const gitApprovalKey = (c) => gitConfigKey(c) + (c.readable ? `|md|${c.readablePath}|${(c.readableSections || []).join(',')}` : '');
         const gitServerKey = (c) => `${c.provider} ${c.host}`;
         function bytesToBase64(bytes) { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
         function base64ToBytes(b64) { const bin = atob(String(b64 || '').replace(/\s+/g, '')); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
@@ -12620,6 +12627,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                 document.getElementById('btn-git-connect').addEventListener('click', () => this.connectGitFromSettings());
                 document.getElementById('form-git-sync').addEventListener('submit', (ev) => { ev.preventDefault(); this.connectGitFromSettings(); });
                 document.getElementById('btn-git-forget').addEventListener('click', () => this.forgetGitToken());
+                document.getElementById('git-readable').addEventListener('change', () => this.syncGitReadableOptions());
                 document.getElementById('btn-git-remove').addEventListener('click', () => this.removeGitSync());
                 const provider = document.getElementById('git-provider'), host = document.getElementById('git-host');
                 provider.addEventListener('change', () => {
@@ -12670,8 +12678,10 @@ Orders DB,down,datastore,App,,,</pre></div>
                 document.getElementById('git-repo').value = cfg.repo;
                 document.getElementById('git-branch').value = cfg.branch;
                 document.getElementById('git-path').value = cfg.path;
-                document.getElementById('git-readable').value = cfg.readable || 'off';
+                document.getElementById('git-readable').checked = !!cfg.readable;
                 document.getElementById('git-readable-path').value = cfg.readablePath || GIT_READABLE_DEFAULT_PATH;
+                GIT_READABLE_SECTIONS.forEach(k => { document.getElementById(`git-readable-sec-${k}`).checked = cfg.readable ? cfg.readableSections.includes(k) : true; });
+                this.syncGitReadableOptions();
                 ['git-token', 'git-passphrase', 'git-passphrase2'].forEach(id => { document.getElementById(id).value = ''; });
                 if (!message && this.state.gitSync) {
                     const saved = this.gitTokens.has(gitServerKey(cfg)) || !!this.readGitSecrets()[gitServerKey(cfg)];
@@ -12684,7 +12694,9 @@ Orders DB,down,datastore,App,,,</pre></div>
             async connectGitFromSettings() {
                 if (this.gitConnecting) return;
                 const v = (id) => document.getElementById(id).value;
-                const cfg = normalizeGitSync({ provider: v('git-provider'), host: v('git-host'), repo: v('git-repo'), branch: v('git-branch'), path: v('git-path'), readable: v('git-readable'), readablePath: v('git-readable-path') });
+                const cfg = normalizeGitSync({ provider: v('git-provider'), host: v('git-host'), repo: v('git-repo'), branch: v('git-branch'), path: v('git-path'),
+                    readable: document.getElementById('git-readable').checked || undefined, readablePath: v('git-readable-path'), readableSections: GIT_READABLE_SECTIONS.filter(k => document.getElementById(`git-readable-sec-${k}`).checked) });
+                if (document.getElementById('git-readable').checked && !GIT_READABLE_SECTIONS.some(k => document.getElementById(`git-readable-sec-${k}`).checked)) { this.setGitStatus('Choose at least one section for the readable copy, or turn it off.', 'danger'); return; }
                 if (!cfg) { this.setGitStatus('Check the server (an https:// address), the repository (GitHub: owner/name; GitLab: group/project), the branch, the file (ending in .json) and the readable copy file (ending in .md).', 'danger'); return; }
                 if (!(window.crypto && crypto.subtle)) { this.setGitStatus('Git sync needs the app to be opened over https:// or from localhost.', 'danger'); return; }
                 const token = v('git-token').trim(), pass = v('git-passphrase'), pass2 = v('git-passphrase2');
@@ -12719,6 +12731,12 @@ Orders DB,down,datastore,App,,,</pre></div>
                     this.gitConnecting = false;
                     document.getElementById('git-token').value = '';
                 }
+            }
+
+            /** The readable copy's file and section choices only show while it is on. */
+            syncGitReadableOptions() {
+                const on = document.getElementById('git-readable').checked;
+                document.querySelectorAll('.git-readable-opts').forEach(el => el.classList.toggle('d-none', !on));
             }
 
             forgetGitToken() {
@@ -12814,7 +12832,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                 try {
                     if (!(window.crypto && crypto.subtle)) throw new GitSyncError('Git sync needs the app to be opened over https:// or from localhost.');
                     if (!this.readGitApproved().has(gitApprovalKey(cfg))) {
-                        this.openGitSettings(`This model syncs with ${GIT_PROVIDERS[cfg.provider].label} ${cfg.host}, repository ${cfg.repo}, branch ${cfg.branch}, file ${cfg.path}${cfg.readable ? `, and writes a readable copy to ${cfg.readablePath} (overwriting that file)` : ''}. Check these settings, then press Connect (with your token) to allow it in this browser.`, 'warning');
+                        this.openGitSettings(`This model syncs with ${GIT_PROVIDERS[cfg.provider].label} ${cfg.host}, repository ${cfg.repo}, branch ${cfg.branch}, file ${cfg.path}${cfg.readable ? `, and writes a readable copy (${cfg.readableSections.join(', ')}) to ${cfg.readablePath} (overwriting that file)` : ''}. Check these settings, then press Connect (with your token) to allow it in this browser.`, 'warning');
                         return;
                     }
                     const token = await this.gitTokenFor(cfg);
@@ -12877,10 +12895,10 @@ Orders DB,down,datastore,App,,,</pre></div>
              * A failure here is reported but never undoes the model sync that already happened.
              */
             async writeGitReadableCopy(cfg, token) {
-                if (!GIT_READABLE.includes(cfg.readable)) return;
+                if (!cfg.readable) return;
                 const mdCfg = { ...cfg, path: gitReadablePath(cfg) };
                 try {
-                    const text = this.buildGitReadableMarkdown(cfg.readable, cfg.path.split('/').pop());
+                    const text = this.buildGitReadableMarkdown(cfg.readableSections, cfg.path.split('/').pop());
                     const remote = await GitRemote.read(mdCfg, token);
                     if (remote.exists && remote.text === text) return;
                     const title = toText(this.state.projectTitle).replace(/\s+/g, ' ').trim().slice(0, 60) || 'threat model';
@@ -17351,16 +17369,20 @@ Orders DB,down,datastore,App,,,</pre></div>
                 }
             }
 
-            mdFlowAndComponentLines(out, analysis = this.computeTrustAnalysis()) {
+            mdFlowAndComponentLines(out, analysis = this.computeTrustAnalysis(), { flows = true, components = true } = {}) {
                 const s = this.state, cell = (v) => mdText(v) || '—';
                 const byId = new Map([...s.elements, ...s.flows].map(x => [x.id, x]));
+                if (flows) {
                 out.push('## Data flows', '', '| Flow | From | To | Ports | Encrypted | Authenticated | Crosses trust boundary |', '|---|---|---|---|---|---|---|');
                 s.flows.forEach(f => {
                     const c = analysis.crossings.get(f.id) || { crosses: false, names: [] };
                     const yn = (k) => f.secProps && f.secProps[k] === 'true' ? 'yes' : 'no';
                     out.push(`| ${cell(f.name)} | ${cell((byId.get(f.sourceId) || {}).name)} | ${cell((byId.get(f.targetId) || {}).name)} | ${cell(f.ports)} | ${yn('encrypted')} | ${yn('authenticated')} | ${c.crosses ? cell(c.names.join(', ')) : 'no'} |`);
                 });
-                out.push('', '## Components', '', '| Component | Type | Trust zone | Security properties | Notes |', '|---|---|---|---|---|');
+                out.push('');
+                }
+                if (!components) return;
+                out.push('## Components', '', '| Component | Type | Trust zone | Security properties | Notes |', '|---|---|---|---|---|');
                 this.modelComponents().forEach(e => {
                     const props = Object.entries(e.secProps || {}).filter(([, v]) => v === 'true').map(([k]) => k.replace(/([A-Z])/g, ' $1').toLowerCase()).join(', ');
                     out.push(`| ${cell(e.name)} | ${e.type.replace(/_/g, ' ')} | ${cell((analysis.nodeZones.get(e.id) || []).map(z => z.name).join(', '))} | ${cell(props)} | ${cell(e.notes)} |`);
@@ -17368,11 +17390,13 @@ Orders DB,down,datastore,App,,,</pre></div>
             }
 
             /**
-             * The readable copy git sync writes next to the JSON. Laid out like the printed report: the header, the diagram
-             * on top, then (kind 'report') the threat register as one block per threat and the mitigations. No date, so an
-             * unchanged model gives a byte-identical file and no commit. Every model value goes through mdText.
+             * The readable copy git sync writes. Laid out like the printed report: the header, the diagram on top, then the
+             * risk summary, one block per threat, the mitigations, data flows and components; only the chosen sections
+             * (GIT_READABLE_SECTIONS keys) appear. No date, so an unchanged model gives a byte-identical file and no commit.
+             * Every model value goes through mdText.
              */
-            buildGitReadableMarkdown(kind, sourceName) {
+            buildGitReadableMarkdown(sections, sourceName) {
+                const on = (k) => sections.includes(k);
                 const s = this.state, cell = (v) => mdText(v) || '—', para = (v) => mdText(v);
                 const category = (c) => STRIDE_CATEGORIES.includes(c) ? c : cell(c);
                 const risk = (t) => ThreatModelSession.calculateRisk(t.likelihood, t.impact);
@@ -17380,17 +17404,20 @@ Orders DB,down,datastore,App,,,</pre></div>
                 const mitigations = s.mitigations || [];
                 const title = para(s.projectTitle) || 'Threat model';
                 const out = [];
-                out.push(kind === 'report' ? `# Threat Register Report — ${title}` : `# ${title}`, '');
+                out.push(on('threats') ? `# Threat Register Report — ${title}` : `# ${title}`, '');
                 out.push(`> This file is generated by Threat Tiger from \`${sourceName}\` on every sync and overwritten each time. Change the model in Threat Tiger, not here.`, '');
                 out.push(`**Scope:** ${cell(s.scopeDefinition)} | ${s.threats.length} threat(s) | ${mitigations.length} mitigation(s)`, '');
-                this.mdDiagramLines(out);
-                if (kind !== 'report') return out.join('\n') + '\n';
+                if (on('diagram')) this.mdDiagramLines(out);
+                if (on('risk')) {
                 out.push('## Risk summary', '', `| Severity | ${THREAT_STATUSES.join(' | ')} | Total |`, `|---|${THREAT_STATUSES.map(() => '---:').join('|')}|---:|`);
                 ['Critical', 'High', 'Medium', 'Low'].forEach(sev => {
                     const list = s.threats.filter(t => risk(t).label === sev);
                     out.push(`| ${sev} | ${THREAT_STATUSES.map(st => list.filter(t => t.status === st).length).join(' | ')} | ${list.length} |`);
                 });
-                out.push('', '## Threats', '');
+                out.push('');
+                }
+                if (on('threats')) {
+                out.push('## Threats', '');
                 if (!s.threats.length) out.push('_No threats recorded._', '');
                 [...s.threats].sort((a, b) => risk(b).score - risk(a).score).forEach(t => {
                     const r = risk(t), target = byId.get(t.elementId);
@@ -17404,13 +17431,14 @@ Orders DB,down,datastore,App,,,</pre></div>
                     if (t.mitigationExplanation) out.push(`_Mitigation:_ ${para(t.mitigationExplanation)}`, '');
                     if (Array.isArray(t.refs) && t.refs.length) out.push(`_References:_ ${t.refs.map(x => { const u = mdUrl(refLink(x)); return u ? `[${mdText(x)}](${u})` : mdText(x); }).join(', ')}`, '');
                 });
-                if (mitigations.length) {
+                }
+                if (on('mitigations') && mitigations.length) {
                     const done = mitigations.filter(m => MITIGATION_DONE.includes(m.status)).length;
                     out.push(`## Mitigations — ${done} of ${mitigations.length} implemented or verified`, '', '| ID | Mitigation | Status | Owner | Threats | Ticket |', '|---|---|---|---|---|---|');
                     mitigations.forEach(m => out.push(`| ${cell(m.id)} | ${cell(m.title)} | ${cell(m.status)} | ${cell(m.owner)} | ${cell(this.threatsCoveredBy(m.id).map(t => t.id).join(', '))} | ${mdUrl(m.ticketUrl) ? `[link](${mdUrl(m.ticketUrl)})` : '—'} |`));
                     out.push('');
                 }
-                this.mdFlowAndComponentLines(out);
+                if (on('flows') || on('components')) this.mdFlowAndComponentLines(out, undefined, { flows: on('flows'), components: on('components') });
                 return out.join('\n') + '\n';
             }
 

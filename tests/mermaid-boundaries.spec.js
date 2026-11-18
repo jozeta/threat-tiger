@@ -26,7 +26,7 @@ test('flows that cross a trust boundary line are drawn red and say which boundar
 
 test('the readable copy has no attack paths section; Export Markdown report keeps it', async ({ page }) => {
   await openApp(page, { session: session() });
-  const [readable, report] = await page.evaluate(() => [app.buildGitReadableMarkdown('report', 'm.json'), app.buildMarkdownReport()]);
+  const [readable, report] = await page.evaluate(() => [app.buildGitReadableMarkdown(GIT_READABLE_SECTIONS, 'm.json'), app.buildMarkdownReport()]);
   expect(readable).not.toContain('## Attack paths');
   expect(readable).toMatch(/crosses [^"]*Internet edge/);
   expect(report).toContain('## Attack paths');
