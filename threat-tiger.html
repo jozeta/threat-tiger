@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-PsdfxrWxcnktFT4LJC6SMRZvDwef25sBqUCgO4/I2kw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-NeGrJqdfhE0keDxonoGrsmfrDsJdXKo8K3TXq6UoIDU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -1945,6 +1945,18 @@
                 /* Settings tabs: 44 px touch targets; the bar scrolls sideways on its own on narrow screens. */
         .settings-tabs { overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; z-index: 2; }
         .settings-tabs .nav-link { min-height: 44px; display: flex; align-items: center; }
+        /* Find on the canvas: a bar at the top of the canvas; the right-click menu sits at the pointer. */
+        .canvas-find { position: absolute; top: 12px; right: 12px; z-index: 12; display: flex; align-items: center; gap: 4px; padding: 2px 4px 2px 10px; max-width: calc(100% - 24px); }
+        .canvas-find.d-none { display: none !important; }
+        .canvas-find input { width: 220px; min-width: 0; }
+        .canvas-find .btn { min-width: 32px; min-height: 32px; }
+        /* Not a Bootstrap .dropdown-menu: Bootstrap's capture-phase dropdown keys would take over its arrow keys. */
+        .canvas-context-menu { position: fixed; z-index: 1080; display: none; min-width: 250px; max-height: calc(100vh - 16px); overflow-y: auto;
+            margin: 0; padding: .35rem 0; list-style: none; background: var(--bs-body-bg, #fff); border: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,.15)); border-radius: .375rem; font-size: .875rem; }
+        .canvas-context-menu.show { display: block; }
+        .canvas-context-menu .dropdown-item { display: flex; align-items: center; gap: 8px; padding: .3rem 1rem; white-space: nowrap; }
+        .canvas-context-menu kbd { margin-left: auto; padding: 0 0 0 1.5rem; font-size: .75rem; box-shadow: none; background: transparent; color: var(--bs-secondary-color, #6c757d); }
+        @media (pointer: coarse) { .canvas-context-menu .dropdown-item { min-height: 44px; } .canvas-find .btn { min-width: 44px; min-height: 44px; } }
 </style>
 </head>
 
@@ -3017,6 +3029,17 @@
                 xmlns="http://www.w3.org/2000/svg"></svg>
             <svg id="minimap" class="d-none" role="img" aria-label="Diagram overview: click or drag to move the view"
                 xmlns="http://www.w3.org/2000/svg"></svg>
+            <!-- Find on the canvas (Ctrl/⌘+F, openCanvasFind) -->
+            <div id="canvas-find" class="canvas-find shadow-sm border rounded bg-white d-none" role="search" aria-label="Find on the canvas">
+                <i class="bi bi-search text-muted" aria-hidden="true"></i>
+                <input type="search" id="canvas-find-input" class="form-control form-control-sm border-0 shadow-none" placeholder="Find shapes and flows" aria-label="Find shapes and flows by name" autocomplete="off" spellcheck="false">
+                <span id="canvas-find-count" class="small text-muted text-nowrap" aria-live="polite"></span>
+                <button type="button" class="btn btn-sm btn-light" id="canvas-find-prev" aria-label="Previous match" title="Previous match (Shift+Enter)"><i class="bi bi-chevron-up" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-sm btn-light" id="canvas-find-next" aria-label="Next match" title="Next match (Enter)"><i class="bi bi-chevron-down" aria-hidden="true"></i></button>
+                <button type="button" class="btn btn-sm btn-light" id="canvas-find-close" aria-label="Close find" title="Close (Esc)"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+            </div>
+            <!-- Right-click menu on the canvas (openCanvasMenu); items are built for what was clicked -->
+            <ul id="canvas-context-menu" class="shadow canvas-context-menu" role="menu" aria-label="Canvas actions"></ul>
             <div id="align-toolbar" role="toolbar" aria-label="Align and distribute"
                 class="position-absolute start-0 m-3 d-flex gap-1 bg-white p-1 rounded shadow-sm border d-none"
                 style="z-index: 10; bottom: 48px;">
@@ -5264,6 +5287,11 @@
             <tr><td>Resize</td><td>Drag the handle at the bottom-right corner of a selected shape.</td></tr>
             <tr><td>Connect</td><td>Hover a shape, then drag from one of its connection points to another shape. <kbd>Esc</kbd> cancels a connection in progress.</td></tr>
             <tr><td>Delete</td><td><kbd>Delete</kbd> / <kbd>Backspace</kbd>, or <span class="tt-help-ui">Delete</span> in Properties. It asks first if threats would be deleted with it.</td></tr>
+            <tr><td>Right-click menu</td><td>Right-click a shape, a flow or empty canvas (or press <kbd>Shift</kbd>+<kbd>F10</kbd> / the <kbd>Menu</kbd> key) for the actions that apply there: duplicate, copy, paste, delete, drawing order, group, select all and find. A right-<em>drag</em> still pans the canvas.</td></tr>
+            <tr><td>Select all, duplicate</td><td><kbd>Ctrl/⌘</kbd>+<kbd>A</kbd> selects every shape on the page you can see; <kbd>Ctrl/⌘</kbd>+<kbd>D</kbd> duplicates the selection (with the flows and threats between the shapes) without touching the clipboard.</td></tr>
+            <tr><td>Group</td><td><kbd>Ctrl/⌘</kbd>+<kbd>G</kbd> groups the selected shapes, so one click selects (and a drag moves) them all; <kbd>Ctrl/⌘</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> ungroups. Groups are saved with the model.</td></tr>
+            <tr><td>Drawing order</td><td>Bring to front / Send to back (<kbd>Ctrl/⌘</kbd>+<kbd>Shift</kbd>+<kbd>]</kbd> / <kbd>[</kbd>) and one step forward or backward (<kbd>Ctrl/⌘</kbd>+<kbd>]</kbd> / <kbd>[</kbd>). Shapes are ordered among their own kind: zones stay behind shapes.</td></tr>
+            <tr><td>Find</td><td><kbd>Ctrl/⌘</kbd>+<kbd>F</kbd> opens a search bar over the canvas: it finds shapes and flows by name on every page. <kbd>Enter</kbd> / <kbd>Shift</kbd>+<kbd>Enter</kbd> jump to the next or previous match (switching page if needed); <kbd>Esc</kbd> closes it.</td></tr>
             <tr><td>Copy and paste</td><td><kbd>Ctrl/⌘</kbd>+<kbd>C</kbd> and <kbd>Ctrl/⌘</kbd>+<kbd>V</kbd> copy the selected shapes with the flows and threats between them. Each paste lands a little further away.</td></tr>
             <tr><td>Undo and redo</td><td>The arrow buttons in the canvas toolbar, <kbd>Ctrl/⌘</kbd>+<kbd>Z</kbd> and <kbd>Ctrl/⌘</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> (or <kbd>Ctrl</kbd>+<kbd>Y</kbd>).</td></tr>
             <tr><td>Zoom</td><td>The <span class="tt-help-ui">+</span> / <span class="tt-help-ui">−</span> buttons or the mouse wheel zoom around the centre of the view; <span class="tt-help-ui">Zoom to fit</span> shows the whole page. On touch screens, pinch.</td></tr>
@@ -5890,6 +5918,12 @@ Orders DB,down,datastore,App,,,</pre></div>
             <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd></td><td>Undo</td></tr>
             <tr><td><kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>Z</kbd> or <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Redo</td></tr>
             <tr><td><kbd>Ctrl</kbd>+<kbd>C</kbd> / <kbd>Ctrl</kbd>+<kbd>V</kbd></td><td>Copy / paste the selected shapes with the flows and threats between them (text copy works as usual when text is selected)</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>A</kbd></td><td>Select every shape on the page</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Duplicate the selection</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>G</kbd> / <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd></td><td>Group / ungroup the selected shapes</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>]</kbd> / <kbd>Ctrl</kbd>+<kbd>[</kbd></td><td>Bring forward / send backward one step (with <kbd>Shift</kbd>: to the front / back)</td></tr>
+            <tr><td><kbd>Ctrl</kbd>+<kbd>F</kbd></td><td>Find shapes and flows by name</td></tr>
+            <tr><td><kbd>Shift</kbd>+<kbd>F10</kbd> or <kbd>Menu</kbd></td><td>Open the right-click menu for the selection</td></tr>
             <tr><td><kbd>F2</kbd></td><td>Rename the focused page tab or layer</td></tr>
             <tr><td><kbd>←</kbd> <kbd>→</kbd> <kbd>Home</kbd> <kbd>End</kbd></td><td>On a page tab: go to the previous, next, first or last page</td></tr>
             <tr><td><kbd>→</kbd> / <kbd>Enter</kbd>, <kbd>←</kbd>, <kbd>↑</kbd> <kbd>↓</kbd></td><td>In the ☰ menu: open a flyout, close it, move inside it</td></tr>
@@ -6244,7 +6278,7 @@ Orders DB,down,datastore,App,,,</pre></div>
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.24.0';
+        const APP_VERSION = '1.25.0';
         const SCHEMA_VERSION = 1;
         const MAX_ZOOM = 2.5;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
@@ -8988,6 +9022,7 @@ Orders DB,down,datastore,App,,,</pre></div>
         // ── end live status: status files ──
         // ── end live status: model validation ──
 
+        const GROUP_ID = /^g-[A-Za-z0-9_-]{1,40}$/;
         function normalizeSession(raw) {
             if (!isPlainObject(raw)) throw new Error('The file does not contain a Threat Tiger model.');
             const warnings = [];
@@ -9042,6 +9077,10 @@ Orders DB,down,datastore,App,,,</pre></div>
             const layerIds = new Set(layers.map(l => l.id));
             [...elements, ...flows].forEach(item => { const id = toText(item.layerId); item.layerId = layerIds.has(id) ? id : 'main'; });
             const activeLayerId = layerIds.has(toText(raw.activeLayerId)) ? toText(raw.activeLayerId) : 'main';
+            // Groups: an id like g-abc on two or more shapes; anything else is dropped.
+            const groupSize = new Map();
+            elements.forEach(e => { if ('groupId' in e) { const g = toText(e.groupId); if (GROUP_ID.test(g)) { e.groupId = g; groupSize.set(g, (groupSize.get(g) || 0) + 1); } else delete e.groupId; } });
+            elements.forEach(e => { if (e.groupId && groupSize.get(e.groupId) < 2) delete e.groupId; });
             if (raw.pages !== undefined && raw.pages !== null && !Array.isArray(raw.pages)) warnings.push('Ignored "pages" because it is not a list.');
             const pages = normalizePages(raw.pages, ctx);
             const pageIds = new Set(pages.map(p => p.id)), pageAt = new Map(pages.map(p => [p.offset, p.id]));
@@ -10983,6 +11022,8 @@ Orders DB,down,datastore,App,,,</pre></div>
                 document.getElementById('btn-import').addEventListener('click', () => this.triggerWorkspaceJsonImportSelector());
                 this.setupMermaidImport();
                 this.setupGitImport();
+                this.setupCanvasFind();
+                this.setupCanvasMenu();
                 this.setupStatusFileImport();   // Build from status file (1.21)
                 document.getElementById('btn-reset-session').addEventListener('click', () => this.resetSession());
                 document.getElementById('btn-help-trigger').addEventListener('click', () => {
@@ -11755,7 +11796,10 @@ Orders DB,down,datastore,App,,,</pre></div>
 
             bindCanvasEvents() {
                 const svg = this.dom.svg;
-                svg.addEventListener('contextmenu', ev => ev.preventDefault());
+                svg.addEventListener('contextmenu', ev => {
+                    ev.preventDefault();
+                    if (ev.button === 0 && ev.ctrlKey) this.openCanvasMenuAt(ev.target, ev.clientX, ev.clientY);   // Ctrl+click on a Mac
+                });
 
                 svg.addEventListener('wheel', (ev) => {
                     ev.preventDefault();
@@ -11788,6 +11832,9 @@ Orders DB,down,datastore,App,,,</pre></div>
                 svg.addEventListener('mousedown', (ev) => {
                     const canvasSpaceCoords = this.convertClientScreenCoordinatesToCanvasSpace(ev.clientX, ev.clientY);
                     if (ev.button === 2) {
+                        this.closeCanvasMenu();
+                        // A real right-click (not the touch layer's synthetic two-finger pan) may open the menu on release.
+                        this.rightPress = ev.isTrusted ? { x: ev.clientX, y: ev.clientY, target: ev.target } : null;
                         this.isPanning = true; this.dom.svg.style.cursor = 'grabbing';
                         this.panStart.x = ev.clientX - this.panX; this.panStart.y = ev.clientY - this.panY;
                         ev.preventDefault(); return;
@@ -12198,7 +12245,12 @@ Orders DB,down,datastore,App,,,</pre></div>
                         this.activeFlowDragMode = null; this.activeFlowDragId = null;
                         this.saveSessionToLocalStorage(); this.refreshAppViewVisualWorkspace(); return;
                     }
-                    if (ev.button === 2 && this.isPanning) { this.isPanning = false; this.dom.svg.style.cursor = 'default'; return; }
+                    if (ev.button === 2 && this.isPanning) {
+                        this.isPanning = false; this.dom.svg.style.cursor = 'default';
+                        const press = this.rightPress; this.rightPress = null;
+                        if (press && Math.hypot(ev.clientX - press.x, ev.clientY - press.y) < 5) this.openCanvasMenuAt(press.target, ev.clientX, ev.clientY);
+                        return;
+                    }
                     if (this.isBoxSelecting) {
                         this.isBoxSelecting = false; this.dom.selectionMarquee.setAttribute('visibility', 'hidden');
                         this.evaluateBoxSelectionIntersections(
@@ -12518,9 +12570,20 @@ Orders DB,down,datastore,App,,,</pre></div>
                     const mod = ev.ctrlKey || ev.metaKey;
                     if (mod && ev.key.toLowerCase() === 'z') { ev.preventDefault(); if (ev.shiftKey) this.redo(); else this.undo(); return; }
                     if (mod && ev.key.toLowerCase() === 'y') { ev.preventDefault(); this.redo(); return; }
+                    if (mod && !ev.altKey && ev.key.toLowerCase() === 'f') { ev.preventDefault(); this.openCanvasFind(); return; }   // anywhere but a field or dialog
                     // Delete, copy and paste act on the canvas only when it (or nothing) has focus, not a button, tab, menu or panel.
                     if (!this.isCanvasKeyTarget(ev.target)) return;
                     if (ev.key === 'Delete' || ev.key === 'Backspace') this.executeTargetedActiveSelectionRemovalTask();
+                    if (ev.key === 'ContextMenu' || (ev.shiftKey && ev.key === 'F10')) { ev.preventDefault(); this.openCanvasMenuForSelection(); return; }
+                    if (mod && !ev.altKey) {
+                        const k = ev.key.toLowerCase();
+                        const act = k === 'a' && !ev.shiftKey ? () => this.selectAllOnPage()
+                            : k === 'd' && !ev.shiftKey ? () => this.duplicateSelection()
+                            : k === 'g' ? () => (ev.shiftKey ? this.ungroupSelection() : this.groupSelection())
+                            : ev.code === 'BracketRight' ? () => this.reorderSelection(ev.shiftKey ? 'front' : 'forward')
+                            : ev.code === 'BracketLeft' ? () => this.reorderSelection(ev.shiftKey ? 'back' : 'backward') : null;
+                        if (act) { ev.preventDefault(); act(); return; }
+                    }
 
                     // Copy and paste shapes only when shapes are selected and no page text is; otherwise leave the keys to the browser.
                     const textSelected = !!(window.getSelection && !window.getSelection().isCollapsed);
@@ -12583,6 +12646,225 @@ Orders DB,down,datastore,App,,,</pre></div>
                 return false;
             }
 
+            // ── Canvas editing basics: select all, duplicate, group, z-order, find, right-click menu ─────────────
+            /** The ids plus every member of their groups (visible shapes only). */
+            withGroups(ids) {
+                const groups = new Set(this.state.elements.filter(e => ids.includes(e.id) && e.groupId).map(e => e.groupId));
+                if (!groups.size) return [...ids];
+                const out = new Set(ids);
+                this.state.elements.forEach(e => { if (e.groupId && groups.has(e.groupId) && this.isItemVisible(e)) out.add(e.id); });
+                return [...out];
+            }
+
+            newGroupId() { return `g-${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`; }
+
+            /** Every shape on the current page that is on a visible layer. */
+            selectAllOnPage() {
+                this.state.selectedFlowId = null;
+                this.state.selectedElementIds = this.state.elements.filter(e => this.isItemVisible(e)).map(e => e.id);
+                this.refreshAppViewVisualWorkspace();
+            }
+
+            /** Copy and paste in one step, keeping whatever the clipboard held. */
+            duplicateSelection() {
+                if (!this.state.selectedElementIds.length || this.blockedByReviewMode('duplicate')) return;
+                const keep = { clipboard: this.clipboard, pasteCount: this.pasteCount };
+                this.copySelection();
+                this.pasteSelection();
+                this.clipboard = keep.clipboard; this.pasteCount = keep.pasteCount;
+            }
+
+            groupSelection() {
+                const ids = this.state.selectedElementIds;
+                if (ids.length < 2) { this.notify('Select two or more shapes to group them.', 'info'); return; }
+                if (this.blockedByReviewMode('group shapes')) return;
+                const gid = this.newGroupId(), set = new Set(ids);
+                this.state.elements.forEach(e => { if (set.has(e.id)) e.groupId = gid; });
+                this.logEvent('CHANGE', `Grouped ${ids.length} shapes`);
+                this.refreshAppViewVisualWorkspace();
+            }
+
+            ungroupSelection() {
+                const set = new Set(this.state.selectedElementIds);
+                const grouped = this.state.elements.filter(e => set.has(e.id) && e.groupId);
+                if (!grouped.length || this.blockedByReviewMode('ungroup shapes')) return;
+                grouped.forEach(e => delete e.groupId);
+                this.logEvent('CHANGE', `Ungrouped ${grouped.length} shapes`);
+                this.refreshAppViewVisualWorkspace();
+            }
+
+            /**
+             * Z-order: 'front' | 'back' | 'forward' | 'backward'. Shapes draw in model order within their kind (zones, boundary
+             * lines, lanes and tables, other shapes), so a step forward swaps with the next shape of the same kind.
+             */
+            reorderSelection(mode) {
+                const set = new Set(this.state.selectedElementIds);
+                if (!set.size || this.blockedByReviewMode('change the drawing order')) return;
+                const kind = (e) => e.type === 'boundary' ? 'zone' : e.type === 'boundary_line' ? 'line' : (e.type === 'swimlane' || TT_DECOR_TYPES.includes(e.type)) ? 'decor' : 'node';
+                const list = this.state.elements, before = list.map(e => e.id).join();
+                if (mode === 'front' || mode === 'back') {
+                    const picked = list.filter(e => set.has(e.id)), rest = list.filter(e => !set.has(e.id));
+                    this.state.elements = mode === 'front' ? [...rest, ...picked] : [...picked, ...rest];
+                } else {
+                    const fwd = mode === 'forward', order = list.map((_, i) => i);
+                    if (fwd) order.reverse();
+                    order.forEach(i => {
+                        if (!set.has(list[i].id)) return;
+                        for (let j = fwd ? i + 1 : i - 1; j >= 0 && j < list.length; j += fwd ? 1 : -1) {
+                            if (kind(list[j]) !== kind(list[i]) || !this.isItemVisible(list[j])) continue;
+                            if (set.has(list[j].id)) break;   // keep selected shapes in their order
+                            [list[i], list[j]] = [list[j], list[i]];
+                            break;
+                        }
+                    });
+                }
+                if (this.state.elements.map(e => e.id).join() === before) return;
+                const label = { front: 'Brought to front', back: 'Sent to back', forward: 'Brought forward', backward: 'Sent backward' }[mode];
+                this.logEvent('CHANGE', `${label}: ${set.size} shape(s)`);
+                this.refreshAppViewVisualWorkspace();
+            }
+
+            // Find: names of shapes and flows on every page, in page order, top to bottom.
+            setupCanvasFind() {
+                const input = document.getElementById('canvas-find-input');
+                input.addEventListener('input', () => { this.findIndex = -1; this.updateCanvasFind(); });
+                input.addEventListener('keydown', (ev) => {
+                    if (ev.key === 'Enter') { ev.preventDefault(); this.stepCanvasFind(ev.shiftKey ? -1 : 1); }
+                    if (ev.key === 'Escape') { ev.preventDefault(); ev.stopPropagation(); this.closeCanvasFind(); }
+                });
+                document.getElementById('canvas-find-next').addEventListener('click', () => this.stepCanvasFind(1));
+                document.getElementById('canvas-find-prev').addEventListener('click', () => this.stepCanvasFind(-1));
+                document.getElementById('canvas-find-close').addEventListener('click', () => this.closeCanvasFind());
+            }
+
+            openCanvasFind() {
+                const bar = document.getElementById('canvas-find'), input = document.getElementById('canvas-find-input');
+                bar.classList.remove('d-none');
+                input.focus(); input.select();
+                this.findIndex = -1; this.updateCanvasFind();
+            }
+
+            closeCanvasFind() {
+                document.getElementById('canvas-find').classList.add('d-none');
+                if (this.dom.svg) this.dom.svg.focus({ preventScroll: true });
+            }
+
+            canvasFindMatches() {
+                const q = document.getElementById('canvas-find-input').value.trim().toLowerCase();
+                if (!q) return [];
+                const pageIdx = new Map((this.state.pages || []).map((p, i) => [p.id, i]));
+                const byId = new Map(this.state.elements.map(e => [e.id, e]));
+                const items = [
+                    ...this.state.elements.filter(e => toText(e.name).toLowerCase().includes(q)).map(e => ({ id: e.id, page: e.pageId, x: e.x, y: e.y })),
+                    ...this.state.flows.filter(f => toText(f.name).toLowerCase().includes(q)).map(f => { const a = byId.get(f.sourceId) || {}; return { id: f.id, page: a.pageId, x: (a.x || 0) + 1, y: a.y || 0 }; }),
+                ];
+                return items.sort((a, b) => (pageIdx.get(a.page) || 0) - (pageIdx.get(b.page) || 0) || a.y - b.y || a.x - b.x);
+            }
+
+            updateCanvasFind() {
+                const n = this.canvasFindMatches().length, q = document.getElementById('canvas-find-input').value.trim();
+                document.getElementById('canvas-find-count').textContent = !q ? '' : !n ? 'No matches' : `${this.findIndex >= 0 ? this.findIndex + 1 : 1} of ${n}`;
+            }
+
+            stepCanvasFind(dir) {
+                const m = this.canvasFindMatches();
+                if (!m.length) { this.updateCanvasFind(); return; }
+                this.findIndex = this.findIndex < 0 ? (dir > 0 ? 0 : m.length - 1) : (this.findIndex + dir + m.length) % m.length;
+                this.focusCanvasItem(m[this.findIndex].id);
+                this.updateCanvasFind();
+                document.getElementById('canvas-find-input').focus();
+            }
+
+            // Right-click menu: the actions that apply to what was clicked (a shape, a flow or empty canvas).
+            openCanvasMenuAt(target, x, y) {
+                const g = target && target.closest ? target.closest('g[data-id], g[data-flow-id]') : null;
+                const elId = g && g.getAttribute('data-id'), flowId = g && !elId ? g.getAttribute('data-flow-id') : null;
+                const el = elId && this.state.elements.find(e => e.id === elId);
+                if (el && (this.isItemLocked(el) || !this.isItemVisible(el))) return this.openCanvasMenu('canvas', x, y);
+                if (el && !this.state.selectedElementIds.includes(el.id)) { this.state.selectedFlowId = null; this.state.selectedElementIds = this.withGroups([el.id]); this.refreshAppViewVisualWorkspace(); }
+                if (flowId && this.state.flows.some(f => f.id === flowId)) { this.handleFlowSelectionEvent(flowId); return this.openCanvasMenu('flow', x, y); }
+                return this.openCanvasMenu(el ? 'shape' : 'canvas', x, y);
+            }
+
+            /** Shift+F10 / the Menu key: the menu for the current selection, at the selection (or the canvas centre). */
+            openCanvasMenuForSelection() {
+                const sel = this.state.selectedElementIds[0] && this.dom.svg.querySelector(`g[data-id="${CSS.escape(this.state.selectedElementIds[0])}"]`);
+                const flow = this.state.selectedFlowId && this.dom.svg.querySelector(`g[data-flow-id="${CSS.escape(this.state.selectedFlowId)}"]`);
+                const r = (sel || flow || this.dom.svg).getBoundingClientRect();
+                this.openCanvasMenu(sel ? 'shape' : flow ? 'flow' : 'canvas', r.left + r.width / 2, r.top + r.height / 2);
+            }
+
+            openCanvasMenu(kind, x, y) {
+                const menu = document.getElementById('canvas-context-menu');
+                const mac = /Mac|iPhone|iPad/.test(navigator.platform || ''), m = mac ? '⌘' : 'Ctrl+', sh = mac ? '⇧' : 'Shift+';
+                const n = this.state.selectedElementIds.length;
+                const grouped = this.state.elements.some(e => this.state.selectedElementIds.includes(e.id) && e.groupId);
+                const items = [];
+                const add = (action, icon, label, key, run) => items.push({ action, icon, label, key, run });
+                const sep = () => items.push(null);
+                if (kind === 'shape') {
+                    add('duplicate', 'bi-copy', 'Duplicate', `${m}D`, () => this.duplicateSelection());
+                    add('copy', 'bi-clipboard', 'Copy', `${m}C`, () => this.copySelection());
+                }
+                if (kind !== 'flow' && this.clipboard && this.clipboard.elements && this.clipboard.elements.length) add('paste', 'bi-clipboard-check', 'Paste', `${m}V`, () => this.pasteSelection());
+                if (kind !== 'canvas') add('delete', 'bi-trash', 'Delete', 'Del', () => this.executeTargetedActiveSelectionRemovalTask());
+                if (kind === 'shape') {
+                    sep();
+                    add('front', 'bi-front', 'Bring to front', `${m}${sh}]`, () => this.reorderSelection('front'));
+                    add('forward', 'bi-layer-forward', 'Bring forward', `${m}]`, () => this.reorderSelection('forward'));
+                    add('backward', 'bi-layer-backward', 'Send backward', `${m}[`, () => this.reorderSelection('backward'));
+                    add('back', 'bi-back', 'Send to back', `${m}${sh}[`, () => this.reorderSelection('back'));
+                    if (n >= 2 || grouped) sep();
+                    if (n >= 2) add('group', 'bi-collection', 'Group', `${m}G`, () => this.groupSelection());
+                    if (grouped) add('ungroup', 'bi-grid', 'Ungroup', `${m}${sh}G`, () => this.ungroupSelection());
+                }
+                sep();
+                add('select-all', 'bi-check2-square', 'Select all', `${m}A`, () => this.selectAllOnPage());
+                add('find', 'bi-search', 'Find…', `${m}F`, () => this.openCanvasFind());
+                const nodes = [];
+                items.forEach((it, i) => {
+                    if (!it) { if (nodes.length && i < items.length - 1 && items[i + 1]) { const li = document.createElement('li'); li.setAttribute('role', 'separator'); const hr = document.createElement('hr'); hr.className = 'dropdown-divider'; li.appendChild(hr); nodes.push(li); } return; }
+                    const li = document.createElement('li'); li.setAttribute('role', 'none');
+                    const b = document.createElement('button');
+                    b.type = 'button'; b.className = 'dropdown-item'; b.setAttribute('role', 'menuitem'); b.dataset.action = it.action;
+                    const ic = document.createElement('i'); ic.className = `bi ${it.icon}`; ic.setAttribute('aria-hidden', 'true');
+                    const kbd = document.createElement('kbd'); kbd.textContent = it.key;
+                    b.append(ic, document.createTextNode(it.label), kbd);
+                    b.addEventListener('click', () => { this.closeCanvasMenu(); it.run(); });
+                    li.appendChild(b); nodes.push(li);
+                });
+                menu.replaceChildren(...nodes);
+                menu.classList.add('show');
+                const w = menu.offsetWidth, h = menu.offsetHeight, vw = document.documentElement.clientWidth, vh = window.innerHeight;
+                menu.style.left = `${Math.max(8, Math.min(x, vw - w - 8))}px`;
+                menu.style.top = `${Math.max(8, Math.min(y, vh - h - 8))}px`;
+                this.canvasMenuReturn = document.activeElement;
+                const first = menu.querySelector('[role="menuitem"]'); if (first) first.focus();
+            }
+
+            closeCanvasMenu() {
+                const menu = document.getElementById('canvas-context-menu');
+                if (!menu || !menu.classList.contains('show')) return;
+                menu.classList.remove('show');
+                const back = this.canvasMenuReturn; this.canvasMenuReturn = null;
+                if (back && back.isConnected && back.focus) back.focus({ preventScroll: true });
+            }
+
+            setupCanvasMenu() {
+                const menu = document.getElementById('canvas-context-menu');
+                document.body.appendChild(menu);   // out of the canvas area, which clips what sits inside it
+                menu.addEventListener('keydown', (ev) => {
+                    const items = [...menu.querySelectorAll('[role="menuitem"]')], i = items.indexOf(document.activeElement);
+                    if (ev.key === 'ArrowDown' || ev.key === 'ArrowUp') { ev.preventDefault(); ev.stopPropagation(); const n = items.length; items[(i + (ev.key === 'ArrowDown' ? 1 : -1) + n) % n].focus(); }
+                    else if (ev.key === 'Home' || ev.key === 'End') { ev.preventDefault(); ev.stopPropagation(); items[ev.key === 'Home' ? 0 : items.length - 1].focus(); }
+                    else if (ev.key === 'Escape' || ev.key === 'Tab') { ev.preventDefault(); ev.stopPropagation(); this.closeCanvasMenu(); }
+                });
+                document.addEventListener('mousedown', (ev) => { if (!menu.contains(ev.target)) this.closeCanvasMenu(); }, true);
+                window.addEventListener('resize', () => this.closeCanvasMenu());
+                window.addEventListener('blur', () => this.closeCanvasMenu());
+            }
+            // ── end canvas editing basics ──
+
             copySelection() {
                 if (this.state.selectedElementIds.length === 0) return;
                 const ids = new Set(this.state.selectedElementIds);
@@ -12608,9 +12890,14 @@ Orders DB,down,datastore,App,,,</pre></div>
                 const idMap = {};
                 const newElementIds = [];
 
-                const active = this.pageById(this.state.activePageId), pageShift = new Map();
+                const active = this.pageById(this.state.activePageId), pageShift = new Map(), groupMap = new Map();
                 this.clipboard.elements.forEach((el, index) => {
                     const pastedEl = JSON.parse(JSON.stringify(el));
+                    if (pastedEl.groupId) {   // a pasted group becomes a new group (a lone member of a group is just a shape)
+                        const members = this.clipboard.elements.filter(x => x.groupId === pastedEl.groupId).length;
+                        if (members < 2) delete pastedEl.groupId;
+                        else { if (!groupMap.has(pastedEl.groupId)) groupMap.set(pastedEl.groupId, this.newGroupId()); pastedEl.groupId = groupMap.get(pastedEl.groupId); }
+                    }
                     pastedEl.id = `el-${stamp}-${index}-${rand()}`;
                     idMap[el.id] = pastedEl.id;
                     const from = this.pageById(el.pageId);   // copied from a page that still exists: move by the exact page distance
@@ -15580,6 +15867,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                     const isContainer = el.type === 'boundary' || el.type === 'swimlane' || LANE_CONTAINER_TYPES.has(el.type);
                     if (isContainer ? encloses : overlaps) this.state.selectedElementIds.push(el.id);
                 });
+                this.state.selectedElementIds = this.withGroups(this.state.selectedElementIds);
                 this.refreshAppViewVisualWorkspace();
             }
 
@@ -15830,7 +16118,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                     return;
                 }
                 this.state.selectedFlowId = null;
-                if (!this.state.selectedElementIds.includes(id)) this.state.selectedElementIds = [id];
+                if (!this.state.selectedElementIds.includes(id)) this.state.selectedElementIds = this.withGroups([id]);
                 this.refreshAppViewVisualWorkspace();
             }
 
@@ -18704,7 +18992,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                     if (this.formatPainter) { ev.preventDefault(); this.painterPressId = elementObj.id; this.handleElementSelectionEvent(elementObj.id); return; }
                     if (!this.state.selectedElementIds.includes(elementObj.id)) {
                         this.state.selectedFlowId = null;
-                        this.state.selectedElementIds = [elementObj.id];
+                        this.state.selectedElementIds = this.withGroups([elementObj.id]);   // a grouped shape brings its group
                         this.dom.svg.querySelectorAll('.node-element').forEach(el => el.classList.remove('selected'));
                         gElement.classList.add('selected');
                         this.refreshAppViewVisualWorkspace();

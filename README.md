@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.24.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.25.0** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -56,6 +56,8 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 ---
 
 ## What's new 🆕
+
+**1.25.0** adds the canvas editing basics: a **right-click menu** (also <kbd>Shift</kbd>+<kbd>F10</kbd>), **select all** (<kbd>Ctrl/⌘</kbd>+<kbd>A</kbd>), **duplicate** (<kbd>Ctrl/⌘</kbd>+<kbd>D</kbd>), **groups** (<kbd>Ctrl/⌘</kbd>+<kbd>G</kbd>, saved with the model), **drawing order** (bring to front, send to back, one step forward or back) and **find** (<kbd>Ctrl/⌘</kbd>+<kbd>F</kbd>, across every page).
 
 **1.24.0**
 *   **Import a threat model from git:** ☰ → *Import threat model from git…*, paste the GitHub or GitLab link to a `.json` file, and it opens (public repositories need no token). See [Importing a model from GitHub or GitLab](#importing-a-model-from-github-or-gitlab).
@@ -126,6 +128,8 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 **1.15.1** was a bug-fix release. Its main fixes:
 
 - **Icons** from the icon sets drag like any other shape (press, move, release), and can be dragged from the palette onto the canvas.
+- **Right-click** a shape, flow or empty canvas for a menu of what you can do there (duplicate, copy, paste, delete, drawing order, group, select all, find); <kbd>Shift</kbd>+<kbd>F10</kbd> or the <kbd>Menu</kbd> key opens it from the keyboard, and a right-drag still pans.
+- **Select all** <kbd>Ctrl/⌘</kbd>+<kbd>A</kbd>, **duplicate** <kbd>Ctrl/⌘</kbd>+<kbd>D</kbd> (keeps the clipboard), **group** <kbd>Ctrl/⌘</kbd>+<kbd>G</kbd> / **ungroup** <kbd>Ctrl/⌘</kbd>+<kbd>Shift</kbd>+<kbd>G</kbd> (one click then selects the whole group; groups are saved with the model), **drawing order** <kbd>Ctrl/⌘</kbd>+<kbd>]</kbd> / <kbd>[</kbd> (with <kbd>Shift</kbd>: to the front / back), and **find** <kbd>Ctrl/⌘</kbd>+<kbd>F</kbd>, which searches shape and flow names on every page.
 - **Adding a shape** by clicking a palette item puts it in the middle of the view, or on the nearest free spot in view when something is already there, so it is never hidden behind another shape. A new trust zone, swimlane or lane keeps clear of existing shapes, so it never takes them into the zone by accident. Dragging an item places it exactly where you drop it.
 - **Zoom** buttons and the mouse wheel zoom around the centre of the view.
 - **Privacy:** an imported image path such as `//host/image.png` is removed instead of loading from another website without asking.

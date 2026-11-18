@@ -5,6 +5,12 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.25.0
+
+### Added
+
+*   **Canvas editing basics** (roadmap item 3): a right-click menu on shapes, flows and empty canvas, opened also with Shift+F10 or the Menu key and operated with the arrow keys (a right-drag still pans; Ctrl+click on a Mac works too); select all (Ctrl/⌘+A, the visible shapes on the page); duplicate (Ctrl/⌘+D, with the flows and threats between the shapes, clipboard untouched); groups (Ctrl/⌘+G / Ctrl/⌘+Shift+G, a click or box selection takes the whole group, copies become a new group, stored as `groupId`, validated on import and dropped for a group of one); drawing order (bring to front, send to back, one step forward or backward among shapes of the same kind you can see); find (Ctrl/⌘+F, shape and flow names on every page, Enter / Shift+Enter, switches page). Review mode allows select all and find, and blocks the rest.
+
 ## 1.24.0
 
 ### Added
