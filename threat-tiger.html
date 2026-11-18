@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-hNVNBhYFZy4QsWwJ8WIDC/LkFYZZRvjyI96qnyYSE1E='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YTknA1nsmlCp5rxGm5dzG/ZPIOZPH3b7Lx6OvOudFwQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -2029,6 +2029,12 @@
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-entra" data-stencil-toggle="entra" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Microsoft Entra<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-gcp" data-stencil-toggle="gcp" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Google Cloud<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-k8s" data-stencil-toggle="k8s" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Kubernetes<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-osa" data-stencil-toggle="osa" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Security architecture (OSA)<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-tabler" data-stencil-toggle="tabler" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Tabler (general)<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-carbon" data-stencil-toggle="carbon" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>IBM Carbon<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-redhat" data-stencil-toggle="redhat" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Red Hat<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-logos" data-stencil-toggle="logos" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>SaaS &amp; dev logos<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
+                            <li><button class="dropdown-item d-flex align-items-center menu-view-item" type="button" id="btn-menu-stencil-fabrands" data-stencil-toggle="fabrands" role="menuitemcheckbox" aria-checked="true"><i class="bi bi-images me-2"></i>Font Awesome brands<i class="bi bi-check2 ms-auto menu-check" aria-hidden="true"></i></button></li>
                             </ul></li>
                             <li class="dropdown-submenu"><button class="dropdown-item d-flex align-items-center submenu-toggle" type="button" id="btn-menu-panel-tabs" aria-haspopup="true" aria-expanded="false" aria-controls="menu-panel-tabs"><i class="bi bi-folder2 me-2"></i>Panel tabs<i class="bi bi-chevron-right ms-auto submenu-chevron" aria-hidden="true"></i></button>
                             <ul class="dropdown-menu submenu shadow" id="menu-panel-tabs" aria-label="Panel tabs">
@@ -4721,7 +4727,7 @@
                         boundaries, and get concrete threats (STRIDE) from a curated library, ranked by what your model shows. Everything stays in this browser.</p>
                     <p class="mb-3">New here? The <strong>Help guide</strong> walks through every part of the app, with pictures. Open it any time from ☰ → Help or with <kbd>F1</kbd>.</p>
                     <p class="mb-4"><button type="button" class="btn btn-sm btn-primary" id="btn-about-open-help"><i class="bi bi-book me-1" aria-hidden="true"></i>Open the Help guide</button></p>
-                    <p class="small text-muted mb-4"><strong>Third-party icons:</strong> the icon sets come from AWS, Microsoft (Azure, Entra, Fluent UI), Google Cloud, the Kubernetes project, Devicon and Simple Icons. They are not covered by Threat Tiger's MIT licence and are included under their owners' terms (Fluent UI and Devicon: MIT; Simple Icons: CC0; Kubernetes: Apache-2.0 or CC-BY-4.0; cloud providers: for architecture diagrams). Brand logos are trademarks of their owners. Details in <code>vendor/stencils/README.md</code>.</p>
+                    <p class="small text-muted mb-4"><strong>Third-party icons:</strong> the icon sets come from AWS, Microsoft (Azure, Entra, Fluent UI), Google Cloud, the Kubernetes project, Devicon, Simple Icons, Tabler, IBM Carbon, Red Hat, Open Security Architecture, SVG Logos (Gil Barbara) and Font Awesome Free. They are not covered by Threat Tiger's MIT licence and are included under their owners' terms (Fluent UI, Devicon and Tabler: MIT; IBM Carbon: Apache-2.0; Simple Icons and SVG Logos: CC0; Kubernetes: Apache-2.0 or CC-BY-4.0; cloud providers: for architecture diagrams). Red Hat icons © Red Hat, Inc., CC BY 4.0. Font Awesome Free brand icons by Fonticons, Inc. (fontawesome.com), CC BY 4.0. Open Security Architecture icons (opensecurityarchitecture.org), CC BY-SA 4.0; that pack is shared under the same licence. All were cleaned and minified. Brand logos are trademarks of their owners. Details in <code>vendor/stencils/README.md</code>.</p>
 
                     <h5 class="fw-bold text-dark mb-2"><i
                             class="bi bi-file-earmark-text-fill me-2 text-secondary"></i>Open Source License &amp;
@@ -5152,7 +5158,7 @@
                 <li><span class="tt-help-thumb" data-help-thumb="pal-custom-image"></span><strong>Custom Image / Icon:</strong> your own picture. Paste an image address or upload a local file in <em>Custom Graphic Source</em>. Uploaded images are stored inside the model.</li>
                 <li><span class="tt-help-thumb" data-help-thumb="pal-infrastructure"></span><strong>Infrastructure Node:</strong> a server, router or other device drawn as an icon in one of 16 colours. It has no security switches; use a process or store for that.</li>
                 <li><strong>Ready-made nodes</strong> (32, in three groups): <em>Network</em> (firewall, WAF, load balancer, API gateway, VPN gateway, IDS/IPS, reverse proxy, DNS, CDN, switch, router, Wi-Fi AP), <em>Security tooling</em> (SIEM, EDR agent, secrets vault, HSM, identity provider, PAM) and <em>Platforms &amp; devices</em> (message queue, cache, object storage, backup, container, Kubernetes, serverless function, AI/LLM model, CI/CD pipeline, Git repository, mail server, workstation, mobile app, IoT device). Each is a real component with the right type and subtypes, so it gets tailored threat suggestions straight away.</li>
-                <li><strong>Icon sets</strong> (about 2,000 icons): Devices &amp; security, Security &amp; DevOps brands, Tech &amp; OS logos, and the official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons. Each set loads when you open it. A placed icon shows the icon with its name underneath and is a normal component (data store, process…), so suggestions work. Hide sets you don’t use with ☰ → View → Icon sets.</li>
+                <li><strong>Icon sets</strong> (about 5,500 icons): Devices &amp; security, Security &amp; DevOps brands, Tech &amp; OS logos, the official AWS, Azure, Microsoft Entra, Google Cloud and Kubernetes icons, Security architecture (Open Security Architecture: servers, firewalls, people such as black and white hats, sites, DevSecOps), Tabler and IBM Carbon (general network, security, infrastructure and developer symbols), Red Hat, SaaS &amp; dev logos (colour logos of SaaS, cloud, security, monitoring, data, DevOps and AI products) and Font Awesome brands. Each set loads when you open it. A placed icon shows the icon with its name underneath and is a normal component (data store, process…), so suggestions work. Hide sets you don’t use with ☰ → View → Icon sets.</li>
             </ul>
         </div>
         <figure class="tt-help-fig narrow">
@@ -7840,7 +7846,8 @@ Orders DB,down,datastore,App,,,</pre></div>
         // Palette sections and sub-groups that Settings → Palette can hide ([data-palette-group] in the palette).
         const PALETTE_GROUPS = [['attack', 'Attack paths & trees'], ['text', 'Text items'], ['data-nodes', 'Data nodes & icons'], ['ready-nodes', 'Ready-made nodes'],
             ['flowchart', 'Flowchart items'], ['diagrams', 'Architecture & process diagrams'], ['c4', 'C4 model'], ['uml', 'UML'], ['bpmn', 'BPMN'], ['erd', 'Entity-relationship']];
-        const STENCIL_SETS = [['fluent', 'Devices & security'], ['brands', 'Security & DevOps brands'], ['devicon', 'Tech & OS logos'], ['aws', 'AWS'], ['azure', 'Azure'], ['entra', 'Microsoft Entra'], ['gcp', 'Google Cloud'], ['k8s', 'Kubernetes']];
+        const STENCIL_SETS = [['fluent', 'Devices & security'], ['brands', 'Security & DevOps brands'], ['devicon', 'Tech & OS logos'], ['aws', 'AWS'], ['azure', 'Azure'], ['entra', 'Microsoft Entra'], ['gcp', 'Google Cloud'], ['k8s', 'Kubernetes'],
+            ['osa', 'Security architecture (OSA)'], ['tabler', 'Tabler (general)'], ['carbon', 'IBM Carbon'], ['redhat', 'Red Hat'], ['logos', 'SaaS & dev logos'], ['fabrands', 'Font Awesome brands']];
         // ── View profiles: constants (setupViewProfiles) ────────────────────────────────
         // A view profile is a named visibility configuration of this browser (never part of the model or its exports):
         // { id, name, icon, hidden: { palette, stencils, icons, tabs }, panels: { left, right, bottom } }.
@@ -14578,7 +14585,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                 };
                 const closeSiblings = (menu, except) => menu.querySelectorAll(':scope > li > .submenu.show').forEach(m => { if (m !== except) close(m); });
                 const place = (sub, trigger) => {
-                    sub.style.left = sub.style.right = sub.style.top = '';
+                    sub.style.left = sub.style.right = sub.style.top = sub.style.maxHeight = sub.style.overflowY = '';
                     const li = trigger.parentElement.getBoundingClientRect(), parent = trigger.closest('.dropdown-menu').getBoundingClientRect();
                     const w = sub.offsetWidth, h = sub.offsetHeight, vw = document.documentElement.clientWidth, vh = window.innerHeight;
                     // Keep going the way the parent flyout went (right for the first level), else the other way if it fits.
@@ -14590,9 +14597,14 @@ Orders DB,down,datastore,App,,,</pre></div>
                     else if (side === 'left') sub.style.left = `${parent.left - w - li.left}px`;
                     else {   // no room either side (phones): over the parent, below its trigger or else above it, kept on screen
                         sub.style.left = `${Math.max(8, Math.min(vw - w - 8, li.left + 24)) - li.left}px`;
-                        if (li.bottom + h <= vh - 8) sub.style.top = `${li.height}px`;
-                        else if (li.top - h >= 8) sub.style.top = `${-h}px`;
-                        else sub.style.top = `${8 - li.top}px`;
+                        const below = vh - 8 - li.bottom, above = li.top - 8;
+                        if (h <= below) sub.style.top = `${li.height}px`;
+                        else if (h <= above) sub.style.top = `${-h}px`;
+                        else {   // too tall for either: the roomier side, scrolling inside, so it never covers its own trigger
+                            sub.style.overflowY = 'auto';
+                            if (below >= above) { sub.style.maxHeight = `${below}px`; sub.style.top = `${li.height}px`; }
+                            else { sub.style.maxHeight = `${above}px`; sub.style.top = `${-above}px`; }
+                        }
                         return;
                     }
                     const r = sub.getBoundingClientRect();

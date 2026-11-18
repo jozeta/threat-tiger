@@ -36,8 +36,10 @@ test('classify maps databases, secrets, network and users', async () => {
   expect(classify('Azure Cosmos DB', 'databases')).toEqual({ type: 'datastore', tags: ['nosql'] });
 });
 
+const ALL_SETS = ['aws', 'azure', 'entra', 'gcp', 'k8s', 'devicon', 'brands', 'fluent', 'tabler', 'carbon', 'redhat', 'osa', 'logos', 'fabrands'];
+
 test('every generated pack loads, has icons, and every icon is clean', async () => {
-  for (const set of ['aws', 'azure', 'entra', 'gcp', 'k8s', 'devicon', 'brands', 'fluent']) {
+  for (const set of ALL_SETS) {
     const ctx = { window: {} };
     vm.runInNewContext(fs.readFileSync(path.join(ROOT, `vendor/stencils/${set}.js`), 'utf8'), ctx);
     const pack = ctx.window.TT_STENCILS[set];
@@ -52,7 +54,7 @@ test('every generated pack loads, has icons, and every icon is clean', async () 
 });
 
 test('no pack shows two icons with the same name', () => {
-  for (const set of ['aws', 'azure', 'entra', 'gcp', 'k8s', 'devicon', 'brands', 'fluent']) {
+  for (const set of ALL_SETS) {
     const ctx = { window: {} };
     vm.runInNewContext(fs.readFileSync(path.join(ROOT, `vendor/stencils/${set}.js`), 'utf8'), ctx);
     const names = ctx.window.TT_STENCILS[set].icons.map((i) => i[1].toLowerCase());
@@ -68,4 +70,24 @@ test('the key OS, security and device icons are present', () => {
   for (const n of ['Laptop', 'Server', 'Bug / malware', 'Incident', 'Firewall / protection', 'Code', 'Server rack', 'Mac', 'Web portal', 'Cloud database', 'Access control', 'Anonymous attacker', 'Pull request', 'AI model']) expect(fluent, n).toContain(n);
   expect(fluent.length).toBeGreaterThan(180);
   for (const n of ['Secret Manager', 'Key Management Service', 'Cloud Armor', 'Cloud Load Balancing']) expect(gcp, n).toContain(n);
+});
+
+test('the 1.24 packs hold the key network, security, SaaS and developer icons', () => {
+  const load = (set) => { const ctx = { window: {} }; vm.runInNewContext(fs.readFileSync(path.join(ROOT, `vendor/stencils/${set}.js`), 'utf8'), ctx); return ctx.window.TT_STENCILS[set]; };
+  const names = (set) => load(set).icons.map((i) => i[1]);
+  for (const n of ['Server', 'Router', 'Shield lock', 'Database', 'Cloud', 'Fingerprint', 'Git branch']) expect(names('tabler'), n).toContain(n);
+  for (const n of ['Firewall', 'Bastion host', 'Router', 'Virtual machine', 'Certificate']) expect(names('carbon'), n).toContain(n);
+  for (const n of ['Server', 'Cloud', 'Shield', 'Firewall a', 'Container']) expect(names('redhat'), n).toContain(n);
+  for (const n of ['Firewall', 'Black Hat', 'Security Specialist', 'CI/CD Pipeline', 'Web Server']) expect(names('osa'), n).toContain(n);
+  for (const n of ['Slack', 'Okta', 'Datadog', 'Cloudflare', 'PostgreSQL', 'GitHub']) expect(names('logos'), n).toContain(n);
+  for (const n of ['GitHub', 'Slack', 'Docker', 'AWS', 'Stripe']) expect(names('fabrands'), n).toContain(n);
+  // Licence terms travel with each pack (CC BY / CC BY-SA need attribution).
+  expect(load('redhat').terms).toMatch(/Red Hat.*CC BY 4\.0/);
+  expect(load('osa').terms).toMatch(/CC BY-SA 4\.0/);
+  expect(load('fabrands').terms).toMatch(/Font Awesome.*CC BY 4\.0/);
+  // Icons are classified, so threat suggestions work: a firewall is a security control, a black hat a threat actor.
+  const byName = (set, n) => load(set).icons.find((i) => i[1] === n);
+  expect(byName('osa', 'Black Hat').slice(3, 5)).toEqual(['interactor', ['threat-actor']]);
+  expect(byName('osa', 'Firewall')[3]).toBe('infrastructure');
+  expect(byName('logos', 'PostgreSQL')[3]).toBe('datastore');
 });

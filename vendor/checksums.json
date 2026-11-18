@@ -16,5 +16,11 @@
   "vendor/stencils/k8s.js": "sha384-b7Uu7Bpa1BqDIUSE+4+R6pE4AMhZvkr94Xy5LpUT4q7TAh6RIajQ7uYONDww0gIy",
   "vendor/stencils/devicon.js": "sha384-XpmkaN8OfDADGhS+HwDqbL0co53GsFdya7UObwZEjfw5f9ZERVeashvy6s+BaoVn",
   "vendor/stencils/brands.js": "sha384-fmpKwrDQ6NT0a3jC0D+iVRrqGIf/xvkDZL7xRHX1Gal5Bfzm1Y4ApsUd8WUIIfjA",
-  "vendor/stencils/fluent.js": "sha384-7n7PnET2+WAX/1gK4+u328yeXFk2x/XViQoWbVO3vfe2INFdw1H9F+AG54diiuSS"
+  "vendor/stencils/fluent.js": "sha384-7n7PnET2+WAX/1gK4+u328yeXFk2x/XViQoWbVO3vfe2INFdw1H9F+AG54diiuSS",
+  "vendor/stencils/osa.js": "sha384-ZDqciBixfhazK4qgOXlSTpAAwWP0K8b4GtT9MnYEVSNrqZPa2C1oNEaG50O5f/rq",
+  "vendor/stencils/tabler.js": "sha384-+W9m05dvESz/Oqv6l9AlW3zNgfk6aDkbom7hG8e258WbgqopnjK72ExjQRwpKMq9",
+  "vendor/stencils/carbon.js": "sha384-c/sUXGJPE3tTuKqQczmXYf01Jo490cvzC8x1wpY973ZS1qmBNOWJ9YMDlQj6K5/g",
+  "vendor/stencils/redhat.js": "sha384-jk5cNcNS2MEumS5wx7DSMo6BDa0Ao8qmE/RxCMEHrH4KyLwMoDwCNAXJvhl6PHht",
+  "vendor/stencils/logos.js": "sha384-3RYSNO9MthPkt8+MLHcEiXZeFtu0AklWWCKAt/VyZLQ8AN2NGc2JVNl1HQhPJyI2",
+  "vendor/stencils/fabrands.js": "sha384-wD2XPswrY6NlH6vAui0buII8XwVekwIImbyap4SkekUqra3mOEFpmHib5yvZYk4P"
 }

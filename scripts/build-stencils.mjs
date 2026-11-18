@@ -25,6 +25,12 @@ export const SETS = {
     brands: { title: 'Security & DevOps brands', source: 'https://github.com/simple-icons/simple-icons', terms: 'Simple Icons, CC0-1.0. Logos are trademarks of their owners; use them only to refer to the product.' },
     fluent: { title: 'Devices & security', source: 'https://github.com/microsoft/fluentui-system-icons', terms: 'Microsoft Fluent UI System Icons, MIT licence (Copyright (c) Microsoft Corporation).' },
     k8s: { title: 'Kubernetes', source: 'https://github.com/kubernetes/community/tree/main/icons', terms: 'Kubernetes icons, licensed under Apache-2.0 or CC-BY-4.0 (your choice).' },
+    tabler: { title: 'Tabler (general)', source: 'https://github.com/tabler/tabler-icons', terms: 'Tabler Icons, MIT licence (Copyright (c) 2020-2026 Paweł Kuna).' },
+    carbon: { title: 'IBM Carbon', source: 'https://github.com/carbon-design-system/carbon/tree/main/packages/icons', terms: 'IBM Carbon icons, Apache-2.0 licence (Copyright IBM Corp.).' },
+    redhat: { title: 'Red Hat', source: 'https://github.com/RedHat-UX/red-hat-icons', terms: 'Red Hat icons, © Red Hat, Inc., CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/). Cleaned and minified for Threat Tiger.' },
+    osa: { title: 'Security architecture (OSA)', source: 'https://www.opensecurityarchitecture.org/foundations/icons/', terms: 'Open Security Architecture icons, CC BY-SA 4.0 (https://creativecommons.org/licenses/by-sa/4.0/). Cleaned and minified for Threat Tiger; this pack is shared under the same licence.' },
+    logos: { title: 'SaaS & dev logos', source: 'https://github.com/gilbarbara/logos', terms: 'SVG Logos by Gil Barbara, CC0-1.0. Logos are trademarks of their owners; use them only to refer to the product.' },
+    fabrands: { title: 'Font Awesome brands', source: 'https://github.com/FortAwesome/Font-Awesome', terms: 'Font Awesome Free by Fonticons, Inc. (https://fontawesome.com), brand icons under CC BY 4.0 (https://fontawesome.com/license/free). Logos are trademarks of their owners.' },
 };
 
 /** Removes everything that could run code or reach the network; null when the result is not a usable SVG. */
@@ -315,6 +321,49 @@ const FLUENT_ICONS = [
     ['arrow_upload', 'Upload', 'process', []],
 ];
 
+// Tabler, Carbon, Red Hat: generic sets, so only the categories (and, elsewhere, the names) a diagram needs.
+const TECH_NAME = /(server|cloud|lock|key|shield|secur|network|router|wifi|wireless|firewall|\bwall\b|database|\bdb\b|\bapi\b|bug|virus|spy|incognito|mask|fingerprint|certificate|password|user|users|\bid\b|identif|terminal|code|git|branch|commit|container|\bbox\b|cube|package|cpu|chip|device|laptop|desktop|computer|phone|mobile|tablet|mail|world|globe|link|plug|alert|alarm|warning|eye|radar|scan|qr|robot|\bai\b|brain|storage|drive|disk|backup|archive|folder|file|document|log\b|logs|report|chart|monitor|dashboard|gauge|settings|tool|webhook|binary|hierarchy|topology|sitemap|building|office|factory|credit-card|payment|wallet|bank|cash|shopping|cart|message|chat|bell|calendar|clock|history|search|filter|flow|pipeline|deploy|rocket|server|rack|switch|hub|antenna|satellite|bluetooth|usb|camera|printer|keyboard|bolt|power|battery|vpn|proxy|gateway|load-balanc|dns|cdn|data|cluster|kubernetes|virtual|machine|vm\b|bastion|threat|attack|risk|audit|compliance|policy|access|login|logout|auth|token|secret|encrypt|decrypt|hash|sign|verified|badge|crown|target|bomb|skull|fire|flag|block|ban|prohibit|forbid)/i;
+const TABLER_CATEGORIES = new Set(['Devices', 'Computers', 'Database', 'Development', 'Version control']);
+const TABLER_EXTRA_CATEGORIES = new Set(['System', 'Document', 'Communication', 'Buildings', 'E-commerce', 'Charts']);
+const CARBON_SUBCATEGORIES = new Set(['Systems', 'Technology', 'User', 'AI', 'App catalogue', 'Data']);
+// Carbon icons a diagram needs that sit in other subcategories (File, Status, Operations…); only these names are taken from there.
+const CARBON_NAMED = ['certificate', 'certificate--check', 'locked', 'unlocked', 'password', 'security', 'fingerprint-recognition', 'firewall', 'firewall--classic', 'document--security', 'policy', 'rule', 'two-factor-authentication', 'encryption', 'api--key'];
+const titleCase = (s) => pretty(s).replace(/\b(api|ai|id|vpn|dns|cdn|vm|usb|qr|cpu|sql|ssh|ssl|tls|http|https|www|iot|ip|os|pc|ci|cd|ibm|aws|gcp|sap|db|nat|vpc)\b/gi, w => w.toUpperCase()).replace(/^./, c => c.toUpperCase());
+
+// Open Security Architecture: one category per kind of thing. [type, tags]
+const OSA_CLASS = {
+    'Infrastructure': ['process', ['host']], 'Network': ['infrastructure', ['network-device']], 'Endpoints': ['interactor', ['workstation']],
+    'Storage & Media': ['datastore', ['local-disk']], 'Devices': ['interactor', ['iot']], 'People - Technical': ['interactor', ['admin']],
+    'People - Business': ['interactor', ['human']], 'People - Special': ['interactor', ['human']], 'Sites': ['interactor', []],
+    'Concepts': ['process', []], 'Industrial Control': ['process', ['iot']], 'DevSecOps': ['process', ['ci-cd']],
+};
+const OSA_OVERRIDES = { 'Black Hat': ['interactor', ['threat-actor']], 'Warning User': ['interactor', ['threat-actor']], 'Database': ['datastore', ['database']],
+    'Database Server': ['datastore', ['database']], 'File Server': ['datastore', ['file-share']], 'Firewall': ['infrastructure', ['security-control']],
+    'VPN': ['infrastructure', ['network-device', 'vpn']], 'Identity Server': ['process', ['identity']], 'Directory Server': ['process', ['identity']],
+    'Web Server': ['process', ['web']], 'Mail Server': ['process', ['email']], 'Proxy Server': ['infrastructure', ['network-device']],
+    'Monitoring Server': ['process', ['monitoring']], 'Padlock': ['infrastructure', ['security-control']], 'Shield (Verified)': ['infrastructure', ['security-control']],
+    'Security Scan': ['process', ['security-control']], 'Code Repository': ['datastore', ['app-code']], 'Container': ['process', ['container']],
+    'Artifact Package': ['process', ['supply-chain']], 'Cloud': ['process', ['cloud-host']], 'ID Card': ['datastore', ['secrets']] };
+
+// SVG Logos (gilbarbara): a curated SaaS, cloud, security, data, DevOps, AI and web subset by short name. [group, type, tags, names]
+const LOGO_GROUPS = [
+    ['SaaS & collaboration', 'process', ['web'], 'slack microsoft-teams zoom google-workspace google-gmail google-drive google-calendar notion confluence jira trello asana monday clickup linear miro figma airtable dropbox box microsoft-onedrive zendesk intercom hubspot salesforce mailchimp sendgrid twilio mailgun resend loom basecamp todoist zapier ifttt n8n typeform shopify woocommerce stripe paypal square adyen chargebee xero gusto docusign calendly freshdesk servicenow workday sap tableau looker microsoft-power-bi webflow wix wordpress ghost discord telegram whatsapp mattermost rocket-chat zulip signal'],
+    ['Identity & security', 'process', ['identity'], 'okta auth0 keycloak ory clerk stytch supertokens workos authy jwt oauth letsencrypt certbot hcaptcha recaptcha vault hashicorp dashlane passbolt snyk sonarqube sonarcloud sonarlint dependabot renovatebot sigstore hacker-one tor gnupg rsa tailscale cloudflare akamai fastly octelium pangolin osquery'],
+    ['Monitoring & incident response', 'process', ['monitoring', 'logs'], 'datadog new-relic sentry splunk kibana logstash grafana prometheus pagerduty opsgenie statuspage dynatrace appdynamics lightstep opentelemetry signoz zabbix graylog bugsnag rollbar sysdig incident posthog mixpanel amplitude segment matomo google-analytics hotjar logentries airbrake'],
+    ['Cloud & hosting', 'process', ['cloud-host'], 'aws microsoft-azure google-cloud digitalocean linode vultr heroku vercel netlify cloudflare-workers fly railway oracle ibm openstack rackspace firebase supabase appwrite planetscale neon upstash nhost dreamhost hostgator wpengine vmware'],
+    ['Data & messaging', 'datastore', ['database'], 'postgresql mysql mariadb mongodb redis cassandra couchbase couchdb elasticsearch opensearch snowflake databricks influxdb neo4j sqlite valkey kafka rabbitmq nats qdrant pinecone weaviate milvus surrealdb cockroachdb clickhouse dgraph fauna realm rethinkdb solr meilisearch typesense memcached'],
+    ['DevOps & CI/CD', 'process', ['ci-cd'], 'github github-actions gitlab bitbucket git jenkins circleci travis-ci buildkite teamcity bamboo drone argo spinnaker octopus-deploy harness terraform pulumi ansible puppet chef packer vagrant docker kubernetes helm rancher openshift nomad consul traefik-proxy nginx envoy kong linkerd jfrog npm pypi nuget maven gradle yarn pnpm bun deno nodejs quay verdaccio'],
+    ['AI & LLM', 'process', ['llm'], 'openai anthropic claude claude-code google-gemini mistral-ai hugging-face ollama langchain llama-index cohere deepseek perplexity github-copilot meta-ai microsoft-copilot groq openrouter'],
+    ['Web & APIs', 'process', ['web'], 'react vue angular nextjs nuxt svelte django rails laravel spring express fastapi flask drupal joomla graphql swagger postman insomnia grpc websocket webhooks openapi asyncapi json'],
+];
+
+// The logo index spells some names inconsistently; these are the products' own spellings.
+const LOGO_LABELS = { slack: 'Slack', github: 'GitHub', gitlab: 'GitLab', cloudflare: 'Cloudflare', appwrite: 'Appwrite', 'github-actions': 'GitHub Actions',
+    'github-copilot': 'GitHub Copilot', 'microsoft-azure': 'Microsoft Azure', 'google-cloud': 'Google Cloud', digitalocean: 'DigitalOcean', postgresql: 'PostgreSQL',
+    mongodb: 'MongoDB', mysql: 'MySQL', mariadb: 'MariaDB', sqlite: 'SQLite', graphql: 'GraphQL', openai: 'OpenAI', pagerduty: 'PagerDuty', hubspot: 'HubSpot',
+    sendgrid: 'SendGrid', woocommerce: 'WooCommerce', wordpress: 'WordPress', nextjs: 'Next.js', nodejs: 'Node.js', 'hugging-face': 'Hugging Face', jwt: 'JWT', oauth: 'OAuth',
+    aws: 'AWS', 'github-alt': 'GitHub (cat)', 'github-square': 'GitHub (square)', 'gitlab-square': 'GitLab (square)', npm: 'npm', php: 'PHP', css3: 'CSS3', html5: 'HTML5', js: 'JavaScript', node: 'Node', 'node-js': 'Node.js', paypal: 'PayPal', linkedin: 'LinkedIn', youtube: 'YouTube', 'stack-overflow': 'Stack Overflow' };   // also used for Font Awesome brands
+
 function walk(dir, out = []) {
     for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
         const p = path.join(dir, e.name);
@@ -405,6 +454,70 @@ function collect(set, dir) {
             const key = path.basename(f, '.svg').replace(/^.*__/, '');
             const [type, tags] = K8S_CLASS[key] || ['process', ['container']];
             return { name: K8S_NAMES[key] || pretty(key), category: path.basename(f).split('__')[0], svgText: fs.readFileSync(f, 'utf8'), type, tags: [...tags] };
+        });
+    }
+    if (set === 'tabler') {
+        const meta = JSON.parse(fs.readFileSync(path.join(dir, 'icons.json'), 'utf8'));
+        return Object.values(meta).filter(m => m && typeof m.name === 'string' && m.styles && m.styles.outline
+            && !/-off$/.test(m.name) && (TABLER_CATEGORIES.has(m.category) || /^cloud/.test(m.name) || (TABLER_EXTRA_CATEGORIES.has(m.category) && TECH_NAME.test(m.name))))   // Tabler files clouds under Weather
+            .map(m => ({ name: titleCase(m.name), category: m.category, file: path.join(dir, 'icons', 'outline', `${m.name}.svg`) }))
+            .filter(x => fs.existsSync(x.file)).map(x => ({ name: x.name, category: x.category, svgText: fs.readFileSync(x.file, 'utf8') }));
+    }
+    if (set === 'carbon') {
+        const meta = JSON.parse(fs.readFileSync(path.join(dir, 'metadata.json'), 'utf8'));
+        const out = [];
+        // Systems and Technology whole; the other chosen subcategories by name (TECH_NAME); a few named icons from anywhere.
+        const wanted = (sub, name) => CARBON_NAMED.includes(name)
+            || (CARBON_SUBCATEGORIES.has(sub) && (sub === 'Systems' || sub === 'Technology' || TECH_NAME.test(name)));
+        (meta.categories || []).forEach(c => (c.subcategories || []).forEach(sc => (sc.members || []).forEach(name => {
+            if (typeof name !== 'string' || !wanted(sc.name, name) || /--(filled|alt|outline)$/.test(name)) return;
+            const file = path.join(dir, 'svg', '32', `${name}.svg`);
+            if (fs.existsSync(file)) out.push({ name: titleCase(name.replace(/--/g, ' ')), category: sc.name, svgText: fs.readFileSync(file, 'utf8') });
+        })));
+        return out;
+    }
+    if (set === 'redhat') {
+        const pick = (folder, all) => fs.readdirSync(path.join(dir, folder)).filter(f => f.endsWith('.svg') && !/-fill\.svg$/.test(f) && (all || TECH_NAME.test(f)))
+            .map(f => ({ name: titleCase(f.replace(/\.svg$/, '')), category: folder === 'standard' ? 'Standard' : 'UI', svgText: fs.readFileSync(path.join(dir, folder, f), 'utf8') }));
+        return [...pick('standard', false), ...pick('ui', false)];   // standard first: on a duplicate name the two-tone standard icon wins
+    }
+    if (set === 'osa') {
+        const manifest = JSON.parse(fs.readFileSync(path.join(dir, '_manifest.json'), 'utf8'));
+        const out = [];
+        Object.entries(manifest.categories || {}).forEach(([cat, items]) => {
+            if (!OSA_CLASS[cat] || !Array.isArray(items)) return;   // Navigation arrows are left out
+            items.forEach(it => {
+                const file = path.join(dir, 'osa-icons', path.basename(String(it.file || '')));
+                if (!it.label || !fs.existsSync(file)) return;
+                const [type, tags] = OSA_OVERRIDES[it.label] || OSA_CLASS[cat];
+                out.push({ name: String(it.label), category: cat, type, tags: [...tags], svgText: fs.readFileSync(file, 'utf8') });
+            });
+        });
+        return out;
+    }
+    if (set === 'logos') {
+        const index = JSON.parse(fs.readFileSync(path.join(dir, 'logos.json'), 'utf8'));
+        const byShort = new Map(index.map(e => [e.shortname, e]));
+        const out = [];
+        LOGO_GROUPS.forEach(([group, type, tags, names]) => names.split(/\s+/).forEach(short => {
+            const e = byShort.get(short);
+            if (!e || !Array.isArray(e.files)) return;
+            const f = e.files.find(x => /-icon\.svg$/.test(x)) || e.files[0];
+            const file = path.join(dir, 'logos', path.basename(String(f)));
+            if (!fs.existsSync(file)) return;
+            const own = classify(String(e.name), '');
+            const keep = own.type !== 'process' || own.tags.length ? own : { type, tags: [...tags] };   // a specific rule (database, queue…) beats the group
+            const label = LOGO_LABELS[short] || (/^[a-z]/.test(e.name) ? titleCase(String(e.name)) : String(e.name));
+            out.push({ name: label, category: group, type: group === 'Data & messaging' && keep.type === 'process' && !keep.tags.length ? type : keep.type, tags: keep.tags.length ? keep.tags : [...tags], svgText: fs.readFileSync(file, 'utf8') });
+        }));
+        return out;
+    }
+    if (set === 'fabrands') {
+        const fam = JSON.parse(fs.readFileSync(path.join(dir, 'metadata', 'icon-families.json'), 'utf8'));
+        const folder = path.join(dir, 'svgs', 'brands');
+        return fs.readdirSync(folder).filter(f => f.endsWith('.svg')).map(f => {
+            const key = f.replace(/\.svg$/, ''), m = fam[key];
+            return { name: LOGO_LABELS[key] || (m && typeof m.label === 'string' ? m.label : titleCase(key)), category: 'Brand', svgText: fs.readFileSync(path.join(folder, f), 'utf8') };
         });
     }
     if (set === 'oci') {

@@ -158,3 +158,18 @@ test('a PNG export includes the cloud icon image', async ({ page }) => {
   expect(svg).toContain('class="stencil-icon"');
   expect(svg).toContain(icon.slice(0, 60));
 });
+
+test('the six 1.24 icon sets are in View → Icon sets and Settings, and load in the palette', async ({ page }) => {
+  const H = require('./helpers');
+  await H.openApp(page, { session: H.demoSession() });
+  const ids = await page.evaluate(() => STENCIL_SETS.map((s) => s[0]));
+  for (const id of ['tabler', 'carbon', 'redhat', 'osa', 'logos', 'fabrands']) {
+    expect(ids).toContain(id);
+    await expect(page.locator(`#btn-menu-stencil-${id}`)).toHaveCount(1);
+    await expect(page.locator(`[data-stencil-set="${id}"]`)).toHaveCount(1);
+  }
+  await page.evaluate(() => document.getElementById('collapseDataNodes').classList.add('show'));
+  await page.locator('[data-stencil-set="osa"] .stencil-set-toggle').click();
+  await expect(page.locator('[data-stencil-set="osa"] .stencil-item').first()).toBeVisible();
+  expect(await page.locator('[data-stencil-set="osa"] .stencil-item').count()).toBeGreaterThan(70);
+});

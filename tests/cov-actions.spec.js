@@ -464,7 +464,7 @@ test('View menu: every icon-set switch hides and shows its set in the palette', 
   await C.openApp(page, { session: C.demoSession() });
   await page.evaluate(() => document.getElementById('collapseDataNodes').classList.add('show'));
   const sets = await page.locator('[data-stencil-toggle]').evaluateAll((els) => els.map((e) => e.dataset.stencilToggle));
-  expect(sets.length).toBe(8);
+  expect(sets.length).toBe(14);   // 8 until 1.24.0 added OSA, Tabler, Carbon, Red Hat, SaaS & dev logos, Font Awesome brands
   await page.click('#btn-main-menu'); await page.click('#btn-menu-view'); await page.click('#btn-menu-icon-sets');
   for (const s of sets) {
     await expect(page.locator(`[data-stencil-set="${s}"]`)).toBeVisible();

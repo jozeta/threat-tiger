@@ -9,9 +9,15 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ### Added
 
+*   **Six icon sets** under Data Nodes & Icons, built by `scripts/build-stencils.mjs` from the official packages: *Security architecture* (Open Security Architecture, 77, CC BY-SA 4.0), *Tabler (general)* (1,435, MIT), *IBM Carbon* (797, Apache-2.0), *Red Hat* (254, CC BY 4.0), *SaaS & dev logos* (SVG Logos by Gil Barbara, 277 curated, CC0) and *Font Awesome brands* (609, CC BY 4.0). Every SVG is cleaned like the other packs, every icon gets a component type and subtypes, the files are pinned in `vendor/checksums.json`, and attribution is in `vendor/stencils/README.md` and About & License.
+
 *   **Import threat model from git** (☰ → Import): paste a GitHub or GitLab link to a JSON file (page or raw link; self-hosted GitLab with groups and GitHub Enterprise too, `parseGitFileLink`). Public files open without a token; for a private repository a token typed in the dialog is used once and never stored, or the token saved for that server is unlocked with its passphrase. The file is validated like any import; errors stay in the dialog and change nothing. Git API requests without a token now send no authorization header.
 *   **☰ menu groups:** *Import* (JSON, from git, Mermaid, status file), *Export* (JSON, Mermaid diagram) and *Reports* (Print report, Markdown report, History).
 *   **Settings has tabs:** *Visuals* (title block & legend), *Profiles*, *Live status* and *Sync* (git sync, with its Connect, Forget token and Remove buttons). ☰ → Settings… opens Visuals; the sync button, live-status host approval and *Edit profiles…* open their own tab. The window now sits near the top of the screen with a fixed height, so it no longer moves when a tab or section changes size; the tab bar stays in place and only the content scrolls.
+
+### Fixed
+
+*   A ☰ menu flyout too tall for the screen on both sides of its trigger (e.g. View → Icon sets on a 667 px phone) no longer covers the trigger: it opens on the roomier side and scrolls inside.
 
 ### Removed
 
