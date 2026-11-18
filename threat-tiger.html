@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-GWV7JxYlDHo6zguCqI0zmmRdjgtdM8ow6d/QE49SFSU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-BPRbKLW/BSU1+h3BA8ormBtotcnV9w73YfnVxdsEBzE='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -5722,7 +5722,7 @@ Orders DB,down,datastore,App,,,</pre></div>
             <tr><td>JSON</td><td>☰ → Export JSON / Import JSON…</td><td>The whole model: pages, shapes, flows, threats, mitigations, settings and the activity log. The app version is recorded as <code>appVersion</code>.</td></tr>
             <tr><td>JSON for git</td><td>☰ → Export JSON for git (no activity log)</td><td>A smaller file with a stable layout that diffs cleanly in a repository.</td></tr>
             <tr><td>Mermaid (import)</td><td>☰ → Import Mermaid flowchart…</td><td>Paste a <code>flowchart</code> / <code>graph</code>: nodes become flowchart shapes, subgraphs trust zones, laid out automatically. Add it next to the current model or replace it (undo brings it back).</td></tr>
-            <tr><td>Mermaid (export)</td><td>☰ → Export Mermaid diagram</td><td>The diagram as Mermaid flowchart text.</td></tr>
+            <tr><td>Mermaid (export)</td><td>☰ → Export Mermaid diagram</td><td>The diagram as Mermaid flowchart text. Trust zones become subgraphs; a data flow that crosses a trust boundary (line or zone) is drawn red and labelled with the boundaries it crosses, since Mermaid cannot draw the lines themselves.</td></tr>
             <tr><td>Markdown report</td><td>☰ → Export Markdown report</td><td>Scope, components, threats, mitigations, model checks and attack paths, with an embedded Mermaid diagram.</td></tr>
             <tr><td>Print / PDF</td><td>☰ → Print report…</td><td>A print-ready report with the diagram (choose <em>Save as PDF</em> in the print dialog).</td></tr>
             <tr><td>PNG</td><td>Canvas toolbar → Save as PNG</td><td>A picture of the current page, with the title block and legend when shown.</td></tr>
@@ -5741,7 +5741,7 @@ Orders DB,down,datastore,App,,,</pre></div>
         <li><strong>Fill in</strong> ☰ → Settings… → <em>Git sync</em>: service, server (defaults to <code>https://api.github.com</code> or <code>https://gitlab.com</code>; GitHub Enterprise <code>https://host/api/v3</code>), repository (<code>owner/name</code>, GitLab <code>group/subgroup/project</code>), branch (<code>main</code>), file (<code>threat-model.json</code>), the token and a passphrase (8+ characters) that encrypts it.</li>
         <li><strong>Connect.</strong> Threat Tiger checks that the token can open the repository, then shows the ⟳ button next to ☰.</li>
         <li><strong>Press ⟳ to sync.</strong> After a reload, the first sync asks for your passphrase.</li>
-        <li><strong>Optional, a readable copy:</strong> <em>Readable copy in the repository</em> also writes a Markdown file to the repository (<code>README.md</code> by default, so it is the repository's front page; change the name under <em>Readable copy file</em>) that GitHub and GitLab show as a page with the diagram drawn: <em>Diagram only</em>, or <em>Full report</em> (the diagram on top, then the risk summary, the threats, mitigations, attack paths, data flows and components, like the printed report). It is written fresh on every sync and never read back, so it replaces any file with that name and edits made to it in the repository are overwritten; an unchanged model makes no new commit.</li>
+        <li><strong>Optional, a readable copy:</strong> <em>Readable copy in the repository</em> also writes a Markdown file to the repository (<code>README.md</code> by default, so it is the repository's front page; change the name under <em>Readable copy file</em>) that GitHub and GitLab show as a page with the diagram drawn: <em>Diagram only</em>, or <em>Full report</em> (the diagram on top, then the risk summary, the threats, mitigations, data flows and components, like the printed report). It is written fresh on every sync and never read back, so it replaces any file with that name and edits made to it in the repository are overwritten; an unchanged model makes no new commit.</li>
     </ol>
     <figure class="tt-help-fig">
         <svg viewBox="0 0 760 200" role="img" aria-labelledby="help-ill-git-t help-ill-git-d">
@@ -6169,7 +6169,7 @@ Orders DB,down,datastore,App,,,</pre></div>
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.23.2';
+        const APP_VERSION = '1.23.3';
         const SCHEMA_VERSION = 1;
         const MAX_ZOOM = 2.5;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
@@ -17410,7 +17410,6 @@ Orders DB,down,datastore,App,,,</pre></div>
                     mitigations.forEach(m => out.push(`| ${cell(m.id)} | ${cell(m.title)} | ${cell(m.status)} | ${cell(m.owner)} | ${cell(this.threatsCoveredBy(m.id).map(t => t.id).join(', '))} | ${mdUrl(m.ticketUrl) ? `[link](${mdUrl(m.ticketUrl)})` : '—'} |`));
                     out.push('');
                 }
-                this.mdAttackPathLines(out);
                 this.mdFlowAndComponentLines(out);
                 return out.join('\n') + '\n';
             }
@@ -20580,7 +20579,9 @@ Orders DB,down,datastore,App,,,</pre></div>
 
             /**
              * Builds a Mermaid flowchart of the diagram: components as nodes (shape by type), trust zones as
-             * subgraphs, data flows as labelled edges. Used by "Export Mermaid diagram" and the Markdown report.
+             * subgraphs, data flows as labelled edges. Mermaid cannot draw a free line, so a flow that crosses a trust
+             * boundary (line or zone) is drawn red and labelled "crosses <names>". Used by "Export Mermaid diagram",
+             * the Markdown report and git sync's readable copy.
              */
             buildMermaidDiagram({ pageId } = {}) {
                 const onPage = (e) => !(this.state.pages || []).length || (e.pageId || this.state.pages[0].id) === (pageId || this.state.activePageId);
@@ -20624,12 +20625,18 @@ Orders DB,down,datastore,App,,,</pre></div>
                 });
                 const threatCount = new Map();
                 this.state.threats.forEach(t => threatCount.set(t.elementId, (threatCount.get(t.elementId) || 0) + 1));
+                const crossings = this.computeTrustAnalysis().crossings, crossingEdges = [];
+                let edgeIndex = 0;   // linkStyle counts edges in the order they are written
                 this.state.flows.forEach(f => {
                     const a = ids.get(f.sourceId), b = ids.get(f.targetId);
                     if (!a || !b) return;
-                    const parts = [f.name, f.ports ? `port ${f.ports}` : '', f.secProps && f.secProps.encrypted === 'true' ? 'encrypted' : '', threatCount.get(f.id) ? `${threatCount.get(f.id)} threat(s)` : ''].filter(Boolean);
+                    const c = crossings.get(f.id), crossed = c && c.crosses ? c.names.map(n => n.replace(/^"|"$/g, '')) : [];
+                    const parts = [f.name, f.ports ? `port ${f.ports}` : '', f.secProps && f.secProps.encrypted === 'true' ? 'encrypted' : '', threatCount.get(f.id) ? `${threatCount.get(f.id)} threat(s)` : '',
+                        crossed.length ? `crosses ${crossed.join(', ')}` : ''].filter(Boolean);
                     const arrow = f.isBidirectional ? (f.isDashed ? '<-.->' : '<-->') : (f.isDashed ? '-.->' : '-->');
                     lines.push(parts.length ? `    ${a} ${arrow}|${label(parts.join(' · '))}| ${b}` : `    ${a} ${arrow} ${b}`);
+                    if (crossed.length) crossingEdges.push(edgeIndex);
+                    edgeIndex++;
                 });
                 const withThreats = nodes.filter(e => threatCount.get(e.id)).map(e => ids.get(e.id));
                 const crown = nodes.filter(e => e.secProps && e.secProps.isCrownJewel === 'true').map(e => ids.get(e.id));
@@ -20638,8 +20645,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                 zones.forEach((z, i) => lines.push(`    style z${i + 1} stroke:#dc3545,stroke-dasharray: 6 4,fill:none`));
                 if (withThreats.length) lines.push(`    class ${withThreats.join(',')} threat`);
                 if (crown.length) lines.push(`    class ${crown.join(',')} crown`);
-                const lineCount = this.state.elements.filter(e => e.type === 'boundary_line').length;
-                if (lineCount) lines.push(`    %% ${lineCount} trust boundary line(s) are not representable in Mermaid and were omitted.`);
+                if (crossingEdges.length) lines.push(`    linkStyle ${crossingEdges.join(',')} stroke:#dc3545,stroke-width:3px`, '    %% Red edges cross a trust boundary (named in the label); Mermaid cannot draw boundary lines themselves.');
                 return lines.join('\n') + '\n';
             }
 

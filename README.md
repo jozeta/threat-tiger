@@ -4,7 +4,7 @@
 
 Threat Tiger is a single HTML file plus a few local assets. It needs no installation, no database and no internet connection, and it never sends your data anywhere: your architecture and threat assessments stay in your browser and in the files you export.
 
-**Current version: 1.23.2** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
+**Current version: 1.23.3** (also shown in the app under Help & License). See [What's new](#whats-new-) and the [changelog](CHANGELOG.md).
 
 A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tiger.html](https://jozeta.github.io/threat-tiger/threat-tiger.html)
 
@@ -56,6 +56,8 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 ---
 
 ## What's new 🆕
+
+**1.23.3:** trust boundaries now show in Mermaid diagrams (Export Mermaid diagram, the Markdown report and the git sync readable copy): flows that cross a boundary line or zone are drawn red and labelled *crosses …*. The readable copy no longer has an Attack paths section.
 
 **1.23.2** is a security fix: the readable copy's settings are now part of the sync target you approve with **Connect**, so an imported or pulled model cannot turn it on or point it at another file in your repository.
 
@@ -147,7 +149,7 @@ All other actions (import, export, reports, History, help) are in the **☰ menu
     - **Repository:** `owner/name` (GitLab: `group/subgroup/project`).
     - **Branch:** defaults to `main`.
     - **File in the repository:** defaults to `threat-model.json`.
-    - **Readable copy in the repository:** **Off** (default), **Diagram only** or **Full report**. Also writes a Markdown file that GitHub and GitLab show with the diagram drawn. The full report puts the diagram on top, then the risk summary, the threats (one block each: severity, risk score, likelihood and impact, status, description, mitigations), the mitigations, attack paths, data flows and components. The file is written fresh on every sync and never read back: edits made to it in the repository are overwritten, and an unchanged model makes no new commit. To change this setting later, change it and press **Connect** again (the token can stay empty).
+    - **Readable copy in the repository:** **Off** (default), **Diagram only** or **Full report**. Also writes a Markdown file that GitHub and GitLab show with the diagram drawn. The full report puts the diagram on top, then the risk summary, the threats (one block each: severity, risk score, likelihood and impact, status, description, mitigations), the mitigations, data flows and components. The file is written fresh on every sync and never read back: edits made to it in the repository are overwritten, and an unchanged model makes no new commit. To change this setting later, change it and press **Connect** again (the token can stay empty).
     - **Readable copy file:** the path of that file in the repository, ending in `.md`; defaults to `README.md`, the repository's front page. It replaces any file with that name.
     - **Access token** and a **passphrase** (8+ characters) that encrypts the token in this browser.
 3.  Press **Connect**. Threat Tiger checks that the token can open the repository, then shows the **⟳** sync button next to ☰.

@@ -5,6 +5,13 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.23.3
+
+### Changed
+
+*   **Trust boundaries in Mermaid.** Export Mermaid diagram, the Markdown report and the git sync readable copy now show trust boundaries: a data flow that crosses a trust boundary line or zone is drawn red (`linkStyle`) and its label ends in *crosses <boundary names>*. Before, boundary lines were left out with only a comment. Zones stay subgraphs. Importing such a file ignores the styling.
+*   **Git sync readable copy** (full report) no longer has an Attack paths section. Export Markdown report keeps it.
+
 ## 1.23.2
 
 ### Security
