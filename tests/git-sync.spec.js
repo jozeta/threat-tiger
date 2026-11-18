@@ -67,7 +67,7 @@ async function setup(page) {
   await openApp(page, { session: demoSession((s) => { s.projectTitle = 'Payments'; }) });
 }
 
-async function connect(page, { provider = 'github', host, repo = 'acme/models', branch = 'main', path = 'threat-model.json', token = TOKEN, pass = PASS, readable } = {}) {
+async function connect(page, { provider = 'github', host, repo = 'acme/models', branch = 'main', path = 'threat-model.json', token = TOKEN, pass = PASS, readable, readablePath } = {}) {
   if (!(await page.locator('#modal-settings').isVisible())) await clickControl(page, '#btn-settings');
   await expect(page.locator('#modal-settings')).toBeVisible();
   await page.selectOption('#git-provider', provider);
@@ -76,6 +76,7 @@ async function connect(page, { provider = 'github', host, repo = 'acme/models', 
   await page.fill('#git-branch', branch);
   await page.fill('#git-path', path);
   if (readable) await page.selectOption('#git-readable', readable);
+  if (readablePath !== undefined) await page.fill('#git-readable-path', readablePath);
   if (token !== null) await page.fill('#git-token', token);
   if (pass !== null) { await page.fill('#git-passphrase', pass); await page.fill('#git-passphrase2', pass); }
   await page.click('#btn-git-connect');
@@ -313,8 +314,9 @@ test('readable copy is off by default: only the JSON is written', async ({ page 
 test('full report: a Markdown file with the diagram on top and the threats below, never read back into the model', async ({ page }) => {
   await setup(page);
   const gh = await fakeGitHub(page);
-  await connect(page, { path: 'models/payments.json', readable: 'report' });
+  await connect(page, { path: 'models/payments.json', readable: 'report', readablePath: 'models/payments.md' });
   expect(await page.evaluate(() => app.state.gitSync.readable)).toBe('report');
+  expect(await page.evaluate(() => app.state.gitSync.readablePath)).toBe('models/payments.md');
   await sync(page);
   expect(gh.model('models/payments.json').gitSync.readable).toBe('report');
   const md = gh.files.get('models/payments.md').text;
@@ -351,7 +353,9 @@ test('diagram only: the Markdown file holds the diagram and no threat register',
   const gh = await fakeGitHub(page);
   await connect(page, { readable: 'diagram' });
   await sync(page);
-  const md = gh.files.get('threat-model.md').text;
+  await expect(page.locator('#git-readable-path')).toHaveValue('README.md');
+  expect([...gh.files.keys()].sort()).toEqual(['README.md', 'threat-model.json']);   // the default name: the repository's front page
+  const md = gh.files.get('README.md').text;
   expect(md).toMatch(/^# Payments/m);
   expect(md).toContain('```mermaid');
   expect(md).not.toContain('## Threats');
@@ -361,7 +365,7 @@ test('a failed readable copy never undoes the saved model', async ({ page }) => 
   await setup(page);
   const gh = await fakeGitHub(page);
   await connect(page, { readable: 'report' });
-  await page.route('https://api.github.com/repos/acme/models/contents/threat-model.md*', (route) =>
+  await page.route('https://api.github.com/repos/acme/models/contents/README.md*', (route) =>
     route.request().method() === 'OPTIONS'
       ? route.fulfill({ status: 204, headers: { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'GET, PUT, OPTIONS' } })
       : route.fulfill({ status: 500, headers: { 'access-control-allow-origin': '*' }, json: { message: 'boom' } }));
@@ -375,7 +379,7 @@ test('GitLab gets the readable copy too', async ({ page }) => {
   const gl = await fakeGitLab(page);
   await connect(page, { provider: 'gitlab', host: 'https://gitlab.example.com', repo: 'group/sub/proj', readable: 'diagram' });
   await sync(page);
-  expect(gl.files.get('threat-model.md').text).toContain('```mermaid');
+  expect(gl.files.get('README.md').text).toContain('```mermaid');
   const n = gl.calls.filter((c) => c.method !== 'GET').length;
   await sync(page);
   expect(gl.calls.filter((c) => c.method !== 'GET').length).toBe(n);
@@ -387,4 +391,17 @@ test('an unknown readable value is dropped on import', async ({ page }) => {
     'readable' in normalizeGitSync({ provider: 'github', repo: 'a/b', readable: '<img>' }),
     'readable' in normalizeGitSync({ provider: 'github', repo: 'a/b', readable: 'off' })]);
   expect(r).toEqual(['report', false, false]);
+});
+
+test('the readable copy name is checked: it must be a Markdown file path', async ({ page }) => {
+  await setup(page);
+  await fakeGitHub(page);
+  await connect(page, { readable: 'report', readablePath: 'docs/model.txt' });
+  await expect(page.locator('#git-status')).toHaveClass(/text-danger/);
+  await expect(page.locator('#git-status')).toContainText('.md');
+  expect(await page.evaluate(() => app.state.gitSync)).toBeNull();
+  const r = await page.evaluate(() => [normalizeGitSync({ provider: 'github', repo: 'a/b', readable: 'diagram' }).readablePath,
+    normalizeGitSync({ provider: 'github', repo: 'a/b', readable: 'diagram', readablePath: '../x.md' }),
+    'readablePath' in normalizeGitSync({ provider: 'github', repo: 'a/b', readablePath: 'x.md' })]);
+  expect(r).toEqual(['README.md', null, false]);
 });

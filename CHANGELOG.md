@@ -5,6 +5,12 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.23.1
+
+### Changed
+
+*   **Git sync readable copy** is written to `README.md` by default (the repository's front page) instead of `<file>.md`, and the new *Readable copy file* setting changes the name (any path ending in `.md`, validated like the JSON path; stored as `gitSync.readablePath`). It replaces any file with that name.
+
 ## 1.23.0
 
 ### Added

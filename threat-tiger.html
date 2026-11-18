@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-mXh3w5FGD9wQQA7jXsON3L0tnUGWKSO8iFwNid2lw1o='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Hceb0+rjbblStMS9c3uBhRMf7gl42PjnBY9PJKUSalc='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -4562,15 +4562,21 @@
                                 <label class="form-label small text-muted mb-1" for="git-path">File in the repository</label>
                                 <input type="text" class="form-control form-control-sm shadow-none" id="git-path" placeholder="threat-model.json" spellcheck="false">
                             </div>
-                            <div class="col-12">
+                            <div class="col-7">
                                 <label class="form-label small text-muted mb-1" for="git-readable">Readable copy in the repository</label>
                                 <select class="form-select form-select-sm shadow-none" id="git-readable" aria-describedby="git-readable-help">
                                     <option value="off">Off</option>
                                     <option value="diagram">Diagram only</option>
                                     <option value="report">Full report: diagram, then threats and mitigations</option>
                                 </select>
-                                <div class="form-text extra-small" id="git-readable-help">A Markdown file next to the JSON (same name, ending in .md). GitHub and GitLab show it as a page with the diagram drawn.
-                                    It is written fresh on every sync and never read back, so changes made to it in the repository are overwritten.</div>
+                            </div>
+                            <div class="col-5">
+                                <label class="form-label small text-muted mb-1" for="git-readable-path">Readable copy file</label>
+                                <input type="text" class="form-control form-control-sm shadow-none" id="git-readable-path" placeholder="README.md" spellcheck="false" aria-describedby="git-readable-help">
+                            </div>
+                            <div class="col-12 mt-1">
+                                <div class="form-text extra-small mt-0" id="git-readable-help">A Markdown file (path in the repository, ending in .md) that GitHub and GitLab show as a page with the diagram drawn;
+                                    README.md is the repository's front page. It is written fresh on every sync and never read back, so it replaces any file with that name and changes made to it in the repository are overwritten.</div>
                             </div>
                             <div class="col-12">
                                 <label class="form-label small text-muted mb-1" for="git-token">Access token</label>
@@ -5735,7 +5741,7 @@ Orders DB,down,datastore,App,,,</pre></div>
         <li><strong>Fill in</strong> ☰ → Settings… → <em>Git sync</em>: service, server (defaults to <code>https://api.github.com</code> or <code>https://gitlab.com</code>; GitHub Enterprise <code>https://host/api/v3</code>), repository (<code>owner/name</code>, GitLab <code>group/subgroup/project</code>), branch (<code>main</code>), file (<code>threat-model.json</code>), the token and a passphrase (8+ characters) that encrypts it.</li>
         <li><strong>Connect.</strong> Threat Tiger checks that the token can open the repository, then shows the ⟳ button next to ☰.</li>
         <li><strong>Press ⟳ to sync.</strong> After a reload, the first sync asks for your passphrase.</li>
-        <li><strong>Optional, a readable copy:</strong> <em>Readable copy in the repository</em> also writes a Markdown file next to the JSON (same name, <code>.md</code>) that GitHub and GitLab show as a page with the diagram drawn: <em>Diagram only</em>, or <em>Full report</em> (the diagram on top, then the risk summary, the threats, mitigations, attack paths, data flows and components, like the printed report). It is written fresh on every sync and never read back, so edits made to it in the repository are overwritten; an unchanged model makes no new commit.</li>
+        <li><strong>Optional, a readable copy:</strong> <em>Readable copy in the repository</em> also writes a Markdown file to the repository (<code>README.md</code> by default, so it is the repository's front page; change the name under <em>Readable copy file</em>) that GitHub and GitLab show as a page with the diagram drawn: <em>Diagram only</em>, or <em>Full report</em> (the diagram on top, then the risk summary, the threats, mitigations, attack paths, data flows and components, like the printed report). It is written fresh on every sync and never read back, so it replaces any file with that name and edits made to it in the repository are overwritten; an unchanged model makes no new commit.</li>
     </ol>
     <figure class="tt-help-fig">
         <svg viewBox="0 0 760 200" role="img" aria-labelledby="help-ill-git-t help-ill-git-d">
@@ -6163,7 +6169,7 @@ Orders DB,down,datastore,App,,,</pre></div>
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.23.0';
+        const APP_VERSION = '1.23.1';
         const SCHEMA_VERSION = 1;
         const MAX_ZOOM = 2.5;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
@@ -8251,12 +8257,16 @@ Orders DB,down,datastore,App,,,</pre></div>
             const parts = path.split('/');
             if (path.length > 200 || !/\.json$/i.test(path) || !parts.every(x => /^[A-Za-z0-9 _.-]+$/.test(x) && x !== '.' && x !== '..' && x.trim() === x)) return null;
             const out = { provider, host, repo, branch, path };
-            if (GIT_READABLE.includes(raw.readable)) out.readable = raw.readable;   // the Markdown copy; absent means off
+            if (GIT_READABLE.includes(raw.readable)) {   // the Markdown copy; absent means off
+                const rp = toText(raw.readablePath).trim() || GIT_READABLE_DEFAULT_PATH, rparts = rp.split('/');
+                if (rp.length > 200 || !/\.md$/i.test(rp) || !rparts.every(x => /^[A-Za-z0-9 _.-]+$/.test(x) && x !== '.' && x !== '..' && x.trim() === x)) return null;
+                out.readable = raw.readable; out.readablePath = rp;
+            }
             return out;
         }
         /** The readable copy written next to the JSON: the diagram only, or the full report. Never read back. */
-        const GIT_READABLE = ['diagram', 'report'];
-        const gitReadablePath = (c) => c.path.replace(/\.json$/i, '.md');
+        const GIT_READABLE = ['diagram', 'report'], GIT_READABLE_DEFAULT_PATH = 'README.md';
+        const gitReadablePath = (c) => c.readablePath || GIT_READABLE_DEFAULT_PATH;
         const gitConfigKey = (c) => [c.provider, c.host, c.repo, c.branch, c.path].join('|');
         const gitServerKey = (c) => `${c.provider} ${c.host}`;
         function bytesToBase64(bytes) { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
@@ -12659,6 +12669,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                 document.getElementById('git-branch').value = cfg.branch;
                 document.getElementById('git-path').value = cfg.path;
                 document.getElementById('git-readable').value = cfg.readable || 'off';
+                document.getElementById('git-readable-path').value = cfg.readablePath || GIT_READABLE_DEFAULT_PATH;
                 ['git-token', 'git-passphrase', 'git-passphrase2'].forEach(id => { document.getElementById(id).value = ''; });
                 if (!message && this.state.gitSync) {
                     const saved = this.gitTokens.has(gitServerKey(cfg)) || !!this.readGitSecrets()[gitServerKey(cfg)];
@@ -12671,8 +12682,8 @@ Orders DB,down,datastore,App,,,</pre></div>
             async connectGitFromSettings() {
                 if (this.gitConnecting) return;
                 const v = (id) => document.getElementById(id).value;
-                const cfg = normalizeGitSync({ provider: v('git-provider'), host: v('git-host'), repo: v('git-repo'), branch: v('git-branch'), path: v('git-path'), readable: v('git-readable') });
-                if (!cfg) { this.setGitStatus('Check the server (an https:// address), the repository (GitHub: owner/name; GitLab: group/project), the branch and the file (ending in .json).', 'danger'); return; }
+                const cfg = normalizeGitSync({ provider: v('git-provider'), host: v('git-host'), repo: v('git-repo'), branch: v('git-branch'), path: v('git-path'), readable: v('git-readable'), readablePath: v('git-readable-path') });
+                if (!cfg) { this.setGitStatus('Check the server (an https:// address), the repository (GitHub: owner/name; GitLab: group/project), the branch, the file (ending in .json) and the readable copy file (ending in .md).', 'danger'); return; }
                 if (!(window.crypto && crypto.subtle)) { this.setGitStatus('Git sync needs the app to be opened over https:// or from localhost.', 'danger'); return; }
                 const token = v('git-token').trim(), pass = v('git-passphrase'), pass2 = v('git-passphrase2');
                 const serverKey = gitServerKey(cfg), haveSaved = this.gitTokens.has(serverKey) || !!this.readGitSecrets()[serverKey];
