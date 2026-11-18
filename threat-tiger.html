@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-Hceb0+rjbblStMS9c3uBhRMf7gl42PjnBY9PJKUSalc='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-GWV7JxYlDHo6zguCqI0zmmRdjgtdM8ow6d/QE49SFSU='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -6169,7 +6169,7 @@ Orders DB,down,datastore,App,,,</pre></div>
 
     <script>
         // ── App identity ──────────────────────────────────────────────────────────
-        const APP_VERSION = '1.23.1';
+        const APP_VERSION = '1.23.2';
         const SCHEMA_VERSION = 1;
         const MAX_ZOOM = 2.5;
         const MIN_ZOOM = 0.15;              // UI-008: large diagrams must fit on small screens
@@ -8267,7 +8267,9 @@ Orders DB,down,datastore,App,,,</pre></div>
         /** The readable copy written next to the JSON: the diagram only, or the full report. Never read back. */
         const GIT_READABLE = ['diagram', 'report'], GIT_READABLE_DEFAULT_PATH = 'README.md';
         const gitReadablePath = (c) => c.readablePath || GIT_READABLE_DEFAULT_PATH;
-        const gitConfigKey = (c) => [c.provider, c.host, c.repo, c.branch, c.path].join('|');
+        const gitConfigKey = (c) => [c.provider, c.host, c.repo, c.branch, c.path].join('|');   // the JSON target: keys the sync state
+        /** Everything sync may write to: the JSON target plus the readable copy, so an imported model cannot aim it at another file. */
+        const gitApprovalKey = (c) => gitConfigKey(c) + (c.readable ? `|${c.readable}|${c.readablePath}` : '');
         const gitServerKey = (c) => `${c.provider} ${c.host}`;
         function bytesToBase64(bytes) { let bin = ''; for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000)); return btoa(bin); }
         function base64ToBytes(b64) { const bin = atob(String(b64 || '').replace(/\s+/g, '')); const out = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i); return out; }
@@ -12651,7 +12653,7 @@ Orders DB,down,datastore,App,,,</pre></div>
             }
 
             approveGitTarget(cfg) {
-                const all = this.readGitApproved(); all.add(gitConfigKey(cfg));
+                const all = this.readGitApproved(); all.add(gitApprovalKey(cfg));
                 this.safeSetItem(GIT_APPROVED_KEY, JSON.stringify([...all].slice(-50)));
             }
 
@@ -12811,8 +12813,8 @@ Orders DB,down,datastore,App,,,</pre></div>
                 const where = `${cfg.repo} (${cfg.branch})`;
                 try {
                     if (!(window.crypto && crypto.subtle)) throw new GitSyncError('Git sync needs the app to be opened over https:// or from localhost.');
-                    if (!this.readGitApproved().has(gitConfigKey(cfg))) {
-                        this.openGitSettings(`This model syncs with ${GIT_PROVIDERS[cfg.provider].label} ${cfg.host}, repository ${cfg.repo}, branch ${cfg.branch}, file ${cfg.path}. Check these settings, then press Connect (with your token) to allow it in this browser.`, 'warning');
+                    if (!this.readGitApproved().has(gitApprovalKey(cfg))) {
+                        this.openGitSettings(`This model syncs with ${GIT_PROVIDERS[cfg.provider].label} ${cfg.host}, repository ${cfg.repo}, branch ${cfg.branch}, file ${cfg.path}${cfg.readable ? `, and writes a readable copy to ${cfg.readablePath} (overwriting that file)` : ''}. Check these settings, then press Connect (with your token) to allow it in this browser.`, 'warning');
                         return;
                     }
                     const token = await this.gitTokenFor(cfg);
@@ -12838,7 +12840,7 @@ Orders DB,down,datastore,App,,,</pre></div>
                         });
                         if (!applied) return;
                         // The pulled file never decides where this model syncs to.
-                        if (gitConfigKey(normalizeGitSync(this.state.gitSync) || {}) !== gitConfigKey(cfg)) { this.state.gitSync = cfg; this.saveSessionToLocalStorage(); this.renderGitSyncButton(); }
+                        if (gitApprovalKey(normalizeGitSync(this.state.gitSync) || {}) !== gitApprovalKey(cfg)) { this.state.gitSync = cfg; this.saveSessionToLocalStorage(); this.renderGitSyncButton(); }
                         this.writeGitSyncState(cfg, { remoteId: remote.id, hash: await this.gitModelHash(this.state) });
                         this.notify(`Loaded the latest version from ${where}. Your previous version is in History.`, 'success');
                         await this.writeGitReadableCopy(cfg, token);

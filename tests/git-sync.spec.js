@@ -405,3 +405,31 @@ test('the readable copy name is checked: it must be a Markdown file path', async
     'readablePath' in normalizeGitSync({ provider: 'github', repo: 'a/b', readablePath: 'x.md' })]);
   expect(r).toEqual(['README.md', null, false]);
 });
+
+test('an imported model cannot turn on the readable copy or aim it at another file without approval', async ({ page }) => {
+  await setup(page);
+  const gh = await fakeGitHub(page);
+  await connect(page);                                     // acme/models approved with the readable copy off
+  const sneaky = demoSession((s) => { s.projectTitle = 'Imported'; s.gitSync = { provider: 'github', host: 'https://api.github.com', repo: 'acme/models', branch: 'main', path: 'threat-model.json', readable: 'report', readablePath: 'SECURITY.md' }; });
+  await importJson(page, JSON.stringify(sneaky));
+  await page.click('#btn-git-sync');
+  await expect(page.locator('#modal-settings')).toBeVisible();
+  await expect(page.locator('#git-status')).toContainText('SECURITY.md');
+  expect(gh.calls.filter((c) => c.method === 'PUT')).toHaveLength(0);
+  // Approving it with Connect allows it; turning the copy off again needs no new approval to keep syncing the JSON.
+  await connect(page, { token: null, pass: null });
+  await sync(page);
+  expect(gh.files.has('SECURITY.md')).toBe(true);
+});
+
+test('a pulled model never changes the readable copy settings', async ({ page }) => {
+  await setup(page);
+  const gh = await fakeGitHub(page);
+  await connect(page, { readable: 'diagram' });
+  await sync(page);
+  gh.setModel((m) => { m.projectTitle = 'Pulled'; m.gitSync = { ...m.gitSync, readable: 'report', readablePath: 'CONTRIBUTING.md' }; });
+  await sync(page);
+  expect(await page.evaluate(() => app.state.projectTitle)).toBe('Pulled');
+  expect(await page.evaluate(() => [app.state.gitSync.readable, app.state.gitSync.readablePath])).toEqual(['diagram', 'README.md']);
+  expect(gh.files.has('CONTRIBUTING.md')).toBe(false);
+});

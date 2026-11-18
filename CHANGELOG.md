@@ -5,6 +5,12 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 
 ## Unreleased
 
+## 1.23.2
+
+### Security
+
+*   **Git sync readable copy needs approval.** The readable copy's kind and file name are now part of the sync target approved with Connect (`gitApprovalKey`), so an imported model can no longer turn the copy on or aim it at another `.md` file (e.g. `SECURITY.md`) in an approved repository, and a pulled model never changes these settings. Approvals for targets without a readable copy stay valid; the sync state is still keyed by the JSON target, so changing the setting causes no false conflict.
+
 ## 1.23.1
 
 ### Changed

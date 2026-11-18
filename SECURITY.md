@@ -29,7 +29,10 @@ the model is sent to and loaded from the server you entered (GitHub, GitLab, or 
 - The model and its exports contain the sync settings (service, server, repository, branch, file), never the token.
 - A loaded repository file is treated like any imported model (validated, never rendered as markup).
 - A model can name a sync target, but nothing is sent until you confirm that exact target (server, repository,
-  branch, file) with **Connect** in this browser; loading the repository copy never changes the target.
+  branch, file, and the readable copy's kind and file name) with **Connect** in this browser; loading the
+  repository copy never changes the target or the readable copy settings.
+- The optional readable copy (a Markdown file, `README.md` by default) is generated from the model with every
+  value Markdown-escaped, overwrites the file of that name, and is never read back.
 - To allow self-hosted servers, the page's Content-Security-Policy permits `connect-src https:`. The app itself
   only connects to the server in your sync settings; the wider policy means a script injection bug could reach any
   https host, so reports about escaping bugs are especially welcome.
