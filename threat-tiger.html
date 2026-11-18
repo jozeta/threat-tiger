@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Threat Tiger - Threat Modeling With A Bite</title>
     <!-- Content-Security-Policy: the script hash is maintained by `npm run sync` (checked by tests/sync.spec.js). -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-YTknA1nsmlCp5rxGm5dzG/ZPIOZPH3b7Lx6OvOudFwQ='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-PsdfxrWxcnktFT4LJC6SMRZvDwef25sBqUCgO4/I2kw='; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https: http:; font-src 'self' data:; connect-src 'self' data: blob: https:; object-src 'none'; base-uri 'none'; form-action 'none'">
     <!-- All assets are local (vendor/), so the app works offline. Versions are listed in vendor/README.md. -->
     <link rel="icon" href="favicon.ico" type="image/x-icon">
     <link href="vendor/bootstrap-5.3.2/bootstrap.min.css" rel="stylesheet">
@@ -5258,7 +5258,7 @@
     <div class="tt-help-wrap"><table class="tt-help-table">
         <thead><tr><th>To…</th><th>Do this</th></tr></thead>
         <tbody>
-            <tr><td>Add a shape</td><td>Click a palette item (it lands in the middle of the view) or drag it to a spot. Double-clicking adds just one.</td></tr>
+            <tr><td>Add a shape</td><td>Click a palette item (it lands in the middle of the view, or on the nearest free spot in view when something is already there; a new trust zone also keeps clear of existing shapes) or drag it to a spot. Double-clicking adds just one.</td></tr>
             <tr><td>Select</td><td>Click a shape or line. Drag on empty canvas to draw a selection box around several shapes. <kbd>Esc</kbd> deselects.</td></tr>
             <tr><td>Move</td><td>Drag a shape, or use the arrow keys (<kbd>Shift</kbd> for five grid steps). Shapes snap to the grid unless snapping is off.</td></tr>
             <tr><td>Resize</td><td>Drag the handle at the bottom-right corner of a selected shape.</td></tr>
@@ -15634,6 +15634,39 @@ Orders DB,down,datastore,App,,,</pre></div>
                 return { name, width: w, height: h, props };
             }
 
+            /**
+             * Where a clicked palette item goes (top-left x/y): the middle of the visible canvas if that is free, else the free
+             * spot in view nearest to it. Shapes on this page and visible layers are obstacles; zones, swimlanes and lanes are
+             * not obstacles for ordinary shapes (a shape may sit in a zone), but a new container avoids everything, so it does
+             * not silently take existing shapes into a trust zone. No free spot in view: the middle, as before.
+             */
+            freeSpotInView(type, w, h, rect = this.dom.svg.getBoundingClientRect()) {
+                const toCanvas = (x, y) => this.convertClientScreenCoordinatesToCanvasSpace(x, y);
+                const c = toCanvas(rect.left + rect.width / 2, rect.top + rect.height / 2);
+                const middle = { x: this.snapValue(c.x - w / 2), y: this.snapValue(c.y - h / 2) };
+                if (this.isIsometric) return middle;   // the 3D view is not axis-aligned; keep the simple rule there
+                const containers = new Set(['boundary', 'swimlane', ...LANE_CONTAINER_TYPES]);
+                const placingContainer = containers.has(type), gap = 16;
+                const obstacles = this.state.elements.filter(e => this.isItemVisible(e) && (placingContainer || !containers.has(e.type))).map(e => {
+                    if (e.type === 'boundary_line') return { x: Math.min(e.x, e.x2), y: Math.min(e.y, e.y2), w: Math.abs(e.x2 - e.x) || 1, h: Math.abs(e.y2 - e.y) || 1 };
+                    const d = this.elementDefaults(e.type);
+                    return { x: e.x, y: e.y, w: e.width || d.width, h: e.height || d.height };
+                });
+                const free = (x, y) => obstacles.every(o => x + w + gap <= o.x || o.x + o.w + gap <= x || y + h + gap <= o.y || o.y + o.h + gap <= y);
+                if (free(middle.x, middle.y)) return middle;
+                const a = toCanvas(rect.left, rect.top), b = toCanvas(rect.right, rect.bottom);
+                const minX = a.x + gap, minY = a.y + gap, maxX = b.x - w - gap, maxY = b.y - h - gap;
+                if (maxX < minX || maxY < minY) return middle;
+                const step = Math.max(10, this.snapValue(20) || 20), cands = [];
+                for (let y = minY; y <= maxY; y += step) for (let x = minX; x <= maxX; x += step) {
+                    const sx = this.snapValue(x), sy = this.snapValue(y);
+                    if (sx >= a.x && sy >= a.y && sx + w <= b.x && sy + h <= b.y) cands.push([sx, sy, (sx - middle.x) ** 2 + (sy - middle.y) ** 2]);
+                }
+                cands.sort((p, q) => p[2] - q[2]);
+                const hit = cands.find(([x, y]) => free(x, y));
+                return hit ? { x: hit[0], y: hit[1] } : middle;
+            }
+
             instantiateNewCanvasElementNode(type, customX = null, customY = null, extra = null) {
                 if (this.blockedByReviewMode('add shapes')) return null;
                 const rect = this.dom.svg.getBoundingClientRect();
@@ -15646,9 +15679,8 @@ Orders DB,down,datastore,App,,,</pre></div>
                     targetX = this.snapValue(customX - w / 2);
                     targetY = this.snapValue(customY - h / 2);
                 } else {
-                    const center = this.convertClientScreenCoordinatesToCanvasSpace(rect.left + rect.width / 2, rect.top + rect.height / 2);
-                    targetX = this.snapValue(center.x - w / 2);
-                    targetY = this.snapValue(center.y - h / 2);
+                    const spot = this.freeSpotInView(type, w, h, rect);   // the middle of the view, or the nearest free spot in view
+                    targetX = spot.x; targetY = spot.y;
                 }
 
                 const elementObj = {

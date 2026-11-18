@@ -15,6 +15,10 @@ Finding IDs (SEC-001, BUG-002, …) refer to the November 2026 audit report.
 *   **☰ menu groups:** *Import* (JSON, from git, Mermaid, status file), *Export* (JSON, Mermaid diagram) and *Reports* (Print report, Markdown report, History).
 *   **Settings has tabs:** *Visuals* (title block & legend), *Profiles*, *Live status* and *Sync* (git sync, with its Connect, Forget token and Remove buttons). ☰ → Settings… opens Visuals; the sync button, live-status host approval and *Edit profiles…* open their own tab. The window now sits near the top of the screen with a fixed height, so it no longer moves when a tab or section changes size; the tab bar stays in place and only the content scrolls.
 
+### Changed
+
+*   **Where a clicked palette item lands** (`freeSpotInView`): the middle of the visible canvas as before when it is free, else the nearest free spot fully in view (16 px clear of other shapes). Zones, swimlanes and lanes are not obstacles for ordinary shapes, but a new container avoids every shape so it does not take them into a trust zone by accident. Drops keep their exact position; the isometric view keeps the old rule.
+
 ### Fixed
 
 *   A ☰ menu flyout too tall for the screen on both sides of its trigger (e.g. View → Icon sets on a 667 px phone) no longer covers the trigger: it opens on the roomier side and scrolls inside.

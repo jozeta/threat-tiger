@@ -62,6 +62,7 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 *   **Readable copy sections:** choose what the git sync Markdown file holds: Diagram, Risk summary, Threats, Mitigations, Data flows, Components.
 *   **Settings in tabs:** *Visuals*, *Profiles*, *Live status* and *Sync*. The window sits near the top and keeps its size, so it no longer jumps when you switch tabs.
 *   **Six new icon sets** under Data Nodes & Icons (about 3,450 icons): *Security architecture (OSA)*, *Tabler (general)*, *IBM Carbon*, *Red Hat*, *SaaS & dev logos* and *Font Awesome brands*. Each loads when you open it, is classified so threat suggestions work, and can be hidden with ☰ → View → Icon sets or in a profile. Licences are in [vendor/stencils/README.md](vendor/stencils/README.md).
+*   **New shapes don't hide behind others:** a clicked palette item goes to the nearest free spot in view when the middle is taken.
 *   **Tidier ☰ menu:** *Import*, *Export* and *Reports* groups. *Export JSON for git* is gone: ☰ → Export JSON keeps the sync settings (never the token or passphrase), and git sync writes the compact format itself.
 
 **1.23.3:** trust boundaries now show in Mermaid diagrams (Export Mermaid diagram, the Markdown report and the git sync readable copy): flows that cross a boundary line or zone are drawn red and labelled *crosses …*. The readable copy no longer has an Attack paths section.
@@ -125,6 +126,7 @@ A demo site is available here: [https://jozeta.github.io/threat-tiger/threat-tig
 **1.15.1** was a bug-fix release. Its main fixes:
 
 - **Icons** from the icon sets drag like any other shape (press, move, release), and can be dragged from the palette onto the canvas.
+- **Adding a shape** by clicking a palette item puts it in the middle of the view, or on the nearest free spot in view when something is already there, so it is never hidden behind another shape. A new trust zone, swimlane or lane keeps clear of existing shapes, so it never takes them into the zone by accident. Dragging an item places it exactly where you drop it.
 - **Zoom** buttons and the mouse wheel zoom around the centre of the view.
 - **Privacy:** an imported image path such as `//host/image.png` is removed instead of loading from another website without asking.
 - **Threat templates backup** keeps every field and the built-ins you deleted, so a restore gives back the same library.
